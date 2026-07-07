@@ -2,8 +2,8 @@
 
 > **Propósito:** Documento vivo de ingeniería inversa del software de referencia de control de accesos.  
 > Sirve como guía para alinear **Controla** sin modificar código hasta que se apruebe cada fase.  
-> **Última actualización:** 2026-07-06  
-> **Versión del documento:** 1.8
+> **Última actualización:** 2026-07-07  
+> **Versión del documento:** 1.9
 
 ---
 
@@ -28,7 +28,8 @@
 3. [Motor de Business Intelligence y dashboards](#sección-3-motor-de-business-intelligence-y-dashboards-gráficos)
 4. [Vigilancia expedicionaria — Libro digital de minutas](#sección-4-vigilancia-expedicionaria--libro-digital-de-minutas)
 5. [Anexo A — Mapeo Controla vs Referencia](#anexo-a--mapeo-controla-vs-referencia)
-6. [Anexo B — Registro de cambios del documento](#anexo-b--registro-de-cambios del documento)
+6. [Anexo C — Inteligencia pública Axesa y oportunidades Controla](#anexo-c--inteligencia-pública-axesa-control-y-oportunidades-para-controla)
+7. [Anexo B — Registro de cambios del documento](#anexo-b--registro-de-cambios del documento)
 
 ---
 
@@ -262,6 +263,8 @@ La empresa de seguridad **no dispone de un panel** para administrar todos sus cl
 | USUARIO | Cuenta master por cliente: `MASTERSJ@[slug]` |
 
 **Flujo actual:** cada cliente nuevo requiere **solicitud al proveedor** (Axesa/Oktal), quien crea la instancia y entrega credenciales.
+
+> **Investigación pública ampliada:** ver [Anexo C — Inteligencia pública Axesa](#anexo-c--inteligencia-pública-axesa-control-y-oportunidades-para-controla) (v1.9): catálogo comercial, planes, app stores, benchmark y backlog traducido a Controla.
 
 **Mejora obligatoria en Controla:** panel **Administrador de Empresa (Nivel 2)** para alta, suspensión y gestión centralizada de clientes — sin URLs ni usuarios master separados por conjunto.
 
@@ -1665,10 +1668,348 @@ public function storeSupervisorAnnotation(Request $request) {
 
 ---
 
+## ANEXO C — INTELIGENCIA PÚBLICA AXESA CONTROL Y OPORTUNIDADES PARA CONTROLA
+
+> **Objetivo:** Consolidar investigación pública (web, stores, partners) + ingeniería inversa ya documentada, y traducirla en **decisiones reutilizables** para Controla / rama Creawilder.  
+> **Alcance:** Especificación y arquitectura — **sin implementar código** hasta aprobar fases.
+
+### C.1 Metodología y confianza de las fuentes
+
+| Capa | Fuente | Confianza | Qué aporta |
+|------|--------|-----------|------------|
+| **A — Campo** | Sesiones en Axesa v13.0.0 (SJ Seguridad) | Alta | Módulos web, UI, flujos, Excel clientes |
+| **B — Marketing oficial** | [controldevisitantes.com](https://www.controldevisitantes.com/), [elconjunto.co/axesa](https://www.elconjunto.co/axesa) | Media-alta | Catálogo comercial, planes, cifras |
+| **C — Stores** | [Google Play](https://play.google.com/store/apps/details?id=com.axesacontrol.pro.app), App Store | Media | Módulos app residente, permisos, cadencia releases |
+| **D — Proveedor** | [oktal.com.co](https://www.oktal.com.co/software-web-consultorias.html) | Media | Stack declarado, servicios, contacto |
+| **E — Login público** | [axesacontrol.com.co](https://www.axesacontrol.com.co/Axesa/login) | Media | Versión visible (12.4 en jul-2026) |
+
+**Nota de versión:** el login público muestra **v12.4**; la referencia de campo es **v13.0.0**. Controla debe diseñar contra v13 (más completa) y asumir evolución incremental del producto legacy.
+
+---
+
+### C.2 Identidad del producto — qué es y qué NO es
+
+| Pregunta | Respuesta verificada |
+|----------|---------------------|
+| **¿Quién lo desarrolla?** | **Oktal Desarrollos Tecnológicos S.A.S.** — Cali, Colombia |
+| **¿Quién lo opera comercialmente?** | Oktal + partners (ej. El Conjunto) + empresas de vigilancia (ej. SJ Seguridad / BigSky) |
+| **¿Es lo mismo que axesa.com?** | **No** — axesa.com es agencia de marketing digital (Puerto Rico) |
+| **¿Es lo mismo que axesa.cl?** | **No** — producto chileno IoT/accesos distinto |
+| **¿Es open source?** | No — SaaS propietario, licencia por estructura |
+| **¿Requiere instalación local?** | No — 100 % nube, navegador + internet |
+| **¿Tiene API pública documentada?** | No encontrada |
+
+**Posicionamiento:** plataforma **modular** para portería + administración PH + app residente, orientada a conjuntos residenciales y empresas con recepción/vigilancia.
+
+---
+
+### C.3 Proveedor, contacto y ecosistema
+
+| Dato | Valor |
+|------|-------|
+| Razón social | OKTAL DESARROLLOS TECNOLOGICOS S A S |
+| Dirección | Calle 38 Nte 4 B 21 Of 10, Cali 760001 |
+| Email | info@oktal.com.co |
+| Teléfonos | +57 315 6739060 · +57 234 50033 |
+| Soporte producto | soporteaxesacontrol.com |
+| Dominios producto | controldevisitantes.com · axesacontrol.com.co · axesacontrol.com |
+| App Android | `com.axesacontrol.pro.app` (~10k+ descargas Play Store) |
+| App relacionada | **Buo** (`com.buoapp.app`) — botones pánico autogestionados (mismo dev) |
+| Partner comercial | [elconjunto.co/axesa](https://www.elconjunto.co/axesa) |
+
+**Cifras publicadas por El Conjunto (2026):** +1.272 estructuras · +259.748 usuarios web · +22.000 descargas app.
+
+**Cifras publicadas en controldevisitantes.com (históricas/acumuladas):**
+
+| Métrica | Valor |
+|---------|-------|
+| Ingresos peatonales registrados | +2 millones |
+| Ingresos vehiculares | +1,5 millones |
+| Correspondencias recibidas | 900 K |
+| Minutas escritas | 1,5 millones |
+| Botones de pánico activados | 5 K |
+| Usuarios software web | 1,5 K |
+| Usuarios app | 2 K |
+
+→ Controla puede usar estas métricas como **KPIs de producto** en dashboards de plataforma (Súper Admin / Admin Empresa).
+
+---
+
+### C.4 Modelo comercial, despliegue y tenancy
+
+#### C.4.1 Cómo vende Axesa hoy
+
+- **SaaS por cliente** con URL propia o subdominio compartido.
+- **Credencial master por conjunto** (`MASTERSJ@cliente`) creada manualmente por Oktal — confirmado en campo (§0.6).
+- **App residente gratis** si el conjunto contrata el servicio web.
+- **Planes por capacidad** (unidades o empleados), no por usuario concurrente.
+- **White label** disponible (logo escritorio; app con costo adicional).
+- **Hardware no incluido** — integración opcional (RFID, LPR, huella).
+
+#### C.4.2 Planes residenciales (controldevisitantes.com)
+
+| Plan | Capacidad | Extras |
+|------|-----------|--------|
+| Económico | Hasta 20 casas/aptos | Usuarios ilimitados, almacenamiento ilimitado, módulo huella opcional |
+| Deluxe | Hasta 50 | Idem |
+| Pro | Hasta 100 | Idem |
+| Ultimate | 100–200 | + dominio y hosting independiente |
+
+#### C.4.3 Planes empresas
+
+| Plan | Capacidad |
+|------|-----------|
+| Junior | Hasta 30 empleados |
+| Micro | Hasta 50 |
+| PYME | Hasta 100 |
+| Industrial | 100–500 |
+
+**Implicación para Controla:** el pricing puede ser **por `client_id` + tier de unidades** (`structures` hoja). El panel **Admin Empresa** debe mostrar consumo vs plan contratado.
+
+#### C.4.4 Brecha B2B confirmada (oportunidad Controla)
+
+Axesa **no ofrece públicamente** un panel donde la empresa de seguridad gestione todos sus clientes. Operan Excel + solicitud a Oktal. **Controla debe implementar esto como diferenciador #1.**
+
+---
+
+### C.5 Catálogo funcional consolidado (web + app)
+
+Fusión de marketing oficial + v13 documentada en §0.6 y §1.
+
+#### C.5.1 Dashboard web — 6 módulos principales (v13)
+
+| Módulo | Color ref. | Subcapacidades reutilizables en Controla |
+|--------|------------|------------------------------------------|
+| **Ingresos y Salidas** | Rojo | Peatones, vehículos, objetos, correspondencia, contratistas, listas negras, parqueaderos |
+| **Reportes** | Azul | BI tiempo real, filtros, consolidados, export |
+| **Estructura** | Verde | Censo: residencial, personas, vehículos, mascotas, autorizaciones, empleados, usuarios APP, zonas comunes |
+| **Administración P.H.** | Amarillo | Cuotas, circulares, presupuesto, tareas, mantenimiento, PQRS, documentos, asambleas |
+| **Vigilancia y Seguridad** | Púrpura | Objetos, minutas, consignas, checklists, pánico, riesgos, préstamo llaves |
+| **Herramientas** | Naranja | Directorio telefónico, tarjetas, mensajería, noticias, bandeja entrada |
+
+#### C.5.2 Módulo Estructura — submódulos (ingeniería inversa §1.2)
+
+| # | Submódulo | Reutilizar en Controla | Prioridad |
+|---|-----------|------------------------|-----------|
+| 1 | Residencial (árbol + badges censo) | ✅ Modelo `structures` + contadores | P0 |
+| 2 | Personas (directorio global `/miembro`) | ✅ + QR, códigos, tabs porterías | P0 |
+| 3 | Vehículos (directorio global) | ✅ + SOAT, carnet, foto, tipo visitante | P0 |
+| 4 | Mascotas | ✅ Tabla `structure_pets` | P1 |
+| 5 | Autorizaciones (Excel + multi-visitante) | ✅ Import + pre-auth enriquecida | P0 |
+| 6 | Usuarios APP (`@cliente`) | ✅ Portal residente + provisioning | P0 |
+| 7 | Zonas comunes | ✅ Reservas + calendario | P1 |
+| 8 | Accesos Porterías (tab persona) | ✅ Scoping guarda por portería | P1 |
+| 9 | Activos fijos / incidencias | ⬜ Axesa los tiene inactivos — posponer | P3 |
+
+#### C.5.3 App residente Axesa Control — módulos confirmados (stores)
+
+| Módulo app | Reutilizar | Notas técnicas Controla |
+|------------|------------|-------------------------|
+| Botones pánico (Seguridad, Secuestro, Salud, Incendio) | ✅ | Push + geolocalización + cola portería |
+| Historial visitas | ✅ | Read-only scoped a `structure_id` |
+| Autorización visitantes/vehículos RT | ✅ | WebSocket o polling; estados pending/approved/denied |
+| Correspondencia pendiente | ✅ | Notificación push al registrar en portería |
+| Circulares administración | ✅ | Módulo PH o integración futura |
+| Reservas zonas comunes | ✅ | Calendario + reglas de uso |
+| Mensajería portería | ✅ | Thread por unidad o ticket |
+| Facturas/pagos administración | ⚠️ | PH profundo — fase 3 o integración contable |
+| Presupuestos y gastos | ⚠️ | Idem |
+| PQRS | ✅ | Ticket con estados |
+| Tips seguridad | ✅ | CMS simple |
+| Minutas georeferenciadas (iOS) | ✅ | Alinear con §4 |
+| Notificaciones push | ✅ | Laravel Notifications + FCM |
+
+**Cadencia Axesa:** actualizaciones app cada ~15 días → Controla puede planificar releases quincenales del portal residente una vez estable.
+
+#### C.5.4 Funciones comerciales no detalladas en v13 pero públicas
+
+| Función | Fuente | Uso Controla |
+|---------|--------|--------------|
+| Consulta antecedentes Policía / Procuraduría | El Conjunto | Integración API externa en ingreso visitante — fase 2 |
+| Contratistas industriales | Marketing | Tipo visitante + vigencia + empresa |
+| Listas negras | Dashboard v13 | Tabla `access_denylists` |
+| Préstamo llaves y objetos | Marketing vigilancia | `visitor_inventory_items` + custodia |
+| Parqueaderos visitantes | Marketing | Módulo parking — fase 2 |
+| Personalización logo cliente | Marketing | `clients.logo_path` + white label |
+| Parámetros por módulo | Panel control Axesa | `client_settings` JSON |
+
+---
+
+### C.6 Stack tecnológico inferido y decisiones para Controla
+
+| Aspecto | Axesa (inferido) | Controla (decisión recomendada) |
+|---------|------------------|--------------------------------|
+| Backend web legacy | IIS + ASP.NET (sitio público histórico) | **Laravel 11** — ya adoptado |
+| BD | MySQL (Oktal declara MySQL en stack propio) | **MySQL** — ya adoptado |
+| Frontend web | jQuery / server-rendered clásico | **Blade + Livewire o Inertia** según fase |
+| App móvil | Nativa/híbrida propietaria | **API REST + PWA o Flutter** — evaluar en fase app |
+| Multi-tenant | Instancias lógicas por URL + master user | **`company_id` + `client_id` en tablas** |
+| Permisos | Roles implícitos por pantalla | **Spatie Permission** — ampliar roles §0 |
+| Realtime portería | No documentado | **Laravel Echo / polling** para "personas adentro" |
+| BI | Reportes server-side | **JSON endpoints + Chart.js** (§3) |
+| QR acceso | Confirmado en personas | **`simplesoftwareio/simple-qrcode`** o equivalente |
+| Excel import | Confirmado autorizaciones | **`maatwebsite/excel`** |
+| Geolocalización minutas | App + web | **`security_minuta_logs.lat/lng`** + validación browser |
+
+**Ventaja arquitectónica Controla:** stack moderno unificado vs legacy ASP fragmentado por cliente.
+
+---
+
+### C.7 Matriz ADOPTAR · MEJORAR · DIFERENCIAR · OMITIR
+
+| Ítem | Decisión | Justificación |
+|------|----------|---------------|
+| Censo en módulo Estructura | **ADOPTAR** | Núcleo del producto; ya documentado §1 |
+| Ingresos/Salidas consola portería | **ADOPTAR** | Core operativo §2 |
+| Sidebar accesos rápidos | **ADOPTAR** | UX probada en campo |
+| BI horas pico / distribución / turnos | **ADOPTAR** | §3 — valor para admin cliente |
+| Minutas geo + firma supervisor | **ADOPTAR** | §4 — compliance vigilancia |
+| App residente (pre-auth, pánico, correspondencia) | **ADOPTAR** | Stores confirman demanda |
+| Import Excel autorizaciones | **ADOPTAR** | Flujo real en Axesa |
+| Usuarios `@cliente` | **ADOPTAR** | Patrón de login multi-tenant |
+| Panel Admin Empresa multi-cliente | **DIFERENCIAR** | Axesa usa Excel — gap #1 |
+| Multi-tenant estricto 3 niveles | **DIFERENCIAR** | Modelo §0 superior a Axesa |
+| Scoping policies en rutas | **MEJORAR** | Controla tiene permisos en config sin enforcement |
+| Árbol `structures` unificado | **MEJORAR** | Reemplaza 3 tablas actuales |
+| Administración PH contable completa | **OMITIR v1** | Properix domina; integrar después |
+| White label por cliente | **OMITIR v1** | Post-MVP; Axesa lo cobra extra |
+| Hardware RFID/LPR/huella | **OMITIR v1** | Interfaces preparadas, drivers fase 3 |
+| Consulta Policía/Procuraduría | **OMITIR v1** | Integración regulada — fase 2 |
+| Producto Buo separado | **OMITIR** | Pánico integrado en app Controla |
+
+---
+
+### C.8 Backlog recomendado para Controla (traducción a fases)
+
+#### Fase 0 — Fundación multi-tenant (bloqueante)
+
+1. Migraciones `security_companies`, `clients`, `client_user_assignments`.
+2. Roles: `company-admin`, `client-admin`, `supervisor`, `guardia`, `resident`.
+3. Middleware `TenantScope` + policies en **todas** las rutas `/access/*`.
+4. Panel Admin Empresa: CRUD clientes (reemplaza Excel Axesa).
+
+#### Fase 1 — Estructura / censo (P0)
+
+1. Tabla `structures` (árbol) + seed tipos (torre, apto, casa, oficina…).
+2. Submódulos: Residencial, Personas, Vehículos, Autorizaciones, Usuarios APP.
+3. Directorios globales con filtros por cliente.
+4. Import Excel autorizaciones.
+5. QR + códigos acceso personas.
+
+#### Fase 2 — Operación portería (P0)
+
+1. Módulo Ingresos y Salidas unificado.
+2. Sidebar flotante accesos rápidos.
+3. Consola "Personas adentro" + alerta >12h + salida masiva.
+4. Modal egreso + custodia objetos.
+5. Correspondencia con notificación push (preparar API).
+
+#### Fase 3 — BI + Vigilancia (P1)
+
+1. Endpoints JSON: horas pico, pie estructuras, matriz tipos visitante.
+2. Dashboard vehicular espejo.
+3. `security_minuta_logs` con geo + doble factor supervisor.
+4. Reportes export Excel/PDF.
+
+#### Fase 4 — App / portal residente (P1)
+
+1. API autenticada `@cliente` scoped a unidad.
+2. Pre-autorizaciones, historial, correspondencia, mensajes.
+3. Reservas zonas comunes.
+4. Botones pánico + push a portería.
+5. PQRS básico.
+
+#### Fase 5 — PH avanzado e integraciones (P2+)
+
+1. Circulares, presupuesto, facturas (o integración Properix/contabilidad).
+2. Parqueaderos visitantes.
+3. Listas negras + antecedentes.
+4. Hardware RFID/LPR.
+5. White label.
+
+---
+
+### C.9 Mapeo directo: hallazgo público → artefacto Controla
+
+| Hallazgo Axesa | Artefacto Controla sugerido |
+|----------------|----------------------------|
+| Plan por # unidades | `clients.plan_tier`, `clients.max_structures` |
+| Logo por cliente | `clients.logo_path`, `config('app.client_brand')` |
+| Master por cliente | `users.is_client_master` + rol `client-admin` |
+| Sufijo login `@palmasdelingenio` | `clients.login_suffix` |
+| Badges censo en residencial | computed: `StructureCensusService` |
+| Tab Datos/Visitas/Correspondencia | Livewire tabs o partials Blade |
+| Directorio `/miembro` | `PersonController@directory` ruta global |
+| Crear persona 2 scrolls | Form wizard 2 steps — UX validada |
+| Generar QR empleado | `QrCode::generate($person->access_code)` |
+| Autorización multi-visitante | `pre_authorizations` + `pre_authorization_guests` |
+| Minutas georeferenciadas | `guard_logs` → migrar a `security_minuta_logs` |
+| App cada 15 días | pipeline CI release quincenal portal/PWA |
+| Métricas plataforma | dashboard Súper Admin con KPIs §C.3 |
+
+---
+
+### C.10 Benchmark competencia (contexto Colombia)
+
+| Producto | Enfoque | Qué copiar | Qué no copiar |
+|----------|---------|------------|---------------|
+| **Axesa Control** | Portería + censo + app residente | Módulos operativos, flujos portería | Excel multi-cliente, legacy ASP |
+| **Properix** | PH integral + contabilidad | App residente, PQRS, reservas, citofonía | Contabilidad profunda (fuera scope v1) |
+| **axesa.cl** | IoT accesos Chile | Invitaciones QR, notificaciones llegada | Hardware propietario |
+
+**Posicionamiento Controla:** *"Axesa operativo + panel B2B empresa de seguridad + stack Laravel moderno"*, sin competir con Properix en contabilidad en v1.
+
+---
+
+### C.11 Riesgos y deudas técnicas a evitar (lecciones Axesa)
+
+1. **Instancias aisladas por URL** sin panel central → deuda operativa para empresas de seguridad.
+2. **Permisos solo en UI** sin enforcement backend → vulnerabilidad; Controla ya tiene señal en `config/access.php`.
+3. **Formularios largos sin wizard** → Axesa usa scroll de 2 partes; Controla puede mejorar con steps + validación.
+4. **Mezclar PH contable con portería** en mismo módulo → separar bounded contexts (`Access`, `Structure`, `PropertyAdmin`, `ResidentApp`).
+5. **App con 15 funciones sin API clara** → diseñar API-first desde Fase 2.
+
+---
+
+### C.12 Checklist de aceptación — paridad mínima vs Axesa v13
+
+Usar como gate antes de declarar "paridad operativa" con la referencia:
+
+- [ ] Admin Empresa crea cliente sin Excel externo
+- [ ] Admin Cliente gestiona árbol estructuras completo
+- [ ] Directorios globales Personas y Vehículos
+- [ ] Import Excel autorizaciones
+- [ ] Portería: ingreso/egreso peatón + vehículo + correspondencia
+- [ ] Personas adentro + salida masiva
+- [ ] Minutas con geo
+- [ ] Reportes: horas pico + distribución estructura
+- [ ] Residente: pre-auth + push correspondencia
+- [ ] Usuarios APP con sufijo `@cliente`
+
+---
+
+### C.13 Fuentes consultadas
+
+| URL | Tipo |
+|-----|------|
+| https://www.controldevisitantes.com/ | Landing + módulos + planes |
+| https://www.controldevisitantes.com/visitor-control-vehicles-access.html | Módulos detallados EN |
+| https://www.axesacontrol.com.co/Axesa/login | Login + versión pública |
+| https://www.elconjunto.co/axesa | Partner + cifras + beneficios |
+| https://www.oktal.com.co/software-web-consultorias.html | Proveedor + stack |
+| https://play.google.com/store/apps/details?id=com.axesacontrol.pro.app | App Android |
+| https://apprecs.com/ios/1167130341/axesa-control | App iOS (descripción) |
+| https://www.properix.com/ | Benchmark PH Colombia |
+| https://axesa.cl/ | Producto homónimo Chile (no confundir) |
+| §0.6–§4 + Anexo A | Ingeniería inversa Controla (v1.8) |
+
+---
+
 ## ANEXO B — REGISTRO DE CAMBIOS DEL DOCUMENTO
 
 | Versión | Fecha | Autor / Fuente | Cambios |
 |---------|-------|----------------|---------|
+| 1.9 | 2026-07-07 | Investigación pública Axesa | Anexo C: inteligencia web, catálogo consolidado, matriz adoptar/mejorar, backlog fases, benchmark, checklist paridad |
 | 1.8 | 2026-07-06 | Usuarios APP | §1.2.6 listado, crear, editar, sufijo @cliente, crear masivo |
 | 1.7 | 2026-07-06 | Autorizaciones visitantes | §1.2.5 listado, import Excel, crear multi-visitante |
 | 1.6 | 2026-07-06 | Vehículos directorio global | §1.2.3: listado `/listadoVehiculos`, crear completo, editar con foto |
@@ -1693,6 +2034,7 @@ public function storeSupervisorAnnotation(Request $request) {
 | `00-dashboard-principal-master.png` | Dashboard Axesa (6 módulos) | ✅ Adjuntada |
 | `00-registro-manual-clientes-empresa.png` | Gestión manual clientes empresa | ✅ Adjuntada |
 | `01-estructura-menu-principal.png` | Menú Estructura (9 submódulos) | ✅ Adjuntada |
+| `01-estructura-por-roles.png` | Matriz roles + jerarquía B2B (canvas export) | ✅ Adjuntada |
 | `02-residencial-listado.png` | Residencial — listado unidades + badges censo | ✅ Adjuntada |
 | `02-residencial-editar-datos.png` | Residencial — modal pestaña Datos | ✅ Adjuntada |
 | `02-residencial-editar-visitas.png` | Residencial — modal pestaña Visitas | ✅ Adjuntada |
