@@ -1,18 +1,19 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Correspondence extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToClient, HasFactory, SoftDeletes;
 
     protected $table = 'correspondence';
 
     protected $fillable = [
-        'visitor_id', 'host_id', 'location_id', 'housing_unit_id', 'resident_id',
+        'client_id', 'visitor_id', 'host_id', 'location_id', 'housing_unit_id', 'resident_id',
         'carrier', 'courier_guide', 'package_type', 'received_at', 'received_by',
         'delivered_at', 'delivered_by', 'status', 'photo_path', 'notes',
     ];

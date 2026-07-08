@@ -1,16 +1,17 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Resident extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToClient, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'document_type', 'document_number', 'first_name', 'last_name',
+        'client_id', 'user_id', 'document_type', 'document_number', 'first_name', 'last_name',
         'phone', 'email', 'photo_path', 'resident_type', 'is_active', 'notes',
     ];
 

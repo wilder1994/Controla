@@ -15,7 +15,7 @@ use App\Http\Controllers\Access\HousingUnitController;
 use App\Http\Controllers\Access\ResidentController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'password.changed'])->prefix('access')->name('access.')->group(function () {
+Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->prefix('access')->name('access.')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

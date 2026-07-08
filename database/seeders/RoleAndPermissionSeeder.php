@@ -1,41 +1,38 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Models\User;
 
-class RoleAndPermissionSeeder extends Seeder
+final class RoleAndPermissionSeeder extends Seeder
 {
     public function run(): void
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $permissions = config('access.permissions', []);
-
-        foreach ($permissions as $permission) {
+        foreach (config('access.permissions', []) as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        $roles = config('access.roles', []);
-
-        foreach ($roles as $roleName => $rolePermissions) {
+        foreach (config('access.roles', []) as $roleName => $rolePermissions) {
             $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
-            if (!empty($rolePermissions)) {
+            if (! empty($rolePermissions)) {
                 $role->syncPermissions($rolePermissions);
             }
         }
 
-        // Super-admin gets all permissions
         $superAdmin = Role::findByName('super-admin');
         $superAdmin->syncPermissions(Permission::all());
 
-        // Create default admin user
         $admin = User::firstOrCreate(
             ['email' => 'admin@control-acceso.test'],
             [
-                'name' => 'Administrador',
+                'name' => 'Súper Administrador',
                 'password' => bcrypt('Admin123!'),
                 'email_verified_at' => now(),
                 'is_active' => true,
@@ -43,7 +40,6 @@ class RoleAndPermissionSeeder extends Seeder
         );
         $admin->assignRole('super-admin');
 
-        // Create default guard user
         $guardia = User::firstOrCreate(
             ['email' => 'guardia@control-acceso.test'],
             [
@@ -55,16 +51,15 @@ class RoleAndPermissionSeeder extends Seeder
         );
         $guardia->assignRole('guardia');
 
-        // Create default host user
         $anfitrion = User::firstOrCreate(
             ['email' => 'anfitrion@control-acceso.test'],
             [
-                'name' => 'Anfitrión Ejemplo',
+                'name' => 'Residente Ejemplo',
                 'password' => bcrypt('Anfitrion123!'),
                 'email_verified_at' => now(),
                 'is_active' => true,
             ]
         );
-        $anfitrion->assignRole('anfitrion');
+        $anfitrion->assignRole('resident');
     }
 }

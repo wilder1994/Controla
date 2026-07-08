@@ -1,15 +1,16 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PreAuthorization extends Model
 {
-    use HasFactory;
+    use BelongsToClient, HasFactory;
 
     protected $fillable = [
-        'visitor_id', 'host_id', 'location_id',
+        'client_id', 'visitor_id', 'host_id', 'location_id',
         'scheduled_date', 'scheduled_time', 'expires_at',
         'status', 'qr_code', 'notes',
     ];

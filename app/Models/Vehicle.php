@@ -1,15 +1,38 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vehicle extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToClient, HasFactory, SoftDeletes;
 
-    protected $fillable = ['visitor_id', 'user_id', 'resident_id', 'plate', 'brand', 'model', 'color', 'type', 'photo_path'];
+    protected $fillable = [
+        'client_id', 'structure_id', 'visitor_id', 'user_id', 'resident_id',
+        'plate', 'brand', 'model', 'color', 'type', 'photo_path',
+        'assigned_parking_spot', 'tag_rfid', 'soat_expires_at', 'license_expires_at', 'is_visitor_vehicle',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'soat_expires_at' => 'date',
+            'license_expires_at' => 'date',
+            'is_visitor_vehicle' => 'boolean',
+        ];
+    }
+
+    public function structure(): BelongsTo
+    {
+        return $this->belongsTo(Structure::class);
+    }
 
     public function visitor()
     {

@@ -1,15 +1,16 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Location extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToClient, HasFactory, SoftDeletes;
 
-    protected $fillable = ['code', 'name', 'address', 'phone', 'type', 'is_active'];
+    protected $fillable = ['client_id', 'code', 'name', 'address', 'phone', 'type', 'is_active'];
 
     protected function casts(): array
     {

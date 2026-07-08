@@ -1,15 +1,16 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class AccessLog extends Model
 {
-    use HasFactory;
+    use BelongsToClient, HasFactory;
 
     protected $fillable = [
-        'visitor_id', 'user_id', 'resident_id', 'housing_unit_id', 'vehicle_id', 'host_id', 'location_id',
+        'client_id', 'visitor_id', 'user_id', 'resident_id', 'housing_unit_id', 'vehicle_id', 'host_id', 'location_id',
         'authorized_by', 'access_type', 'entry_time', 'exit_time', 'status',
         'purpose', 'company_visited', 'screening_temp', 'qr_code', 'notes',
     ];

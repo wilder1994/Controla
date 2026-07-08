@@ -3,7 +3,8 @@
 > **Propósito:** Documento vivo de ingeniería inversa del software de referencia de control de accesos.  
 > Sirve como guía para alinear **Controla** sin modificar código hasta que se apruebe cada fase.  
 > **Última actualización:** 2026-07-07  
-> **Versión del documento:** 1.9
+> **Versión del documento:** 1.9  
+> **Plan de implementación:** [PLAN-INICIO-PROYECTO-CONTROLA.md](./PLAN-INICIO-PROYECTO-CONTROLA.md) v1.0
 
 ---
 
@@ -30,6 +31,8 @@
 5. [Anexo A — Mapeo Controla vs Referencia](#anexo-a--mapeo-controla-vs-referencia)
 6. [Anexo C — Inteligencia pública Axesa y oportunidades Controla](#anexo-c--inteligencia-pública-axesa-control-y-oportunidades-para-controla)
 7. [Anexo B — Registro de cambios del documento](#anexo-b--registro-de-cambios del documento)
+
+**Plan de ejecución:** [PLAN-INICIO-PROYECTO-CONTROLA.md](./PLAN-INICIO-PROYECTO-CONTROLA.md)
 
 ---
 

@@ -1,15 +1,16 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class GuardLog extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToClient, HasFactory, SoftDeletes;
 
-    protected $fillable = ['user_id', 'location_id', 'log_time', 'type', 'shift_type', 'description'];
+    protected $fillable = ['client_id', 'user_id', 'location_id', 'log_time', 'type', 'shift_type', 'description'];
 
     protected function casts(): array
     {

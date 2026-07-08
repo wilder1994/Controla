@@ -1,15 +1,16 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class HousingUnit extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToClient, HasFactory, SoftDeletes;
 
-    protected $fillable = ['building_id', 'unit_number', 'floor', 'type', 'notes', 'is_active'];
+    protected $fillable = ['client_id', 'building_id', 'unit_number', 'floor', 'type', 'notes', 'is_active'];
 
     protected function casts(): array
     {
