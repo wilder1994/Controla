@@ -9,7 +9,7 @@ Route::get('/', function () {
         return redirect()->action(HomeController::class);
     }
 
-    return redirect()->route('login');
+    return view('welcome');
 });
 
 Route::get('/home', HomeController::class)

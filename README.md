@@ -2,7 +2,7 @@
 
 Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de seguridad privada y conjuntos residenciales en Colombia. Construida sobre **Laravel 11** (Laragon), con referencia funcional **Axesa Control v13**.
 
-**Repositorio:** [github.com/wilder1994/Controla](https://github.com/wilder1994/Controla)
+**Repositorio:** [github.com/wmcodesoft/Controla](https://github.com/wmcodesoft/Controla)
 
 ---
 
@@ -13,6 +13,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **0** | Fundación multi-tenant | ✅ Implementada |
 | **1** | Estructura / censo | ✅ Implementada |
 | **Limpieza** | Panel plataforma + residuos Breeze | ✅ Implementada |
+| **Landing** | Vista pública `/` (welcome) | ✅ Implementada |
 | **2** | Operación portería (MVP) | ⏳ Pendiente |
 | **3** | BI + vigilancia | ⏳ Pendiente |
 
@@ -46,7 +47,7 @@ Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` 
 ## Instalación
 
 ```bash
-git clone https://github.com/wilder1994/Controla.git
+git clone https://github.com/wmcodesoft/Controla.git
 cd Controla
 composer install
 cp .env.example .env   # o copiar .env manualmente
@@ -68,6 +69,25 @@ php artisan migrate          # solo migraciones aditivas
 php artisan db:seed
 npm install && npm run build
 ```
+
+### Assets estáticos (imágenes)
+
+Las imágenes del producto viven en `resources/images/`. Para servirlas con `asset('images/...')`, crear un enlace en Laragon (Windows):
+
+```powershell
+cd C:\laragon\www\Controla
+New-Item -ItemType Junction -Path "public\images" -Target "C:\laragon\www\Controla\resources\images" -Force
+```
+
+### Node.js en Laragon
+
+Si `npm` no se reconoce en la terminal, agregar al PATH de Windows:
+
+```
+C:\laragon\bin\nodejs\node-v18
+```
+
+Luego: `npm run build` o `npm run dev`.
 
 > **Importante:** No ejecutar `migrate:fresh` ni `db:wipe` en entornos con datos reales sin autorización explícita.
 
@@ -96,6 +116,21 @@ Los usuarios demo se crean en `DemoUsersSeeder` (idempotente con `updateOrCreate
 ```bash
 php artisan db:seed --class=DemoUsersSeeder   # solo usuarios demo
 ```
+
+---
+
+## Landing pública (`/`)
+
+Vista de bienvenida para invitados (`resources/views/welcome.blade.php`). Usuarios autenticados siguen yendo a `/home`.
+
+| Asset | Ruta |
+|-------|------|
+| Logo | `resources/images/branding/logo-controla.png` |
+| Favicon | `resources/images/branding/favicon.ico` |
+| Fondo | `resources/images/welcome/hero-background.png` |
+| Hero dashboard | `resources/images/welcome/hero-dashboard.png` |
+
+Diseño: una pantalla sin scroll (`h-screen`), hero 40/60 (texto / imagen), 3 cards (Portería, Censo, Multi-cliente), CTA a `/login`.
 
 ---
 
@@ -252,6 +287,14 @@ npm run dev                                 # Vite en desarrollo
 - Ejecutar `php artisan test` sin `controla_test` configurada en `phpunit.xml`
 
 Regla del proyecto para el agente IA: `.cursor/rules/database-safety.mdc`
+
+### Git — remoto oficial
+
+Publicar solo en **`wmcodesoft`** cuando se solicite explícitamente:
+
+```bash
+git push wmcodesoft main
+```
 
 ---
 
