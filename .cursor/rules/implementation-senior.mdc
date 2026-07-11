@@ -1,0 +1,29 @@
+---
+description: Calidad senior y estrategia de releases Controla — leer antes de implementar
+alwaysApply: true
+---
+
+# Implementación senior — Controla
+
+## Documentación obligatoria
+
+Antes de implementar o refactorizar, consultar:
+
+- `docs/ESTANDARES-IMPLEMENTACION-SENIOR.md` — DoD por PR, capas, tests, anti-patrones
+- `docs/ESTRATEGIA-VERSIONES-Y-ALCANCE.md` — v1.0 piloto, v1.1 paridad, v2.0 enterprise
+- `docs/PLAN-INICIO-PROYECTO-CONTROLA.md` — fases técnicas
+
+## Reglas
+
+1. **No entregar features básicas** ni placeholders de producción; cumplir DoD senior del doc.
+2. **Próximo hito comercial:** v1.0 = Fase 2 portería completa (multi-tenant + censo ya hechos).
+3. Módulos “postponidos” (white label, RFID, PH contable, antecedentes) van en **v2.0**, no se ignoran — usar extension points del estándar senior.
+4. Multi-tenant: scope + policy + test de aislamiento en endpoints de dominio.
+5. Controllers delgados → Service → Repository; `declare(strict_types=1)` en PHP nuevo.
+6. Citar sección de referencia (`§` o Plan Fase N) en commits/PR cuando aplique.
+
+## Prohibido
+
+- Autorización solo en Blade sin policy en backend
+- Queries sin `client_id`/`company_id` en módulos operativos
+- `migrate:fresh` / `db:wipe` en BD desarrollo (ver `database-safety.mdc`)

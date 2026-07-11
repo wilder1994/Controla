@@ -8,17 +8,34 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 
 ## Estado del proyecto
 
-| Fase | Nombre | Estado |
-|------|--------|--------|
+| Fase / release | Nombre | Estado |
+|----------------|--------|--------|
 | **0** | Fundación multi-tenant | ✅ Implementada |
 | **1** | Estructura / censo | ✅ Implementada |
 | **Limpieza** | Panel plataforma + residuos Breeze | ✅ Implementada |
 | **Landing** | Vista pública `/` (welcome) | ✅ Implementada |
 | **Auth** | Login `/login` (AuthLayout) | ✅ Implementada |
-| **2** | Operación portería (MVP) | ⏳ Pendiente |
-| **3** | BI + vigilancia | ⏳ Pendiente |
+| **2 → v1.0** | Operación portería (piloto comercial) | ⏳ **Próximo hito** |
+| **3–4 → v1.1** | BI + vigilancia + portal residente | ⏳ Pendiente |
+| **5 → v2.0** | Enterprise (white label, hardware, PH, antecedentes) | ⏳ Pendiente |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md)
+### Calidad y releases
+
+- **Estándar obligatorio:** todo PR cumple [DoD senior](docs/ESTANDARES-IMPLEMENTACION-SENIOR.md) — no hay entregables “básicos” ni placeholders de producción.
+- **v1.0** = multi-tenant + censo + **Fase 2 portería completa** (piloto vendible sin Excel).
+- **v1.1** = paridad operativa Axesa (BI, minutas geo, API residente).
+- **v2.0** = módulos enterprise antes etiquetados “OMITIR v1” (white label, RFID/LPR, PH avanzado, antecedentes).
+
+Detalle: [`docs/ESTRATEGIA-VERSIONES-Y-ALCANCE.md`](docs/ESTRATEGIA-VERSIONES-Y-ALCANCE.md)
+
+### Documentación
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) | Roadmap fases 0–5 |
+| [`docs/ESTRATEGIA-VERSIONES-Y-ALCANCE.md`](docs/ESTRATEGIA-VERSIONES-Y-ALCANCE.md) | **v1.0 / v1.1 / v2.0** — releases comerciales |
+| [`docs/ESTANDARES-IMPLEMENTACION-SENIOR.md`](docs/ESTANDARES-IMPLEMENTACION-SENIOR.md) | **DoD senior** — calidad obligatoria por PR |
+| [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) | Referencia Axesa v13 |
 
 ---
 
@@ -312,15 +329,17 @@ npm run dev                                 # Vite en desarrollo
 - `migrate:fresh`, `migrate:refresh`, `db:wipe`
 - Ejecutar `php artisan test` sin `controla_test` configurada en `phpunit.xml`
 
-Regla del proyecto para el agente IA: `.cursor/rules/database-safety.mdc`
+Reglas del agente IA: `.cursor/rules/database-safety.mdc` · `.cursor/rules/implementation-senior.mdc`
 
 ### Git — remoto oficial
 
-Publicar solo en **`wmcodesoft`** cuando se solicite explícitamente:
+Repositorio canónico: **wmcodesoft/Controla**. Publicar con:
 
 ```bash
 git push wmcodesoft main
 ```
+
+Política completa: `.cursor/rules/git-remote.mdc`
 
 ---
 

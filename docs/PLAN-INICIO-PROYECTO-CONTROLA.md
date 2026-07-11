@@ -3,7 +3,8 @@
 > **Propósito:** Hoja de ruta ejecutable para pasar de documentación (referencia Axesa / Creawilder) a implementación incremental en Controla.  
 > **Versión:** 1.0  
 > **Fecha:** 2026-07-07  
-> **Estado:** Aprobación pendiente por fase — **no iniciar código de una fase sin firmar su Definition of Done**
+> **Estado:** Aprobación pendiente por fase — **no iniciar código de una fase sin firmar su Definition of Done**  
+> **Calidad y releases:** [ESTANDARES-IMPLEMENTACION-SENIOR.md](./ESTANDARES-IMPLEMENTACION-SENIOR.md) · [ESTRATEGIA-VERSIONES-Y-ALCANCE.md](./ESTRATEGIA-VERSIONES-Y-ALCANCE.md) (v1.0 / v1.1 / v2.0 — todo entregable nivel senior)
 
 ---
 
@@ -26,6 +27,8 @@ El plan divide el trabajo en **6 fases (0–5)**. La **Fase 0 es bloqueante**: s
 
 | Documento | Uso en este plan |
 |-----------|------------------|
+| [ESTANDARES-IMPLEMENTACION-SENIOR.md](./ESTANDARES-IMPLEMENTACION-SENIOR.md) | DoD transversal, anti-patrones, checklist PR |
+| [ESTRATEGIA-VERSIONES-Y-ALCANCE.md](./ESTRATEGIA-VERSIONES-Y-ALCANCE.md) | v1.0 piloto, v1.1 paridad Axesa, v2.0 enterprise |
 | [REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md](./REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) | Especificación funcional, BD, UI de referencia (v1.9) |
 | [assets/referencia/01-estructura-por-roles.png](./assets/referencia/01-estructura-por-roles.png) | Matriz roles × módulo Estructura |
 | Anexo A (referencia) | Gap analysis Controla actual vs Axesa |
@@ -105,12 +108,16 @@ flowchart TB
 | B5 | Sin portal residente separado | Rol `anfitrion` limitado a pre-auth web |
 | B6 | Sin API REST versionada | App móvil futura bloqueada |
 
-### 4.3 Deuda aceptable en MVP
+### 4.3 Alcance diferido en v1.0 (no cancelado — ver estrategia de releases)
 
-- Administración PH contable (facturas, presupuesto profundo).
-- Hardware RFID / LPR / huella.
-- White label por cliente.
-- Consulta Policía / Procuraduría.
+Los siguientes módulos **no bloquean v1.0 piloto** pero están planificados con DoD senior en releases posteriores ([ESTRATEGIA-VERSIONES-Y-ALCANCE.md](./ESTRATEGIA-VERSIONES-Y-ALCANCE.md)):
+
+- Administración PH contable (facturas, presupuesto profundo) → **v2.0**
+- Hardware RFID / LPR / huella → **v2.0**
+- White label por cliente → **v2.0**
+- Consulta Policía / Procuraduría → **v2.0**
+
+> Sustituye la etiqueta histórica “OMITIR v1” del Anexo C.7: **postponer release**, no omitir del producto.
 
 ---
 
@@ -554,6 +561,7 @@ Usar antes de piloto con empresa de seguridad real:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 1.1 | 2026-07-11 | Enlace a estándares senior y estrategia v1.0/v1.1/v2.0; §4.3 alineado con releases |
 | 1.0 | 2026-07-07 | Plan inicial derivado de REFERENCIA v1.9 + línea base Controla |
 
 ---

@@ -1860,6 +1860,8 @@ Fusión de marketing oficial + v13 documentada en §0.6 y §1.
 
 ### C.7 Matriz ADOPTAR · MEJORAR · DIFERENCIAR · OMITIR
 
+> **Actualización 2026-07-11:** La columna **OMITIR v1** se reinterpreta en [ESTRATEGIA-VERSIONES-Y-ALCANCE.md](./ESTRATEGIA-VERSIONES-Y-ALCANCE.md): **postponer al release v2.0 enterprise**, no cancelar del producto. Todo entregable cumple [ESTANDARES-IMPLEMENTACION-SENIOR.md](./ESTANDARES-IMPLEMENTACION-SENIOR.md).
+
 | Ítem | Decisión | Justificación |
 |------|----------|---------------|
 | Censo en módulo Estructura | **ADOPTAR** | Núcleo del producto; ya documentado §1 |
@@ -2012,6 +2014,7 @@ Usar como gate antes de declarar "paridad operativa" con la referencia:
 
 | Versión | Fecha | Autor / Fuente | Cambios |
 |---------|-------|----------------|---------|
+| 1.9.1 | 2026-07-11 | Estrategia producto | Nota C.7: OMITIR v1 → releases v2.0; enlaces estándares senior |
 | 1.9 | 2026-07-07 | Investigación pública Axesa | Anexo C: inteligencia web, catálogo consolidado, matriz adoptar/mejorar, backlog fases, benchmark, checklist paridad |
 | 1.8 | 2026-07-06 | Usuarios APP | §1.2.6 listado, crear, editar, sufijo @cliente, crear masivo |
 | 1.7 | 2026-07-06 | Autorizaciones visitantes | §1.2.5 listado, import Excel, crear multi-visitante |
