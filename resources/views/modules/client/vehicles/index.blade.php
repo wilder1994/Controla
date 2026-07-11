@@ -22,6 +22,7 @@
                         <th class="px-4 py-3 text-left text-xs uppercase text-slate-500">Vehículo</th>
                         <th class="px-4 py-3 text-left text-xs uppercase text-slate-500">Unidad</th>
                         <th class="px-4 py-3 text-left text-xs uppercase text-slate-500">Parqueadero</th>
+                        <th class="px-4 py-3 text-right text-xs uppercase text-slate-500">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800">
@@ -31,9 +32,12 @@
                             <td class="px-4 py-3 text-slate-300">{{ trim("{$vehicle->brand} {$vehicle->model}") }}</td>
                             <td class="px-4 py-3 text-slate-400">{{ $vehicle->structure?->name }}</td>
                             <td class="px-4 py-3 text-slate-500">{{ $vehicle->assigned_parking_spot ?? '—' }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{{ route('client.vehicles.edit', $vehicle) }}" class="text-teal-400 hover:text-teal-300 text-xs">Editar</a>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">Sin vehículos en censo.</td></tr>
+                        <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">Sin vehículos en censo.</td></tr>
                     @endforelse
                 </tbody>
             </table>

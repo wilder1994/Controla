@@ -9,6 +9,7 @@ use App\Enums\StructureType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreStructureRequest;
 use App\Models\Structure;
+use App\Models\VisitorPreAuthorization;
 use App\Repositories\StructureRepository;
 use App\Services\Structure\CreateStructureService;
 use App\Support\Tenancy\TenantContext;
@@ -61,6 +62,12 @@ final class StructureController extends Controller
 
         $structure->load(['members', 'pets', 'vehicles', 'parent']);
 
-        return view('modules.client.structures.show', compact('structure'));
+        $authorizations = VisitorPreAuthorization::query()
+            ->where('structure_id', $structure->id)
+            ->latest('valid_for_date')
+            ->limit(20)
+            ->get();
+
+        return view('modules.client.structures.show', compact('structure', 'authorizations'));
     }
 }

@@ -34,12 +34,21 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::get('/members/create', [MemberController::class, 'create'])
             ->middleware('permission:client.members.manage')
             ->name('members.create');
+        Route::post('/members/create', [MemberController::class, 'storeStep1'])
+            ->middleware('permission:client.members.manage')
+            ->name('members.create.step1');
+        Route::get('/members/create/confirm', [MemberController::class, 'createConfirm'])
+            ->middleware('permission:client.members.manage')
+            ->name('members.create.confirm');
         Route::post('/members', [MemberController::class, 'store'])
             ->middleware('permission:client.members.manage')
             ->name('members.store');
         Route::get('/members/{member}', [MemberController::class, 'show'])
             ->middleware('permission:client.members.manage')
             ->name('members.show');
+        Route::patch('/members/{member}', [MemberController::class, 'update'])
+            ->middleware('permission:client.members.manage')
+            ->name('members.update');
 
         Route::get('/vehicles', [VehicleController::class, 'index'])
             ->middleware('permission:client.vehicles.manage')
@@ -50,6 +59,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::post('/vehicles', [VehicleController::class, 'store'])
             ->middleware('permission:client.vehicles.manage')
             ->name('vehicles.store');
+        Route::get('/vehicles/{vehicle}/edit', [VehicleController::class, 'edit'])
+            ->middleware('permission:client.vehicles.manage')
+            ->name('vehicles.edit');
+        Route::patch('/vehicles/{vehicle}', [VehicleController::class, 'update'])
+            ->middleware('permission:client.vehicles.manage')
+            ->name('vehicles.update');
 
         Route::get('/authorizations', [AuthorizationController::class, 'index'])
             ->middleware('permission:client.authorizations.manage')

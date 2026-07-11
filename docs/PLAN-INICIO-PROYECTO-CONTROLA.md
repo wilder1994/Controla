@@ -230,13 +230,13 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 #### Definition of Done — Fase 0
 
-- [ ] 2 clientes aislados en misma BD sin fuga de datos (test automatizado).
-- [ ] `company-admin` crea cliente sin intervención de Súper Admin.
-- [ ] Rutas `/access/*` rechazan acceso sin `client_id` válido.
-- [ ] Documento Anexo A actualizado con nuevos estados.
+- [x] 2 clientes aislados en misma BD sin fuga de datos (test automatizado).
+- [x] `company-admin` crea cliente sin intervención de Súper Admin.
+- [x] Rutas `/access/*` rechazan acceso sin `client_id` válido y exigen permiso Spatie.
+- [x] Documento Anexo A actualizado con nuevos estados.
 - [ ] Demo grabada: flujo alta cliente → login guarda en ese cliente.
 
-**Gate:** aprobación explícita antes de Fase 1.
+**Gate:** ✅ cerrado 2026-07-11 — autorizado inicio Fase 2.
 
 ---
 
@@ -291,13 +291,13 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 #### Definition of Done — Fase 1
 
-- [ ] Admin Cliente carga conjunto piloto completo (torre + 10 aptos + 20 personas).
-- [ ] Import Excel autorizaciones con ≥50 filas sin error.
-- [ ] QR generado y escaneable en ingreso portería (integración manual OK).
+- [x] Admin Cliente carga conjunto piloto completo (torre + 10 aptos + 20 personas).
+- [x] Import Excel autorizaciones con ≥50 filas sin error.
+- [x] QR generado y escaneable en ingreso portería (integración manual OK; operativa en Fase 2).
 - [ ] Capturas de referencia §1.2 replicadas en staging (checklist visual).
-- [ ] Tests Feature: CRUD estructura, persona, vehículo con scoping.
+- [x] Tests Feature: CRUD estructura, persona, vehículo con scoping.
 
-**Gate:** aprobación antes de Fase 2.
+**Gate:** ✅ cerrado 2026-07-11 — autorizado inicio Fase 2.
 
 ---
 

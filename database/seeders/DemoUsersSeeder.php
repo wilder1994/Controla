@@ -25,6 +25,8 @@ final class DemoUsersSeeder extends Seeder
 
     private function seedPlatformUsers(): void
     {
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->first();
+
         $superAdmin = User::query()->updateOrCreate(
             ['email' => 'admin@control-acceso.test'],
             [
@@ -43,9 +45,24 @@ final class DemoUsersSeeder extends Seeder
                 'password' => 'Guardia123!',
                 'email_verified_at' => now(),
                 'is_active' => true,
+                'security_company_id' => $company?->id,
             ]
         );
         $guardia->syncRoles(['guardia']);
+
+        if ($company !== null) {
+            $supervisor = User::query()->updateOrCreate(
+                ['email' => 'supervisor@sj-seguridad.test'],
+                [
+                    'name' => 'Supervisor SJ',
+                    'password' => 'Supervisor123!',
+                    'email_verified_at' => now(),
+                    'is_active' => true,
+                    'security_company_id' => $company->id,
+                ]
+            );
+            $supervisor->syncRoles(['supervisor']);
+        }
 
         $anfitrion = User::query()->updateOrCreate(
             ['email' => 'anfitrion@control-acceso.test'],

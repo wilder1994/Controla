@@ -114,8 +114,6 @@ final class TenantContext
 
         if (count($allowedClientIds) === 1) {
             $this->setClientId($allowedClientIds[0]);
-        } elseif ($user->primary_client_id !== null && in_array((int) $user->primary_client_id, $allowedClientIds, true)) {
-            $this->setClientId((int) $user->primary_client_id);
         }
     }
 }

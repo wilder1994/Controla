@@ -7,9 +7,13 @@ namespace App\Http\Controllers\Client;
 use App\Domain\Structure\Data\CreateMemberData;
 use App\Enums\MemberType;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Client\StoreMemberRequest;
+use App\Http\Requests\Client\FinalizeMemberRequest;
+use App\Http\Requests\Client\StoreMemberStep1Request;
+use App\Http\Requests\Client\UpdateMemberRequest;
+use App\Models\Location;
 use App\Models\Structure;
 use App\Models\StructureMember;
+use App\Models\VisitorPreAuthorization;
 use App\Repositories\StructureMemberRepository;
 use App\Services\Structure\CreateMemberService;
 use App\Support\Tenancy\TenantContext;
@@ -19,6 +23,8 @@ use Illuminate\View\View;
 
 final class MemberController extends Controller
 {
+    private const STEP1_SESSION_KEY = 'client.members.create.step1';
+
     public function __construct(
         private readonly StructureMemberRepository $memberRepository,
         private readonly CreateMemberService $createMemberService,
@@ -51,23 +57,71 @@ final class MemberController extends Controller
         return view('modules.client.members.create', compact('structures', 'memberTypes'));
     }
 
-    public function store(StoreMemberRequest $request): RedirectResponse
+    public function storeStep1(StoreMemberStep1Request $request): RedirectResponse
     {
+        $request->session()->put(self::STEP1_SESSION_KEY, $request->validated());
+
+        return redirect()->route('client.members.create.confirm');
+    }
+
+    public function createConfirm(Request $request): View|RedirectResponse
+    {
+        $this->authorize('create', StructureMember::class);
+
+        $step1 = $request->session()->get(self::STEP1_SESSION_KEY);
+
+        if (! is_array($step1)) {
+            return redirect()
+                ->route('client.members.create')
+                ->with('warning', 'Completa primero los datos básicos de la persona.');
+        }
+
+        $structure = Structure::query()->find($step1['structure_id']);
+        $locations = Location::query()->where('is_active', true)->orderBy('name')->get();
+
+        return view('modules.client.members.create-confirm', [
+            'step1' => $step1,
+            'structure' => $structure,
+            'locations' => $locations,
+        ]);
+    }
+
+    public function store(FinalizeMemberRequest $request): RedirectResponse
+    {
+        $step1 = $request->session()->get(self::STEP1_SESSION_KEY);
+
+        if (! is_array($step1)) {
+            return redirect()
+                ->route('client.members.create')
+                ->with('warning', 'La sesión del registro expiró. Vuelve a iniciar el wizard.');
+        }
+
         $clientId = (int) $this->tenantContext->clientId();
 
         $member = $this->createMemberService->execute(new CreateMemberData(
             clientId: $clientId,
-            structureId: (int) $request->validated('structure_id'),
-            firstName: $request->validated('first_name'),
-            lastName: $request->validated('last_name'),
-            documentNumber: $request->validated('document_number'),
-            memberType: MemberType::from($request->validated('member_type')),
-            phonePrimary: $request->validated('phone_primary'),
-            phoneSecondary: $request->validated('phone_secondary'),
-            email: $request->validated('email'),
+            structureId: (int) $step1['structure_id'],
+            firstName: $step1['first_name'],
+            lastName: $step1['last_name'],
+            documentNumber: $step1['document_number'],
+            memberType: MemberType::from($step1['member_type']),
+            phonePrimary: $step1['phone_primary'] ?? null,
+            phoneSecondary: null,
+            email: $step1['email'] ?? null,
             hasAppAccess: $request->boolean('has_app_access'),
             isActive: $request->boolean('is_active', true),
         ));
+
+        $locationIds = $request->validated('assigned_location_ids', []);
+        if (count($locationIds) > 0) {
+            $member->update([
+                'metadata' => array_merge($member->metadata ?? [], [
+                    'assigned_location_ids' => array_map('intval', $locationIds),
+                ]),
+            ]);
+        }
+
+        $request->session()->forget(self::STEP1_SESSION_KEY);
 
         return redirect()
             ->route('client.members.show', $member)
@@ -79,7 +133,22 @@ final class MemberController extends Controller
         $this->authorize('view', $member);
 
         $member->load('structure');
+        $locations = Location::query()->where('is_active', true)->orderBy('name')->get();
+        $assignedLocationIds = $member->metadata['assigned_location_ids'] ?? [];
 
-        return view('modules.client.members.show', compact('member'));
+        return view('modules.client.members.show', compact('member', 'locations', 'assignedLocationIds'));
+    }
+
+    public function update(UpdateMemberRequest $request, StructureMember $member): RedirectResponse
+    {
+        $locationIds = $request->validated('assigned_location_ids', []);
+
+        $member->update([
+            'metadata' => array_merge($member->metadata ?? [], [
+                'assigned_location_ids' => array_map('intval', $locationIds),
+            ]),
+        ]);
+
+        return back()->with('success', 'Accesos portería actualizados.');
     }
 }

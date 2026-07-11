@@ -20,5 +20,13 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::post('/clients/{client}/activate', [ClientController::class, 'activate'])
             ->name('clients.activate');
 
+        Route::post('/clients/{client}/assign', [ClientController::class, 'assign'])
+            ->middleware('permission:company.users.assign')
+            ->name('clients.assign');
+
+        Route::delete('/clients/{client}/assign/{user}', [ClientController::class, 'unassign'])
+            ->middleware('permission:company.users.assign')
+            ->name('clients.unassign');
+
         Route::resource('clients', ClientController::class);
     });

@@ -1580,77 +1580,78 @@ public function storeSupervisorAnnotation(Request $request) {
 
 ## ANEXO A — MAPEO CONTROLA VS REFERENCIA
 
-> Estado de Controla al 2026-07-06. Actualizar este anexo cuando evolucione el proyecto.
+> Estado de Controla al **2026-07-11** (Fases 0–1 cerradas; Fase 2 pendiente). Actualizar este anexo cuando evolucione el proyecto.
 
 ### Modelo organizacional B2B y usuarios
 
 | Referencia | Controla actual | Estado |
 |------------|-----------------|--------|
-| Súper Admin (dueño plataforma) | Rol `super-admin` en Spatie | ⚠️ Parcial — sin gestión de empresas ni licencias |
-| Administrador de Empresa (tenant) | — | ❌ No existe multi-tenant |
-| Administrador de Cliente (sub-tenant) | Rol `admin-accesos` (genérico) | ⚠️ Parcial — sin aislamiento por cliente |
-| Guarda de portería | Rol `guardia` | ⚠️ Parcial — sin scoping por cliente asignado |
-| Supervisor (firma minutas) | — | ❌ No existe rol `supervisor` |
-| Residente (app móvil/web) | Rol `anfitrion` + modelo `residents` | ⚠️ Parcial — sin app residente ni aislamiento por unidad |
-| Modelo 3 niveles estricto | Single-tenant, roles planos | ❌ No implementado |
-| Portal residente vs panel portería | Solo panel web único | ❌ No separado |
-| Zonas comunes / reservas | — | ❌ No existe |
+| Súper Admin (dueño plataforma) | Rol `super-admin` + `/admin/dashboard` | ⚠️ Parcial — KPIs; sin CRUD empresas/licencias |
+| Administrador de Empresa (tenant) | Rol `company-admin` + `/company/*` | ✅ CRUD clientes, asignación operativos |
+| Administrador de Cliente (sub-tenant) | Rol `client-admin` + `/client/*` | ✅ Censo scoped por `client_id` |
+| Guarda de portería | Rol `guardia` + `/access/*` | ✅ Scoping tenant + permisos Spatie por ruta |
+| Supervisor (firma minutas) | Rol `supervisor` | ⚠️ Rol y permisos; firma geo pendiente Fase 3 |
+| Residente (app móvil/web) | Rol `resident` / `anfitrion` | ⚠️ Pre-auth web; sin app móvil (Fase 4) |
+| Modelo 3 niveles estricto | `security_companies` → `clients` → usuarios | ✅ Implementado con `TenantContext` + `ClientScope` |
+| Portal residente vs panel portería | Paneles separados por rol/ruta | ⚠️ Parcial — sin API/app residente |
+| Zonas comunes / reservas | — | ❌ P1 — pendiente post v1.0 |
 
-**Roles actuales en Controla** (`config/access.php`): `super-admin`, `admin-accesos`, `guardia`, `anfitrion`.
+**Roles actuales en Controla** (`config/access.php`): `super-admin`, `company-admin`, `client-admin`, `supervisor`, `guardia`, `resident` (+ compat `admin-accesos`, `anfitrion`).
 
-**Brecha principal:** Controla asume un solo conjunto; la referencia exige **Empresa de Seguridad → Cliente (conjunto) → Usuarios** con aislamiento vertical estricto.
+**Nota Fase 2:** el panel `/access` aún consume tablas legacy (`buildings`, `housing_units`, `residents`) en operación diaria; el censo unificado vive en `/client` (`structures`). La integración operativa es el objetivo de Fase 2.
 
 | Submódulo Axesa (menú Estructura) | Controla actual | Estado |
 |-----------------------------------|-----------------|--------|
-| Residencial (árbol unidades) | `buildings` + `housing_units` | ⚠️ Sin árbol unificado |
-| Directorio de Personas | `residents` | ⚠️ Sin QR, códigos acceso, tab porterías |
-| Directorio de Vehículos | `vehicles` | ⚠️ Sin directorio global, SOAT, carnet/tarjeta, foto, tipo visitante |
-| Autorizaciones | `pre_authorizations` | ⚠️ Sin Excel, multi-visitante, asunto, empresa, motivo, origen |
-| Directorio de Mascotas | — | ❌ Documentado en referencia, no en Controla |
-| Reserva Zonas Comunes | — | ❌ |
-| Usuarios APP | `anfitrion` + residents | ⚠️ Referencia completa; Controla sin portal, sufijo @cliente, tracking app |
+| Residencial (árbol unidades) | `structures` + badges censo + tabs | ✅ P0 |
+| Directorio de Personas | `structure_members` + wizard 2 pasos + QR + tab porterías | ✅ P0 |
+| Directorio de Vehículos | `vehicles.structure_id` + SOAT/carnet + edición | ✅ P0 |
+| Autorizaciones | `visitor_pre_authorizations` + import Excel | ✅ P0 |
+| Directorio de Mascotas | `structure_pets` (seed) | ⚠️ P1 — sin UI |
+| Reserva Zonas Comunes | — | ❌ P1 |
+| Usuarios APP | `structure_app_users` + `@login_suffix` | ⚠️ P0 — alta individual; masiva pendiente |
 | Activos Fijos / Incidencias | — | ⬜ Inactivos en Axesa también |
 
 ### Arquitectura de datos — Estructuras (tablas)
 
 | Referencia | Controla actual | Estado |
 |------------|-----------------|--------|
-| `structures` (árbol único) | `locations` + `buildings` + `housing_units` (3 tablas) | ⚠️ Parcial — sin jerarquía unificada |
-| `structure_residents` | `residents` + pivot `resident_housing_unit` | ⚠️ Parcial — sin `has_app_access`, sin app residente |
-| `vehicles` por estructura | `vehicles` + relación residente | ⚠️ Parcial — sin RFID, sin celda asignada |
-| `structure_pets` | — | ❌ No existe |
-| `structure_employees` | — | ❌ No existe |
-| `visitor_pre_authorizations` | `pre_authorizations` | ⚠️ Parcial — QR texto, sin categorías ni estados completos |
+| `structures` (árbol único) | Tabla `structures` + migración legacy | ✅ Implementado |
+| `structure_residents` | `structure_members` + `access_code`, `has_app_access` | ✅ Implementado |
+| `vehicles` por estructura | `vehicles.structure_id` + SOAT, celda | ✅ Implementado |
+| `structure_pets` | Tabla + seed piloto | ⚠️ Sin UI |
+| `structure_employees` | Tipos en `member_type` enum | ⚠️ Parcial |
+| `visitor_pre_authorizations` | Tabla + QR token + categorías | ✅ Implementado |
 
 ### Control operativo
 
 | Referencia | Controla actual | Estado |
 |------------|-----------------|--------|
-| Sidebar flotante accesos rápidos | Subnav en cards estáticas | ❌ No implementado |
-| `pedestrian_access_logs` | `access_logs` (visitantes + vehículos) | ⚠️ Parcial — tabla unificada |
-| Alerta permanencia > 12h | — | ❌ No implementado |
-| Salida masiva bulk | — | ❌ No implementado |
+| Sidebar flotante accesos rápidos | Subnav en layout portería | ❌ Fase 2 |
+| `pedestrian_access_logs` | `access_logs` (visitantes + vehículos) | ⚠️ Legacy; integrar censo Fase 2 |
+| Permisos por ruta `/access/*` | Middleware Spatie por recurso | ✅ Fase 0 |
+| Alerta permanencia > 12h | — | ❌ Fase 2 |
+| Salida masiva bulk | — | ❌ Fase 2 |
 | Modal egreso + contador anual | Flujo básico entry/exit | ⚠️ Parcial |
-| `visitor_inventory_items` | — | ❌ No existe |
+| `visitor_inventory_items` | — | ❌ Fase 2 |
 
 ### Business Intelligence
 
 | Referencia | Controla actual | Estado |
 |------------|-----------------|--------|
-| Horas pico Chart.js | `ReportController` filtros básicos | ⚠️ Parcial |
-| Distribución por estructura (pie) | — | ❌ No implementado |
-| Matriz tipos visitante | — | ❌ No implementado |
+| Horas pico Chart.js | `ReportController` filtros básicos | ⚠️ Parcial — Fase 3 |
+| Distribución por estructura (pie) | — | ❌ Fase 3 |
+| Matriz tipos visitante | — | ❌ Fase 3 |
 | Dashboard vehicular espejo | Reportes básicos | ⚠️ Parcial |
-| Segmentación por turno | — | ❌ No implementado |
+| Segmentación por turno | — | ❌ Fase 3 |
 
 ### Minutas / vigilancia
 
 | Referencia | Controla actual | Estado |
 |------------|-----------------|--------|
-| `security_minuta_logs` | `guard_logs` | ⚠️ Parcial — sin geo, sin doble factor |
-| Geolocalización obligatoria | — | ❌ No implementado |
-| Firma supervisor in situ | — | ❌ No implementado |
-| Export Excel/PDF con logo | — | ❌ No implementado |
+| `security_minuta_logs` | `guard_logs` | ⚠️ Parcial — Fase 3 |
+| Geolocalización obligatoria | — | ❌ Fase 3 |
+| Firma supervisor in situ | — | ❌ Fase 3 |
+| Export Excel/PDF con logo | — | ❌ Fase 3 |
 
 ### Leyenda
 
@@ -1658,16 +1659,13 @@ public function storeSupervisorAnnotation(Request $request) {
 - ⚠️ Parcial — existe concepto similar con gaps  
 - ❌ No existe en Controla  
 
-### Prioridades sugeridas para alineación (sin implementar aún)
+### Prioridades siguientes (Fase 2+)
 
-1. **Multi-tenancy B2B:** empresas de seguridad + clientes (sub-tenants) + scoping en todas las tablas.
-2. **Roles y permisos:** mapear los 3 niveles administrativos + operativos + residentes (Sección 0).
-3. **Estructuras:** evaluar migración a modelo `structures` o adaptar capa de dominio sobre tablas actuales.
-4. **Operativo:** sidebar rápido + censo "personas adentro" + bulk exit.
-5. **Custodia:** `visitor_inventory_items` + cascada en egreso.
-6. **BI:** endpoints JSON + Chart.js (horas pico, distribución, turnos).
-7. **Minutas:** geolocalización + doble factor supervisor.
-8. **App residente:** pre-autorizaciones, censo privado, zonas comunes.
+1. **Integrar censo ↔ portería:** autocompletar ingresos desde `structures` / `structure_members` / pre-auth.
+2. **Hub Ingresos/Salidas:** sidebar rápido + personas adentro + bulk exit.
+3. **Custodia:** `visitor_inventory_items` + cascada en egreso.
+4. **BI (Fase 3):** endpoints JSON + Chart.js.
+5. **Minutas geo + app residente (Fases 3–4).**
 
 ---
 

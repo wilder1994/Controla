@@ -10,12 +10,12 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 
 | Fase / release | Nombre | Estado |
 |----------------|--------|--------|
-| **0** | Fundación multi-tenant | ✅ Implementada |
-| **1** | Estructura / censo | ✅ Implementada |
+| **0** | Fundación multi-tenant | ✅ Cerrada (gate 2026-07-11) |
+| **1** | Estructura / censo | ✅ Cerrada (gate 2026-07-11) |
 | **Limpieza** | Panel plataforma + residuos Breeze | ✅ Implementada |
 | **Landing** | Vista pública `/` (welcome) | ✅ Implementada |
 | **Auth** | Login `/login` (AuthLayout) | ✅ Implementada |
-| **2 → v1.0** | Operación portería (piloto comercial) | ⏳ **Próximo hito** |
+| **2 → v1.0** | Operación portería (piloto comercial) | 🚀 **En curso — próximo hito** |
 | **3–4 → v1.1** | BI + vigilancia + portal residente | ⏳ Pendiente |
 | **5 → v2.0** | Enterprise (white label, hardware, PH, antecedentes) | ⏳ Pendiente |
 
@@ -118,10 +118,13 @@ Luego: `npm run build` o `npm run dev`.
 | Súper Admin | `admin@control-acceso.test` | `Admin123!` | `/admin/dashboard` |
 | Admin Empresa | `empresa@sj-seguridad.test` | `Empresa123!` | `/company/dashboard` |
 | Admin Cliente | `admin@palmasdelingenio.test` | `Cliente123!` | `/client/dashboard` |
+| Supervisor | `supervisor@sj-seguridad.test` | `Supervisor123!` | `/access/dashboard` |
 | Guardia | `guardia@control-acceso.test` | `Guardia123!` | `/access/dashboard` |
 | Residente | `anfitrion@control-acceso.test` | `Anfitrion123!` | pre-autorizaciones |
 
 **Datos piloto:** empresa SJ Seguridad, clientes *Palmas del Ingenio* y *Torres de la Loma*, Torre A + 10 apartamentos, 20 personas en censo.
+
+**Asignar operativos:** login como Admin Empresa → detalle de cliente → sección «Operativos asignados». El supervisor demo debe asignarse a un conjunto antes de operar portería.
 
 Los usuarios demo se crean en `DemoUsersSeeder` (idempotente con `updateOrCreate`). Orden de ejecución en `DatabaseSeeder`:
 
@@ -170,7 +173,7 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 
 ---
 
-## Fase 0 — Multi-tenant (implementado)
+## Fase 0 — Multi-tenant ✅ (gate 2026-07-11)
 
 ### Base de datos
 
@@ -185,6 +188,7 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 - Middleware: `tenancy.access`, `tenant.unscoped`, `company`, `client.admin`, `platform.admin`
 - Capas: Controllers → Services → Repositories → Models
 - Policies Spatie + permisos en `config/access.php`
+- Usuario con **varios clientes** debe elegir conjunto en `/company/clients/select` (no se auto-asigna por `primary_client_id`)
 
 ### Panel Empresa (`/company`)
 
@@ -192,12 +196,21 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 |------|---------|
 | `GET /company/dashboard` | Métricas de cartera |
 | `GET /company/clients` | Listado de clientes |
-| `POST /company/clients` | Alta de cliente |
+| `POST /company/clients` | Alta de cliente (sin Súper Admin) |
 | `GET /company/clients/select` | Selección de conjunto para operar portería |
+| `POST /company/clients/{id}/assign` | Asignar guardas/supervisores al cliente |
+| `DELETE /company/clients/{id}/assign/{user}` | Desasignar operativo |
+
+### Seguridad portería
+
+Todas las rutas `/access/*` exigen:
+
+1. Sesión activa con `client_id` válido (`InitializeAccessTenancy`)
+2. Permiso Spatie por recurso (`routes/modules/access.php`)
 
 ---
 
-## Fase 1 — Estructura / censo (implementado)
+## Fase 1 — Estructura / censo ✅ (gate 2026-07-11)
 
 ### Modelo unificado `structures`
 
@@ -205,11 +218,11 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 
 Tablas relacionadas:
 
-- `structure_members` — personas del censo + `access_code` (QR)
-- `structure_pets` — mascotas
+- `structure_members` — personas del censo + `access_code` (QR) + tab accesos portería
+- `structure_pets` — mascotas (seed piloto; UI P1)
 - `visitor_pre_authorizations` — pre-autorizaciones con `qr_auth_token`
 - `structure_app_users` — usuarios APP (`usuario@login_suffix`)
-- `vehicles.structure_id` — vehículos vinculados a unidad
+- `vehicles.structure_id` — vehículos vinculados a unidad (SOAT, carnet, edición)
 
 ### Panel Conjunto (`/client`)
 
@@ -217,8 +230,13 @@ Tablas relacionadas:
 |------|--------|
 | `/client/dashboard` | Resumen unidades |
 | `/client/structures` | Árbol residencial + badges censo |
-| `/client/members` | Directorio personas + QR |
+| `/client/structures/{id}` | Detalle con tabs Datos / Visitas / Correspondencia |
+| `/client/members` | Directorio personas |
+| `/client/members/create` | Wizard paso 1 (datos básicos) |
+| `/client/members/create/confirm` | Wizard paso 2 (APP, porterías, QR) |
+| `/client/members/{id}` | Detalle + QR + tab accesos portería |
 | `/client/vehicles` | Directorio vehicular |
+| `/client/vehicles/{id}/edit` | Edición vehículo |
 | `/client/authorizations` | Pre-autorizaciones |
 | `/client/authorizations/import` | Import Excel (`maatwebsite/excel`) |
 | `/client/app-users` | Usuarios APP móvil |
@@ -227,10 +245,13 @@ Tablas relacionadas:
 
 - `StructureRepository` — árbol, contadores censo
 - `MigrateLegacyStructuresService` — buildings/housing_units → structures
-- `SeedPilotStructuresService` — datos piloto
+- `SeedPilotStructuresService` — torre + 10 aptos + 20 personas piloto
 - `ImportAuthorizationsService` — Excel columnas: `visitante`, `estructura`, `fecha`
+- `AssignClientUsersService` — asignación operativos empresa → cliente
 
----
+### DoD verificado (tests automatizados)
+
+Ver sección [Tests](#tests).
 
 ## Limpieza arquitectónica (implementado)
 
@@ -242,9 +263,11 @@ Tablas relacionadas:
 
 ---
 
-## Módulo Portería (`/access`) — línea base
+## Módulo Portería (`/access`) — Fase 2 en curso
 
-Dashboard operativo con KPIs (personas dentro, visitantes, correspondencia pendiente, etc.). Sigue usando layout Breeze (`x-app-layout`) y modelos legacy (`buildings`, `housing_units`, `residents`) en paralelo al nuevo censo `structures`.
+Dashboard operativo con KPIs (personas dentro, visitantes, correspondencia pendiente, etc.). Usa layout Breeze (`x-app-layout`) y modelos **legacy** (`buildings`, `housing_units`, `residents`) en paralelo al censo unificado (`structures`).
+
+**Próximo hito v1.0:** integrar ingresos/salidas con `structures` + `structure_members` + pre-autorizaciones del panel `/client`.
 
 ---
 
@@ -262,12 +285,23 @@ CREATE DATABASE IF NOT EXISTS controla_test CHARACTER SET utf8mb4 COLLATE utf8mb
 php artisan test
 ```
 
-Suites relevantes:
+Suites Fases 0–1 (17 tests):
 
-- `tests/Feature/Tenancy/TenantIsolationTest.php`
-- `tests/Feature/Structure/StructureModuleTest.php`
-- `tests/Feature/Platform/PlatformDashboardTest.php`
-- `tests/Feature/Auth/LoginCsrfTest.php`
+| Suite | Qué valida |
+|-------|------------|
+| `tests/Feature/Tenancy/TenantIsolationTest.php` | Aislamiento tenant, panel empresa |
+| `tests/Feature/Company/CompanyClientTest.php` | Alta cliente + asignación operativos |
+| `tests/Feature/Access/AccessAuthorizationTest.php` | Permisos `/access/*`, selección conjunto |
+| `tests/Feature/Structure/StructureModuleTest.php` | CRUD estructura, persona, vehículo |
+| `tests/Feature/Structure/AuthorizationImportTest.php` | Import Excel 50 filas |
+| `tests/Feature/Platform/PlatformDashboardTest.php` | Panel plataforma |
+| `tests/Feature/Auth/LoginCsrfTest.php` | Login y CSRF |
+
+Filtrar solo Fases 0–1:
+
+```bash
+php artisan test --filter="TenantIsolationTest|StructureModuleTest|PlatformDashboardTest|CompanyClientTest|AccessAuthorizationTest|AuthorizationImportTest"
+```
 
 > Los tests usan `RefreshDatabase` y **recrean** `controla_test` en cada ejecución. Nunca ejecutar la suite completa contra la BD de desarrollo.
 

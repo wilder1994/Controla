@@ -7,12 +7,17 @@ namespace App\Http\Controllers\Company;
 use App\Domain\Tenant\Data\CreateClientData;
 use App\Enums\ClientPlanTier;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Company\AssignClientUsersRequest;
 use App\Http\Requests\Company\StoreClientRequest;
 use App\Http\Requests\Company\UpdateClientRequest;
 use App\Models\Client;
+use App\Models\User;
 use App\Repositories\ClientRepository;
+use App\Repositories\CompanyUserRepository;
+use App\Services\Tenant\AssignClientUsersService;
 use App\Services\Tenant\CreateClientService;
 use App\Services\Tenant\UpdateClientService;
+use InvalidArgumentException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,8 +26,10 @@ final class ClientController extends Controller
 {
     public function __construct(
         private readonly ClientRepository $clientRepository,
+        private readonly CompanyUserRepository $companyUserRepository,
         private readonly CreateClientService $createClientService,
         private readonly UpdateClientService $updateClientService,
+        private readonly AssignClientUsersService $assignClientUsersService,
     ) {}
 
     public function index(Request $request): View
@@ -68,9 +75,13 @@ final class ClientController extends Controller
         $this->authorize('view', $client);
         $this->assertCompanyOwnership($request, $client);
 
+        $client->load(['assignments.user.roles']);
         $client->loadCount('assignments');
 
-        return view('modules.company.clients.show', compact('client'));
+        $operatives = $this->companyUserRepository->operativesForCompany((int) $client->security_company_id);
+        $assignedUserIds = $client->assignments->pluck('user_id')->all();
+
+        return view('modules.company.clients.show', compact('client', 'operatives', 'assignedUserIds'));
     }
 
     public function edit(Request $request, Client $client): View
@@ -116,6 +127,38 @@ final class ClientController extends Controller
         return redirect()
             ->route('access.dashboard')
             ->with('success', "Operando en: {$client->name}");
+    }
+
+    public function assign(AssignClientUsersRequest $request, Client $client): RedirectResponse
+    {
+        $this->authorize('assignUsers', $client);
+        $this->assertCompanyOwnership($request, $client);
+
+        try {
+            $count = $this->assignClientUsersService->assign(
+                $client,
+                $request->validated('user_ids'),
+                (int) $client->security_company_id,
+            );
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['user_ids' => $exception->getMessage()]);
+        }
+
+        return back()->with('success', "Se asignaron {$count} operativo(s) al cliente.");
+    }
+
+    public function unassign(Request $request, Client $client, User $user): RedirectResponse
+    {
+        $this->authorize('assignUsers', $client);
+        $this->assertCompanyOwnership($request, $client);
+
+        try {
+            $this->assignClientUsersService->unassign($client, $user, (int) $client->security_company_id);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['assign' => $exception->getMessage()]);
+        }
+
+        return back()->with('success', 'Operativo desasignado del cliente.');
     }
 
     private function companyId(Request $request): int

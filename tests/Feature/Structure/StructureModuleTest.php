@@ -109,4 +109,92 @@ final class StructureModuleTest extends TestCase
         $this->assertGreaterThanOrEqual(12, $structures);
         $this->assertGreaterThanOrEqual(20, $members);
     }
+
+    public function test_client_admin_can_create_member_via_wizard(): void
+    {
+        $this->seed();
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
+        $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
+        $structure = Structure::withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->where('type', StructureType::Apartment)
+            ->first();
+
+        $this->assertNotNull($structure);
+
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->post(route('client.members.create.step1'), [
+                'first_name' => 'Nueva',
+                'last_name' => 'Persona',
+                'document_number' => '5551234567',
+                'structure_id' => $structure->id,
+                'member_type' => MemberType::Owner->value,
+                'phone_primary' => '+573001112233',
+            ])
+            ->assertRedirect(route('client.members.create.confirm'));
+
+        $response = $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->post(route('client.members.store'), [
+                'has_app_access' => true,
+                'is_active' => true,
+            ]);
+
+        $response->assertRedirect();
+
+        $member = StructureMember::withoutGlobalScopes()
+            ->where('document_number', '5551234567')
+            ->first();
+
+        $this->assertNotNull($member);
+        $this->assertSame($client->id, $member->client_id);
+        $this->assertNotEmpty($member->access_code);
+    }
+
+    public function test_client_admin_can_create_and_update_vehicle_with_tenant_scope(): void
+    {
+        $this->seed();
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
+        $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
+        $structure = Structure::withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->where('type', StructureType::Apartment)
+            ->first();
+
+        $this->assertNotNull($structure);
+
+        $createResponse = $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->post(route('client.vehicles.store'), [
+                'structure_id' => $structure->id,
+                'plate' => 'XYZ999',
+                'brand' => 'Mazda',
+                'model' => '3',
+                'color' => 'Rojo',
+                'is_visitor_vehicle' => false,
+            ]);
+
+        $createResponse->assertRedirect(route('client.vehicles.index'));
+
+        $vehicle = Vehicle::withoutGlobalScopes()->where('plate', 'XYZ999')->first();
+        $this->assertNotNull($vehicle);
+        $this->assertSame($client->id, $vehicle->client_id);
+
+        $updateResponse = $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->patch(route('client.vehicles.update', $vehicle), [
+                'structure_id' => $structure->id,
+                'plate' => 'XYZ999',
+                'brand' => 'Mazda',
+                'model' => 'CX-5',
+                'color' => 'Azul',
+                'is_visitor_vehicle' => false,
+            ]);
+
+        $updateResponse->assertRedirect(route('client.vehicles.index'));
+        $this->assertSame('CX-5', $vehicle->fresh()->model);
+    }
 }

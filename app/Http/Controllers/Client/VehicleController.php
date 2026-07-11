@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreStructureVehicleRequest;
+use App\Http\Requests\Client\UpdateStructureVehicleRequest;
 use App\Models\Structure;
 use App\Models\Vehicle;
 use App\Repositories\StructureVehicleRepository;
@@ -23,7 +24,7 @@ final class VehicleController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->can('client.vehicles.manage'), 403);
+        $this->authorize('viewAny', Vehicle::class);
 
         $clientId = (int) $this->tenantContext->clientId();
         $vehicles = $this->vehicleRepository->paginateForClient(
@@ -38,7 +39,7 @@ final class VehicleController extends Controller
 
     public function create(): View
     {
-        abort_unless(auth()->user()?->can('client.vehicles.manage'), 403);
+        $this->authorize('create', Vehicle::class);
 
         $structures = Structure::query()->orderBy('name')->get();
 
@@ -66,5 +67,34 @@ final class VehicleController extends Controller
         return redirect()
             ->route('client.vehicles.index')
             ->with('success', 'Vehículo registrado en el censo.');
+    }
+
+    public function edit(Vehicle $vehicle): View
+    {
+        $this->authorize('update', $vehicle);
+
+        $structures = Structure::query()->orderBy('name')->get();
+
+        return view('modules.client.vehicles.edit', compact('vehicle', 'structures'));
+    }
+
+    public function update(UpdateStructureVehicleRequest $request, Vehicle $vehicle): RedirectResponse
+    {
+        $vehicle->update([
+            'structure_id' => $request->validated('structure_id'),
+            'plate' => strtoupper($request->validated('plate')),
+            'brand' => $request->validated('brand'),
+            'model' => $request->validated('model'),
+            'color' => $request->validated('color'),
+            'type' => $request->validated('type', 'carro'),
+            'assigned_parking_spot' => $request->validated('assigned_parking_spot'),
+            'soat_expires_at' => $request->validated('soat_expires_at'),
+            'license_expires_at' => $request->validated('license_expires_at'),
+            'is_visitor_vehicle' => $request->boolean('is_visitor_vehicle'),
+        ]);
+
+        return redirect()
+            ->route('client.vehicles.index')
+            ->with('success', 'Vehículo actualizado.');
     }
 }
