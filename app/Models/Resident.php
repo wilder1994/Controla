@@ -12,12 +12,15 @@ class Resident extends Model
 
     protected $fillable = [
         'client_id', 'user_id', 'document_type', 'document_number', 'first_name', 'last_name',
-        'phone', 'email', 'photo_path', 'resident_type', 'is_active', 'notes',
+        'birth_date', 'blood_type', 'phone', 'email', 'photo_path', 'resident_type', 'is_active', 'notes',
     ];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'birth_date' => 'date',
+        ];
     }
 
     public function user()

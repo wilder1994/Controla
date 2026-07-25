@@ -21,6 +21,12 @@
 
                     <div class="bg-purple-900/30 rounded-xl p-4 mb-6">
                         <label class="block text-sm font-semibold text-slate-300 mb-2">Visitante</label>
+
+                        <div class="mb-3 p-3 bg-slate-950/50 border border-slate-700/50 rounded-lg">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escáner QR Cédula</label>
+                            @include('modules.access.partials.qr-scan-field')
+                        </div>
+
                         <div class="relative">
                             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             <input type="text" x-model="search" @input.debounce="searchVisitor()" placeholder="Buscar por documento o nombre..." class="block w-full pl-10 rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
@@ -87,6 +93,7 @@
     <script>
         function entryForm() {
             return {
+                scanBuffer: '',
                 search: '',
                 searchResults: [],
                 selectedVisitorId: null,
@@ -113,6 +120,24 @@
                     this.selectedVisitorId = null;
                     this.search = '';
                     this.searchResults = [];
+                },
+                async handleScan() {
+                    let parts = this.scanBuffer.trim().split(/[|\t]/);
+                    if (parts.length < 5) return;
+                    let numero = parts[0], apellido1 = parts[1] || '', apellido2 = parts[2] || '';
+                    let nombre1 = parts[3] || '', nombre2 = parts[4] || '';
+                    let nombreCompleto = (nombre1 + ' ' + nombre2).trim();
+                    let apellidoCompleto = (apellido1 + ' ' + apellido2).trim();
+                    this.scanBuffer = '';
+                    try {
+                        const res = await fetch('{{ route("access.visitors.scan-register") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ document_number: numero, first_name: nombreCompleto, last_name: apellidoCompleto })
+                        });
+                        const data = await res.json();
+                        this.selectVisitor(data.visitor);
+                    } catch(e) {}
                 }
             }
         }

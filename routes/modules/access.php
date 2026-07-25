@@ -37,6 +37,7 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->pre
     // Visitors
     Route::resource('visitors', VisitorController::class);
     Route::get('visitors/search/json', [VisitorController::class, 'searchJson'])->name('visitors.search.json');
+    Route::post('visitors/scan-register', [VisitorController::class, 'scanRegister'])->name('visitors.scan-register');
 
     // Residents
     Route::resource('residents', ResidentController::class);

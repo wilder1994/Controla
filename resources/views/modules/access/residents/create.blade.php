@@ -9,8 +9,43 @@
     </div>
 
     <div class="bg-slate-900 rounded-xl border border-slate-800 p-6">
-        <form method="POST" action="{{ route('access.residents.store') }}" x-data="residentForm()">
+        <form method="POST" action="{{ route('access.residents.store') }}" x-data="{
+            scanBuffer: '',
+            housingUnits: @json($housingUnitsData),
+            selectedUnitIds: [],
+            get selectedUnits() {
+                return this.housingUnits.filter(u => this.selectedUnitIds.includes(String(u.id)));
+            },
+            handleScan() {
+                let parts = this.scanBuffer.trim().split(/[|\t]/);
+                if (parts.length < 5) return;
+                let numero = parts[0], apellido1 = parts[1] || '', apellido2 = parts[2] || '';
+                let nombre1 = parts[3] || '', nombre2 = parts[4] || '';
+                let fechaRaw = parts[6] || '';
+                let sangre = parts[7] || '';
+                this.scanBuffer = '';
+                $el.querySelector('[name=document_number]').value = numero;
+                $el.querySelector('[name=first_name]').value = (nombre1 + ' ' + nombre2).trim();
+                $el.querySelector('[name=last_name]').value = (apellido1 + ' ' + apellido2).trim();
+                $el.querySelector('[name=document_type]').value = 'CC';
+                if (fechaRaw) {
+                    let ds = fechaRaw.replace(/\//g, '');
+                    if (ds.length >= 8) {
+                        $el.querySelector('[name=birth_date]').value = ds.substring(0, 4) + '-' + ds.substring(4, 6) + '-' + ds.substring(6, 8);
+                    }
+                }
+                if (sangre) {
+                    $el.querySelector('[name=blood_type]').value = sangre;
+                }
+            }
+        }">
             @csrf
+
+            <div class="mb-6 p-4 bg-slate-950/60 border border-slate-700/50 rounded-lg">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escáner QR Cédula</label>
+                @include('modules.access.partials.qr-scan-field')
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Tipo Documento</label>
@@ -32,6 +67,14 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Apellidos</label>
                     <input type="text" name="last_name" value="{{ old('last_name') }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300">Fecha Nacimiento</label>
+                    <input type="date" name="birth_date" value="{{ old('birth_date') }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300">Tipo Sangre</label>
+                    <input type="text" name="blood_type" value="{{ old('blood_type') }}" placeholder="A+, O-, etc." class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-300">Teléfono</label>
@@ -91,18 +134,4 @@
             </div>
         </form>
     </div>
-
-    @push('scripts')
-    <script>
-        function residentForm() {
-            return {
-                housingUnits: @json($housingUnitsData),
-                selectedUnitIds: [],
-                get selectedUnits() {
-                    return this.housingUnits.filter(u => this.selectedUnitIds.includes(String(u.id)));
-                }
-            }
-        }
-    </script>
-    @endpush
 </x-access-layout>

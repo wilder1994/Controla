@@ -34,6 +34,14 @@
                     <input type="text" name="last_name" value="{{ old('last_name', $resident->last_name) }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" required>
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-slate-300">Fecha Nacimiento</label>
+                    <input type="date" name="birth_date" value="{{ old('birth_date', $resident->birth_date) }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300">Tipo Sangre</label>
+                    <input type="text" name="blood_type" value="{{ old('blood_type', $resident->blood_type) }}" placeholder="A+, O-, etc." class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-slate-300">Teléfono</label>
                     <input type="text" name="phone" value="{{ old('phone', $resident->phone) }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
                 </div>

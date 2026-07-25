@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Visitor;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class VisitorController extends Controller
 {
@@ -23,7 +24,12 @@ class VisitorController extends Controller
     {
         $validated = $request->validate([
             'document_type' => 'required|in:CC,NIT,CE,Pasaporte',
-            'document_number' => 'required|string|max:50|unique:visitors,document_number,NULL,id,document_type,' . $request->document_type,
+            'document_number' => [
+                'required', 'string', 'max:50',
+                Rule::unique('visitors')
+                    ->whereNull('deleted_at')
+                    ->where('document_type', $request->document_type),
+            ],
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'phone' => 'nullable|string|max:20',
@@ -34,6 +40,18 @@ class VisitorController extends Controller
             'birth_date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
+
+        $existing = Visitor::withTrashed()
+            ->where('document_type', $validated['document_type'])
+            ->where('document_number', $validated['document_number'])
+            ->first();
+
+        if ($existing) {
+            $existing->restore();
+            $existing->update($validated);
+            return redirect()->route('access.visitors.index')
+                ->with('success', 'Visitante restaurado exitosamente.');
+        }
 
         Visitor::create($validated);
 
@@ -56,7 +74,13 @@ class VisitorController extends Controller
     {
         $validated = $request->validate([
             'document_type' => 'required|in:CC,NIT,CE,Pasaporte',
-            'document_number' => 'required|string|max:50|unique:visitors,document_number,' . $visitor->id . ',id,document_type,' . $request->document_type,
+            'document_number' => [
+                'required', 'string', 'max:50',
+                Rule::unique('visitors')
+                    ->ignore($visitor->id)
+                    ->whereNull('deleted_at')
+                    ->where('document_type', $request->document_type),
+            ],
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'phone' => 'nullable|string|max:20',
@@ -91,5 +115,57 @@ class VisitorController extends Controller
             ->get(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']);
 
         return response()->json($visitors);
+    }
+
+    public function scanRegister(Request $request)
+    {
+        $validated = $request->validate([
+            'document_number' => 'required|string|max:50',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'birth_date' => 'nullable|date',
+        ]);
+
+        $visitor = Visitor::whereNull('deleted_at')
+            ->where('document_number', $validated['document_number'])
+            ->first();
+
+        if ($visitor) {
+            return response()->json([
+                'found' => true,
+                'visitor' => $visitor->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
+            ]);
+        }
+
+        $existingSoftDeleted = Visitor::withTrashed()
+            ->where('document_number', $validated['document_number'])
+            ->first();
+
+        if ($existingSoftDeleted) {
+            $existingSoftDeleted->restore();
+            $existingSoftDeleted->update([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'] ?? '',
+                'birth_date' => $validated['birth_date'] ?? null,
+            ]);
+            return response()->json([
+                'found' => false,
+                'visitor' => $existingSoftDeleted->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
+            ]);
+        }
+
+        $visitor = Visitor::create([
+            'document_type' => 'CC',
+            'document_number' => $validated['document_number'],
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'] ?? '',
+            'visitor_type' => 'persona',
+            'birth_date' => $validated['birth_date'] ?? null,
+        ]);
+
+        return response()->json([
+            'found' => false,
+            'visitor' => $visitor->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
+        ]);
     }
 }
