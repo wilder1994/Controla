@@ -103,6 +103,29 @@ C:\laragon\bin\nodejs\node-v18
 
 Luego: `npm run build` o `npm run dev`.
 
+### Google Maps (dashboard `/admin`)
+
+El mapa de **Distribución geográfica** usa la **Maps JavaScript API**. Variables en `.env` (plantilla en `.env.example`):
+
+```env
+GOOGLE_MAPS_API_KEY=
+GOOGLE_MAPS_DEFAULT_LAT=4.5709
+GOOGLE_MAPS_DEFAULT_LNG=-74.2973
+GOOGLE_MAPS_DEFAULT_ZOOM=6
+```
+
+**Configurar en Google Cloud Console:**
+
+1. [APIs y servicios → Biblioteca](https://console.cloud.google.com/apis/library) → habilitar **Maps JavaScript API**.
+2. [Credenciales](https://console.cloud.google.com/apis/credentials) → **Crear credenciales → Clave de API**.
+3. Restringir la clave:
+   - **Aplicación:** referentes HTTP → `http://controla.test/*` y `http://localhost/*`
+   - **API:** solo **Maps JavaScript API**
+4. Pegar la clave en `GOOGLE_MAPS_API_KEY` y ejecutar `php artisan config:clear`.
+
+Sin clave, el dashboard muestra un aviso en el contenedor del mapa (el resto de métricas funciona igual).  
+Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa geográfico.
+
 > **Importante:** No ejecutar `migrate:fresh` ni `db:wipe` en entornos con datos reales sin autorización explícita.
 
 ---

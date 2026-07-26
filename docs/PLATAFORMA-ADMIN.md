@@ -56,13 +56,34 @@ Leyenda HTML a la izquierda; gráfico a la derecha. Motor: `CompanySubscriptionS
 Configuración: `config/google-maps.php`
 
 ```env
-GOOGLE_MAPS_API_KEY=tu_clave
+GOOGLE_MAPS_API_KEY=
 GOOGLE_MAPS_DEFAULT_LAT=4.5709
 GOOGLE_MAPS_DEFAULT_LNG=-74.2973
 GOOGLE_MAPS_DEFAULT_ZOOM=6
 ```
 
 Sin API key se muestra aviso en el contenedor del mapa.
+
+#### Alta de clave en Google Cloud
+
+1. Proyecto en [Google Cloud Console](https://console.cloud.google.com/).
+2. **APIs y servicios → Biblioteca** → buscar y habilitar **Maps JavaScript API** (única API requerida por Controla).
+3. **APIs y servicios → Credenciales → Crear credenciales → Clave de API**.
+4. Editar la clave creada:
+   - **Restricciones de aplicación:** Sitios web → agregar `http://controla.test/*` y `http://localhost/*` (ajustar dominio en producción).
+   - **Restricciones de API:** Restringir clave → marcar solo **Maps JavaScript API**.
+5. Copiar la clave a `.env` → `GOOGLE_MAPS_API_KEY=...`
+6. En el proyecto: `php artisan config:clear` y recargar `/admin`.
+
+**Facturación:** Google exige cuenta de facturación activa en el proyecto (incluye crédito gratuito mensual).
+
+| Error en consola del navegador | Causa habitual |
+|--------------------------------|----------------|
+| `RefererNotAllowedMapError` | Falta el referente HTTP del dominio local |
+| `ApiNotActivatedMapError` | Maps JavaScript API no habilitada |
+| `BillingNotEnabledMapError` | Facturación no vinculada al proyecto |
+
+**Datos demo:** `TenantSeeder` asigna coordenadas en Cali a SJ Seguridad y sus conjuntos piloto.
 
 ### TOP empresas por facturación
 
