@@ -47,12 +47,20 @@ final class TenantSeeder extends Seeder
             BillingCycle::Monthly,
         );
 
+        $company->update([
+            'address' => 'Av. 6N # 28-90, Cali',
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+        ]);
+
         $palmas = Client::query()->updateOrCreate(
             ['security_company_id' => $company->id, 'slug' => 'palmas-del-ingenio'],
             [
                 'name' => 'Palmas del Ingenio',
                 'login_suffix' => 'palmasdelingenio',
                 'address' => 'Cra 100 # 14-25, Cali',
+                'latitude' => 3.3678,
+                'longitude' => -76.5275,
                 'plan_tier' => ClientPlanTier::Economic,
                 'max_structures' => ClientPlanTier::Economic->maxStructures(),
                 'access_url' => 'https://controla.test',
@@ -66,6 +74,8 @@ final class TenantSeeder extends Seeder
                 'name' => 'Torres de la Loma',
                 'login_suffix' => 'torresloma',
                 'address' => 'Av 6N # 28-90, Cali',
+                'latitude' => 3.3742,
+                'longitude' => -76.5198,
                 'plan_tier' => ClientPlanTier::Economic,
                 'max_structures' => ClientPlanTier::Economic->maxStructures(),
                 'access_url' => 'https://controla.test',

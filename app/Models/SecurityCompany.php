@@ -25,6 +25,9 @@ class SecurityCompany extends Model
         'tax_id',
         'email',
         'phone',
+        'address',
+        'latitude',
+        'longitude',
         'logo_path',
         'is_active',
         'package_size',
@@ -51,6 +54,8 @@ class SecurityCompany extends Model
     {
         return [
             'is_active' => 'boolean',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
             'package_size' => 'integer',
             'package_modality' => PackageModality::class,
             'package_sku' => CompanyPackageSku::class,

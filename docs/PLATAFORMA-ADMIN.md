@@ -19,31 +19,58 @@ Guía visual: [`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md) §13.
 
 ## Dashboard (`GET /admin/dashboard`)
 
-Pantalla principal de cartera viva. **Sin scroll de página**; scroll solo en paneles internos (mapa árbol y tabla detalle).
+Pantalla analítica de la plataforma. Métricas comerciales, distribución geográfica y tendencias de facturación.
 
-### Filtros (server-side, query params)
+### Layout (v2 — julio 2026)
 
-| Parámetro | Valores | Efecto |
-|-----------|---------|--------|
-| `alert` | `current`, `due_soon`, `overdue`, `archived` | Filtra empresas/conjuntos por bucket de alerta |
-| `archive` | `recovery`, `cancelled` | Subfiltro cuando `alert=archived` |
-| `company` | ID empresa | Drill-down de una empresa |
-| `view` | `global` | Vista global (todas las filas de conjuntos) |
+| Bloque | Contenido |
+|--------|-----------|
+| **Fila superior** | Mapa (Google Maps) + 4 KPIs + donut estado de cartera |
+| **Paquetes** | Modalidad (manual/hardware), cupo contratado (1/5/10/50/100), ciclo (mensual/anual) |
+| **Facturación** | TOP 5 empresas por MRR, KPIs comerciales, nuevos vs retenidos |
+| **Tendencia** | Línea MRR (12 meses) + conjuntos activos (eje dual) |
 
-Alpine.js se usa **solo** para expand/collapse del árbol; el estado de filtros vive en la URL.
+Gráficas: **Chart.js 4** (CDN). Mapa: **Google Maps JavaScript API** con toggle **Empresa / Clientes**.
 
-### Buckets de alerta (`CompanyAlertBucket`)
+### KPIs principales
 
-| Bucket | Regla |
-|--------|--------|
-| **Al día** | Suscripción activa, vence en más de 30 días |
-| **Por vencer** | Vence en ≤ 30 días |
-| **Vencidos** | Gracia vencida o estado `expired` |
-| **Archivados** | `archived_at` o `subscription_status = suspended` |
+| Métrica | Fuente |
+|---------|--------|
+| Empresas activas | Empresas no archivadas |
+| Conjuntos operativos | `clients` con `lifecycle = active` |
+| MRR estimado | Suma mensualizada de paquetes (`package_price_monthly` o anual ÷ 12) |
+| Tasa retención | % empresas en bucket «Al día» |
 
-Motor: `App\Support\Tenancy\CompanySubscriptionState`
+### Estado de cartera
 
-### Acciones
+Donut con buckets `CompanyAlertBucket`: Al día, Por vencer, Vencidos, Archivados.  
+Leyenda HTML a la izquierda; gráfico a la derecha. Motor: `CompanySubscriptionState`.
+
+### Mapa geográfico
+
+| Capa | Marcadores |
+|------|------------|
+| **Empresa** | `security_companies` (coordenadas propias o promedio de conjuntos) |
+| **Clientes** | `clients` con `latitude`/`longitude` |
+
+Configuración: `config/google-maps.php`
+
+```env
+GOOGLE_MAPS_API_KEY=tu_clave
+GOOGLE_MAPS_DEFAULT_LAT=4.5709
+GOOGLE_MAPS_DEFAULT_LNG=-74.2973
+GOOGLE_MAPS_DEFAULT_ZOOM=6
+```
+
+Sin API key se muestra aviso en el contenedor del mapa.
+
+### TOP empresas por facturación
+
+Tabla con altura fija (alineada a la columna derecha del grid). Scroll interno cuando hay más filas. Cabecera sticky.
+
+### Acciones de cartera (desde otras rutas)
+
+Las acciones de archivo y retiro de conjunto siguen disponibles en el detalle de empresa:
 
 | Acción | Ruta | Efecto |
 |--------|------|--------|
@@ -156,7 +183,7 @@ Servicios:
 
 | Método | Ruta | Función |
 |--------|------|---------|
-| GET | `/admin/dashboard` | Resumen cartera + árbol + detalle |
+| GET | `/admin/dashboard` | Dashboard analítico (mapa, KPIs, cartera, facturación) |
 | POST | `/admin/companies/{company}/archive` | Archivar empresa |
 | POST | `/admin/companies/{company}/clients/{client}/release` | Retirar conjunto |
 | GET | `/admin/pricing` | Tabla de precios |
@@ -173,12 +200,15 @@ Archivo: `routes/modules/admin.php`
 
 ```
 app/Services/Platform/
-├── PlatformDashboardService.php      # Datos dashboard + filtros
+├── PlatformDashboardService.php      # Orquesta datos del dashboard
+├── PlatformDashboardAnalytics.php    # KPIs, gráficas, marcadores mapa, TOP facturación
 ├── ArchiveCompanyService.php         # Archivo en cascada
 ├── ReleaseClientService.php          # Retiro de conjunto
 ├── ProcessSubscriptionLifecycleService.php
 ├── ProcessDataRetentionPurgeService.php
 └── PurgeClientTenantDataService.php
+
+config/google-maps.php                # API key y centro por defecto (Colombia)
 
 app/Enums/
 ├── ArchiveReason.php                 # cancelled, recovery
@@ -198,6 +228,7 @@ app/Support/Tenancy/CompanySubscriptionState.php
 | `2026_07_20_160000_add_address_to_clients_table.php` | Campo `address` en conjuntos |
 | `2026_07_20_170000_add_archive_and_lifecycle_fields.php` | Archivo, gracia, lifecycle |
 | `2026_07_20_180000_add_data_retention_purge_fields.php` | `tenant_data_purged_at`, `commercial_anonymized_at` |
+| `2026_07_26_120000_add_geolocation_to_companies_and_clients.php` | `address`, `latitude`, `longitude` en empresas; coords en conjuntos |
 
 ```bash
 php artisan migrate

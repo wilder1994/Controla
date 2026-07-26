@@ -20,7 +20,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **4** | API REST (Sanctum) + Portal Residente web | ✅ Implementada |
 | **Comercial** | Paquetes empresa + tabla de precios + facturación mensual/anual | ✅ Implementada |
 | **UI Empresa** | Design system `x-ui.*`, dashboard licencia + cartera, nav Portería/Conjunto | ✅ Implementada (v1) |
-| **UI Plataforma** | Dashboard cartera, archivo/retiro, design system violet | ✅ Implementada (v1) |
+| **UI Plataforma** | Dashboard analítico (mapa, KPIs, cartera, facturación) | ✅ Implementada (v2) |
 | **Ciclo comercial** | Gracia, suspensión, archivo, purga retención legal | ✅ Implementada |
 
 Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md)
@@ -31,7 +31,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
-| **Plataforma** | `/admin` | `super-admin` | KPIs, tabla de precios, empresas y asignación de paquetes |
+| **Plataforma** | `/admin` | `super-admin` | Dashboard analítico, precios, empresas y paquetes |
 | **Empresa** | `/company` | `company-admin` | Licencia, cupo de clientes, cartera de conjuntos |
 | **Conjunto** | `/client` | `client-admin` | Censo: estructuras, personas, vehículos, mascotas, autorizaciones |
 | **Portería** | `/access` | `guardia`, `supervisor`, `client-admin` | Operación diaria: hub operaciones, bloqueo, reportes |
@@ -70,6 +70,12 @@ DB_DATABASE=controla
 DB_USERNAME=root
 DB_PASSWORD=
 SESSION_DRIVER=file
+
+# Mapa del dashboard plataforma (opcional)
+GOOGLE_MAPS_API_KEY=
+GOOGLE_MAPS_DEFAULT_LAT=4.5709
+GOOGLE_MAPS_DEFAULT_LNG=-74.2973
+GOOGLE_MAPS_DEFAULT_ZOOM=6
 ```
 
 ```bash
@@ -211,7 +217,7 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 
 | Ruta | Función |
 |------|---------|
-| `GET /admin/dashboard` | Cartera viva: alertas, árbol empresa→conjuntos, vista global, archivo/retiro |
+| `GET /admin/dashboard` | Dashboard analítico: mapa, KPIs, cartera, paquetes, TOP facturación, tendencia MRR |
 | `POST /admin/companies/{id}/archive` | Archivar empresa (cascada a clientes) |
 | `POST /admin/companies/{id}/clients/{client}/release` | Retirar conjunto y liberar cupo |
 | `GET /admin/pricing` | Tabla de precios (editar unitarios, matriz calculada) |
@@ -259,7 +265,10 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 | Elemento | Detalle |
 |----------|---------|
 | Layout | `resources/views/layouts/admin.blade.php` — sidebar violet, header con Precios/Empresas |
-| Dashboard | Alertas, árbol colapsable, vista global, acciones archivar/retirar |
+| Dashboard | Mapa geográfico (Google Maps), KPIs, estado de cartera, modalidad/cupo/ciclo, TOP 5 facturación, KPIs comerciales, tendencia MRR (Chart.js) |
+| Analytics | `PlatformDashboardAnalytics` — agregación de métricas y marcadores del mapa |
+| Geolocalización | `latitude`/`longitude` en empresas y conjuntos; migración `2026_07_26_120000_add_geolocation_to_companies_and_clients` |
+| Mapa | Toggle Empresa / Clientes; requiere `GOOGLE_MAPS_API_KEY` en `.env` |
 | Componentes | Mismos `x-ui.*` con `variant="platform"` y `accent="platform"` en inputs |
 | Vistas migradas | `admin/dashboard`, `admin/companies/*`, `admin/pricing/edit` |
 
@@ -447,7 +456,7 @@ app/
 ├── Models/PricingSettings.php      # Unitarios editables por súper admin
 ├── Repositories/
 ├── Services/Pricing/               # PriceCalculator, UpdatePlatformPricingService
-├── Services/Platform/              # Dashboard, archivo, retiro, lifecycle, purga retención
+├── Services/Platform/              # Dashboard analytics, archivo, retiro, lifecycle, purga retención
 ├── Services/Tenant/                # AssignCompanyPackageService, CreateClientService, EnterPorteriaService
 ├── Policies/
 ├── View/Components/
@@ -498,7 +507,13 @@ Regla del proyecto para el agente IA: `.cursor/rules/database-safety.mdc`
 
 ### Git — remoto oficial
 
-Publicar solo en **`wmcodesoft`** cuando se solicite explícitamente:
+Publicar en la rama de integración del fork (flujo acordado):
+
+```bash
+git push origin main:creawilder
+```
+
+Para publicar directamente en `main` de **wmcodesoft** solo cuando se solicite explícitamente:
 
 ```bash
 git push wmcodesoft main

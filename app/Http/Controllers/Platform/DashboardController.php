@@ -37,7 +37,7 @@ final class DashboardController extends Controller
         $this->archiveCompanyService->execute($company, $reason);
 
         return redirect()
-            ->route('admin.dashboard', ['alert' => 'archived', 'archive' => $reason->value])
+            ->route('admin.dashboard')
             ->with('success', "Empresa «{$company->trade_name}» archivada ({$reason->label()}).");
     }
 
@@ -49,7 +49,7 @@ final class DashboardController extends Controller
         $this->releaseClientService->execute($client);
 
         return redirect()
-            ->route('admin.dashboard', ['company' => $company->id])
+            ->route('admin.dashboard')
             ->with('success', "Conjunto «{$client->name}» retirado. Cupo liberado.");
     }
 }
