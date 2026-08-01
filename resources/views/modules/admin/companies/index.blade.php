@@ -156,6 +156,7 @@
                                         @if($bucket->value === 'current') bg-emerald-900/30 text-emerald-300
                                         @elseif($bucket->value === 'due_soon') bg-amber-900/30 text-amber-300
                                         @elseif($bucket->value === 'overdue') bg-red-900/30 text-red-300
+                                        @elseif($bucket->value === 'suspended') bg-orange-900/40 text-orange-300
                                         @else bg-slate-800 text-slate-400 @endif">
                                         {{ $bucket->label() }}
                                     </span>

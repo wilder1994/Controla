@@ -15,7 +15,7 @@
     $manualLen = ($manual / $modalityTotal) * 226;
     $hardwareLen = ($hardware / $modalityTotal) * 226;
 
-    $portfolioColors = ['#34d399', '#fbbf24', '#f87171', '#64748b'];
+    $portfolioColors = ['#34d399', '#fbbf24', '#f87171', '#f59e0b', '#64748b', '#334155'];
     $portfolioTotal = max(1, collect($a['portfolio_status'])->sum('value'));
     $mapMarkersJson = json_encode($a['map_markers'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $googleMapsJson = json_encode($a['google_maps'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
@@ -81,11 +81,11 @@
                         <h3 class="text-sm font-semibold text-white">Estado de cartera</h3>
                     </div>
                     <div class="flex-1 flex items-center justify-between gap-3 px-3 py-2 min-h-0">
-                        <div class="flex flex-col justify-center gap-2.5 pl-1 min-w-0">
+                        <div class="flex flex-col justify-center gap-1.5 pl-1 min-w-0">
                             @foreach ($a['portfolio_status'] as $index => $item)
                                 @php $pct = round(($item['value'] / $portfolioTotal) * 100); @endphp
-                                <div class="flex items-center gap-2 text-sm">
-                                    <span class="w-2 h-2 rounded-full shrink-0" style="background-color: {{ $portfolioColors[$index] }}"></span>
+                                <div class="flex items-center gap-2 text-xs sm:text-sm">
+                                    <span class="w-2 h-2 rounded-full shrink-0" style="background-color: {{ $portfolioColors[$index] ?? '#64748b' }}"></span>
                                     <span class="text-slate-300 truncate">
                                         {{ $item['label'] }} · <strong class="text-white tabular-nums">{{ $pct }}%</strong>
                                     </span>

@@ -22,9 +22,9 @@ final class CompanySubscriptionState
             return CompanyAlertBucket::Archived;
         }
 
-        // Suspendida = acceso bloqueado, aún no archivada comercialmente.
+        // Suspendida = acceso bloqueado, aún no archivada (distinto de gracia/vencidos).
         if ($company->subscription_status === SubscriptionStatus::Suspended) {
-            return CompanyAlertBucket::Overdue;
+            return CompanyAlertBucket::Suspended;
         }
 
         if ($company->subscription_status === SubscriptionStatus::Expired) {

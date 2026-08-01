@@ -21,7 +21,12 @@ final class PlatformDashboardAnalytics
         $companies->loadMissing(['clients' => fn ($q) => $q->orderBy('name')]);
 
         $activeCompanies = $companies->filter(
-            fn (SecurityCompany $company) => CompanySubscriptionState::bucket($company) !== CompanyAlertBucket::Archived
+            function (SecurityCompany $company): bool {
+                $bucket = CompanySubscriptionState::bucket($company);
+
+                return $bucket !== CompanyAlertBucket::Archived
+                    && $bucket !== CompanyAlertBucket::Suspended;
+            }
         );
 
         $operationalClients = $this->operationalClientsCount($companies);
@@ -93,25 +98,32 @@ final class PlatformDashboardAnalytics
 
     /**
      * @param  Collection<int, SecurityCompany>  $companies
-     * @return list<array{label: string, value: int}>
+     * @return list<array{label: string, value: int, key: string}>
      */
     private function portfolioStatus(Collection $companies): array
     {
         $counts = [
-            CompanyAlertBucket::Current->label() => 0,
-            CompanyAlertBucket::DueSoon->label() => 0,
-            CompanyAlertBucket::Overdue->label() => 0,
-            CompanyAlertBucket::Archived->label() => 0,
+            CompanyAlertBucket::Current->value => 0,
+            CompanyAlertBucket::DueSoon->value => 0,
+            CompanyAlertBucket::Overdue->value => 0,
+            CompanyAlertBucket::Suspended->value => 0,
+            CompanyAlertBucket::Archived->value => 0,
         ];
 
         foreach ($companies as $company) {
-            $counts[CompanySubscriptionState::bucket($company)->label()]++;
+            $counts[CompanySubscriptionState::bucket($company)->value]++;
         }
 
-        return collect($counts)
-            ->map(fn (int $value, string $label) => ['label' => $label, 'value' => $value])
-            ->values()
-            ->all();
+        $deleted = SecurityCompany::onlyTrashed()->count();
+
+        return [
+            ['key' => CompanyAlertBucket::Current->value, 'label' => CompanyAlertBucket::Current->label(), 'value' => $counts[CompanyAlertBucket::Current->value]],
+            ['key' => CompanyAlertBucket::DueSoon->value, 'label' => CompanyAlertBucket::DueSoon->label(), 'value' => $counts[CompanyAlertBucket::DueSoon->value]],
+            ['key' => CompanyAlertBucket::Overdue->value, 'label' => CompanyAlertBucket::Overdue->label(), 'value' => $counts[CompanyAlertBucket::Overdue->value]],
+            ['key' => CompanyAlertBucket::Suspended->value, 'label' => CompanyAlertBucket::Suspended->label(), 'value' => $counts[CompanyAlertBucket::Suspended->value]],
+            ['key' => CompanyAlertBucket::Archived->value, 'label' => CompanyAlertBucket::Archived->label(), 'value' => $counts[CompanyAlertBucket::Archived->value]],
+            ['key' => 'deleted', 'label' => 'Eliminadas', 'value' => $deleted],
+        ];
     }
 
     /**
@@ -208,6 +220,7 @@ final class PlatformDashboardAnalytics
             $retenidos[] = $companies->filter(
                 fn (SecurityCompany $company) => ($company->created_at?->lt($month) ?? false)
                     && CompanySubscriptionState::bucket($company) !== CompanyAlertBucket::Archived
+                    && CompanySubscriptionState::bucket($company) !== CompanyAlertBucket::Suspended
             )->count();
         }
 

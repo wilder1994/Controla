@@ -2,7 +2,7 @@
 
 Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo de cartera y retención legal de datos.
 
-**Última actualización:** julio 2026
+**Última actualización:** agosto 2026
 
 ---
 
@@ -13,6 +13,7 @@ Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo
 | `/admin` | `super-admin` | `platform.dashboard`, `platform.companies.view`, `platform.companies.manage` |
 
 Layout: `resources/views/layouts/admin.blade.php` (acento **violet**).  
+Shell: altura de viewport fija (`h-screen`); sidebar sin scroll; pie de usuario anclado abajo; scroll solo en la columna de contenido.  
 Guía visual: [`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md) §13.
 
 ---
@@ -43,8 +44,18 @@ Gráficas: **Chart.js 4** (CDN). Mapa: **Google Maps JavaScript API** con toggle
 
 ### Estado de cartera
 
-Donut con buckets `CompanyAlertBucket`: Al día, Por vencer, Vencidos, Archivados.  
-Leyenda HTML a la izquierda; gráfico a la derecha. Motor: `CompanySubscriptionState`.
+Donut / leyenda con estados alineados al ciclo de acceso:
+
+| Segmento | Criterio |
+|----------|----------|
+| Al día | Bucket `current` |
+| Por vencer | Bucket `due_soon` |
+| Vencidos | Gracia / vencido **con acceso** (`grace` / overdue, no suspended) |
+| Suspendidas | Acceso bloqueado (`subscription_status = suspended`) |
+| Archivadas | `archived_at` not null |
+| Eliminadas | Soft-delete (`onlyTrashed`) |
+
+Motor de buckets: `CompanySubscriptionState` · datos: `PlatformDashboardAnalytics::portfolioStatus`.
 
 ### Mapa geográfico
 

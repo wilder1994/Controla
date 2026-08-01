@@ -23,6 +23,8 @@ final class PlatformDashboardTest extends TestCase
         $response->assertOk();
         $response->assertSee('Distribución geográfica');
         $response->assertSee('Estado de cartera');
+        $response->assertSee('Suspendidas');
+        $response->assertSee('Eliminadas');
         $response->assertSee('SJ Seguridad');
     }
 

@@ -9,6 +9,7 @@ enum CompanyAlertBucket: string
     case Current = 'current';
     case DueSoon = 'due_soon';
     case Overdue = 'overdue';
+    case Suspended = 'suspended';
     case Archived = 'archived';
 
     public function label(): string
@@ -17,7 +18,8 @@ enum CompanyAlertBucket: string
             self::Current => 'Al día',
             self::DueSoon => 'Por vencer',
             self::Overdue => 'Vencidos',
-            self::Archived => 'Archivados',
+            self::Suspended => 'Suspendidas',
+            self::Archived => 'Archivadas',
         };
     }
 

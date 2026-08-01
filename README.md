@@ -281,7 +281,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `resources/views/layouts/company.blade.php` — header con título, empresa, **Portería** y **+ Conjunto**; sidebar Resumen + Clientes |
+| Layout | `resources/views/layouts/company.blade.php` — shell `h-screen`; sidebar fijo al viewport (marca · nav · pie); scroll en columna derecha; header con título, empresa, **Portería** y **+ Conjunto** |
 | Dashboard | Franja de licencia, tabla de conjuntos (protagonista) y panel lateral **Cuenta** (ciclo, ampliar cupo, features) |
 | Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error` en `resources/views/components/ui/` |
 | Contexto cupo | `CompanyLayoutComposer` inyecta `companyContext` en el layout |
@@ -295,8 +295,8 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `resources/views/layouts/admin.blade.php` — sidebar violet, header con Precios/Empresas |
-| Dashboard | Mapa geográfico (Google Maps), KPIs, estado de cartera, modalidad/cupo/ciclo, TOP 5 facturación, KPIs comerciales, tendencia MRR (Chart.js) |
+| Layout | `resources/views/layouts/admin.blade.php` — shell `h-screen`; sidebar violet fijo al viewport (pie usuario siempre visible); scroll solo en contenido |
+| Dashboard | Mapa geográfico (Google Maps), KPIs, estado de cartera (6 segmentos), modalidad/cupo/ciclo, TOP 5 facturación, KPIs comerciales, tendencia MRR (Chart.js) |
 | Empresas | 3 KPIs: Riesgo (suspendidas/archivadas/eliminadas), Total empresas, Total conjuntos; tabla de cartera |
 | Analytics | `PlatformDashboardAnalytics` — agregación de métricas y marcadores del mapa |
 | Geolocalización | `latitude`/`longitude` en empresas y conjuntos; migración `2026_07_26_120000_add_geolocation_to_companies_and_clients` |
@@ -304,6 +304,7 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 | Mapa | Toggle Empresa / Clientes; requiere `GOOGLE_MAPS_API_KEY` en `.env` |
 | Componentes | Mismos `x-ui.*` con `variant="platform"` y `accent="platform"` en inputs |
 | Vistas migradas | `admin/dashboard`, `admin/companies/*`, `admin/pricing/edit` |
+| Shell UI | Mismo patrón viewport-fixed en `layouts/company`, `client`, `access` (en access el nav largo scrollea; el pie no) |
 
 ---
 
