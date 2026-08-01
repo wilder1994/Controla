@@ -7,13 +7,13 @@ namespace App\Enums;
 enum ArchiveReason: string
 {
     case Cancelled = 'cancelled';
-    case Recovery = 'recovery';
+    case NonPayment = 'non_payment';
 
     public function label(): string
     {
         return match ($this) {
             self::Cancelled => 'Baja voluntaria',
-            self::Recovery => 'Cartera por recuperar',
+            self::NonPayment => 'Falta de pago',
         };
     }
 }

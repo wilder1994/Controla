@@ -103,24 +103,53 @@ Las acciones de archivo y retiro de conjunto siguen disponibles en el detalle de
 
 ## Ciclo comercial de licencia
 
+Los **paquetes** (cupo × modalidad × ciclo mensual/anual) se mantienen. El ciclo de **acceso/cobranza** es independiente:
+
 ```
-Venta → vigencia → gracia (30 días) → sin pago → suspender → archivo por recuperar
-Cancelación voluntaria → archivo inmediato (motivo cancelled)
+Paquete activo → vencimiento → gracia (5 días) → suspensión (bloqueo)
+→ (configurable, default 90 días) → archivo por falta de pago
+→ retención legal → purga / eliminación
 ```
+
+**No existe** el concepto «cartera por recuperar». Reactivar = asignar/pagar de nuevo el paquete (`AssignCompanyPackageService`).
 
 ### Estados (`SubscriptionStatus`)
 
-`active` · `grace` · `expired` · `suspended`
+`active` · `grace` · `expired` (legacy) · `suspended`
 
 ### Campos empresa (`security_companies`)
 
 | Campo | Uso |
 |-------|-----|
+| `billing_cycle` | Mensual / anual del **paquete** |
+| `billing_day` | Día de corte (1–28); se setea al asignar paquete |
 | `package_ends_at` | Fin de vigencia contratada |
-| `grace_ends_at` | Fin del mes de gracia |
-| `suspended_at` | Fecha de suspensión |
-| `archived_at` | Fecha de archivo |
-| `archive_reason` | `cancelled` \| `recovery` |
+| `grace_ends_at` | Fin de gracia post-corte (`config/subscription.php` → `grace_days`) |
+| `suspended_at` | Inicio de bloqueo por falta de pago |
+| `archived_at` | Archivo comercial |
+| `archive_reason` | `cancelled` (baja voluntaria) \| `non_payment` (falta de pago) |
+
+Config:
+
+```env
+SUBSCRIPTION_GRACE_DAYS=5
+SUBSCRIPTION_REMINDER_DAYS=5
+SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS=90
+```
+
+Pendiente de producto: facturas/prorrateo de 1ª cuota, recordatorios por email/WhatsApp, pasarela de pago.
+
+### Vista Empresas (`GET /admin/companies`)
+
+Cabecera con **3 KPIs** (sin bloque de título textual):
+
+| KPI | Contenido |
+|-----|-----------|
+| **Riesgo comercial** | Suspendidas + Archivadas + Eliminadas (soft-delete) |
+| **Total empresas** | Total · Activas (`is_active`) · Archivadas |
+| **Total conjuntos** | Total · Operativos (`lifecycle=active`) · Archivados |
+
+Datos: `SecurityCompanyRepository::companiesIndexKpis()` (cartera completa, no solo la página).
 
 ### Campos conjunto (`clients`)
 
@@ -226,13 +255,15 @@ app/Services/Platform/
 ├── ArchiveCompanyService.php         # Archivo en cascada
 ├── ReleaseClientService.php          # Retiro de conjunto
 ├── ProcessSubscriptionLifecycleService.php
+├── SuspendCompanyService.php
 ├── ProcessDataRetentionPurgeService.php
 └── PurgeClientTenantDataService.php
 
+config/subscription.php               # gracia, recordatorio, archivo post-suspensión
 config/google-maps.php                # API key y centro por defecto (Colombia)
 
 app/Enums/
-├── ArchiveReason.php                 # cancelled, recovery
+├── ArchiveReason.php                 # cancelled, non_payment
 ├── ClientLifecycle.php               # active, released, archived_company
 ├── CompanyAlertBucket.php            # current, due_soon, overdue, archived
 └── SubscriptionStatus.php            # incluye Suspended
@@ -250,6 +281,7 @@ app/Support/Tenancy/CompanySubscriptionState.php
 | `2026_07_20_170000_add_archive_and_lifecycle_fields.php` | Archivo, gracia, lifecycle |
 | `2026_07_20_180000_add_data_retention_purge_fields.php` | `tenant_data_purged_at`, `commercial_anonymized_at` |
 | `2026_07_26_120000_add_geolocation_to_companies_and_clients.php` | `address`, `latitude`, `longitude` en empresas; coords en conjuntos |
+| `2026_08_01_160000_subscription_lifecycle_billing_day_and_archive_reason.php` | `billing_day`; `recovery` → `non_payment` |
 
 ```bash
 php artisan migrate
@@ -261,10 +293,14 @@ php artisan migrate
 
 ```bash
 php artisan test --filter=PlatformDashboardTest
+php artisan test --filter=PlatformCompaniesIndexTest
+php artisan test --filter=SubscriptionLifecycleTest
 php artisan test --filter=DataRetentionPurgeTest
 ```
 
 - `tests/Feature/Platform/PlatformDashboardTest.php`
+- `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
+- `tests/Unit/Platform/SubscriptionLifecycleTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
 
 ---

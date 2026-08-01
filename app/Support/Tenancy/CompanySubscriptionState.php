@@ -18,12 +18,13 @@ final class CompanySubscriptionState
     {
         $now ??= CarbonImmutable::now();
 
-        if ($company->archived_at !== null || $company->archive_reason !== null) {
+        if ($company->archived_at !== null) {
             return CompanyAlertBucket::Archived;
         }
 
+        // Suspendida = acceso bloqueado, aún no archivada comercialmente.
         if ($company->subscription_status === SubscriptionStatus::Suspended) {
-            return CompanyAlertBucket::Archived;
+            return CompanyAlertBucket::Overdue;
         }
 
         if ($company->subscription_status === SubscriptionStatus::Expired) {
@@ -31,11 +32,7 @@ final class CompanySubscriptionState
         }
 
         if ($company->subscription_status === SubscriptionStatus::Grace) {
-            $graceEnds = $company->grace_ends_at ?? $company->package_ends_at?->addMonth();
-
-            return ($graceEnds !== null && $graceEnds->isPast())
-                ? CompanyAlertBucket::Overdue
-                : CompanyAlertBucket::Overdue;
+            return CompanyAlertBucket::Overdue;
         }
 
         $endsAt = $company->package_ends_at;
@@ -71,11 +68,14 @@ final class CompanySubscriptionState
 
     public static function matchesArchiveFilter(SecurityCompany $company, ?ArchiveReason $reason): bool
     {
-        if ($reason === null) {
-            return self::bucket($company) === CompanyAlertBucket::Archived;
+        if ($company->archived_at === null) {
+            return false;
         }
 
-        return $company->archive_reason === $reason
-            || ($reason === ArchiveReason::Recovery && $company->subscription_status === SubscriptionStatus::Suspended);
+        if ($reason === null) {
+            return true;
+        }
+
+        return $company->archive_reason === $reason;
     }
 }

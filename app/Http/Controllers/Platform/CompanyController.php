@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Platform;
 
 use App\Enums\BillingCycle;
+use App\Enums\ClientLifecycle;
 use App\Enums\CompanyPackageSku;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\UpdateCompanyPackageRequest;
@@ -29,8 +30,9 @@ final class CompanyController extends Controller
         abort_unless(auth()->user()?->can('platform.companies.view'), 403);
 
         $companies = $this->securityCompanyRepository->paginate();
+        $kpis = $this->securityCompanyRepository->companiesIndexKpis();
 
-        return view('modules.admin.companies.index', compact('companies'));
+        return view('modules.admin.companies.index', compact('companies', 'kpis'));
     }
 
     public function show(Request $request, SecurityCompany $company): View
@@ -39,7 +41,7 @@ final class CompanyController extends Controller
 
         $company->loadCount('clients')
             ->loadCount([
-                'clients as operational_clients_count' => fn ($q) => $q->where('lifecycle', \App\Enums\ClientLifecycle::Active),
+                'clients as operational_clients_count' => fn ($q) => $q->where('lifecycle', ClientLifecycle::Active),
             ]);
         $packageOptions = CompanyPackageSku::options();
         $cycleOptions = BillingCycle::options();

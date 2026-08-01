@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Enums\ClientLifecycle;
+use App\Enums\SubscriptionStatus;
 use App\Models\Client;
 use App\Models\SecurityCompany;
 use App\Models\User;
@@ -21,6 +22,53 @@ final class SecurityCompanyRepository
             'clients_total' => Client::query()->count(),
             'clients_active' => Client::query()->where('is_active', true)->count(),
             'users_total' => User::query()->count(),
+        ];
+    }
+
+    /**
+     * KPIs de la vista /admin/companies (cartera completa, no página paginada).
+     *
+     * @return array{
+     *     companies_total: int,
+     *     companies_active: int,
+     *     companies_archived: int,
+     *     companies_suspended: int,
+     *     companies_deleted: int,
+     *     companies_risk_total: int,
+     *     clients_total: int,
+     *     clients_operational: int,
+     *     clients_archived: int
+     * }
+     */
+    public function companiesIndexKpis(): array
+    {
+        $companiesTotal = SecurityCompany::query()->count();
+        $companiesArchived = SecurityCompany::query()->whereNotNull('archived_at')->count();
+        $companiesSuspended = SecurityCompany::query()
+            ->whereNull('archived_at')
+            ->where('subscription_status', SubscriptionStatus::Suspended)
+            ->count();
+        $companiesDeleted = SecurityCompany::onlyTrashed()->count();
+        $companiesActive = SecurityCompany::query()
+            ->whereNull('archived_at')
+            ->where('is_active', true)
+            ->count();
+
+        $clientsTotal = Client::query()->count();
+        $clientsOperational = Client::query()
+            ->where('lifecycle', ClientLifecycle::Active)
+            ->count();
+
+        return [
+            'companies_total' => $companiesTotal,
+            'companies_active' => $companiesActive,
+            'companies_archived' => $companiesArchived,
+            'companies_suspended' => $companiesSuspended,
+            'companies_deleted' => $companiesDeleted,
+            'companies_risk_total' => $companiesSuspended + $companiesArchived + $companiesDeleted,
+            'clients_total' => $clientsTotal,
+            'clients_operational' => $clientsOperational,
+            'clients_archived' => $clientsTotal - $clientsOperational,
         ];
     }
 

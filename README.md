@@ -20,8 +20,8 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **4** | API REST (Sanctum) + Portal Residente web | ✅ Implementada |
 | **Comercial** | Paquetes empresa + tabla de precios + facturación mensual/anual | ✅ Implementada |
 | **UI Empresa** | Design system `x-ui.*`, dashboard licencia + cartera, nav Portería/Conjunto | ✅ Implementada (v1) |
-| **UI Plataforma** | Dashboard analítico (mapa, KPIs, cartera, facturación) | ✅ Implementada (v2) |
-| **Ciclo comercial** | Gracia, suspensión, archivo, purga retención legal | ✅ Implementada |
+| **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
+| **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 
 Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md)
 
@@ -76,8 +76,12 @@ GOOGLE_MAPS_API_KEY=
 GOOGLE_MAPS_DEFAULT_LAT=4.5709
 GOOGLE_MAPS_DEFAULT_LNG=-74.2973
 GOOGLE_MAPS_DEFAULT_ZOOM=6
-```
 
+# Ciclo de acceso / cobranza (paquetes cupo×modalidad×ciclo siguen independientes)
+SUBSCRIPTION_GRACE_DAYS=5
+SUBSCRIPTION_REMINDER_DAYS=5
+SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS=90
+```
 ```bash
 php artisan migrate          # solo migraciones aditivas
 php artisan db:seed
@@ -241,19 +245,23 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | Ruta | Función |
 |------|---------|
 | `GET /admin/dashboard` | Dashboard analítico: mapa, KPIs, cartera, paquetes, TOP facturación, tendencia MRR |
+| `GET /admin/companies` | Listado empresas + KPIs (riesgo, totales empresas/conjuntos) |
 | `POST /admin/companies/{id}/archive` | Archivar empresa (cascada a clientes) |
 | `POST /admin/companies/{id}/clients/{client}/release` | Retirar conjunto y liberar cupo |
 | `GET /admin/pricing` | Tabla de precios (editar unitarios, matriz calculada) |
 | `PUT /admin/pricing` | Guardar unitarios manual/hardware |
-| `GET /admin/companies` | Listado empresas + cupo operativo/paquete/ciclo |
 | `GET /admin/companies/{id}` | Detalle y cambio de paquete + ciclo |
 | `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación |
 
-**Ciclo comercial:** gracia → suspensión → archivo (`subscriptions:process-lifecycle`, diario 02:00).
+**Ciclo comercial (acceso):** gracia 5 días → suspensión (bloqueo) → archivo por falta de pago tras N días (`SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS`, default 90) → retención → purga. Job `subscriptions:process-lifecycle` (diario 02:00).
+
+**Paquetes:** cupo × modalidad × ciclo mensual/anual **no se eliminan**; son independientes del motor de acceso. Reactivar = reasignar paquete (`AssignCompanyPackageService`). Ya no existe «cartera por recuperar» (`archive_reason`: `cancelled` \| `non_payment`).
 
 **Retención legal:** purga datos operativos tras 365 días y anonimización comercial tras 5 años (`data:purge-retention`, mensual día 1 03:00). Config: `config/retention.php`.
 
 **Cupo:** solo `lifecycle = active` consume slot (`operationalClientsCount()`).
+
+Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md).
 
 ### Panel Empresa (`/company`)
 
@@ -289,8 +297,10 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 |----------|---------|
 | Layout | `resources/views/layouts/admin.blade.php` — sidebar violet, header con Precios/Empresas |
 | Dashboard | Mapa geográfico (Google Maps), KPIs, estado de cartera, modalidad/cupo/ciclo, TOP 5 facturación, KPIs comerciales, tendencia MRR (Chart.js) |
+| Empresas | 3 KPIs: Riesgo (suspendidas/archivadas/eliminadas), Total empresas, Total conjuntos; tabla de cartera |
 | Analytics | `PlatformDashboardAnalytics` — agregación de métricas y marcadores del mapa |
 | Geolocalización | `latitude`/`longitude` en empresas y conjuntos; migración `2026_07_26_120000_add_geolocation_to_companies_and_clients` |
+| Acceso/cobranza | `config/subscription.php` + `billing_day`; lifecycle sin «recovery» |
 | Mapa | Toggle Empresa / Clientes; requiere `GOOGLE_MAPS_API_KEY` en `.env` |
 | Componentes | Mismos `x-ui.*` con `variant="platform"` y `accent="platform"` en inputs |
 | Vistas migradas | `admin/dashboard`, `admin/companies/*`, `admin/pricing/edit` |
@@ -420,7 +430,9 @@ Suites relevantes:
 - `tests/Feature/Tenancy/TenantIsolationTest.php`
 - `tests/Feature/Structure/StructureModuleTest.php`
 - `tests/Feature/Platform/PlatformDashboardTest.php`
+- `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
+- `tests/Unit/Platform/SubscriptionLifecycleTest.php`
 - `tests/Feature/Auth/LoginCsrfTest.php`
 - `tests/Unit/Pricing/PriceCalculatorTest.php`
 
@@ -504,7 +516,7 @@ routes/api.php                   # Sanctum endpoints
 
 ```bash
 php artisan migrate                         # aplicar migraciones nuevas
-php artisan subscriptions:process-lifecycle # gracia → suspensión → archivo (también programado diario)
+php artisan subscriptions:process-lifecycle # gracia 5d → suspensión → archivo non_payment (diario 02:00)
 php artisan data:purge-retention            # purga censo post-retención (también programado mensual)
 php artisan db:seed                         # datos demo (aditivo, todos los seeders)
 php artisan db:seed --class=RoleAndPermissionSeeder  # sincronizar permisos tras cambios en config/access.php
