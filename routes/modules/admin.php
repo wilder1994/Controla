@@ -71,4 +71,8 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::post('/documents/expedientes/{company}/payments/manual', [DocumentController::class, 'storeManualPayment'])
             ->middleware('permission:platform.documents.manage')
             ->name('documents.expedientes.payment.manual');
+
+        Route::post('/documents/expedientes/{company}/payments/local-checkout', [DocumentController::class, 'storeLocalCheckout'])
+            ->middleware('permission:platform.documents.manage')
+            ->name('documents.expedientes.payment.local-checkout');
     });

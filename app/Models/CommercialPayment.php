@@ -17,10 +17,14 @@ class CommercialPayment extends Model
         'currency',
         'billing_cycle',
         'method',
+        'gateway_driver',
+        'gateway_transaction_id',
+        'gateway_status',
         'status',
         'reference',
         'paid_at',
         'recorded_by_user_id',
+        'initiated_by_user_id',
         'metadata',
     ];
 
@@ -43,5 +47,10 @@ class CommercialPayment extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by_user_id');
+    }
+
+    public function initiatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'initiated_by_user_id');
     }
 }

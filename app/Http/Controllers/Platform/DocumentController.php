@@ -129,4 +129,20 @@ final class DocumentController extends Controller
             ->route('admin.documents.expedientes.show', $company)
             ->with('success', 'Pago manual registrado. Factura demo generada en expediente.');
     }
+
+    public function storeLocalCheckout(
+        SecurityCompany $company,
+    ): RedirectResponse {
+        abort_unless(auth()->user()?->can('platform.documents.manage'), 403);
+
+        try {
+            $payment = $this->paymentService->initiateLocalCheckout($company, auth()->user());
+        } catch (\InvalidArgumentException|\RuntimeException $e) {
+            return redirect()
+                ->route('admin.documents.expedientes.show', $company)
+                ->with('warning', $e->getMessage());
+        }
+
+        return redirect()->route('billing.checkout.show', $payment);
+    }
 }

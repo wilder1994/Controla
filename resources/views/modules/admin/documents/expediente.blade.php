@@ -206,6 +206,13 @@
                             </p>
                             <x-ui.button type="submit" variant="platform" size="md" class="w-full">Registrar pago y factura demo</x-ui.button>
                         </form>
+
+                        <form method="POST" action="{{ route('admin.documents.expedientes.payment.local-checkout', $company) }}" class="mt-3">
+                            @csrf
+                            <x-ui.button type="submit" variant="secondary" size="md" class="w-full">
+                                Simular pago online (checkout local)
+                            </x-ui.button>
+                        </form>
                     @endif
                 </section>
             </div>

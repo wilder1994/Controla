@@ -14,6 +14,8 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **1** | Estructura / censo | ✅ Implementada |
 | **Limpieza** | Panel plataforma + residuos Breeze | ✅ Implementada |
 | **Landing** | Vista pública `/` (welcome) | ✅ Implementada |
+| **Contratación** | Planes `/planes` + wizard guest `/contratar` | ✅ Implementada |
+| **Billing local** | Checkout simulado empresa + expediente | ✅ Implementada |
 | **Auth** | Login `/login` (AuthLayout) | ✅ Implementada |
 | **2** | Operación portería (MVP) — Hub operaciones, lista bloqueo, salida masiva | ✅ Implementada |
 | **3** | BI + vigilancia — Reportes mejorados con exportación | ✅ Implementada |
@@ -24,7 +26,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca, TRD, expedientes, clickwrap, pago manual, factura demo | ✅ Implementada (v1) |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1 + fases futuras §12)
+Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1 + fases futuras §12)
 
 ---
 
@@ -86,6 +88,9 @@ SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS=90
 # Facturación plataforma (demo = facturas sin PT DIAN)
 BILLING_MODE=demo
 BILLING_DEMO_PREFIX=DEMO
+BILLING_GATEWAY_DRIVER=local
+BILLING_SIGNUP_INTENT_TTL_HOURS=24
+BILLING_ALLOW_PUBLIC_REGISTER=false
 ```
 ```bash
 php artisan migrate          # solo migraciones aditivas
@@ -167,9 +172,21 @@ php artisan db:seed --class=DemoUsersSeeder   # solo usuarios demo
 
 ---
 
-## Landing pública (`/`)
+## Landing y contratación pública
 
-Vista de bienvenida para invitados (`resources/views/welcome.blade.php`). Usuarios autenticados siguen yendo a `/home`.
+Documentación completa: [`docs/LANDING-Y-CONTRATACION.md`](docs/LANDING-Y-CONTRATACION.md)
+
+### Welcome (`/`)
+
+Vista `resources/views/welcome.blade.php` · `WelcomeController` redirige autenticados a `/home`.
+
+| Elemento | Detalle |
+|----------|---------|
+| Layout | `h-screen` sin scroll: header + main flexible + footer |
+| Hero | `flex-1`, grid 40/60 (texto / imagen dashboard) |
+| Tarjeta `@guest` | Precio mínimo mensual (`PriceCalculator`), pills SaaS + anual, CTA → `/planes` |
+| Cards | Portería, Censo, Multi-cliente (glass, copy largo) |
+| Header | Logo + «Iniciar sesión» |
 
 | Asset | Ruta |
 |-------|------|
@@ -178,7 +195,21 @@ Vista de bienvenida para invitados (`resources/views/welcome.blade.php`). Usuari
 | Fondo | `resources/images/welcome/hero-background.png` |
 | Hero dashboard | `resources/images/welcome/hero-dashboard.png` |
 
-Diseño: una pantalla sin scroll (`h-screen`), hero 40/60 (texto / imagen), 3 cards (Portería, Censo, Multi-cliente), CTA a `/login`.
+### Rutas guest (signup)
+
+| Ruta | Función |
+|------|---------|
+| `GET /planes` | Matriz de precios |
+| `GET /contratar?sku=&cycle=` | Inicia intent de contratación |
+| `GET/POST /contratar/datos/{token}` | Datos empresa + contraseña |
+| `GET/POST /contratar/legal/{token}` | Clickwrap representante legal |
+| `GET /contratar/resumen/{token}` | Resumen antes de pagar |
+| `POST /contratar/pagar/{token}` | Crea checkout simulado |
+| `GET /contratar/checkout/{token}` | Aprobar / Rechazar pago |
+
+**Regla:** `users` y `security_companies` solo se crean si el pago se **aprueba**. `BILLING_ALLOW_PUBLIC_REGISTER=false` desactiva `/register` de Breeze.
+
+Layout wizard: `layouts/public.blade.php` · Rutas: `routes/modules/public.php`
 
 ---
 
@@ -266,6 +297,9 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `GET /admin/documents/expedientes/{company}` | Expediente: timeline, documentos, aceptación, pago |
 | `POST /admin/documents/expedientes/{company}/acceptance` | Registrar clickwrap + rep. legal |
 | `POST /admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
+| `POST /admin/documents/expedientes/{company}/payments/local-checkout` | Checkout simulado (sin proveedor) |
+
+**Pagos locales (sin proveedor):** `BILLING_GATEWAY_DRIVER=local` abre checkout interno (`/billing/checkout/{payment}`) con Aprobar/Rechazar. Manual súper admin + online simulado convergen en `commercial_payments`. Guía: [`docs/BILLING-LOCAL-Y-MIGRACION.md`](docs/BILLING-LOCAL-Y-MIGRACION.md).
 
 **Módulo Documentos (v1):** normoteca, TRD, expediente probatorio por empresa, aceptación contractual (clickwrap con representante legal), registro de pago manual y factura demo (`BILLING_MODE=demo`). Evidencias automáticas en suspensión, archivo, retiro de conjunto y purga. Fases futuras (pasarela sandbox, API PT DIAN, wizard PJ/PN, disposición final): [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md) §12.
 
@@ -288,6 +322,8 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 | `GET /company/clients?modo=operar` | Modo portería: elegir conjunto y entrar |
 | `GET /company/porteria` | Entrada inteligente a portería (auto si hay 1 conjunto) |
 | `POST /company/clients` | Alta de cliente (bloqueada si cupo lleno) |
+| `GET /company/billing` | Facturación licencia + pago online simulado |
+| `POST /company/billing/checkout` | Crea pago `pending` → checkout local |
 
 `/company/clients/select` redirige a `/company/porteria` (vista eliminada).
 
@@ -448,6 +484,8 @@ Suites relevantes:
 - `tests/Feature/Structure/StructureModuleTest.php`
 - `tests/Feature/Platform/PlatformDashboardTest.php`
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
+- `tests/Feature/Billing/LocalPaymentCheckoutTest.php`
+- `tests/Feature/Public/PublicSignupFlowTest.php`
 - `tests/Feature/Platform/PlatformDocumentsTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
 - `tests/Unit/Platform/SubscriptionLifecycleTest.php`
@@ -505,11 +543,14 @@ app/
 │   ├── Company/                    # Admin Empresa
 │   ├── Client/                     # Admin Cliente
 │   ├── Resident/                   # Portal Residente
+│   ├── Public/                     # Welcome, planes, signup guest
+│   ├── Billing/                    # Checkout local (pasarela simulada)
 │   └── Access/                     # Portería
 ├── Models/PricingSettings.php      # Unitarios editables por súper admin
 ├── Repositories/
 ├── Services/Pricing/               # PriceCalculator, UpdatePlatformPricingService
 ├── Services/Platform/              # Dashboard analytics, archivo, retiro, lifecycle, purga, documentos
+├── Services/Public/                # CompletePublicSignupService
 ├── Services/Tenant/                # AssignCompanyPackageService, CreateClientService, EnterPorteriaService
 ├── Policies/
 ├── View/Components/
@@ -521,6 +562,8 @@ resources/views/components/ui/     # x-ui.* (button, label, input, field-error)
 config/billing.php                  # BILLING_MODE demo|live, prefijo factura demo
 
 routes/modules/
+├── public.php                    # /planes, /contratar (guest)
+├── billing.php                   # /billing/checkout/{payment}
 ├── admin.php
 ├── company.php
 ├── client.php
@@ -544,6 +587,8 @@ php artisan db:seed --class=DemoUsersSeeder # solo usuarios demo
 php artisan db:seed --class=TenantSeeder    # solo empresa y clientes
 php artisan db:seed --class=PlatformDocumentsSeeder  # normoteca + TRD
 php artisan config:clear
+php artisan route:list --path=planes          # landing y contratación pública
+php artisan route:list --path=contratar
 php artisan route:list --path=admin         # rutas plataforma (pricing, empresas)
 php artisan route:list --path=company       # rutas admin empresa
 php artisan route:list --path=api           # ver rutas API

@@ -35,8 +35,8 @@
                             >
                         </a>
 
-                        @if (Route::has('login'))
-                            <nav class="flex items-center gap-3">
+                        <nav class="flex items-center gap-3">
+                            @if (Route::has('login'))
                                 @auth
                                     <a
                                         href="{{ route('home') }}"
@@ -52,40 +52,45 @@
                                         Iniciar sesión
                                     </a>
                                 @endauth
-                            </nav>
-                        @endif
+                            @endif
+                        </nav>
                     </div>
                 </header>
 
-                <main class="mx-auto flex min-h-0 w-full max-w-[96rem] flex-1 flex-col px-6 lg:px-8">
-                    {{-- Hero: 40% texto / 60% imagen, ocupa el alto disponible --}}
-                    <section class="grid min-h-0 flex-1 items-stretch gap-6 py-4 sm:gap-8 sm:py-5 lg:grid-cols-5 lg:gap-10 lg:py-6">
-                        <div class="flex flex-col justify-center space-y-5 lg:col-span-2 lg:space-y-6">
-                            <div class="space-y-3">
-                                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-400 sm:text-sm">
-                                    Plataforma Controla
+                <main class="mx-auto flex min-h-0 w-full max-w-[96rem] flex-1 flex-col px-6 py-4 lg:px-8 lg:py-4">
+                    <section class="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-6 py-1 sm:gap-7 sm:py-2 lg:grid-cols-5 lg:gap-7 lg:py-3">
+                        <div class="flex min-h-0 flex-col justify-center gap-5 lg:col-span-2">
+                            <div class="space-y-2">
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">
+                                    PLATAFORMA CONTROLA
                                 </p>
-                                <h1 class="text-3xl font-bold leading-[1.08] text-white sm:text-4xl lg:text-5xl xl:text-[3.25rem]">
+                                <h1 class="text-3xl font-bold leading-[1.08] text-white sm:text-4xl lg:text-5xl">
                                     Control de accesos inteligente
                                 </h1>
-                                <p class="text-base leading-relaxed text-slate-300 lg:text-lg xl:pr-2">
-                                    Plataforma B2B para empresas de seguridad privada y conjuntos residenciales en Colombia.
-                                    Portería, censo unificado y gestión multi-cliente en un solo sistema.
-                                </p>
                             </div>
 
                             @guest
-                                <div class="space-y-3">
-                                    <a
-                                        href="{{ route('login') }}"
-                                        class="inline-flex w-full items-center justify-center rounded-lg bg-cyan-500 px-8 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:w-auto"
-                                    >
-                                        Ingresar al sistema
-                                    </a>
-                                    <p class="text-sm text-slate-400">
-                                        Acceso para administradores, guardas y residentes autorizados.
-                                        <span class="text-slate-500"> &middot; Multi-tenant &middot; Colombia</span>
+                                <div class="max-w-md rounded-xl border border-cyan-500 bg-slate-900/95 p-3.5 space-y-2.5">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="rounded-md bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-400">
+                                            Licencia SaaS
+                                        </span>
+                                        <span class="rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                            Anual −{{ number_format($annualDiscount * 100, 0) }}%
+                                        </span>
+                                    </div>
+                                    <p class="text-sm font-medium text-slate-200 tabular-nums">
+                                        Desde {{ '$'.number_format($minMonthly->priceMonthly, 0, ',', '.') }} / mes · 1 conjunto · manual
                                     </p>
+                                    <a
+                                        href="{{ route('planes.index') }}"
+                                        class="flex w-full items-center justify-center rounded-lg bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                                    >
+                                        Ver planes y contratar
+                                    </a>
+                                    <a href="{{ route('login') }}" class="block text-center text-xs text-slate-500 hover:text-slate-300">
+                                        Ya tengo cuenta · Iniciar sesión
+                                    </a>
                                 </div>
                             @endguest
                         </div>
@@ -95,13 +100,13 @@
                             <img
                                 src="{{ asset('images/welcome/hero-dashboard.png') }}"
                                 alt="Panel de administración central de Controla"
-                                class="relative h-full min-h-[200px] w-full max-h-[34vh] rounded-xl border border-white/10 object-cover shadow-2xl shadow-black/50 sm:max-h-[38vh] sm:rounded-2xl lg:max-h-none lg:min-h-0 lg:rounded-2xl"
+                                class="relative h-full min-h-0 w-full rounded-xl border border-white/10 object-cover shadow-2xl shadow-black/50 sm:rounded-2xl lg:rounded-2xl"
                             >
                         </div>
                     </section>
 
                     {{-- Cards --}}
-                    <section class="shrink-0 pb-4 pt-1 sm:pb-5">
+                    <section class="shrink-0 mt-3.5 pb-4 sm:pb-5">
                         <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
                             <li class="group flex gap-4 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-md transition duration-300 hover:border-cyan-400/30 hover:bg-white/[0.07] hover:shadow-lg hover:shadow-cyan-500/5 lg:p-5">
                                 <div class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-400 transition group-hover:bg-cyan-500/25">

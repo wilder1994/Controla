@@ -173,6 +173,7 @@ return [
             'permission' => 'company.dashboard',
             'items' => [
                 ['label' => 'Resumen', 'route' => 'company.dashboard', 'permission' => 'company.dashboard'],
+                ['label' => 'Facturación', 'route' => 'company.billing.index', 'permission' => 'company.dashboard'],
                 ['label' => 'Clientes', 'route' => 'company.clients.index', 'permission' => 'company.clients.view'],
             ],
         ],

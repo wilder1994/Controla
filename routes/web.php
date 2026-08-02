@@ -2,21 +2,18 @@
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->action(HomeController::class);
-    }
-
-    return view('welcome');
-});
+Route::get('/', WelcomeController::class);
 
 Route::get('/home', HomeController::class)
     ->middleware(['auth', 'password.changed'])
     ->name('home');
 
 Route::redirect('/dashboard', '/home');
+
+require __DIR__.'/modules/public.php';
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -32,6 +29,9 @@ require __DIR__.'/modules/admin.php';
 
 // Panel empresa (Fase 0)
 require __DIR__.'/modules/company.php';
+
+// Checkout billing (simulador local / futuro pasarela)
+require __DIR__.'/modules/billing.php';
 
 // Panel conjunto / censo (Fase 1)
 require __DIR__.'/modules/client.php';

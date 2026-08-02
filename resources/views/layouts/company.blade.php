@@ -29,6 +29,10 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.dashboard') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Resumen</span>
                 </a>
+                <a href="{{ route('company.billing.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.billing.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Facturación</span>
+                </a>
                 @endcan
                 @can('company.clients.view')
                 <a href="{{ route('company.clients.index') }}"

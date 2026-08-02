@@ -18,18 +18,22 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        if (! config('billing.allow_public_register', false)) {
+            return redirect()
+                ->route('planes.index')
+                ->with('warning', 'El registro público está deshabilitado. Contrata un plan o contacta a soporte.');
+        }
+
         return view('auth.register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
+        if (! config('billing.allow_public_register', false)) {
+            abort(403);
+        }
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
