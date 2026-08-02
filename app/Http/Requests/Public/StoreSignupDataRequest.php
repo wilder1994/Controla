@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Public;
 
 use App\Enums\PartyType;
+use App\Support\Geo\GeoAddressRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -29,7 +30,7 @@ final class StoreSignupDataRequest extends FormRequest
             'admin_name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'phone' => ['nullable', 'string', 'max:40'],
-            'address' => ['nullable', 'string', 'max:255'],
+            ...GeoAddressRules::optional(),
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }

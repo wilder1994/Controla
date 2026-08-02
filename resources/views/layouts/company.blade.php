@@ -40,6 +40,18 @@
                     <span>Clientes</span>
                 </a>
                 @endcan
+                @can('company.users.assign')
+                <a href="{{ route('company.users.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.users.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Usuarios</span>
+                </a>
+                @endcan
+                @can('company.settings.manage')
+                <a href="{{ route('company.settings.edit') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.settings.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Mi empresa</span>
+                </a>
+                @endcan
             </nav>
             <div class="px-4 py-4 border-t border-slate-800 shrink-0">
                 <p class="text-xs text-slate-400 truncate">{{ Auth::user()->name }}</p>

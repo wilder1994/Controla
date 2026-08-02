@@ -25,8 +25,10 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca, TRD, expedientes, clickwrap, pago manual, factura demo | ✅ Implementada (v1) |
+| **Usuarios** | CRUD scoped por panel + políticas de alcance | ✅ Implementada |
+| **Perfiles** | Empresa/conjunto: dirección y geo; signup alineado | ✅ Implementada |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1 + fases futuras §12)
+Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1 + fases futuras §12)
 
 ---
 
@@ -201,7 +203,7 @@ Vista `resources/views/welcome.blade.php` · `WelcomeController` redirige autent
 |------|---------|
 | `GET /planes` | Matriz de precios |
 | `GET /contratar?sku=&cycle=` | Inicia intent de contratación |
-| `GET/POST /contratar/datos/{token}` | Datos empresa + contraseña |
+| `GET/POST /contratar/datos/{token}` | Datos empresa + contraseña + dirección/geo |
 | `GET/POST /contratar/legal/{token}` | Clickwrap representante legal |
 | `GET /contratar/resumen/{token}` | Resumen antes de pagar |
 | `POST /contratar/pagar/{token}` | Crea checkout simulado |
@@ -210,6 +212,18 @@ Vista `resources/views/welcome.blade.php` · `WelcomeController` redirige autent
 **Regla:** `users` y `security_companies` solo se crean si el pago se **aprueba**. `BILLING_ALLOW_PUBLIC_REGISTER=false` desactiva `/register` de Breeze.
 
 Layout wizard: `layouts/public.blade.php` · Rutas: `routes/modules/public.php`
+
+### Usuarios y perfiles
+
+Documentación: [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md)
+
+| Panel | Rutas clave |
+|-------|-------------|
+| Plataforma | `/admin/users`, `/admin/companies/{id}/profile` |
+| Empresa | `/company/users`, `/company/settings` |
+| Conjunto | `/client/users` (portal web; APP en `/client/app-users`) |
+
+Tras desplegar permisos nuevos: `php artisan db:seed --class=RoleAndPermissionSeeder`
 
 ---
 
@@ -290,6 +304,10 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `PUT /admin/pricing` | Guardar unitarios manual/hardware |
 | `GET /admin/companies/{id}` | Detalle y cambio de paquete + ciclo |
 | `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación |
+| `GET /admin/companies/{id}/profile` | Perfil legal, contacto y ubicación |
+| `PUT /admin/companies/{id}/profile` | Guardar perfil empresa |
+| `GET /admin/users` | Usuarios globales |
+| `GET/PUT /admin/users/{id}/edit` | Crear/editar usuario (cualquier rol) |
 | `GET /admin/documents` | Hub documental (KPIs, accesos normoteca/TRD/expedientes) |
 | `GET /admin/documents/normativa` | Normoteca — corpus legal versionado |
 | `GET /admin/documents/trd` | Tabla de retención documental |
@@ -324,6 +342,10 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 | `POST /company/clients` | Alta de cliente (bloqueada si cupo lleno) |
 | `GET /company/billing` | Facturación licencia + pago online simulado |
 | `POST /company/billing/checkout` | Crea pago `pending` → checkout local |
+| `GET /company/users` | Usuarios de la empresa y conjuntos asignados |
+| `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped |
+| `GET /company/settings` | Perfil legal y ubicación de la empresa |
+| `PUT /company/settings` | Guardar perfil empresa |
 
 `/company/clients/select` redirige a `/company/porteria` (vista eliminada).
 
@@ -335,9 +357,9 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 |----------|---------|
 | Layout | `resources/views/layouts/company.blade.php` — shell `h-screen`; sidebar fijo al viewport (marca · nav · pie); scroll en columna derecha; header con título, empresa, **Portería** y **+ Conjunto** |
 | Dashboard | Franja de licencia, tabla de conjuntos (protagonista) y panel lateral **Cuenta** (ciclo, ampliar cupo, features) |
-| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error` en `resources/views/components/ui/` |
+| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields` |
 | Contexto cupo | `CompanyLayoutComposer` inyecta `companyContext` en el layout |
-| Vistas migradas | `company/dashboard`, `company/clients/index`, `company/clients/create`, `company/clients/edit` |
+| Vistas migradas | `company/dashboard`, `company/clients/*`, `company/users/*`, `company/settings` |
 
 Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `platform` (violet en `/admin`). Tamaños: `sm`, `md`.
 
@@ -355,7 +377,7 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 | Acceso/cobranza | `config/subscription.php` + `billing_day`; lifecycle sin «recovery» |
 | Mapa | Toggle Empresa / Clientes; requiere `GOOGLE_MAPS_API_KEY` en `.env` |
 | Componentes | Mismos `x-ui.*` con `variant="platform"` y `accent="platform"` en inputs |
-| Vistas migradas | `admin/dashboard`, `admin/companies/*`, `admin/pricing/edit`, `admin/documents/*` |
+| Vistas migradas | `admin/dashboard`, `admin/companies/*`, `admin/users/*`, `admin/pricing/edit`, `admin/documents/*` |
 | Shell UI | Mismo patrón viewport-fixed en `layouts/company`, `client`, `access` (en access el nav largo scrollea; el pie no) |
 
 ---
@@ -385,7 +407,8 @@ Tablas relacionadas:
 | `/client/vehicles` | Directorio vehicular |
 | `/client/authorizations` | Pre-autorizaciones |
 | `/client/authorizations/import` | Import Excel (`maatwebsite/excel`) |
-| `/client/app-users` | Usuarios APP móvil |
+| `/client/app-users` | Usuarios APP móvil (`structure_app_users`) |
+| `/client/users` | Usuarios portal web (residentes, guardias del conjunto) |
 
 ### Mascotas (`/client/pets`) — CRUD completo
 
@@ -486,6 +509,7 @@ Suites relevantes:
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
 - `tests/Feature/Billing/LocalPaymentCheckoutTest.php`
 - `tests/Feature/Public/PublicSignupFlowTest.php`
+- `tests/Feature/User/ScopedUserManagementTest.php`
 - `tests/Feature/Platform/PlatformDocumentsTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
 - `tests/Unit/Platform/SubscriptionLifecycleTest.php`
@@ -551,6 +575,9 @@ app/
 ├── Services/Pricing/               # PriceCalculator, UpdatePlatformPricingService
 ├── Services/Platform/              # Dashboard analytics, archivo, retiro, lifecycle, purga, documentos
 ├── Services/Public/                # CompletePublicSignupService
+├── Services/User/                  # ManageScopedUserService
+├── Services/Auth/                  # UserScopeResolver
+├── Policies/UserPolicy.php         # SecurityCompanyPolicy
 ├── Services/Tenant/                # AssignCompanyPackageService, CreateClientService, EnterPorteriaService
 ├── Policies/
 ├── View/Components/

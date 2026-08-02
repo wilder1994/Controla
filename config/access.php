@@ -8,6 +8,8 @@ return [
         'platform.dashboard',
         'platform.companies.view',
         'platform.companies.manage',
+        'platform.users.view',
+        'platform.users.manage',
         'platform.documents.view',
         'platform.documents.manage',
 
@@ -16,6 +18,7 @@ return [
         'company.clients.view',
         'company.clients.manage',
         'company.users.assign',
+        'company.settings.manage',
 
         // Cliente / censo (fase 1+)
         'client.structures.manage',
@@ -24,6 +27,7 @@ return [
         'client.vehicles.manage',
         'client.authorizations.manage',
         'client.app_users.manage',
+        'client.users.manage',
 
         // Portería operativa
         'access.operations',
@@ -52,6 +56,8 @@ return [
             'platform.dashboard',
             'platform.companies.view',
             'platform.companies.manage',
+            'platform.users.view',
+            'platform.users.manage',
             'platform.documents.view',
             'platform.documents.manage',
         ],
@@ -61,6 +67,7 @@ return [
             'company.clients.view',
             'company.clients.manage',
             'company.users.assign',
+            'company.settings.manage',
             'access.operations',
             'access.dashboard',
             'access.view.reports',
@@ -73,6 +80,7 @@ return [
             'client.vehicles.manage',
             'client.authorizations.manage',
             'client.app_users.manage',
+            'client.users.manage',
             'access.operations',
             'access.dashboard',
             'access.manage.blocklist',
@@ -133,6 +141,7 @@ return [
             'client.vehicles.manage',
             'client.authorizations.manage',
             'client.app_users.manage',
+            'client.users.manage',
             'access.operations',
             'access.dashboard',
             'access.manage.blocklist',
@@ -165,6 +174,7 @@ return [
                 ['label' => 'Resumen', 'route' => 'admin.dashboard', 'permission' => 'platform.dashboard'],
                 ['label' => 'Tabla de precios', 'route' => 'admin.pricing.edit', 'permission' => 'platform.companies.view'],
                 ['label' => 'Empresas', 'route' => 'admin.companies.index', 'permission' => 'platform.companies.view'],
+                ['label' => 'Usuarios', 'route' => 'admin.users.index', 'permission' => 'platform.users.view'],
                 ['label' => 'Documentos', 'route' => 'admin.documents.index', 'permission' => 'platform.documents.view'],
             ],
         ],
@@ -175,6 +185,8 @@ return [
                 ['label' => 'Resumen', 'route' => 'company.dashboard', 'permission' => 'company.dashboard'],
                 ['label' => 'Facturación', 'route' => 'company.billing.index', 'permission' => 'company.dashboard'],
                 ['label' => 'Clientes', 'route' => 'company.clients.index', 'permission' => 'company.clients.view'],
+                ['label' => 'Usuarios', 'route' => 'company.users.index', 'permission' => 'company.users.assign'],
+                ['label' => 'Mi empresa', 'route' => 'company.settings.edit', 'permission' => 'company.settings.manage'],
             ],
         ],
         'access' => [
@@ -208,6 +220,7 @@ return [
                 ['label' => 'Vehículos', 'route' => 'client.vehicles.index', 'permission' => 'client.vehicles.manage'],
                 ['label' => 'Mascotas', 'route' => 'client.pets.index', 'permission' => 'client.pets.manage'],
                 ['label' => 'Autorizaciones', 'route' => 'client.authorizations.index', 'permission' => 'client.authorizations.manage'],
+                ['label' => 'Usuarios portal', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
                 ['label' => 'Usuarios APP', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],
             ],
         ],

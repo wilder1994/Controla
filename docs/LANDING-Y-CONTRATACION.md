@@ -53,7 +53,7 @@ Requiere junction `public/images` → `resources/images` (ver README § Assets e
 | `GET /` | Welcome con tarjeta comercial |
 | `GET /planes` | Matriz de precios (PriceCalculator) |
 | `GET /contratar?sku=&cycle=` | Crea `commercial_signup_intents` |
-| `GET/POST /contratar/datos/{token}` | Paso 1 datos + contraseña |
+| `GET/POST /contratar/datos/{token}` | Paso 1: datos empresa, contacto, dirección/geo, contraseña |
 | `GET/POST /contratar/legal/{token}` | Paso 2 clickwrap |
 | `GET /contratar/resumen/{token}` | Resumen |
 | `POST /contratar/pagar/{token}` | Checkout simulado |
@@ -113,4 +113,4 @@ php artisan test --filter=PublicSignupFlowTest
 
 ---
 
-Ver también: [`BILLING-LOCAL-Y-MIGRACION.md`](BILLING-LOCAL-Y-MIGRACION.md) · [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md)
+Ver también: [`BILLING-LOCAL-Y-MIGRACION.md`](BILLING-LOCAL-Y-MIGRACION.md) · [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md) · [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md)

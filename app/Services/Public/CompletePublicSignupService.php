@@ -56,6 +56,8 @@ final class CompletePublicSignupService
                 'email' => $intent->email,
                 'phone' => $intent->phone,
                 'address' => $intent->address,
+                'latitude' => $intent->latitude,
+                'longitude' => $intent->longitude,
                 'is_active' => true,
             ]);
 

@@ -33,11 +33,11 @@
                 </div>
             </div>
 
-            <div>
-                <x-ui.label for="address">Dirección del conjunto</x-ui.label>
-                <x-ui.input id="address" type="text" name="address" :value="old('address')" placeholder="Calle, ciudad" />
-                <x-ui.field-error :messages="$errors->get('address')" />
-            </div>
+            <x-ui.geo-address-fields
+                :address="old('address')"
+                :latitude="old('latitude')"
+                :longitude="old('longitude')"
+            />
 
             <div>
                 <x-ui.label for="access_url">URL acceso (opcional)</x-ui.label>

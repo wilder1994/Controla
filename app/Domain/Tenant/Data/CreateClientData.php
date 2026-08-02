@@ -12,6 +12,8 @@ final readonly class CreateClientData
         public string $slug,
         public string $loginSuffix,
         public ?string $address = null,
+        public ?float $latitude = null,
+        public ?float $longitude = null,
         public ?string $accessUrl = null,
         public bool $isActive = true,
     ) {}

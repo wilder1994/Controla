@@ -6,6 +6,7 @@ use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\DocumentController;
 use App\Http\Controllers\Platform\PricingController;
+use App\Http\Controllers\Platform\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tenant.unscoped'])
@@ -43,6 +44,30 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::put('/companies/{company}/package', [CompanyController::class, 'updatePackage'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.package.update');
+
+        Route::get('/companies/{company}/profile', [CompanyController::class, 'editProfile'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.profile.edit');
+
+        Route::put('/companies/{company}/profile', [CompanyController::class, 'updateProfile'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.profile.update');
+
+        Route::get('/users', [UserController::class, 'index'])
+            ->middleware('permission:platform.users.view')
+            ->name('users.index');
+        Route::get('/users/create', [UserController::class, 'create'])
+            ->middleware('permission:platform.users.manage')
+            ->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])
+            ->middleware('permission:platform.users.manage')
+            ->name('users.store');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])
+            ->middleware('permission:platform.users.view')
+            ->name('users.edit');
+        Route::put('/users/{user}', [UserController::class, 'update'])
+            ->middleware('permission:platform.users.manage')
+            ->name('users.update');
 
         Route::get('/documents', [DocumentController::class, 'index'])
             ->middleware('permission:platform.documents.view')

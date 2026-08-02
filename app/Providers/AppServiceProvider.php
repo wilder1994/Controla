@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\SecurityCompany;
 use App\Models\User;
+use App\Policies\SecurityCompanyPolicy;
+use App\Policies\UserPolicy;
 use App\Support\Tenancy\TenantContext;
 use App\View\Composers\CompanyLayoutComposer;
 use Illuminate\Support\Facades\Gate;
@@ -18,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(SecurityCompany::class, SecurityCompanyPolicy::class);
+
         Gate::before(function (User $user, string $ability): ?bool {
             if ($user->hasRole('super-admin')) {
                 return true;

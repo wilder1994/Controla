@@ -54,6 +54,11 @@
                 <x-ui.input id="phone" name="phone" value="{{ old('phone', $intent->phone) }}" />
                 <x-ui.field-error name="phone" />
             </div>
+            <x-ui.geo-address-fields
+                :address="old('address', $intent->address)"
+                :latitude="old('latitude', $intent->latitude)"
+                :longitude="old('longitude', $intent->longitude)"
+            />
             <div>
                 <x-ui.label for="password">Contraseña</x-ui.label>
                 <x-ui.input type="password" id="password" name="password" required />

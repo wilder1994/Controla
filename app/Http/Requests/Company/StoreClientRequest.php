@@ -36,6 +36,8 @@ final class StoreClientRequest extends FormRequest
                 Rule::unique('clients', 'login_suffix')->where('security_company_id', $companyId),
             ],
             'address' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'access_url' => ['nullable', 'url', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
         ];

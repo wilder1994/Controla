@@ -7,12 +7,15 @@ namespace App\Http\Controllers\Platform;
 use App\Enums\BillingCycle;
 use App\Enums\ClientLifecycle;
 use App\Enums\CompanyPackageSku;
+use App\Domain\Geo\GeoAddressData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\UpdateCompanyPackageRequest;
+use App\Http\Requests\Platform\UpdateCompanyProfileRequest;
 use App\Models\SecurityCompany;
 use App\Repositories\SecurityCompanyRepository;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Tenant\AssignCompanyPackageService;
+use App\Services\Tenant\UpdateCompanyProfileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,6 +26,7 @@ final class CompanyController extends Controller
         private readonly SecurityCompanyRepository $securityCompanyRepository,
         private readonly AssignCompanyPackageService $assignCompanyPackageService,
         private readonly PriceCalculator $priceCalculator,
+        private readonly UpdateCompanyProfileService $updateCompanyProfileService,
     ) {}
 
     public function index(): View
@@ -71,5 +75,27 @@ final class CompanyController extends Controller
         return redirect()
             ->route('admin.companies.show', $company)
             ->with('success', "Paquete actualizado a «{$sku->label()}» ({$cycle->label()}).");
+    }
+
+    public function editProfile(SecurityCompany $company): View
+    {
+        abort_unless(auth()->user()?->can('updateProfile', $company), 403);
+
+        return view('modules.admin.companies.profile', compact('company'));
+    }
+
+    public function updateProfile(UpdateCompanyProfileRequest $request, SecurityCompany $company): RedirectResponse
+    {
+        $this->updateCompanyProfileService->assertTaxIdImmutable($company, $request->input('tax_id'));
+
+        $this->updateCompanyProfileService->execute(
+            $company,
+            $request->safe()->except(['address', 'latitude', 'longitude']),
+            GeoAddressData::fromValidated($request->validated()),
+        );
+
+        return redirect()
+            ->route('admin.companies.profile.edit', $company)
+            ->with('success', 'Perfil de empresa actualizado.');
     }
 }

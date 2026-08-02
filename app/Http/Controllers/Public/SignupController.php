@@ -66,6 +66,8 @@ final class SignupController extends Controller
             'email' => $request->validated('email'),
             'phone' => $request->validated('phone'),
             'address' => $request->validated('address'),
+            'latitude' => $request->validated('latitude'),
+            'longitude' => $request->validated('longitude'),
             'password' => Hash::make($request->validated('password')),
         ]);
 
