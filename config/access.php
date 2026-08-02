@@ -8,6 +8,8 @@ return [
         'platform.dashboard',
         'platform.companies.view',
         'platform.companies.manage',
+        'platform.documents.view',
+        'platform.documents.manage',
 
         // Empresa de seguridad
         'company.dashboard',
@@ -50,6 +52,8 @@ return [
             'platform.dashboard',
             'platform.companies.view',
             'platform.companies.manage',
+            'platform.documents.view',
+            'platform.documents.manage',
         ],
 
         'company-admin' => [
@@ -161,6 +165,7 @@ return [
                 ['label' => 'Resumen', 'route' => 'admin.dashboard', 'permission' => 'platform.dashboard'],
                 ['label' => 'Tabla de precios', 'route' => 'admin.pricing.edit', 'permission' => 'platform.companies.view'],
                 ['label' => 'Empresas', 'route' => 'admin.companies.index', 'permission' => 'platform.companies.view'],
+                ['label' => 'Documentos', 'route' => 'admin.documents.index', 'permission' => 'platform.documents.view'],
             ],
         ],
         'company' => [

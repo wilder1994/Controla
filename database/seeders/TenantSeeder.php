@@ -48,6 +48,7 @@ final class TenantSeeder extends Seeder
         );
 
         $company->update([
+            'party_type' => 'legal_entity',
             'address' => 'Av. 6N # 28-90, Cali',
             'latitude' => 3.4516,
             'longitude' => -76.5320,

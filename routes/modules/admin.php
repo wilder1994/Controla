@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\Platform\DashboardController;
+use App\Http\Controllers\Platform\DocumentController;
 use App\Http\Controllers\Platform\PricingController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,4 +43,32 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::put('/companies/{company}/package', [CompanyController::class, 'updatePackage'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.package.update');
+
+        Route::get('/documents', [DocumentController::class, 'index'])
+            ->middleware('permission:platform.documents.view')
+            ->name('documents.index');
+
+        Route::get('/documents/normativa', [DocumentController::class, 'normativa'])
+            ->middleware('permission:platform.documents.view')
+            ->name('documents.normativa');
+
+        Route::get('/documents/trd', [DocumentController::class, 'trd'])
+            ->middleware('permission:platform.documents.view')
+            ->name('documents.trd');
+
+        Route::get('/documents/expedientes', [DocumentController::class, 'expedientes'])
+            ->middleware('permission:platform.documents.view')
+            ->name('documents.expedientes');
+
+        Route::get('/documents/expedientes/{company}', [DocumentController::class, 'showExpediente'])
+            ->middleware('permission:platform.documents.view')
+            ->name('documents.expedientes.show');
+
+        Route::post('/documents/expedientes/{company}/acceptance', [DocumentController::class, 'storeAcceptance'])
+            ->middleware('permission:platform.documents.manage')
+            ->name('documents.expedientes.acceptance');
+
+        Route::post('/documents/expedientes/{company}/payments/manual', [DocumentController::class, 'storeManualPayment'])
+            ->middleware('permission:platform.documents.manage')
+            ->name('documents.expedientes.payment.manual');
     });

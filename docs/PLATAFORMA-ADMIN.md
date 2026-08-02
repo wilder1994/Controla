@@ -14,6 +14,7 @@ Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo
 
 Layout: `resources/views/layouts/admin.blade.php` (acento **violet**).  
 Shell: altura de viewport fija (`h-screen`); sidebar sin scroll; pie de usuario anclado abajo; scroll solo en la columna de contenido.  
+Módulo Documentos (definición + v1 implementado; fases futuras §12): [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md).  
 Guía visual: [`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md) §13.
 
 ---
@@ -252,6 +253,15 @@ Servicios:
 | GET | `/admin/companies` | Listado empresas |
 | GET | `/admin/companies/{company}` | Detalle y cambio de paquete |
 | PUT | `/admin/companies/{company}/package` | Asignar SKU y ciclo |
+| GET | `/admin/documents` | Hub documental (KPIs) |
+| GET | `/admin/documents/normativa` | Normoteca legal versionada |
+| GET | `/admin/documents/trd` | Tabla de retención documental |
+| POST | `/admin/documents/expedientes/{company}/acceptance` | Aceptación clickwrap |
+| POST | `/admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
+| GET | `/admin/documents/expedientes` | Listado expedientes |
+| GET | `/admin/documents/expedientes/{company}` | Detalle expediente |
+
+Permisos: `platform.documents.view`, `platform.documents.manage` (solo `super-admin` en v1).
 
 Archivo: `routes/modules/admin.php`
 
@@ -268,8 +278,14 @@ app/Services/Platform/
 ├── ProcessSubscriptionLifecycleService.php
 ├── SuspendCompanyService.php
 ├── ProcessDataRetentionPurgeService.php
-└── PurgeClientTenantDataService.php
+├── PurgeClientTenantDataService.php
+├── PlatformDocumentsHubService.php
+├── RecordSubscriptionAcceptanceService.php
+├── RegisterCommercialPaymentService.php
+├── IssueDemoInvoiceService.php
+└── RecordLifecycleEvidenceService.php
 
+config/billing.php                    # BILLING_MODE, prefijo demo
 config/subscription.php               # gracia, recordatorio, archivo post-suspensión
 config/google-maps.php                # API key y centro por defecto (Colombia)
 
@@ -293,9 +309,11 @@ app/Support/Tenancy/CompanySubscriptionState.php
 | `2026_07_20_180000_add_data_retention_purge_fields.php` | `tenant_data_purged_at`, `commercial_anonymized_at` |
 | `2026_07_26_120000_add_geolocation_to_companies_and_clients.php` | `address`, `latitude`, `longitude` en empresas; coords en conjuntos |
 | `2026_08_01_160000_subscription_lifecycle_billing_day_and_archive_reason.php` | `billing_day`; `recovery` → `non_payment` |
+| `2026_08_02_120000_create_platform_documents_module.php` | `party_type`; normoteca, TRD, aceptaciones, pagos, expediente, evidencias |
 
 ```bash
 php artisan migrate
+php artisan db:seed --class=PlatformDocumentsSeeder
 ```
 
 ---
@@ -306,11 +324,13 @@ php artisan migrate
 php artisan test --filter=PlatformDashboardTest
 php artisan test --filter=PlatformCompaniesIndexTest
 php artisan test --filter=SubscriptionLifecycleTest
+php artisan test --filter=PlatformDocumentsTest
 php artisan test --filter=DataRetentionPurgeTest
 ```
 
 - `tests/Feature/Platform/PlatformDashboardTest.php`
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
+- `tests/Feature/Platform/PlatformDocumentsTest.php`
 - `tests/Unit/Platform/SubscriptionLifecycleTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
 

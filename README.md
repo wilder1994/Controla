@@ -22,8 +22,9 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **UI Empresa** | Design system `x-ui.*`, dashboard licencia + cartera, nav Portería/Conjunto | ✅ Implementada (v1) |
 | **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
+| **Documentos** | Normoteca, TRD, expedientes, clickwrap, pago manual, factura demo | ✅ Implementada (v1) |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md)
+Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1 + fases futuras §12)
 
 ---
 
@@ -31,7 +32,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
-| **Plataforma** | `/admin` | `super-admin` | Dashboard analítico, precios, empresas y paquetes |
+| **Plataforma** | `/admin` | `super-admin` | Dashboard analítico, precios, empresas, paquetes y documentos |
 | **Empresa** | `/company` | `company-admin` | Licencia, cupo de clientes, cartera de conjuntos |
 | **Conjunto** | `/client` | `client-admin` | Censo: estructuras, personas, vehículos, mascotas, autorizaciones |
 | **Portería** | `/access` | `guardia`, `supervisor`, `client-admin` | Operación diaria: hub operaciones, bloqueo, reportes |
@@ -81,6 +82,10 @@ GOOGLE_MAPS_DEFAULT_ZOOM=6
 SUBSCRIPTION_GRACE_DAYS=5
 SUBSCRIPTION_REMINDER_DAYS=5
 SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS=90
+
+# Facturación plataforma (demo = facturas sin PT DIAN)
+BILLING_MODE=demo
+BILLING_DEMO_PREFIX=DEMO
 ```
 ```bash
 php artisan migrate          # solo migraciones aditivas
@@ -151,10 +156,12 @@ Los usuarios demo se crean en `DemoUsersSeeder` (idempotente con `updateOrCreate
 1. `RoleAndPermissionSeeder` — roles y permisos Spatie
 2. `LocationSeeder` — ubicaciones base
 3. `TenantSeeder` — empresa + clientes piloto
-4. `DemoUsersSeeder` — **todos** los usuarios demo (plataforma, empresa, cliente, portería, residente)
-5. `StructureSeeder` — árbol residencial y censo piloto
+4. `PlatformDocumentsSeeder` — normoteca legal v1 + TRD inicial
+5. `DemoUsersSeeder` — **todos** los usuarios demo (plataforma, empresa, cliente, portería, residente)
+6. `StructureSeeder` — árbol residencial y censo piloto
 
 ```bash
+php artisan db:seed --class=PlatformDocumentsSeeder  # solo normoteca + TRD
 php artisan db:seed --class=DemoUsersSeeder   # solo usuarios demo
 ```
 
@@ -252,6 +259,15 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `PUT /admin/pricing` | Guardar unitarios manual/hardware |
 | `GET /admin/companies/{id}` | Detalle y cambio de paquete + ciclo |
 | `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación |
+| `GET /admin/documents` | Hub documental (KPIs, accesos normoteca/TRD/expedientes) |
+| `GET /admin/documents/normativa` | Normoteca — corpus legal versionado |
+| `GET /admin/documents/trd` | Tabla de retención documental |
+| `GET /admin/documents/expedientes` | Listado expedientes por suscriptor |
+| `GET /admin/documents/expedientes/{company}` | Expediente: timeline, documentos, aceptación, pago |
+| `POST /admin/documents/expedientes/{company}/acceptance` | Registrar clickwrap + rep. legal |
+| `POST /admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
+
+**Módulo Documentos (v1):** normoteca, TRD, expediente probatorio por empresa, aceptación contractual (clickwrap con representante legal), registro de pago manual y factura demo (`BILLING_MODE=demo`). Evidencias automáticas en suspensión, archivo, retiro de conjunto y purga. Fases futuras (pasarela sandbox, API PT DIAN, wizard PJ/PN, disposición final): [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md) §12.
 
 **Ciclo comercial (acceso):** gracia 5 días → suspensión (bloqueo) → archivo por falta de pago tras N días (`SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS`, default 90) → retención → purga. Job `subscriptions:process-lifecycle` (diario 02:00).
 
@@ -303,7 +319,7 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 | Acceso/cobranza | `config/subscription.php` + `billing_day`; lifecycle sin «recovery» |
 | Mapa | Toggle Empresa / Clientes; requiere `GOOGLE_MAPS_API_KEY` en `.env` |
 | Componentes | Mismos `x-ui.*` con `variant="platform"` y `accent="platform"` en inputs |
-| Vistas migradas | `admin/dashboard`, `admin/companies/*`, `admin/pricing/edit` |
+| Vistas migradas | `admin/dashboard`, `admin/companies/*`, `admin/pricing/edit`, `admin/documents/*` |
 | Shell UI | Mismo patrón viewport-fixed en `layouts/company`, `client`, `access` (en access el nav largo scrollea; el pie no) |
 
 ---
@@ -432,6 +448,7 @@ Suites relevantes:
 - `tests/Feature/Structure/StructureModuleTest.php`
 - `tests/Feature/Platform/PlatformDashboardTest.php`
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
+- `tests/Feature/Platform/PlatformDocumentsTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
 - `tests/Unit/Platform/SubscriptionLifecycleTest.php`
 - `tests/Feature/Auth/LoginCsrfTest.php`
@@ -484,7 +501,7 @@ app/
 ├── Exports/                        # AccessLogsExport, MembersAssemblyExport
 ├── Http/Controllers/
 │   ├── Api/                        # Sanctum API
-│   ├── Platform/                   # Dashboard, Pricing, Company (súper admin)
+│   ├── Platform/                   # Dashboard, Pricing, Company, Document (súper admin)
 │   ├── Company/                    # Admin Empresa
 │   ├── Client/                     # Admin Cliente
 │   ├── Resident/                   # Portal Residente
@@ -492,7 +509,7 @@ app/
 ├── Models/PricingSettings.php      # Unitarios editables por súper admin
 ├── Repositories/
 ├── Services/Pricing/               # PriceCalculator, UpdatePlatformPricingService
-├── Services/Platform/              # Dashboard analytics, archivo, retiro, lifecycle, purga retención
+├── Services/Platform/              # Dashboard analytics, archivo, retiro, lifecycle, purga, documentos
 ├── Services/Tenant/                # AssignCompanyPackageService, CreateClientService, EnterPorteriaService
 ├── Policies/
 ├── View/Components/
@@ -500,6 +517,8 @@ app/
 └── Support/Tenancy/CompanyPackage.php
 
 resources/views/components/ui/     # x-ui.* (button, label, input, field-error)
+
+config/billing.php                  # BILLING_MODE demo|live, prefijo factura demo
 
 routes/modules/
 ├── admin.php
@@ -523,6 +542,7 @@ php artisan db:seed                         # datos demo (aditivo, todos los see
 php artisan db:seed --class=RoleAndPermissionSeeder  # sincronizar permisos tras cambios en config/access.php
 php artisan db:seed --class=DemoUsersSeeder # solo usuarios demo
 php artisan db:seed --class=TenantSeeder    # solo empresa y clientes
+php artisan db:seed --class=PlatformDocumentsSeeder  # normoteca + TRD
 php artisan config:clear
 php artisan route:list --path=admin         # rutas plataforma (pricing, empresas)
 php artisan route:list --path=company       # rutas admin empresa
