@@ -22,6 +22,8 @@ class Client extends Model
         'slug',
         'login_suffix',
         'address',
+        'city',
+        'department',
         'latitude',
         'longitude',
         'plan_tier',

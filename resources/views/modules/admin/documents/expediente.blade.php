@@ -119,7 +119,30 @@
                             <p class="text-[10px] text-emerald-400/60 mt-2">
                                 {{ $acceptance->accepted_at->format('d/m/Y H:i') }} · hash {{ Str::limit($acceptance->content_hash, 16, '') }}
                             </p>
+                            <p class="text-[10px] text-emerald-400/50 mt-1">Corpus congelado (inmutable ante cambios de Normoteca).</p>
                         </div>
+
+                        @if (! empty($frozenCorpus))
+                            <details class="mt-3 text-xs text-slate-500">
+                                <summary class="cursor-pointer hover:text-slate-300">Ver texto aceptado ({{ count($frozenCorpus) }} docs)</summary>
+                                <ul class="mt-2 space-y-2">
+                                    @foreach ($frozenCorpus as $item)
+                                        <li class="rounded border border-slate-800 p-2">
+                                            <p class="text-slate-300 font-medium">
+                                                {{ $item['title'] ?? 'Documento' }}
+                                                <span class="text-slate-500 font-normal">(v{{ $item['version'] ?? '?' }})</span>
+                                            </p>
+                                            @if (! empty($item['content']))
+                                                <div class="text-slate-500 mt-1 max-h-32 overflow-y-auto whitespace-pre-line">{{ $item['content'] }}</div>
+                                            @endif
+                                            @if (! empty($item['content_hash']))
+                                                <p class="text-[10px] text-slate-600 font-mono mt-1">{{ Str::limit($item['content_hash'], 20, '') }}</p>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </details>
+                        @endif
                     @else
                         <p class="text-xs text-slate-500 mt-1">Representante legal y aceptación de corpus vigente antes del pago.</p>
 

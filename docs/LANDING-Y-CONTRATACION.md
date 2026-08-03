@@ -53,8 +53,8 @@ Requiere junction `public/images` → `resources/images` (ver README § Assets e
 | `GET /` | Welcome con tarjeta comercial |
 | `GET /planes` | Matriz de precios (PriceCalculator) |
 | `GET /contratar?sku=&cycle=` | Crea `commercial_signup_intents` |
-| `GET/POST /contratar/datos/{token}` | Paso 1: datos empresa, contacto, dirección/geo, contraseña |
-| `GET/POST /contratar/legal/{token}` | Paso 2 clickwrap |
+| `GET/POST /contratar/datos/{token}` | Paso 1: datos empresa, contacto, dirección/ciudad/depto/geo, contraseña |
+| `GET/POST /contratar/legal/{token}` | Paso 2: contrato del SKU + T&C + privacidad (texto) + clickwrap |
 | `GET /contratar/resumen/{token}` | Resumen |
 | `POST /contratar/pagar/{token}` | Checkout simulado |
 | `GET /contratar/checkout/{token}` | Aprobar / Rechazar |
@@ -67,14 +67,15 @@ Requiere junction `public/images` → `resources/images` (ver README § Assets e
 |-------|-----------|
 | Intents | `App\Models\CommercialSignupIntent` + enum `SignupIntentStatus` |
 | Wizard | `App\Http\Controllers\Public\SignupController` |
+| Corpus legal | `BuildLegalCorpusSnapshotService` · `LegalCorpusVersion::currentForPackage` |
 | Checkout guest | `App\Http\Controllers\Public\SignupCheckoutController` |
-| Completar signup | `App\Services\Public\CompletePublicSignupService` |
+| Completar signup | `App\Services\Public\CompletePublicSignupService` (congela snapshot en expediente) |
 | Rutas | `routes/modules/public.php` (middleware `guest`) |
 | Layout público | `resources/views/layouts/public.blade.php` |
 | Vistas wizard | `resources/views/modules/public/signup/*` |
 | Planes | `resources/views/modules/public/plans/index.blade.php` |
 
-Migración: `2026_08_02_160000_create_commercial_signup_intents_table.php`
+Migraciones: `2026_08_02_160000_create_commercial_signup_intents_table.php` · `2026_08_02_190000_add_city_department_to_geo_entities.php`
 
 ---
 

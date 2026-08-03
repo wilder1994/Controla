@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Platform;
 
 use App\Enums\EvidenceEventType;
-use App\Models\LegalCorpusVersion;
+use App\Enums\PlatformDocumentType;
 use App\Models\PlatformDocument;
 use App\Models\SecurityCompany;
 use App\Models\SubscriptionAcceptance;
@@ -19,6 +19,7 @@ final class RecordSubscriptionAcceptanceService
 {
     public function __construct(
         private readonly RecordLifecycleEvidenceService $evidenceService,
+        private readonly BuildLegalCorpusSnapshotService $snapshotService,
     ) {}
 
     public function execute(
@@ -31,16 +32,8 @@ final class RecordSubscriptionAcceptanceService
         Request $request,
     ): SubscriptionAcceptance {
         return DB::transaction(function () use ($company, $user, $representativeName, $representativeRole, $documentType, $documentNumber, $request) {
-            $corpus = LegalCorpusVersion::currentForAllTypes();
-            $snapshot = $corpus->map(fn (LegalCorpusVersion $v) => [
-                'type' => $v->type->value,
-                'version' => $v->version,
-                'title' => $v->title,
-                'content_hash' => $v->content_hash,
-            ])->values()->all();
-
-            $canonical = json_encode($snapshot, JSON_THROW_ON_ERROR);
-            $contentHash = hash('sha256', $canonical.'|'.$representativeName.'|'.$documentNumber);
+            $snapshot = $this->snapshotService->forPackage($company->package_sku);
+            $contentHash = $this->snapshotService->hash($snapshot, $representativeName, $documentNumber);
             $acceptedAt = CarbonImmutable::now();
 
             $acceptance = SubscriptionAcceptance::query()->create([
@@ -57,14 +50,19 @@ final class RecordSubscriptionAcceptanceService
                 'accepted_at' => $acceptedAt,
             ]);
 
+            $contractTitle = collect($snapshot)
+                ->firstWhere('type', 'contract')['title'] ?? 'Paquete contractual aceptado';
+
             PlatformDocument::query()->create([
                 'security_company_id' => $company->id,
-                'type' => \App\Enums\PlatformDocumentType::Contract,
-                'title' => 'Paquete contractual aceptado',
+                'type' => PlatformDocumentType::Contract,
+                'title' => $contractTitle,
                 'reference_number' => 'ACC-'.$acceptance->id,
                 'metadata' => [
                     'acceptance_id' => $acceptance->id,
+                    'package_sku' => $company->package_sku?->value,
                     'corpus_snapshot' => $snapshot,
+                    'immutable' => true,
                 ],
                 'issued_at' => $acceptedAt,
                 'retention_until' => $acceptedAt->addYears(10)->toDateString(),
@@ -79,6 +77,7 @@ final class RecordSubscriptionAcceptanceService
                     'acceptance_id' => $acceptance->id,
                     'representative_name' => $representativeName,
                     'representative_document_number' => $documentNumber,
+                    'package_sku' => $company->package_sku?->value,
                     'content_hash' => $contentHash,
                 ],
                 $company->id,

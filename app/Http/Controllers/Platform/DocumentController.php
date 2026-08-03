@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Platform;
 
+use App\Enums\LegalCorpusType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\PublishLegalCorpusVersionRequest;
 use App\Http\Requests\Platform\StoreManualPaymentRequest;
 use App\Http\Requests\Platform\StoreSubscriptionAcceptanceRequest;
 use App\Models\DocumentRetentionSeries;
 use App\Models\LegalCorpusVersion;
 use App\Models\SecurityCompany;
 use App\Services\Platform\PlatformDocumentsHubService;
+use App\Services\Platform\PublishLegalCorpusVersionService;
 use App\Services\Platform\RecordSubscriptionAcceptanceService;
 use App\Services\Platform\RegisterCommercialPaymentService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -22,6 +26,7 @@ final class DocumentController extends Controller
         private readonly PlatformDocumentsHubService $hubService,
         private readonly RecordSubscriptionAcceptanceService $acceptanceService,
         private readonly RegisterCommercialPaymentService $paymentService,
+        private readonly PublishLegalCorpusVersionService $publishCorpusService,
     ) {}
 
     public function index(): View
@@ -37,13 +42,48 @@ final class DocumentController extends Controller
     {
         abort_unless(auth()->user()?->can('platform.documents.view'), 403);
 
-        $documents = LegalCorpusVersion::query()
-            ->orderBy('type')
+        $all = LegalCorpusVersion::query()
             ->orderByDesc('effective_from')
-            ->get()
+            ->orderByDesc('id')
+            ->get();
+
+        $globals = $all
+            ->filter(static fn (LegalCorpusVersion $v): bool => $v->isGlobal() && $v->type !== LegalCorpusType::Contract)
             ->groupBy(fn (LegalCorpusVersion $v) => $v->type->value);
 
-        return view('modules.admin.documents.normativa', compact('documents'));
+        $contracts = $all
+            ->filter(static fn (LegalCorpusVersion $v): bool => $v->type === LegalCorpusType::Contract)
+            ->groupBy(fn (LegalCorpusVersion $v) => (string) $v->package_sku);
+
+        return view('modules.admin.documents.normativa', compact('globals', 'contracts'));
+    }
+
+    public function editNormativa(LegalCorpusVersion $corpus): View
+    {
+        abort_unless(auth()->user()?->can('platform.documents.manage'), 403);
+        abort_unless($corpus->isCurrent(), 404);
+
+        return view('modules.admin.documents.normativa-edit', ['document' => $corpus]);
+    }
+
+    public function publishNormativa(
+        PublishLegalCorpusVersionRequest $request,
+        LegalCorpusVersion $corpus,
+    ): RedirectResponse {
+        abort_unless($corpus->isCurrent(), 404);
+
+        $effectiveFrom = $request->validated('effective_from');
+
+        $published = $this->publishCorpusService->execute(
+            $corpus,
+            $request->validated('title'),
+            $request->validated('content'),
+            $effectiveFrom !== null ? CarbonImmutable::parse($effectiveFrom) : null,
+        );
+
+        return redirect()
+            ->route('admin.documents.normativa.edit', $published)
+            ->with('success', 'Nueva versión '.$published->version.' publicada. Expedientes ya aceptados no se modifican.');
     }
 
     public function trd(): View
@@ -72,7 +112,7 @@ final class DocumentController extends Controller
         abort_unless(auth()->user()?->can('platform.documents.view'), 403);
 
         $detail = $this->hubService->expedienteDetail($company);
-        $corpus = LegalCorpusVersion::currentForAllTypes();
+        $corpus = LegalCorpusVersion::currentForPackage($company->package_sku);
 
         return view('modules.admin.documents.expediente', [
             'company' => $company,
@@ -81,6 +121,7 @@ final class DocumentController extends Controller
             'acceptance' => $detail['acceptance'],
             'payments' => $detail['payments'],
             'corpus' => $corpus,
+            'frozenCorpus' => $detail['acceptance']?->corpus_snapshot ?? null,
         ]);
     }
 

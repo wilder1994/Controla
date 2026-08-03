@@ -70,6 +70,8 @@
 
     <x-ui.geo-address-fields
         :address="old('address', $company->address)"
+        :city="old('city', $company->city)"
+        :department="old('department', $company->department)"
         :latitude="old('latitude', $company->latitude)"
         :longitude="old('longitude', $company->longitude)"
         :accent="$accent"

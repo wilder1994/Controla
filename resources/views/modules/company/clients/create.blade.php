@@ -35,6 +35,8 @@
 
             <x-ui.geo-address-fields
                 :address="old('address')"
+                :city="old('city')"
+                :department="old('department')"
                 :latitude="old('latitude')"
                 :longitude="old('longitude')"
             />

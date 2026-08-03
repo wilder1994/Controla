@@ -83,22 +83,29 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 
 | Entidad | Campos |
 |---------|--------|
-| `security_companies` | `address`, `latitude`, `longitude` |
-| `clients` | `address`, `latitude`, `longitude` |
-| `commercial_signup_intents` | `address`, `latitude`, `longitude` (paso datos) |
+| `security_companies` | `address`, `city`, `department`, `latitude`, `longitude` |
+| `clients` | `address`, `city`, `department`, `latitude`, `longitude` |
+| `commercial_signup_intents` | `address`, `city`, `department`, `latitude`, `longitude` (paso datos) |
+
+Migración: `2026_08_02_190000_add_city_department_to_geo_entities.php`.
 
 ### UI compartida
 
-Componente Blade: `x-ui.geo-address-fields` (dirección + lat/long opcionales).
+Componente Blade: `x-ui.geo-address-fields` (dirección, ciudad, departamento + lat/long; botón mapa).
 
-Usado en: signup paso 1, `/company/settings`, perfil admin empresa, alta/edición de conjuntos.
+JS: `resources/js/geo-address-picker.js` (Places Autocomplete + Geocoding; requiere APIs en la clave Google Maps).
+
+Icono: `resources/images/ui/map-pin.png` → servir en `public/images/ui/` (carpeta `public/images` ignorada por git).
+
+Usado en: signup paso 1, `/company/settings`, perfil/alta admin empresa, alta/edición de conjuntos.
 
 El mapa del dashboard plataforma (`PlatformDashboardAnalytics`) consume coords de empresa o promedio de conjuntos.
 
 ### Reglas de negocio empresa
 
 - `tax_id` **inmutable** tras `hasCompletedAcceptance()` (clickwrap en expediente).
-- Servicio: `UpdateCompanyProfileService` · DTO: `GeoAddressData`.
+- Servicio: `UpdateCompanyProfileService` · DTO: `GeoAddressData` · reglas: `GeoAddressRules`.
+- Alta admin: `CreateCompanyService` · `StoreCompanyRequest` · rutas `admin.companies.create/store`.
 
 ---
 

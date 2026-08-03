@@ -131,6 +131,8 @@ final class ClientController extends Controller
             slug: $request->validated('slug'),
             loginSuffix: $request->validated('login_suffix'),
             address: $request->validated('address'),
+            city: $request->validated('city'),
+            department: $request->validated('department'),
             latitude: $request->filled('latitude') ? (float) $request->validated('latitude') : null,
             longitude: $request->filled('longitude') ? (float) $request->validated('longitude') : null,
             accessUrl: $request->validated('access_url'),

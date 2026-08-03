@@ -24,11 +24,11 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **UI Empresa** | Design system `x-ui.*`, dashboard licencia + cartera, nav Portería/Conjunto | ✅ Implementada (v1) |
 | **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
-| **Documentos** | Normoteca, TRD, expedientes, clickwrap, pago manual, factura demo | ✅ Implementada (v1) |
+| **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped por panel + políticas de alcance | ✅ Implementada |
-| **Perfiles** | Empresa/conjunto: dirección y geo; signup alineado | ✅ Implementada |
+| **Perfiles** | Empresa/conjunto: dirección, ciudad/depto y geo (Places); alta empresa admin; signup alineado | ✅ Implementada |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1 + fases futuras §12)
+Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
 
 ---
 
@@ -119,9 +119,9 @@ C:\laragon\bin\nodejs\node-v18
 
 Luego: `npm run build` o `npm run dev`.
 
-### Google Maps (dashboard `/admin`)
+### Google Maps (dashboard `/admin` + selector de dirección)
 
-El mapa de **Distribución geográfica** usa la **Maps JavaScript API**. Variables en `.env` (plantilla en `.env.example`):
+El mapa de **Distribución geográfica** y el picker de `x-ui.geo-address-fields` usan Google Maps. Variables en `.env` (plantilla en `.env.example`):
 
 ```env
 GOOGLE_MAPS_API_KEY=
@@ -132,15 +132,16 @@ GOOGLE_MAPS_DEFAULT_ZOOM=6
 
 **Configurar en Google Cloud Console:**
 
-1. [APIs y servicios → Biblioteca](https://console.cloud.google.com/apis/library) → habilitar **Maps JavaScript API**.
+1. [APIs y servicios → Biblioteca](https://console.cloud.google.com/apis/library) → habilitar **Maps JavaScript API**, **Places API** y **Geocoding API**.
 2. [Credenciales](https://console.cloud.google.com/apis/credentials) → **Crear credenciales → Clave de API**.
 3. Restringir la clave:
    - **Aplicación:** referentes HTTP → `http://controla.test/*` y `http://localhost/*`
-   - **API:** solo **Maps JavaScript API**
+   - **API:** Maps JavaScript API, Places API, Geocoding API
 4. Pegar la clave en `GOOGLE_MAPS_API_KEY` y ejecutar `php artisan config:clear`.
 
-Sin clave, el dashboard muestra un aviso en el contenedor del mapa (el resto de métricas funciona igual).  
-Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa geográfico.
+Sin clave, el dashboard muestra un aviso en el contenedor del mapa; el formulario geo sigue permitiendo captura manual.  
+Icono del botón mapa: `resources/images/ui/map-pin.png` (copiar a `public/images/ui/` en local; `/public/images` está en `.gitignore`).  
+Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa geográfico · [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md) § Ubicación.
 
 > **Importante:** No ejecutar `migrate:fresh` ni `db:wipe` en entornos con datos reales sin autorización explícita.
 
@@ -163,7 +164,7 @@ Los usuarios demo se crean en `DemoUsersSeeder` (idempotente con `updateOrCreate
 1. `RoleAndPermissionSeeder` — roles y permisos Spatie
 2. `LocationSeeder` — ubicaciones base
 3. `TenantSeeder` — empresa + clientes piloto
-4. `PlatformDocumentsSeeder` — normoteca legal v1 + TRD inicial
+4. `PlatformDocumentsSeeder` — normoteca (globales + contrato por SKU) + TRD inicial
 5. `DemoUsersSeeder` — **todos** los usuarios demo (plataforma, empresa, cliente, portería, residente)
 6. `StructureSeeder` — árbol residencial y censo piloto
 
@@ -203,8 +204,8 @@ Vista `resources/views/welcome.blade.php` · `WelcomeController` redirige autent
 |------|---------|
 | `GET /planes` | Matriz de precios |
 | `GET /contratar?sku=&cycle=` | Inicia intent de contratación |
-| `GET/POST /contratar/datos/{token}` | Datos empresa + contraseña + dirección/geo |
-| `GET/POST /contratar/legal/{token}` | Clickwrap representante legal |
+| `GET/POST /contratar/datos/{token}` | Datos empresa + contraseña + dirección/ciudad/depto/geo |
+| `GET/POST /contratar/legal/{token}` | Clickwrap: contrato del SKU + T&C + privacidad (texto completo) |
 | `GET /contratar/resumen/{token}` | Resumen antes de pagar |
 | `POST /contratar/pagar/{token}` | Crea checkout simulado |
 | `GET /contratar/checkout/{token}` | Aprobar / Rechazar pago |
@@ -298,6 +299,7 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 |------|---------|
 | `GET /admin/dashboard` | Dashboard analítico: mapa, KPIs, cartera, paquetes, TOP facturación, tendencia MRR |
 | `GET /admin/companies` | Listado empresas + KPIs (riesgo, totales empresas/conjuntos) |
+| `GET/POST /admin/companies/create` | Alta empresa (datos fiscales, paquete, ubicación geo) |
 | `POST /admin/companies/{id}/archive` | Archivar empresa (cascada a clientes) |
 | `POST /admin/companies/{id}/clients/{client}/release` | Retirar conjunto y liberar cupo |
 | `GET /admin/pricing` | Tabla de precios (editar unitarios, matriz calculada) |
@@ -309,17 +311,18 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `GET /admin/users` | Usuarios globales |
 | `GET/PUT /admin/users/{id}/edit` | Crear/editar usuario (cualquier rol) |
 | `GET /admin/documents` | Hub documental (KPIs, accesos normoteca/TRD/expedientes) |
-| `GET /admin/documents/normativa` | Normoteca — corpus legal versionado |
+| `GET /admin/documents/normativa` | Normoteca — globales + contratos por SKU |
+| `GET/PUT /admin/documents/normativa/{id}/edit` | Editar y publicar nueva versión (no altera expedientes aceptados) |
 | `GET /admin/documents/trd` | Tabla de retención documental |
 | `GET /admin/documents/expedientes` | Listado expedientes por suscriptor |
-| `GET /admin/documents/expedientes/{company}` | Expediente: timeline, documentos, aceptación, pago |
-| `POST /admin/documents/expedientes/{company}/acceptance` | Registrar clickwrap + rep. legal |
+| `GET /admin/documents/expedientes/{company}` | Expediente: timeline, documentos, corpus congelado, pago |
+| `POST /admin/documents/expedientes/{company}/acceptance` | Registrar clickwrap + rep. legal (snapshot con contenido) |
 | `POST /admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
 | `POST /admin/documents/expedientes/{company}/payments/local-checkout` | Checkout simulado (sin proveedor) |
 
 **Pagos locales (sin proveedor):** `BILLING_GATEWAY_DRIVER=local` abre checkout interno (`/billing/checkout/{payment}`) con Aprobar/Rechazar. Manual súper admin + online simulado convergen en `commercial_payments`. Guía: [`docs/BILLING-LOCAL-Y-MIGRACION.md`](docs/BILLING-LOCAL-Y-MIGRACION.md).
 
-**Módulo Documentos (v1):** normoteca, TRD, expediente probatorio por empresa, aceptación contractual (clickwrap con representante legal), registro de pago manual y factura demo (`BILLING_MODE=demo`). Evidencias automáticas en suspensión, archivo, retiro de conjunto y purga. Fases futuras (pasarela sandbox, API PT DIAN, wizard PJ/PN, disposición final): [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md) §12.
+**Módulo Documentos (v1.1):** normoteca con **contrato por plan (SKU)** y documentos globales (T&C, privacidad, procedimiento); versionado desde admin; al aceptar se congela contenido + hash en expediente (**inmutable** ante cambios posteriores de Normoteca); clickwrap, pago manual y factura demo (`BILLING_MODE=demo`). Sin export PDF/HTML en v1. Detalle: [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md).
 
 **Ciclo comercial (acceso):** gracia 5 días → suspensión (bloqueo) → archivo por falta de pago tras N días (`SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS`, default 90) → retención → purga. Job `subscriptions:process-lifecycle` (diario 02:00).
 
@@ -373,7 +376,7 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 | Dashboard | Mapa geográfico (Google Maps), KPIs, estado de cartera (6 segmentos), modalidad/cupo/ciclo, TOP 5 facturación, KPIs comerciales, tendencia MRR (Chart.js) |
 | Empresas | 3 KPIs: Riesgo (suspendidas/archivadas/eliminadas), Total empresas, Total conjuntos; tabla de cartera |
 | Analytics | `PlatformDashboardAnalytics` — agregación de métricas y marcadores del mapa |
-| Geolocalización | `latitude`/`longitude` en empresas y conjuntos; migración `2026_07_26_120000_add_geolocation_to_companies_and_clients` |
+| Geolocalización | `address`, `city`, `department`, `latitude`/`longitude` en empresas, conjuntos e intents; picker Places (`geo-address-picker.js`) |
 | Acceso/cobranza | `config/subscription.php` + `billing_day`; lifecycle sin «recovery» |
 | Mapa | Toggle Empresa / Clientes; requiere `GOOGLE_MAPS_API_KEY` en `.env` |
 | Componentes | Mismos `x-ui.*` con `variant="platform"` y `accent="platform"` en inputs |

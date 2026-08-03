@@ -36,7 +36,7 @@ final class SettingsController extends Controller
 
         $this->updateCompanyProfileService->execute(
             $company,
-            $request->safe()->except(['address', 'latitude', 'longitude']),
+            $request->safe()->except(\App\Domain\Geo\GeoAddressData::formKeys()),
             GeoAddressData::fromValidated($request->validated()),
         );
 

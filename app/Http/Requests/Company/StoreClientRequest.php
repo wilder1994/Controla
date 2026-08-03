@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Company;
 
+use App\Support\Geo\GeoAddressRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,9 +36,7 @@ final class StoreClientRequest extends FormRequest
                 'regex:/^[a-z0-9][a-z0-9\-\.]+$/i',
                 Rule::unique('clients', 'login_suffix')->where('security_company_id', $companyId),
             ],
-            'address' => ['nullable', 'string', 'max:255'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            ...GeoAddressRules::optional(),
             'access_url' => ['nullable', 'url', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
         ];

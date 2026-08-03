@@ -28,6 +28,8 @@ class SecurityCompany extends Model
         'email',
         'phone',
         'address',
+        'city',
+        'department',
         'latitude',
         'longitude',
         'logo_path',

@@ -27,6 +27,8 @@ class CommercialSignupIntent extends Model
         'email',
         'phone',
         'address',
+        'city',
+        'department',
         'latitude',
         'longitude',
         'password',

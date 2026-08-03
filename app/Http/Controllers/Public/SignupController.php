@@ -13,6 +13,7 @@ use App\Http\Requests\Public\StoreSignupDataRequest;
 use App\Http\Requests\Public\StoreSignupLegalRequest;
 use App\Models\CommercialSignupIntent;
 use App\Models\LegalCorpusVersion;
+use App\Services\Platform\BuildLegalCorpusSnapshotService;
 use App\Services\Public\StartSignupIntentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ final class SignupController extends Controller
 {
     public function __construct(
         private readonly StartSignupIntentService $startSignupIntentService,
+        private readonly BuildLegalCorpusSnapshotService $corpusSnapshotService,
     ) {}
 
     public function create(Request $request): RedirectResponse
@@ -66,6 +68,8 @@ final class SignupController extends Controller
             'email' => $request->validated('email'),
             'phone' => $request->validated('phone'),
             'address' => $request->validated('address'),
+            'city' => $request->validated('city'),
+            'department' => $request->validated('department'),
             'latitude' => $request->validated('latitude'),
             'longitude' => $request->validated('longitude'),
             'password' => Hash::make($request->validated('password')),
@@ -84,7 +88,7 @@ final class SignupController extends Controller
             return redirect()->route('signup.data', $intent);
         }
 
-        $corpus = LegalCorpusVersion::currentForAllTypes();
+        $corpus = LegalCorpusVersion::currentForPackage($intent->package_sku);
 
         return view('modules.public.signup.legal', compact('intent', 'corpus'));
     }
@@ -95,18 +99,11 @@ final class SignupController extends Controller
             return $redirect;
         }
 
-        $corpus = LegalCorpusVersion::currentForAllTypes();
-        $snapshot = $corpus->map(fn (LegalCorpusVersion $v) => [
-            'type' => $v->type->value,
-            'version' => $v->version,
-            'title' => $v->title,
-            'content_hash' => $v->content_hash,
-        ])->values()->all();
-
-        $canonical = json_encode($snapshot, JSON_THROW_ON_ERROR);
-        $contentHash = hash(
-            'sha256',
-            $canonical.'|'.$request->validated('representative_name').'|'.$request->validated('representative_document_number'),
+        $snapshot = $this->corpusSnapshotService->forPackage($intent->package_sku);
+        $contentHash = $this->corpusSnapshotService->hash(
+            $snapshot,
+            $request->validated('representative_name'),
+            $request->validated('representative_document_number'),
         );
 
         $intent->update([

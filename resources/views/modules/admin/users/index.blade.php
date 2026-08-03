@@ -1,15 +1,11 @@
 <x-admin-layout title="Usuarios">
-    <div class="max-w-5xl space-y-4">
-        <div class="flex items-center justify-between gap-3">
-            <div>
-                <h3 class="text-sm font-semibold text-white">Usuarios del sistema</h3>
-                <p class="text-xs text-slate-500 mt-1">Alcance global — todos los paneles y roles.</p>
-            </div>
-            @can('platform.users.manage')
-                <x-ui.button variant="platform" :href="route('admin.users.create')" size="sm">+ Nuevo usuario</x-ui.button>
-            @endcan
-        </div>
+    <x-slot:actions>
+        @can('platform.users.manage')
+            <x-ui.button variant="platform" :href="route('admin.users.create')" size="sm">Nuevo usuario</x-ui.button>
+        @endcan
+    </x-slot:actions>
 
+    <div class="max-w-5xl space-y-4">
         <form method="GET" class="flex gap-2">
             <x-ui.input name="q" :value="$search" placeholder="Buscar por nombre o email" accent="platform" class="max-w-xs" />
             <x-ui.button type="submit" variant="secondary" size="sm">Buscar</x-ui.button>

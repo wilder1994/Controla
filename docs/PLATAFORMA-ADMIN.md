@@ -251,15 +251,17 @@ Servicios:
 | GET | `/admin/pricing` | Tabla de precios |
 | PUT | `/admin/pricing` | Guardar unitarios |
 | GET | `/admin/companies` | Listado empresas |
+| GET/POST | `/admin/companies/create` | Alta empresa (paquete + geo) |
 | GET | `/admin/companies/{company}` | Detalle y cambio de paquete |
 | PUT | `/admin/companies/{company}/package` | Asignar SKU y ciclo |
 | GET | `/admin/documents` | Hub documental (KPIs) |
-| GET | `/admin/documents/normativa` | Normoteca legal versionada |
+| GET | `/admin/documents/normativa` | Normoteca (globales + contratos por SKU) |
+| GET/PUT | `/admin/documents/normativa/{corpus}` | Editar / publicar nueva versión |
 | GET | `/admin/documents/trd` | Tabla de retención documental |
 | POST | `/admin/documents/expedientes/{company}/acceptance` | Aceptación clickwrap |
 | POST | `/admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
 | GET | `/admin/documents/expedientes` | Listado expedientes |
-| GET | `/admin/documents/expedientes/{company}` | Detalle expediente |
+| GET | `/admin/documents/expedientes/{company}` | Detalle expediente (corpus congelado) |
 
 Permisos: `platform.documents.view`, `platform.documents.manage` (solo `super-admin` en v1).
 
@@ -280,9 +282,12 @@ app/Services/Platform/
 ├── ProcessDataRetentionPurgeService.php
 ├── PurgeClientTenantDataService.php
 ├── PlatformDocumentsHubService.php
+├── BuildLegalCorpusSnapshotService.php
+├── PublishLegalCorpusVersionService.php
 ├── RecordSubscriptionAcceptanceService.php
 ├── RegisterCommercialPaymentService.php
 ├── IssueDemoInvoiceService.php
+├── CreateCompanyService.php
 └── RecordLifecycleEvidenceService.php
 
 config/billing.php                    # BILLING_MODE, prefijo demo
@@ -310,6 +315,8 @@ app/Support/Tenancy/CompanySubscriptionState.php
 | `2026_07_26_120000_add_geolocation_to_companies_and_clients.php` | `address`, `latitude`, `longitude` en empresas; coords en conjuntos |
 | `2026_08_01_160000_subscription_lifecycle_billing_day_and_archive_reason.php` | `billing_day`; `recovery` → `non_payment` |
 | `2026_08_02_120000_create_platform_documents_module.php` | `party_type`; normoteca, TRD, aceptaciones, pagos, expediente, evidencias |
+| `2026_08_02_190000_add_city_department_to_geo_entities.php` | `city`, `department` en empresas, clientes e intents |
+| `2026_08_02_200000_add_package_sku_to_legal_corpus_versions.php` | Contrato por SKU en normoteca |
 
 ```bash
 php artisan migrate
@@ -323,6 +330,7 @@ php artisan db:seed --class=PlatformDocumentsSeeder
 ```bash
 php artisan test --filter=PlatformDashboardTest
 php artisan test --filter=PlatformCompaniesIndexTest
+php artisan test --filter=CreateCompanyTest
 php artisan test --filter=SubscriptionLifecycleTest
 php artisan test --filter=PlatformDocumentsTest
 php artisan test --filter=DataRetentionPurgeTest

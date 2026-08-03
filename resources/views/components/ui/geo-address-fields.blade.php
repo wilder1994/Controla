@@ -1,56 +1,141 @@
 @props([
     'address' => null,
+    'city' => null,
+    'department' => null,
     'latitude' => null,
     'longitude' => null,
     'accent' => 'default',
 ])
 
 @php
-    $focus = $accent === 'platform'
-        ? 'focus:border-violet-500 focus:ring-violet-500/30'
-        : 'focus:border-indigo-500 focus:ring-indigo-500/30';
+    $uid = 'geo-'.uniqid();
+    $inputAccent = $accent === 'platform' ? 'platform' : 'indigo';
+    $mapsConfig = [
+        'apiKey' => config('google-maps.api_key'),
+        'center' => config('google-maps.default_center'),
+        'zoom' => (int) config('google-maps.default_zoom', 6),
+    ];
 @endphp
 
-<div class="space-y-4">
+<div
+    class="space-y-4"
+    x-data="geoAddressPicker({
+        address: @js(old('address', $address)),
+        city: @js(old('city', $city)),
+        department: @js(old('department', $department)),
+        latitude: @js(old('latitude', $latitude)),
+        longitude: @js(old('longitude', $longitude)),
+        maps: @js($mapsConfig),
+        uid: @js($uid),
+    })"
+>
     <div>
-        <x-ui.label for="address">Dirección</x-ui.label>
-        <x-ui.input
-            id="address"
-            name="address"
-            :value="old('address', $address)"
-            placeholder="Calle, barrio, ciudad"
-            :accent="$accent"
-        />
+        <x-ui.label for="{{ $uid }}-address">Dirección</x-ui.label>
+        <div class="flex gap-2">
+            <x-ui.input
+                id="{{ $uid }}-address"
+                name="address"
+                x-model="address"
+                placeholder="Calle, barrio…"
+                :accent="$inputAccent"
+                class="flex-1"
+            />
+            <button
+                type="button"
+                @click="openMap()"
+                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-950/80 p-0.5 transition hover:border-slate-500 hover:bg-slate-900"
+                title="Seleccionar en mapa"
+                aria-label="Seleccionar ubicación en mapa"
+            >
+                <img
+                    src="{{ asset('images/ui/map-pin.png') }}"
+                    alt=""
+                    class="h-7 w-7 object-contain"
+                    aria-hidden="true"
+                >
+            </button>
+        </div>
         <x-ui.field-error :messages="$errors->get('address')" />
-        <p class="mt-1 text-xs text-slate-500">Usada en mapa de plataforma y expediente comercial.</p>
+        <p class="mt-1 text-xs text-slate-500">Puedes editar el texto sin cambiar las coordenadas. Usa el mapa para fijar la ubicación.</p>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-            <x-ui.label for="latitude">Latitud (opcional)</x-ui.label>
-            <x-ui.input
-                id="latitude"
-                type="number"
-                step="any"
-                name="latitude"
-                :value="old('latitude', $latitude)"
-                placeholder="4.5709"
-                :accent="$accent"
-            />
-            <x-ui.field-error :messages="$errors->get('latitude')" />
+            <x-ui.label for="{{ $uid }}-city">Ciudad</x-ui.label>
+            <x-ui.input id="{{ $uid }}-city" name="city" x-model="city" placeholder="Municipio / ciudad" :accent="$inputAccent" />
+            <x-ui.field-error :messages="$errors->get('city')" />
         </div>
         <div>
-            <x-ui.label for="longitude">Longitud (opcional)</x-ui.label>
-            <x-ui.input
-                id="longitude"
-                type="number"
-                step="any"
-                name="longitude"
-                :value="old('longitude', $longitude)"
-                placeholder="-74.2973"
-                :accent="$accent"
-            />
-            <x-ui.field-error :messages="$errors->get('longitude')" />
+            <x-ui.label for="{{ $uid }}-department">Departamento</x-ui.label>
+            <x-ui.input id="{{ $uid }}-department" name="department" x-model="department" placeholder="Departamento" :accent="$inputAccent" />
+            <x-ui.field-error :messages="$errors->get('department')" />
         </div>
     </div>
+
+    <input type="hidden" name="latitude" :value="latitude ?? ''">
+    <input type="hidden" name="longitude" :value="longitude ?? ''">
+
+    <p x-show="latitude !== null && longitude !== null" x-cloak class="text-xs text-slate-500 tabular-nums">
+        Coordenadas: <span x-text="Number(latitude).toFixed(5)"></span>, <span x-text="Number(longitude).toFixed(5)"></span>
+    </p>
+
+    {{-- Modal mapa --}}
+    <template x-teleport="body">
+        <div
+            x-show="open"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="{{ $uid }}-map-title"
+        >
+            <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="closeMap()"></div>
+            <div class="relative w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
+                <div class="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
+                    <div>
+                        <h3 id="{{ $uid }}-map-title" class="text-sm font-semibold text-white">Seleccionar ubicación</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Busca un lugar o mueve el pin en el mapa.</p>
+                    </div>
+                    <button type="button" class="text-slate-400 hover:text-white text-sm" @click="closeMap()">Cerrar</button>
+                </div>
+
+                <div class="p-4 space-y-3">
+                    <template x-if="!maps.apiKey">
+                        <p class="text-sm text-amber-300 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2">
+                            Configura <code class="text-amber-200">GOOGLE_MAPS_API_KEY</code> y habilita Maps JavaScript API + Places API.
+                        </p>
+                    </template>
+
+                    <input
+                        type="text"
+                        x-ref="search"
+                        placeholder="Buscar dirección, empresa o lugar…"
+                        class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white placeholder:text-slate-600 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                    >
+
+                    <div x-ref="map" class="h-72 w-full rounded-lg border border-slate-800 bg-slate-950"></div>
+
+                    <p class="text-xs text-slate-400" x-text="draftLabel || 'Sin ubicación seleccionada'"></p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 border-t border-slate-800 px-4 py-3">
+                    <button type="button" class="h-9 px-4 text-sm rounded-lg border border-slate-700 text-slate-200 hover:bg-slate-800" @click="closeMap()">Cancelar</button>
+                    <button
+                        type="button"
+                        class="h-9 px-4 text-sm font-medium rounded-lg {{ $accent === 'platform' ? 'bg-violet-600 hover:bg-violet-500' : 'bg-indigo-600 hover:bg-indigo-500' }} text-white disabled:opacity-40"
+                        :disabled="draftLat === null"
+                        @click="confirmPlace()"
+                    >
+                        Usar esta ubicación
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
+
+@once
+    @push('scripts')
+        <style>[x-cloak]{display:none!important}</style>
+    @endpush
+@endonce

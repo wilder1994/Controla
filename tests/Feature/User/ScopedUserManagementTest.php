@@ -84,7 +84,9 @@ final class ScopedUserManagementTest extends TestCase
             'party_type' => 'legal_entity',
             'email' => 'contacto@sj-seguridad.test',
             'phone' => '+57 300 000 0000',
-            'address' => 'Calle 100 # 15-20, Bogotá',
+            'address' => 'Calle 100 # 15-20',
+            'city' => 'Bogotá',
+            'department' => 'Cundinamarca',
             'latitude' => 4.65,
             'longitude' => -74.05,
         ]);
@@ -92,7 +94,9 @@ final class ScopedUserManagementTest extends TestCase
         $response->assertRedirect(route('company.settings.edit'));
         $this->assertDatabaseHas('security_companies', [
             'tax_id' => '900123456-1',
-            'address' => 'Calle 100 # 15-20, Bogotá',
+            'address' => 'Calle 100 # 15-20',
+            'city' => 'Bogotá',
+            'department' => 'Cundinamarca',
         ]);
     }
 }

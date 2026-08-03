@@ -3,31 +3,22 @@
 @endphp
 
 <x-admin-layout title="Tabla de precios">
-    <div class="flex flex-col flex-1 min-h-0 gap-4">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 shrink-0">
-            <div>
-                <p class="text-xs text-slate-500">Comercial · Plataforma</p>
-                <h3 class="text-sm font-semibold text-white mt-0.5">Tabla de precios</h3>
-                <p class="text-xs text-slate-500 mt-1 max-w-2xl">
-                    Dos precios unitarios base. La matriz aplica descuento por volumen y anual (~{{ number_format($annualDiscount * 100, 0) }}%).
-                </p>
-            </div>
-            <div class="flex gap-2">
-                <x-ui.button
-                    :variant="$cycle->value === 'monthly' ? 'platform' : 'secondary'"
-                    :href="route('admin.pricing.edit', ['cycle' => 'monthly'])"
-                    size="sm">
-                    Mensual
-                </x-ui.button>
-                <x-ui.button
-                    :variant="$cycle->value === 'annual' ? 'platform' : 'secondary'"
-                    :href="route('admin.pricing.edit', ['cycle' => 'annual'])"
-                    size="sm">
-                    Anual <span class="ml-1 opacity-80 text-xs">recomendado</span>
-                </x-ui.button>
-            </div>
-        </div>
+    <x-slot:actions>
+        <x-ui.button
+            :variant="$cycle->value === 'monthly' ? 'platform' : 'secondary'"
+            :href="route('admin.pricing.edit', ['cycle' => 'monthly'])"
+            size="sm">
+            Mensual
+        </x-ui.button>
+        <x-ui.button
+            :variant="$cycle->value === 'annual' ? 'platform' : 'secondary'"
+            :href="route('admin.pricing.edit', ['cycle' => 'annual'])"
+            size="sm">
+            Anual recomendado
+        </x-ui.button>
+    </x-slot:actions>
 
+    <div class="flex flex-col flex-1 min-h-0 gap-4">
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 min-h-0">
             <section class="xl:col-span-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col">
                 <h3 class="text-sm font-semibold text-white">Precios base</h3>

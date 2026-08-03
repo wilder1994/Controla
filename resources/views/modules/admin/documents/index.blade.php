@@ -1,20 +1,11 @@
 <x-admin-layout title="Documentos">
-    <div class="flex flex-col flex-1 min-h-0 gap-3">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 shrink-0">
-            <div>
-                <p class="text-xs text-slate-500">Normoteca · TRD · Expedientes</p>
-                <p class="text-xs text-slate-500 mt-1 max-w-2xl">
-                    Hub documental de plataforma. Modo facturación:
-                    <span class="text-violet-300 font-medium">{{ $kpis['billing_mode'] }}</span>
-                </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <x-ui.button variant="secondary" :href="route('admin.documents.normativa')" size="sm">Normativa</x-ui.button>
-                <x-ui.button variant="secondary" :href="route('admin.documents.trd')" size="sm">TRD</x-ui.button>
-                <x-ui.button variant="platform" :href="route('admin.documents.expedientes')" size="sm">Expedientes</x-ui.button>
-            </div>
-        </div>
+    <x-slot:actions>
+        <x-ui.button variant="secondary" :href="route('admin.documents.normativa')" size="sm">Normativa</x-ui.button>
+        <x-ui.button variant="secondary" :href="route('admin.documents.trd')" size="sm">TRD</x-ui.button>
+        <x-ui.button variant="platform" :href="route('admin.documents.expedientes')" size="sm">Expedientes</x-ui.button>
+    </x-slot:actions>
 
+    <div class="flex flex-col flex-1 min-h-0 gap-3">
         <div class="flex flex-col lg:flex-row gap-2.5 shrink-0 lg:justify-stretch">
             <div class="rounded-xl border border-slate-700/80 bg-slate-900/90 px-3 py-2.5 min-w-0 flex-1">
                 <div class="flex items-center gap-2">

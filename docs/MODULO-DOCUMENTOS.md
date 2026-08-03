@@ -3,7 +3,7 @@
 Documentación de diseño del módulo `/admin/documents`: gobierno documental, expediente probatorio, aceptación contractual y facturación (fase demo → go-live con proveedor tecnológico).
 
 **Última actualización:** agosto 2026  
-**Estado:** implementado v1 (hub, normoteca, TRD, expedientes, aceptación clickwrap, pago manual, factura demo)  
+**Estado:** implementado **v1.1** (hub, normoteca globales + contrato por SKU, versionado admin, TRD, expedientes con corpus congelado, clickwrap, pago manual, factura demo)  
 **Mockups:** canvas en el IDE — `canvases/modulo-documentos-pantallas.canvas.tsx` (wireframes interactivos).
 
 > Orientación jurídica-técnica para ingeniería de producto. No sustituye asesoría legal ni contable.
@@ -14,9 +14,9 @@ Documentación de diseño del módulo `/admin/documents`: gobierno documental, e
 
 **Documentos** no es un wiki estático. Es el sistema de:
 
-- **Normoteca** — contrato, T&C, políticas, procedimientos (venta, suspensión, archivo, eliminación, retención).
+- **Normoteca** — T&C, políticas y procedimientos **globales**; **contrato de licencia por plan (SKU)**; versionado editable en admin.
 - **TRD operativa** — series documentales, plazos, disposición final, base legal.
-- **Expediente por suscriptor** — contratos, aceptaciones, facturas, actas de ciclo.
+- **Expediente por suscriptor** — aceptación con corpus congelado (contenido + hash), facturas, actas de ciclo.
 - **Evidencias** — registro inmutable de quién aceptó qué, cuándo, y qué ocurrió en cada transición del ciclo comercial.
 
 **Audiencia v1:** solo **súper admin** (`/admin`).  
@@ -55,13 +55,16 @@ Documentación de diseño del módulo `/admin/documents`: gobierno documental, e
 | Tema | Decisión |
 |------|----------|
 | Aceptación contractual | **Clickwrap reforzado** (sin firma digital ONAC por defecto) |
-| Antes del pago | Obligatorio: **contrato + T&C + políticas** |
+| Antes del pago | Obligatorio: **contrato del SKU** + T&C + políticas (+ procedimiento de ciclo de vida en corpus) |
+| Contratos | **Uno por plan (SKU)**; documentos globales (T&C, privacidad, procedimiento) iguales para todos |
+| Inmutabilidad | Al aceptar/comprar se congela el corpus (contenido + hash) en expediente; editar Normoteca **no** altera aceptaciones previas |
 | Quién acepta | **Representante legal declarado** (nombre, cargo, tipo y número de documento) |
 | Tipo de cliente | **Persona jurídica** y **persona natural** |
 | Pagos | **Pasarela online** + **registro manual** por súper admin |
 | Facturación | **Proveedor tecnológico**; v1 desarrollo con facturas **demo** |
 | Evidencias de ciclo | Suspensión, archivo, retiro conjunto, purga → **acta/evidencia** en expediente |
 | Retención | **Dual track:** censo operativo ~365d (1581); soportes mercantiles/contrato/FE **~10 años** (CCom/Ley 962); revisar `commercial_retention_years` actual (5) en go-live |
+| Export PDF/HTML | **Fuera de alcance v1** (textos en BD + lectura en UI) |
 | Permisos v1 | Solo **super-admin**; opcional futuro `platform.documents.view` |
 
 ---
@@ -86,7 +89,7 @@ Rutas previstas (prefijo `/admin`):
 | # | Pantalla | Ruta prevista | Función |
 |---|----------|---------------|---------|
 | 1 | Hub Documentos | `GET /admin/documents` | Tablero cumplimiento + accesos rápidos |
-| 2 | Normoteca | `GET /admin/documents/normativa` | Corpus legal versionado |
+| 2 | Normoteca | `GET /admin/documents/normativa` | Corpus legal versionado (globales + contrato por SKU); `…/normativa/{id}/edit` publica nueva versión |
 | 3 | TRD | `GET /admin/documents/trd` | Tabla de retención documental |
 | 4 | Expedientes | `GET /admin/documents/expedientes` | Listado suscriptores (PJ/PN) |
 | 5 | Expediente detalle | `GET /admin/documents/expedientes/{company}` | Timeline + documentos + evidencias |
@@ -128,12 +131,39 @@ Alta suscriptor (PJ o PN)
 
 ---
 
+## 6.1 Normoteca — modelo de datos y servicios (v1.1)
+
+| Concepto | Detalle |
+|----------|---------|
+| Tabla | `legal_corpus_versions` |
+| `package_sku` | `null` = documento global; valor SKU = contrato de ese plan |
+| Unicidad | `(type, package_sku, version)` |
+| Vigente | `superseded_at IS NULL` |
+| Snapshot | Al aceptar: `type`, `version`, `title`, `package_sku`, **`content`**, `content_hash` |
+| Hash aceptación | SHA-256 del JSON del snapshot + representante + documento |
+| Inmutabilidad | Editar Normoteca crea versión nueva; el `corpus_snapshot` del expediente **no** se reescribe |
+
+**Carga vigente para un plan:** `LegalCorpusVersion::currentForPackage($sku)` → globales (T&C, privacidad, procedimiento) + contrato del SKU.
+
+| Servicio | Rol |
+|----------|-----|
+| `BuildLegalCorpusSnapshotService` | Arma snapshot con contenido completo + hash |
+| `PublishLegalCorpusVersionService` | Archiva vigente y publica `n.m+1` |
+| `RecordSubscriptionAcceptanceService` | Clickwrap admin → snapshot + `platform_documents` (metadata `immutable`) |
+| Signup `storeLegal` / `CompletePublicSignupService` | Mismo snapshot en intent → aceptación al aprobar pago |
+
+**UI admin:** `GET /admin/documents/normativa` · `GET/PUT …/normativa/{corpus}` (editar / publicar).  
+**Seed:** `PlatformDocumentsSeeder` + `database/seeders/Support/LegalCorpusDraftContent.php` (borrador; revisión legal externa pendiente).  
+**Fuera de alcance v1.1:** export PDF / impresión / HTML descargable.
+
+---
+
 ## 7. Expediente — tipos documentales
 
 | Tipo | Origen | Retención orientativa |
 |------|--------|------------------------|
-| Contrato de licencia | Clickwrap + PDF/HTML congelado | 10 años mercantil |
-| T&C + políticas aceptadas | Versión normoteca + hash | 10 años |
+| Contrato de licencia (SKU) | Clickwrap + **texto congelado** en snapshot / metadata | 10 años mercantil |
+| T&C + políticas aceptadas | Versión normoteca + contenido + hash en snapshot | 10 años |
 | Evidencia de aceptación | BD append-only | Vinculada al contrato |
 | Factura electrónica | PT (live) o demo | 10 años + CUFE/XML |
 | Acta suspensión | Job / acción admin | TRD ciclo comercial |
@@ -161,6 +191,7 @@ Alta suscriptor (PJ o PN)
 |------|---------|--------|
 | **0** | Doc + canvas + `config/billing.php` demo | ✅ |
 | **1** | Nav + hub + normoteca + TRD + expedientes (seeds) | ✅ |
+| **1.1** | Contrato por SKU + versionado admin + snapshot con contenido inmutable | ✅ |
 | **2** | Clickwrap + rep. legal + evidencia | ✅ |
 | **3** | Pago manual admin + factura demo | ✅ |
 | **4** | Pasarela sandbox real | 🔲 Fase futura — ver §12 |
@@ -175,6 +206,9 @@ Alta suscriptor (PJ o PN)
 
 | Componente actual | Relación con Documentos |
 |-------------------|-------------------------|
+| `LegalCorpusVersion` / `package_sku` | Contrato por plan + globales |
+| `BuildLegalCorpusSnapshotService` | Snapshot con contenido al aceptar |
+| `PublishLegalCorpusVersionService` | Nueva versión Normoteca |
 | `ProcessSubscriptionLifecycleService` | Fuente de actas suspensión/archivo |
 | `ReleaseClientService` | Acta retiro conjunto |
 | `ProcessDataRetentionPurgeService` | Acta purga |

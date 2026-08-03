@@ -56,6 +56,8 @@ final class CompletePublicSignupService
                 'email' => $intent->email,
                 'phone' => $intent->phone,
                 'address' => $intent->address,
+                'city' => $intent->city,
+                'department' => $intent->department,
                 'latitude' => $intent->latitude,
                 'longitude' => $intent->longitude,
                 'is_active' => true,
@@ -92,15 +94,20 @@ final class CompletePublicSignupService
                 'accepted_at' => $now,
             ]);
 
+            $contractTitle = collect($intent->corpus_snapshot ?? [])
+                ->firstWhere('type', 'contract')['title'] ?? 'Paquete contractual aceptado';
+
             PlatformDocument::query()->create([
                 'security_company_id' => $company->id,
                 'type' => PlatformDocumentType::Contract,
-                'title' => 'Paquete contractual aceptado',
+                'title' => $contractTitle,
                 'reference_number' => 'ACC-'.$acceptance->id,
                 'metadata' => [
                     'acceptance_id' => $acceptance->id,
+                    'package_sku' => $intent->package_sku?->value ?? $intent->package_sku,
                     'corpus_snapshot' => $intent->corpus_snapshot,
                     'signup_intent_token' => $intent->token,
+                    'immutable' => true,
                 ],
                 'issued_at' => $now,
                 'retention_until' => $now->addYears(10)->toDateString(),

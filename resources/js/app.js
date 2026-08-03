@@ -1,4 +1,5 @@
 import './bootstrap';
+import './geo-address-picker';
 
 import Alpine from 'alpinejs';
 

@@ -5,6 +5,12 @@
 @endphp
 
 <x-admin-layout title="Empresas">
+    <x-slot:actions>
+        @can('platform.companies.manage')
+            <x-ui.button variant="platform" :href="route('admin.companies.create')" size="sm">Crear empresa</x-ui.button>
+        @endcan
+    </x-slot:actions>
+
     <div class="flex flex-col flex-1 min-h-0 gap-3">
         {{-- KPIs cartera (sin bloque de título: el layout ya muestra «Empresas») --}}
         <div class="flex flex-col lg:flex-row gap-2.5 shrink-0 lg:justify-stretch">

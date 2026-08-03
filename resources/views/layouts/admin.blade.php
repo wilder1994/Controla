@@ -45,14 +45,11 @@
                         <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Panel Plataforma' }}</h2>
                         <p class="text-xs text-slate-500">Plataforma · Súper Admin</p>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        @can('platform.companies.view')
-                            <x-ui.button variant="secondary" :href="route('admin.pricing.edit')">Precios</x-ui.button>
-                        @endcan
-                        @can('platform.companies.view')
-                            <x-ui.button variant="platform" :href="route('admin.companies.index')">Empresas</x-ui.button>
-                        @endcan
-                    </div>
+                    @isset($actions)
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            {{ $actions }}
+                        </div>
+                    @endisset
                 </div>
             </header>
 

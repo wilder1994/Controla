@@ -37,6 +37,14 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
             ->middleware('permission:platform.companies.view')
             ->name('companies.index');
 
+        Route::get('/companies/create', [CompanyController::class, 'create'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.create');
+
+        Route::post('/companies', [CompanyController::class, 'store'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.store');
+
         Route::get('/companies/{company}', [CompanyController::class, 'show'])
             ->middleware('permission:platform.companies.view')
             ->name('companies.show');
@@ -76,6 +84,14 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::get('/documents/normativa', [DocumentController::class, 'normativa'])
             ->middleware('permission:platform.documents.view')
             ->name('documents.normativa');
+
+        Route::get('/documents/normativa/{corpus}/edit', [DocumentController::class, 'editNormativa'])
+            ->middleware('permission:platform.documents.manage')
+            ->name('documents.normativa.edit');
+
+        Route::put('/documents/normativa/{corpus}', [DocumentController::class, 'publishNormativa'])
+            ->middleware('permission:platform.documents.manage')
+            ->name('documents.normativa.publish');
 
         Route::get('/documents/trd', [DocumentController::class, 'trd'])
             ->middleware('permission:platform.documents.view')

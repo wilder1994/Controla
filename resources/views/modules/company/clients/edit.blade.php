@@ -27,6 +27,8 @@
 
             <x-ui.geo-address-fields
                 :address="old('address', $client->address)"
+                :city="old('city', $client->city)"
+                :department="old('department', $client->department)"
                 :latitude="old('latitude', $client->latitude)"
                 :longitude="old('longitude', $client->longitude)"
             />

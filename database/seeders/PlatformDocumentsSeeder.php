@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\CompanyPackageSku;
 use App\Enums\LegalCorpusType;
 use App\Models\DocumentRetentionSeries;
 use App\Models\LegalCorpusVersion;
+use Database\Seeders\Support\LegalCorpusDraftContent;
 use Illuminate\Database\Seeder;
 
 final class PlatformDocumentsSeeder extends Seeder
@@ -19,28 +21,52 @@ final class PlatformDocumentsSeeder extends Seeder
 
     private function seedLegalCorpus(): void
     {
-        $items = [
-            [LegalCorpusType::Contract, 'Contrato de licencia SaaS Controla. El suscriptor acepta el uso del software bajo el paquete contratado, ciclo de facturación y políticas de acceso descritas en la plataforma.'],
-            [LegalCorpusType::Terms, 'Términos y condiciones de uso de la plataforma Controla. Incluye obligaciones de las partes, limitación de responsabilidad y jurisdicción aplicable en Colombia.'],
-            [LegalCorpusType::PrivacyPolicy, 'Política de tratamiento de datos personales alineada a Ley 1581 de 2012. Define roles responsable/encargado, finalidades del tratamiento y derechos ARCO de titulares.'],
-            [LegalCorpusType::ProcedureLifecycle, 'Procedimiento operativo: gracia 5 días → suspensión (bloqueo) → archivo por falta de pago tras plazo configurable → retención legal → purga operativa del censo tenant.'],
+        // Contratos legacy globales (pre package_sku) → se reemplazan por contrato por SKU.
+        LegalCorpusVersion::query()
+            ->where('type', LegalCorpusType::Contract->value)
+            ->whereNull('package_sku')
+            ->delete();
+
+        $globals = [
+            [LegalCorpusType::Terms, LegalCorpusDraftContent::terms()],
+            [LegalCorpusType::PrivacyPolicy, LegalCorpusDraftContent::privacy()],
+            [LegalCorpusType::ProcedureLifecycle, LegalCorpusDraftContent::procedureLifecycle()],
         ];
 
-        foreach ($items as [$type, $body]) {
-            $content = $body."\n\nVersión inicial para desarrollo y pruebas. Revisión legal pendiente antes del go-live comercial.";
-            $hash = hash('sha256', $content);
+        foreach ($globals as [$type, $content]) {
+            $this->upsertVersion($type, null, $type->label(), $content);
+        }
 
-            LegalCorpusVersion::query()->updateOrCreate(
-                ['type' => $type->value, 'version' => '1.0'],
-                [
-                    'title' => $type->label(),
-                    'content' => $content,
-                    'effective_from' => now()->toDateString(),
-                    'superseded_at' => null,
-                    'content_hash' => $hash,
-                ],
+        foreach (CompanyPackageSku::cases() as $sku) {
+            $this->upsertVersion(
+                LegalCorpusType::Contract,
+                $sku->value,
+                LegalCorpusType::Contract->label().' · '.$sku->label(),
+                LegalCorpusDraftContent::contractForSku($sku),
             );
         }
+    }
+
+    private function upsertVersion(
+        LegalCorpusType $type,
+        ?string $packageSku,
+        string $title,
+        string $content,
+    ): void {
+        LegalCorpusVersion::query()->updateOrCreate(
+            [
+                'type' => $type->value,
+                'package_sku' => $packageSku,
+                'version' => '1.0',
+            ],
+            [
+                'title' => $title,
+                'content' => $content,
+                'effective_from' => now()->toDateString(),
+                'superseded_at' => null,
+                'content_hash' => hash('sha256', $content),
+            ],
+        );
     }
 
     private function seedTrd(): void

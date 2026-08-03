@@ -9,12 +9,14 @@ use App\Enums\ClientLifecycle;
 use App\Enums\CompanyPackageSku;
 use App\Domain\Geo\GeoAddressData;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\StoreCompanyRequest;
 use App\Http\Requests\Platform\UpdateCompanyPackageRequest;
 use App\Http\Requests\Platform\UpdateCompanyProfileRequest;
 use App\Models\SecurityCompany;
 use App\Repositories\SecurityCompanyRepository;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Tenant\AssignCompanyPackageService;
+use App\Services\Tenant\CreateCompanyService;
 use App\Services\Tenant\UpdateCompanyProfileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +29,7 @@ final class CompanyController extends Controller
         private readonly AssignCompanyPackageService $assignCompanyPackageService,
         private readonly PriceCalculator $priceCalculator,
         private readonly UpdateCompanyProfileService $updateCompanyProfileService,
+        private readonly CreateCompanyService $createCompanyService,
     ) {}
 
     public function index(): View
@@ -37,6 +40,25 @@ final class CompanyController extends Controller
         $kpis = $this->securityCompanyRepository->companiesIndexKpis();
 
         return view('modules.admin.companies.index', compact('companies', 'kpis'));
+    }
+
+    public function create(): View
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+
+        return view('modules.admin.companies.create');
+    }
+
+    public function store(StoreCompanyRequest $request): RedirectResponse
+    {
+        $company = $this->createCompanyService->execute(
+            $request->safe()->except(GeoAddressData::formKeys()),
+            GeoAddressData::fromValidated($request->validated()),
+        );
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with('success', "Empresa «{$company->displayName()}» creada.");
     }
 
     public function show(Request $request, SecurityCompany $company): View
@@ -90,7 +112,7 @@ final class CompanyController extends Controller
 
         $this->updateCompanyProfileService->execute(
             $company,
-            $request->safe()->except(['address', 'latitude', 'longitude']),
+            $request->safe()->except(GeoAddressData::formKeys()),
             GeoAddressData::fromValidated($request->validated()),
         );
 

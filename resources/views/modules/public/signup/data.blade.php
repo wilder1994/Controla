@@ -56,6 +56,8 @@
             </div>
             <x-ui.geo-address-fields
                 :address="old('address', $intent->address)"
+                :city="old('city', $intent->city)"
+                :department="old('department', $intent->department)"
                 :latitude="old('latitude', $intent->latitude)"
                 :longitude="old('longitude', $intent->longitude)"
             />
