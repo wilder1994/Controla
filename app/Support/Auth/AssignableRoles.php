@@ -39,19 +39,27 @@ final class AssignableRoles
             'resident',
             'anfitrion',
             'guardia',
-            'supervisor',
         ];
     }
 
+    /** Roles que requieren al menos un conjunto asignado. */
     /** @return list<string> */
     public static function requiringClientAssignment(): array
     {
         return [
             'client-admin',
             'guardia',
-            'supervisor',
             'resident',
             'anfitrion',
+        ];
+    }
+
+    /** Roles con exactamente un conjunto (vigilante). */
+    /** @return list<string> */
+    public static function requiringSingleClientAssignment(): array
+    {
+        return [
+            'guardia',
         ];
     }
 
@@ -61,8 +69,8 @@ final class AssignableRoles
             'super-admin' => 'Súper administrador',
             'company-admin' => 'Administrador empresa',
             'client-admin' => 'Administrador conjunto',
-            'guardia' => 'Guardia portería',
-            'supervisor' => 'Supervisor portería',
+            'guardia' => 'Vigilante',
+            'supervisor' => 'Supervisor de vigilancia',
             'resident' => 'Residente portal',
             'anfitrion' => 'Anfitrión',
             'admin-accesos' => 'Admin accesos (legacy)',

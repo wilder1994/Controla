@@ -305,24 +305,17 @@ app/Support/Tenancy/CompanySubscriptionState.php
 
 ---
 
-## Migraciones (julio 2026)
+## Migraciones (baseline unificado — ago 2026)
 
-| Archivo | Cambios |
-|---------|---------|
-| `2026_07_20_160000_add_address_to_clients_table.php` | Campo `address` en conjuntos |
-| `2026_07_20_170000_add_archive_and_lifecycle_fields.php` | Archivo, gracia, lifecycle |
-| `2026_07_20_180000_add_data_retention_purge_fields.php` | `tenant_data_purged_at`, `commercial_anonymized_at` |
-| `2026_07_26_120000_add_geolocation_to_companies_and_clients.php` | `address`, `latitude`, `longitude` en empresas; coords en conjuntos |
-| `2026_08_01_160000_subscription_lifecycle_billing_day_and_archive_reason.php` | `billing_day`; `recovery` → `non_payment` |
-| `2026_08_02_120000_create_platform_documents_module.php` | `party_type`; normoteca, TRD, aceptaciones, pagos, expediente, evidencias |
-| `2026_08_02_190000_add_city_department_to_geo_entities.php` | `city`, `department` en empresas, clientes e intents |
-| `2026_08_02_200000_add_package_sku_to_legal_corpus_versions.php` | Contrato por SKU en normoteca |
+Historial squasheado: creates con schema final (sin cascada de `add_*`). En local tras pull:
 
 ```bash
-php artisan migrate
-php artisan db:seed --class=PlatformDocumentsSeeder
+php artisan migrate:fresh --seed
 ```
 
+> Solo en desarrollo. Requiere autorización explícita si hay datos reales.
+
+Tablas clave incluyen de origen: geo (`city`/`department`), `service_started_at`, `supervisor_code` / `job_title` / `avatar_path`, paquete/ciclo en empresas, normoteca con `package_sku`, pagos con gateway fields.
 ---
 
 ## Tests

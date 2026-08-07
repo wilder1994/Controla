@@ -75,7 +75,7 @@ Requiere junction `public/images` → `resources/images` (ver README § Assets e
 | Vistas wizard | `resources/views/modules/public/signup/*` |
 | Planes | `resources/views/modules/public/plans/index.blade.php` |
 
-Migraciones: `2026_08_02_160000_create_commercial_signup_intents_table.php` · `2026_08_02_190000_add_city_department_to_geo_entities.php`
+Migración: `2026_08_02_160000_create_commercial_signup_intents_table.php` (incluye city/department/geo en el create baseline).
 
 ---
 

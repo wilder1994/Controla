@@ -14,6 +14,7 @@ use App\Repositories\UserRepository;
 use App\Services\User\ManageScopedUserService;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
+use App\Support\User\UserAvatarUploader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -59,6 +60,8 @@ final class UserController extends Controller
                 securityCompanyId: null,
                 clientIds: [],
                 isActive: $request->boolean('is_active', true),
+                jobTitle: $request->validated('job_title'),
+                avatarPath: UserAvatarUploader::store($request->file('avatar')),
             ),
             $request->user(),
             UserManagementContext::Client,
@@ -92,6 +95,8 @@ final class UserController extends Controller
                 role: $request->validated('role'),
                 clientIds: null,
                 isActive: $request->boolean('is_active', true),
+                jobTitle: $request->validated('job_title'),
+                avatarPath: UserAvatarUploader::store($request->file('avatar')),
             ),
             $request->user(),
             UserManagementContext::Client,

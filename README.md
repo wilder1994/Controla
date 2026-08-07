@@ -25,8 +25,8 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
-| **Usuarios** | CRUD scoped por panel + políticas de alcance | ✅ Implementada |
-| **Perfiles** | Empresa/conjunto: dirección, ciudad/depto y geo (Places); alta empresa admin; signup alineado | ✅ Implementada |
+| **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
+| **Perfiles** | Empresa/conjunto: dirección, ciudad/depto y geo; `service_started_at` en conjuntos (sin cobro al cliente en Controla) | ✅ Implementada |
 
 Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
 
@@ -39,7 +39,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | **Plataforma** | `/admin` | `super-admin` | Dashboard analítico, precios, empresas, paquetes y documentos |
 | **Empresa** | `/company` | `company-admin` | Licencia, cupo de clientes, cartera de conjuntos |
 | **Conjunto** | `/client` | `client-admin` | Censo: estructuras, personas, vehículos, mascotas, autorizaciones |
-| **Portería** | `/access` | `guardia`, `supervisor`, `client-admin` | Operación diaria: hub operaciones, bloqueo, reportes |
+| **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Operación diaria: hub operaciones, bloqueo, reportes |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia |
 
@@ -95,10 +95,16 @@ BILLING_SIGNUP_INTENT_TTL_HOURS=24
 BILLING_ALLOW_PUBLIC_REGISTER=false
 ```
 ```bash
-php artisan migrate          # solo migraciones aditivas
+# Desarrollo limpio (baseline unificado ~30 migraciones; borra datos):
+php artisan migrate:fresh --seed
+
+# Solo aplicar migraciones pendientes (si ya hay BD):
+php artisan migrate
 php artisan db:seed
 npm install && npm run build
 ```
+
+> **Baseline ago 2026:** el historial de `add_*` se consolidó en creates. Clonar o reset local → `migrate:fresh --seed`. Detalle: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Migraciones · glosario operativo [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md).
 
 ### Assets estáticos (imágenes)
 
@@ -154,7 +160,8 @@ Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa 
 | Súper Admin | `admin@control-acceso.test` | `Admin123!` | `/admin/dashboard` |
 | Admin Empresa | `empresa@sj-seguridad.test` | `Empresa123!` | `/company/dashboard` |
 | Admin Cliente | `admin@palmasdelingenio.test` | `Cliente123!` | `/client/dashboard` |
-| Guardia | `guardia@control-acceso.test` | `Guardia123!` | `/access/operations` |
+| Vigilante (`guardia`) | `guardia@control-acceso.test` | `Guardia123!` | `/access/operations` |
+| Supervisor de vigilancia | `supervisor@sj-seguridad.test` | `Super123!` | `/access/operations` (código revista `123456`) |
 | Residente | `anfitrion@control-acceso.test` | `Anfitrion123!` | `/resident/dashboard` |
 
 **Datos piloto:** empresa SJ Seguridad, clientes *Palmas del Ingenio* y *Torres de la Loma*, Torre A + 10 apartamentos, 20 personas en censo.
@@ -165,7 +172,7 @@ Los usuarios demo se crean en `DemoUsersSeeder` (idempotente con `updateOrCreate
 2. `LocationSeeder` — ubicaciones base
 3. `TenantSeeder` — empresa + clientes piloto
 4. `PlatformDocumentsSeeder` — normoteca (globales + contrato por SKU) + TRD inicial
-5. `DemoUsersSeeder` — **todos** los usuarios demo (plataforma, empresa, cliente, portería, residente)
+5. `DemoUsersSeeder` — usuarios demo (plataforma, empresa, supervisor, vigilante, conjunto, residente)
 6. `StructureSeeder` — árbol residencial y censo piloto
 
 ```bash
@@ -608,7 +615,8 @@ routes/api.php                   # Sanctum endpoints
 ## Comandos útiles
 
 ```bash
-php artisan migrate                         # aplicar migraciones nuevas
+php artisan migrate:fresh --seed            # reset desarrollo (baseline unificado; requiere OK explícito)
+php artisan migrate                         # aplicar migraciones pendientes
 php artisan subscriptions:process-lifecycle # gracia 5d → suspensión → archivo non_payment (diario 02:00)
 php artisan data:purge-retention            # purga censo post-retención (también programado mensual)
 php artisan db:seed                         # datos demo (aditivo, todos los seeders)

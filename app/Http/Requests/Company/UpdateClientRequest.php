@@ -48,6 +48,7 @@ final class UpdateClientRequest extends FormRequest
             ],
             ...GeoAddressRules::optional(),
             'access_url' => ['nullable', 'url', 'max:255'],
+            'service_started_at' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

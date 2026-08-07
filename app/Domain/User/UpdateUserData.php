@@ -14,5 +14,8 @@ final readonly class UpdateUserData
         public ?string $role,
         public ?array $clientIds,
         public bool $isActive,
+        public ?string $jobTitle = null,
+        public ?string $avatarPath = null,
+        public bool $regenerateSupervisorCode = false,
     ) {}
 }

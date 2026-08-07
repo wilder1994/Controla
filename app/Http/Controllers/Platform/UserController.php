@@ -16,6 +16,7 @@ use App\Repositories\UserRepository;
 use App\Services\User\ManageScopedUserService;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
+use App\Support\User\UserAvatarUploader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -65,14 +66,21 @@ final class UserController extends Controller
                     : null,
                 clientIds: array_map('intval', $request->input('client_ids', [])),
                 isActive: $request->boolean('is_active', true),
+                jobTitle: $request->validated('job_title'),
+                avatarPath: UserAvatarUploader::store($request->file('avatar')),
             ),
             $request->user(),
             UserManagementContext::Platform,
         );
 
+        $message = 'Usuario creado correctamente.';
+        if ($user->supervisor_code) {
+            $message .= ' Código de revista: '.$user->supervisor_code;
+        }
+
         return redirect()
             ->route('admin.users.edit', $user)
-            ->with('success', 'Usuario creado correctamente.');
+            ->with('success', $message);
     }
 
     public function edit(User $user): View
@@ -100,6 +108,9 @@ final class UserController extends Controller
                 role: $request->validated('role'),
                 clientIds: array_map('intval', $request->input('client_ids', [])),
                 isActive: $request->boolean('is_active', true),
+                jobTitle: $request->validated('job_title'),
+                avatarPath: UserAvatarUploader::store($request->file('avatar')),
+                regenerateSupervisorCode: $request->boolean('regenerate_supervisor_code'),
             ),
             $request->user(),
             UserManagementContext::Platform,

@@ -15,5 +15,7 @@ final readonly class CreateUserData
         public ?int $securityCompanyId,
         public array $clientIds = [],
         public bool $isActive = true,
+        public ?string $jobTitle = null,
+        public ?string $avatarPath = null,
     ) {}
 }

@@ -10,13 +10,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('security_companies', function (Blueprint $table) {
-            $table->string('party_type', 20)->default('legal_entity')->after('tax_id');
-        });
-
         Schema::create('legal_corpus_versions', function (Blueprint $table) {
             $table->id();
             $table->string('type', 40);
+            $table->string('package_sku', 40)->nullable();
             $table->string('version', 20);
             $table->string('title');
             $table->longText('content');
@@ -25,7 +22,8 @@ return new class extends Migration
             $table->char('content_hash', 64);
             $table->timestamps();
 
-            $table->unique(['type', 'version']);
+            $table->unique(['type', 'package_sku', 'version']);
+            $table->index(['type', 'package_sku', 'superseded_at']);
         });
 
         Schema::create('document_retention_series', function (Blueprint $table) {
@@ -63,10 +61,14 @@ return new class extends Migration
             $table->string('currency', 3)->default('COP');
             $table->string('billing_cycle', 20)->nullable();
             $table->string('method', 20);
+            $table->string('gateway_driver', 30)->nullable();
+            $table->string('gateway_transaction_id', 64)->nullable()->unique();
+            $table->string('gateway_status', 40)->nullable();
             $table->string('status', 20);
             $table->string('reference')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->foreignId('recorded_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('initiated_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->json('metadata')->nullable();
             $table->timestamps();
         });
@@ -113,9 +115,5 @@ return new class extends Migration
         Schema::dropIfExists('subscription_acceptances');
         Schema::dropIfExists('document_retention_series');
         Schema::dropIfExists('legal_corpus_versions');
-
-        Schema::table('security_companies', function (Blueprint $table) {
-            $table->dropColumn('party_type');
-        });
     }
 };

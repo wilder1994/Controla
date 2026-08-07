@@ -11,7 +11,8 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
- * Usuarios demo del sistema — credenciales documentadas en README.md.
+ * Usuarios demo — credenciales en README.md.
+ * Roles de producto: Vigilante (`guardia`), Supervisor de vigilancia (`supervisor`).
  */
 final class DemoUsersSeeder extends Seeder
 {
@@ -19,8 +20,9 @@ final class DemoUsersSeeder extends Seeder
     {
         $this->seedPlatformUsers();
         $this->seedCompanyAdmin();
+        $this->seedCompanySupervisor();
         $this->seedClientAdmin();
-        $this->linkLegacyUsersToPilotClient();
+        $this->linkOperationalUsersToPilotClient();
     }
 
     private function seedPlatformUsers(): void
@@ -35,28 +37,6 @@ final class DemoUsersSeeder extends Seeder
             ]
         );
         $superAdmin->syncRoles(['super-admin']);
-
-        $guardia = User::query()->updateOrCreate(
-            ['email' => 'guardia@control-acceso.test'],
-            [
-                'name' => 'Guardia Portero',
-                'password' => 'Guardia123!',
-                'email_verified_at' => now(),
-                'is_active' => true,
-            ]
-        );
-        $guardia->syncRoles(['guardia']);
-
-        $anfitrion = User::query()->updateOrCreate(
-            ['email' => 'anfitrion@control-acceso.test'],
-            [
-                'name' => 'Residente Ejemplo',
-                'password' => 'Anfitrion123!',
-                'email_verified_at' => now(),
-                'is_active' => true,
-            ]
-        );
-        $anfitrion->syncRoles(['resident']);
     }
 
     private function seedCompanyAdmin(): void
@@ -82,9 +62,33 @@ final class DemoUsersSeeder extends Seeder
         $companyAdmin->syncRoles(['company-admin']);
     }
 
+    private function seedCompanySupervisor(): void
+    {
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->first();
+
+        if ($company === null) {
+            return;
+        }
+
+        $supervisor = User::query()->updateOrCreate(
+            ['email' => 'supervisor@sj-seguridad.test'],
+            [
+                'name' => 'Supervisor Zona Demo',
+                'job_title' => 'Supervisor de vigilancia',
+                'password' => 'Super123!',
+                'email_verified_at' => now(),
+                'is_active' => true,
+                'security_company_id' => $company->id,
+                'supervisor_code' => '123456',
+            ]
+        );
+        $supervisor->syncRoles(['supervisor']);
+    }
+
     private function seedClientAdmin(): void
     {
         $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->first();
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->first();
 
         if ($palmas === null) {
             $this->command?->warn('DemoUsersSeeder: cliente piloto no encontrado; omitiendo admin cliente.');
@@ -99,6 +103,7 @@ final class DemoUsersSeeder extends Seeder
                 'password' => 'Cliente123!',
                 'email_verified_at' => now(),
                 'is_active' => true,
+                'security_company_id' => $company?->id,
                 'primary_client_id' => $palmas->id,
             ]
         );
@@ -106,31 +111,47 @@ final class DemoUsersSeeder extends Seeder
         $this->assignClient($clientAdmin, $palmas, true);
     }
 
-    private function linkLegacyUsersToPilotClient(): void
+    private function linkOperationalUsersToPilotClient(): void
     {
         $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->first();
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->first();
 
-        if ($palmas === null) {
+        if ($palmas === null || $company === null) {
             return;
         }
 
-        $guardia = User::query()->where('email', 'guardia@control-acceso.test')->first();
-        if ($guardia) {
-            $guardia->update(['primary_client_id' => $palmas->id]);
-            $guardia->syncRoles(['guardia']);
-            $this->assignClient($guardia, $palmas, true);
-        }
+        $vigilante = User::query()->updateOrCreate(
+            ['email' => 'guardia@control-acceso.test'],
+            [
+                'name' => 'Vigilante Portero',
+                'job_title' => 'Portería',
+                'password' => 'Guardia123!',
+                'email_verified_at' => now(),
+                'is_active' => true,
+                'security_company_id' => $company->id,
+                'primary_client_id' => $palmas->id,
+            ]
+        );
+        $vigilante->syncRoles(['guardia']);
+        $this->assignClient($vigilante, $palmas, true);
 
-        $legacyAdmin = User::query()->where('email', 'admin@control-acceso.test')->first();
-        if ($legacyAdmin) {
-            $legacyAdmin->update(['primary_client_id' => $palmas->id]);
-            $this->assignClient($legacyAdmin, $palmas, true);
-        }
+        $anfitrion = User::query()->updateOrCreate(
+            ['email' => 'anfitrion@control-acceso.test'],
+            [
+                'name' => 'Residente Ejemplo',
+                'password' => 'Anfitrion123!',
+                'email_verified_at' => now(),
+                'is_active' => true,
+                'primary_client_id' => $palmas->id,
+            ]
+        );
+        $anfitrion->syncRoles(['resident']);
+        $this->assignClient($anfitrion, $palmas, true);
     }
 
     private function assignClient(User $user, Client $client, bool $primary = false): void
     {
-        ClientUserAssignment::query()->firstOrCreate(
+        ClientUserAssignment::query()->updateOrCreate(
             ['user_id' => $user->id, 'client_id' => $client->id],
             ['is_primary' => $primary, 'assigned_at' => now()]
         );

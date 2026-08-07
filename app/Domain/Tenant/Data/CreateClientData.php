@@ -18,5 +18,6 @@ final readonly class CreateClientData
         public ?float $longitude = null,
         public ?string $accessUrl = null,
         public bool $isActive = true,
+        public ?string $serviceStartedAt = null,
     ) {}
 }

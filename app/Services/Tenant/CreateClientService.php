@@ -34,6 +34,7 @@ final class CreateClientService
             'max_structures' => ClientPlanTier::Economic->maxStructures(),
             'access_url' => $data->accessUrl,
             'is_active' => $data->isActive,
+            'service_started_at' => $data->serviceStartedAt ?? now()->toDateString(),
             'lifecycle' => ClientLifecycle::Active,
         ]);
     }

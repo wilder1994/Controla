@@ -23,21 +23,85 @@ final class ScopedUserManagementTest extends TestCase
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
 
         $response = $this->actingAs($admin)->post(route('company.users.store'), [
-            'name' => 'Guardia Nuevo',
-            'email' => 'guardia.nuevo@sj-seguridad.test',
+            'name' => 'Vigilante Nuevo',
+            'email' => 'vigilante.nuevo@sj-seguridad.test',
             'password' => 'Guardia123!',
             'password_confirmation' => 'Guardia123!',
             'role' => 'guardia',
             'client_ids' => [$client->id],
+            'job_title' => 'Portería',
             'is_active' => '1',
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('users', ['email' => 'guardia.nuevo@sj-seguridad.test']);
+        $this->assertDatabaseHas('users', [
+            'email' => 'vigilante.nuevo@sj-seguridad.test',
+            'job_title' => 'Portería',
+        ]);
         $this->assertDatabaseHas('client_user_assignments', [
             'client_id' => $client->id,
-            'user_id' => User::query()->where('email', 'guardia.nuevo@sj-seguridad.test')->value('id'),
+            'user_id' => User::query()->where('email', 'vigilante.nuevo@sj-seguridad.test')->value('id'),
         ]);
+    }
+
+    public function test_company_admin_can_create_supervisor_with_code_without_client(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $response = $this->actingAs($admin)->post(route('company.users.store'), [
+            'name' => 'Supervisor Zona Norte',
+            'email' => 'supervisor.norte@sj-seguridad.test',
+            'password' => 'Super123!',
+            'password_confirmation' => 'Super123!',
+            'role' => 'supervisor',
+            'job_title' => 'Supervisor de zona',
+            'is_active' => '1',
+        ]);
+
+        $response->assertRedirect();
+        $user = User::query()->where('email', 'supervisor.norte@sj-seguridad.test')->firstOrFail();
+        $this->assertTrue($user->hasRole('supervisor'));
+        $this->assertNotNull($user->supervisor_code);
+        $this->assertSame(6, strlen($user->supervisor_code));
+        $this->assertTrue(ctype_digit($user->supervisor_code));
+        $this->assertDatabaseMissing('client_user_assignments', ['user_id' => $user->id]);
+    }
+
+    public function test_reassigning_vigilante_requires_new_password(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $torres = Client::query()->where('slug', 'torres-loma')->firstOrFail();
+        $vigilante = User::query()->where('email', 'guardia@control-acceso.test')->firstOrFail();
+
+        $denied = $this->actingAs($admin)->put(route('company.users.update', $vigilante), [
+            'name' => $vigilante->name,
+            'email' => $vigilante->email,
+            'role' => 'guardia',
+            'client_ids' => [$torres->id],
+            'is_active' => '1',
+        ]);
+
+        $denied->assertSessionHasErrors('password');
+
+        $ok = $this->actingAs($admin)->put(route('company.users.update', $vigilante), [
+            'name' => $vigilante->name,
+            'email' => $vigilante->email,
+            'role' => 'guardia',
+            'client_ids' => [$torres->id],
+            'password' => 'NuevaClave123!',
+            'password_confirmation' => 'NuevaClave123!',
+            'is_active' => '1',
+        ]);
+
+        $ok->assertRedirect();
+        $vigilante->refresh();
+        $this->assertSame($torres->id, (int) $vigilante->primary_client_id);
+        $this->assertFalse($vigilante->clients()->where('clients.id', $palmas->id)->exists());
     }
 
     public function test_company_admin_cannot_edit_super_admin_user(): void

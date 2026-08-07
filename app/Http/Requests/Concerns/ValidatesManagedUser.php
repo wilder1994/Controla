@@ -14,11 +14,14 @@ trait ValidatesManagedUser
     {
         return [
             'name' => ['required', 'string', 'max:120'],
+            'job_title' => ['nullable', 'string', 'max:80'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'email' => ['required', 'email', 'max:255'],
             'password' => $passwordRequired
                 ? ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()]
                 : ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
             'is_active' => ['sometimes', 'boolean'],
+            'regenerate_supervisor_code' => ['sometimes', 'boolean'],
         ];
     }
 

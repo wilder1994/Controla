@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h3 class="text-sm font-semibold text-white">Usuarios del conjunto</h3>
-                <p class="text-xs text-slate-500 mt-1">Residentes, guardias y supervisores asignados a este conjunto.</p>
+                <p class="text-xs text-slate-500 mt-1">Residentes y vigilantes asignados a este conjunto.</p>
             </div>
             <x-ui.button :href="route('client.users.create')" size="sm">+ Nuevo usuario</x-ui.button>
         </div>

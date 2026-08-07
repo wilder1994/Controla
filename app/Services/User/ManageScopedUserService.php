@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\User;
 
-use App\Domain\Geo\GeoAddressData;
 use App\Domain\User\CreateUserData;
 use App\Domain\User\UpdateUserData;
 use App\Models\Client;
 use App\Models\ClientUserAssignment;
-use App\Models\SecurityCompany;
 use App\Models\User;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
@@ -36,15 +34,22 @@ final class ManageScopedUserService
         $clientIds = $this->normalizeClientIds($data->clientIds, $data->role, $companyId, $context, $actor);
 
         return DB::transaction(function () use ($data, $companyId, $clientIds): User {
-            $user = User::query()->create([
+            $attributes = [
                 'name' => $data->name,
                 'email' => $data->email,
                 'password' => $data->password,
                 'is_active' => $data->isActive,
                 'security_company_id' => $companyId,
+                'job_title' => $data->jobTitle,
+                'avatar_path' => $data->avatarPath,
                 'email_verified_at' => now(),
-            ]);
+            ];
 
+            if ($data->role === 'supervisor') {
+                $attributes['supervisor_code'] = $this->generateSupervisorCode($companyId);
+            }
+
+            $user = User::query()->create($attributes);
             $user->syncRoles([$data->role]);
             $this->syncClientAssignments($user, $clientIds, $data->role);
 
@@ -64,20 +69,49 @@ final class ManageScopedUserService
             ]);
         }
 
-        $companyId = (int) ($target->security_company_id ?? $this->scopeCompanyId($actor));
+        $companyId = (int) ($target->security_company_id ?? $this->scopeCompanyId($actor) ?? 0) ?: null;
         $role = $data->role ?? $target->getRoleNames()->first() ?? '';
         $clientIds = $data->clientIds ?? $target->clients()->pluck('clients.id')->map(fn ($id) => (int) $id)->all();
         $clientIds = $this->normalizeClientIds($clientIds, $role, $companyId, $context, $actor);
 
-        return DB::transaction(function () use ($target, $data, $role, $clientIds): User {
+        $previousPrimary = $target->primary_client_id !== null ? (int) $target->primary_client_id : null;
+        $newPrimary = $clientIds[0] ?? null;
+        $clientChanged = $role === 'guardia' && $previousPrimary !== null && $newPrimary !== null && $previousPrimary !== $newPrimary;
+
+        if ($clientChanged && ($data->password === null || $data->password === '')) {
+            throw ValidationException::withMessages([
+                'password' => 'Al reasignar el vigilante a otro conjunto debes definir una nueva contraseña.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($target, $data, $role, $clientIds, $companyId, $clientChanged): User {
             $attributes = [
                 'name' => $data->name,
                 'email' => $data->email,
                 'is_active' => $data->isActive,
+                'job_title' => $data->jobTitle,
             ];
+
+            if ($data->avatarPath !== null) {
+                $attributes['avatar_path'] = $data->avatarPath;
+            }
 
             if ($data->password !== null && $data->password !== '') {
                 $attributes['password'] = $data->password;
+                if ($clientChanged) {
+                    $attributes['must_change_password'] = false;
+                }
+            }
+
+            $becomingSupervisor = $role === 'supervisor' && ! $target->hasRole('supervisor');
+            $leavingSupervisor = $role !== 'supervisor' && $target->hasRole('supervisor');
+
+            if ($becomingSupervisor || ($role === 'supervisor' && ($target->supervisor_code === null || $data->regenerateSupervisorCode))) {
+                $attributes['supervisor_code'] = $this->generateSupervisorCode($companyId, $target->id);
+            }
+
+            if ($leavingSupervisor) {
+                $attributes['supervisor_code'] = null;
             }
 
             $target->update($attributes);
@@ -90,6 +124,33 @@ final class ManageScopedUserService
 
             return $target->fresh(['roles', 'clients']);
         });
+    }
+
+    private function generateSupervisorCode(?int $companyId, ?int $exceptUserId = null): string
+    {
+        if ($companyId === null || $companyId <= 0) {
+            throw ValidationException::withMessages([
+                'role' => 'El supervisor de vigilancia debe pertenecer a una empresa.',
+            ]);
+        }
+
+        for ($attempt = 0; $attempt < 40; $attempt++) {
+            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            $exists = User::query()
+                ->where('security_company_id', $companyId)
+                ->where('supervisor_code', $code)
+                ->when($exceptUserId, fn ($q) => $q->whereKeyNot($exceptUserId))
+                ->exists();
+
+            if (! $exists) {
+                return $code;
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'role' => 'No fue posible generar un código de supervisor único. Intenta de nuevo.',
+        ]);
     }
 
     private function assertRoleAllowed(string $role, UserManagementContext $context, User $actor): void
@@ -146,7 +207,7 @@ final class ManageScopedUserService
     }
 
     /**
-     * @param list<int> $clientIds
+     * @param  list<int>  $clientIds
      * @return list<int>
      */
     private function normalizeClientIds(
@@ -177,6 +238,12 @@ final class ManageScopedUserService
         if ($clientIds === []) {
             throw ValidationException::withMessages([
                 'client_ids' => 'Selecciona al menos un conjunto para este rol.',
+            ]);
+        }
+
+        if (in_array($role, AssignableRoles::requiringSingleClientAssignment(), true) && count($clientIds) !== 1) {
+            throw ValidationException::withMessages([
+                'client_ids' => 'El vigilante debe quedar asignado a un solo conjunto.',
             ]);
         }
 

@@ -137,6 +137,7 @@ final class ClientController extends Controller
             longitude: $request->filled('longitude') ? (float) $request->validated('longitude') : null,
             accessUrl: $request->validated('access_url'),
             isActive: $request->boolean('is_active', true),
+            serviceStartedAt: $request->validated('service_started_at'),
         ));
 
         return redirect()

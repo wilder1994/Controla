@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('pre_authorizations', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('client_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('visitor_id')->constrained()->cascadeOnDelete();
             $table->foreignId('host_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('location_id')->constrained()->cascadeOnDelete();

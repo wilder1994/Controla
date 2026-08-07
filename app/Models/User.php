@@ -19,6 +19,8 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'job_title',
+        'avatar_path',
         'email',
         'password',
         'is_active',
@@ -27,11 +29,13 @@ class User extends Authenticatable
         'area_key',
         'security_company_id',
         'primary_client_id',
+        'supervisor_code',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'supervisor_code',
     ];
 
     protected function casts(): array

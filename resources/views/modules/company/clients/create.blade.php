@@ -46,6 +46,13 @@
                 <x-ui.input id="access_url" type="url" name="access_url" :value="old('access_url')" />
             </div>
 
+            <div>
+                <x-ui.label for="service_started_at">Inicio de servicio</x-ui.label>
+                <x-ui.input id="service_started_at" type="date" name="service_started_at" :value="old('service_started_at', now()->toDateString())" />
+                <p class="mt-1 text-[11px] text-slate-500">Fecha en que se aperturó el servicio en este conjunto. No hay cobros al cliente en Controla.</p>
+                <x-ui.field-error :messages="$errors->get('service_started_at')" />
+            </div>
+
             <label class="inline-flex items-center gap-2 text-sm text-slate-300">
                 <input type="hidden" name="is_active" value="0">
                 <input type="checkbox" name="is_active" value="1" checked class="rounded border-slate-600 bg-slate-950 text-indigo-600">

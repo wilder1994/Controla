@@ -66,6 +66,7 @@ final class TenantSeeder extends Seeder
                 'max_structures' => ClientPlanTier::Economic->maxStructures(),
                 'access_url' => 'https://controla.test',
                 'is_active' => true,
+                'service_started_at' => now()->subMonths(6)->toDateString(),
             ]
         );
 
@@ -81,6 +82,7 @@ final class TenantSeeder extends Seeder
                 'max_structures' => ClientPlanTier::Economic->maxStructures(),
                 'access_url' => 'https://controla.test',
                 'is_active' => true,
+                'service_started_at' => now()->subMonths(3)->toDateString(),
             ]
         );
 
