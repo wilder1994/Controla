@@ -92,4 +92,10 @@ class User extends Authenticatable
     {
         return in_array($clientId, $this->assignedClientIds(), true);
     }
+
+    public function isSupervisionManager(): bool
+    {
+        return $this->hasAnyRole(['super-admin', 'company-admin', 'client-admin', 'admin-accesos'])
+            || $this->can('access.manage.supervision_codes');
+    }
 }
