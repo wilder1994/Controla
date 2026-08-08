@@ -39,8 +39,10 @@ class ReportController extends Controller
         $todayEntries = AccessLog::whereDate('entry_time', today())->count();
         $totalVisitors = Visitor::count();
         $avgDuration = AccessLog::whereNotNull('exit_time')
-            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) as avg_minutes')
-            ->value('avg_minutes');
+            ->get(['entry_time', 'exit_time'])
+            ->map(fn ($log) => $log->exit_time?->diffInMinutes($log->entry_time))
+            ->filter()
+            ->avg();
 
         $locations = Location::where('is_active', true)->get();
 
