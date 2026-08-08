@@ -140,17 +140,23 @@
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
             <h3 class="text-sm font-semibold text-white mb-1">Accesos diarios (últimos 7 días)</h3>
             <p class="text-xs text-slate-500 mb-4">Movimientos de entrada registrados por día</p>
-            <canvas id="dailyChart" height="180"></canvas>
+            <div class="relative h-64 overflow-y-auto">
+                <canvas id="dailyChart"></canvas>
+            </div>
         </div>
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
             <h3 class="text-sm font-semibold text-white mb-1">Distribución por tipo</h3>
             <p class="text-xs text-slate-500 mb-4">Visitantes peatonales vs vehiculares vs residentes</p>
-            <canvas id="typeChart" height="180"></canvas>
+            <div class="relative h-64 overflow-y-auto">
+                <canvas id="typeChart"></canvas>
+            </div>
         </div>
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 lg:col-span-2">
             <h3 class="text-sm font-semibold text-white mb-1">Actividad hoy por hora</h3>
             <p class="text-xs text-slate-500 mb-4">Distribución horaria de ingresos del día</p>
-            <canvas id="hourlyChart" height="120"></canvas>
+            <div class="relative h-56 overflow-y-auto">
+                <canvas id="hourlyChart"></canvas>
+            </div>
         </div>
     </div>
 

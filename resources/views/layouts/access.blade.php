@@ -38,6 +38,16 @@
             <div class="px-4 py-4 border-t border-slate-800 text-xs text-slate-500">
                 {{ Auth::user()->name }}
             </div>
+            <div class="px-4 pb-4 border-t border-slate-800">
+                <button
+                    type="button"
+                    @click="$dispatch('open-panic')"
+                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-red-900/30 hover:bg-red-800/30 border border-red-800 text-left transition-colors group"
+                >
+                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                    <span class="text-sm font-medium text-red-300 group-hover:text-red-200">Botón de Pánico</span>
+                </button>
+            </div>
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0">
