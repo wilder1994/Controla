@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100">
-    <div class="min-h-screen flex">
+    <div class="h-screen flex overflow-hidden">
         <aside class="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 border-r border-slate-800">
             <div class="px-6 py-5 border-b border-slate-800">
                 <p class="text-xs uppercase tracking-wider text-slate-500">Controla</p>
@@ -19,7 +19,7 @@
                     <p class="text-xs text-indigo-300 mt-1">{{ $activeClient->name }}</p>
                 @endisset
             </div>
-            <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll">
                 @foreach (config('access.navigation.access.items', []) as $item)
                     @can($item['permission'])
                     <a href="{{ route($item['route']) }}"
@@ -35,22 +35,23 @@
                 </a>
                 @endcan
             </nav>
-            <div class="px-4 py-4 border-t border-slate-800 text-xs text-slate-500">
-                {{ Auth::user()->name }}
-            </div>
-            <div class="px-4 pb-4 border-t border-slate-800">
+            <div class="px-4 py-4 border-t border-slate-800">
+                <p class="text-xs text-slate-500 mb-3 truncate">{{ Auth::user()->name }}</p>
                 <button
                     type="button"
                     @click="$dispatch('open-panic')"
-                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-red-900/30 hover:bg-red-800/30 border border-red-800 text-left transition-colors group"
+                    class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-950/60 to-red-900/40 hover:from-red-900/70 hover:to-red-800/50 border border-red-800/70 transition-colors group"
                 >
-                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-                    <span class="text-sm font-medium text-red-300 group-hover:text-red-200">Botón de Pánico</span>
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                        <span class="text-sm font-semibold text-red-300 group-hover:text-red-100">Botón de Pánico</span>
+                    </span>
+                    <svg class="w-3.5 h-3.5 text-red-500/70 group-hover:text-red-300 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                 </button>
             </div>
         </aside>
 
-        <div class="flex-1 flex flex-col min-w-0">
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-20">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
@@ -82,8 +83,10 @@
                 </div>
             @endif
 
-            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
-                {{ $slot }}
+            <main class="flex-1 min-w-0 overflow-y-scroll">
+                <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+                    {{ $slot }}
+                </div>
             </main>
         </div>
     </div>

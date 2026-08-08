@@ -1,5 +1,5 @@
 <x-access-layout title="Dashboard de Acceso">
-    <div class="-mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-6 pb-8 bg-gradient-to-r from-slate-800 to-indigo-900 mb-6">
+    <div class="-mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 bg-gradient-to-r from-slate-800 to-indigo-900 mb-4">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm font-medium text-indigo-300">Panel de Control</p>
