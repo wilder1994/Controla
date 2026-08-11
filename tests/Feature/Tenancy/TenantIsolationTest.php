@@ -56,6 +56,7 @@ final class TenantIsolationTest extends TestCase
         $response = $this->actingAs($admin)->get(route('company.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Vista consolidada');
+        $response->assertSee('Resumen empresa');
+        $response->assertSee('Cartera y operación');
     }
 }

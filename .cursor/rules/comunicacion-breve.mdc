@@ -1,0 +1,19 @@
+---
+description: Respuestas cortas, directas y precisas en consultas del usuario
+alwaysApply: true
+---
+
+# Comunicación breve
+
+Cuando el usuario pregunte, consulte o diga “necesito”:
+
+- Responde **corto**, **directo** y **preciso**.
+- Prioriza el dato o la decisión; sin relleno, sin preámbulos ni secciones largas.
+- No repitas el enunciado ni listes lo obvio.
+- Expande solo si el usuario lo pide (“explica”, “detalla”, “paso a paso”).
+
+## Ejemplos
+
+❌ Largo: inventarios completos, tablas de estado y planes de 5 bloques cuando solo preguntó “qué vistas tocaremos”.
+
+✅ Corto: “Bienvenida/público, `/admin` y `/company`. ¿Empezamos por empresa `clients/show`?”

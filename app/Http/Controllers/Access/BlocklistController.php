@@ -15,7 +15,7 @@ class BlocklistController extends Controller
     public function index(): View
     {
         $entries = Blocklist::with(['blocker', 'client'])
-            ->where('is_active', true)
+            ->active()
             ->latest('blocked_at')
             ->paginate(20);
 

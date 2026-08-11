@@ -44,14 +44,13 @@
                         @forelse ($entries as $entry)
                         <tr class="hover:bg-slate-800/40 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
+                                @php $type = $entry->normalizedType(); @endphp
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    @if(str_contains($entry->blockable_type, 'Visitor')) bg-blue-900/30 text-blue-300 ring-1 ring-blue-700
-                                    @elseif(str_contains($entry->blockable_type, 'Vehicle')) bg-cyan-900/30 text-cyan-300 ring-1 ring-cyan-700
+                                    @if($type === 'visitor') bg-blue-900/30 text-blue-300 ring-1 ring-blue-700
+                                    @elseif($type === 'vehicle') bg-cyan-900/30 text-cyan-300 ring-1 ring-cyan-700
+                                    @elseif($type === 'resident') bg-violet-900/30 text-violet-300 ring-1 ring-violet-700
                                     @else bg-slate-800 text-slate-300 ring-1 ring-slate-600 @endif">
-                                    @if(str_contains($entry->blockable_type, 'Visitor')) Visitante
-                                    @elseif(str_contains($entry->blockable_type, 'Vehicle')) Vehículo
-                                    @else {{ class_basename($entry->blockable_type) }}
-                                    @endif
+                                    {{ $entry->typeLabel() }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">#{{ $entry->blockable_id }}</td>

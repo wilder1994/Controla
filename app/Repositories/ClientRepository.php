@@ -142,6 +142,8 @@ final class ClientRepository
         $total = (clone $base)->where('lifecycle', ClientLifecycle::Active)->count();
         $active = (clone $base)->where('lifecycle', ClientLifecycle::Active)->where('is_active', true)->count();
         $inactive = $total - $active;
+        $archived = (clone $base)->where('lifecycle', ClientLifecycle::ArchivedCompany)->count();
+        $released = (clone $base)->where('lifecycle', ClientLifecycle::Released)->count();
         $maxClients = (int) ($company->max_clients ?: 0);
         $usageRatio = $maxClients > 0 ? round(($total / $maxClients) * 100, 1) : 0.0;
         $features = $company->package_modality?->features() ?? [];
@@ -159,6 +161,8 @@ final class ClientRepository
             'total' => $total,
             'active' => $active,
             'inactive' => $inactive,
+            'archived' => $archived,
+            'released' => $released,
             'max_clients' => $maxClients,
             'clients_remaining' => $company->clientsRemaining(),
             'usage_ratio' => $usageRatio,
@@ -186,17 +190,5 @@ final class ClientRepository
             'is_quota_full' => $maxClients > 0 && $total >= $maxClients,
             'is_hardware' => ($company->package_modality?->value ?? 'manual') === 'hardware',
         ];
-    }
-
-    /** @return Collection<int, Client> */
-    public function recentForCompany(int $companyId, int $limit = 5): Collection
-    {
-        return Client::query()
-            ->with('securityCompany')
-            ->where('security_company_id', $companyId)
-            ->withCount('assignments')
-            ->orderByDesc('created_at')
-            ->limit($limit)
-            ->get();
     }
 }

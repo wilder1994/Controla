@@ -10,7 +10,7 @@ class GuardLog extends Model
 {
     use BelongsToClient, HasFactory, SoftDeletes;
 
-    protected $fillable = ['client_id', 'user_id', 'location_id', 'log_time', 'type', 'shift_type', 'description', 'latitude', 'longitude', 'signed_at', 'is_panic'];
+    protected $fillable = ['client_id', 'user_id', 'location_id', 'log_time', 'type', 'shift_type', 'description', 'latitude', 'longitude', 'signed_at', 'is_panic', 'resolved_at'];
 
     protected function casts(): array
     {
@@ -20,6 +20,7 @@ class GuardLog extends Model
             'longitude' => 'decimal:7',
             'signed_at' => 'datetime',
             'is_panic' => 'boolean',
+            'resolved_at' => 'datetime',
         ];
     }
 

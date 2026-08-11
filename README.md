@@ -21,7 +21,8 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **3** | BI + vigilancia — Reportes mejorados con exportación | ✅ Implementada |
 | **4** | API REST (Sanctum) + Portal Residente web | ✅ Implementada |
 | **Comercial** | Paquetes empresa + tabla de precios + facturación mensual/anual | ✅ Implementada |
-| **UI Empresa** | Design system `x-ui.*`, dashboard licencia + cartera, nav Portería/Conjunto | ✅ Implementada (v1) |
+| **UI Empresa** | Design system `x-ui.*`, Command Center operativo + licencia, nav Portería/Conjunto | ✅ Implementada (v2) |
+| **Ops empresa** | Turnos (`guard_shifts`), revistas (`supervisor_reviews`), KPIs pánico/bloqueo/revista | ✅ Implementada (v1) |
 | **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
@@ -345,7 +346,7 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 | Ruta | Función |
 |------|---------|
-| `GET /company/dashboard` | Licencia: cupo, ciclo, precio, upgrades sugeridos |
+| `GET /company/dashboard` | **Command Center**: KPIs operativos, mapa, atención, turnos, revistas, charts; franja de licencia secundaria |
 | `GET /company/clients` | Cartera de conjuntos (búsqueda, dirección, operar) |
 | `GET /company/clients?modo=operar` | Modo portería: elegir conjunto y entrar |
 | `GET /company/porteria` | Entrada inteligente a portería (auto si hay 1 conjunto) |
@@ -359,6 +360,32 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 `/company/clients/select` redirige a `/company/porteria` (vista eliminada).
 
+#### Command Center (`/company/dashboard`)
+
+Dashboard operativo multi-conjunto para `company-admin`. Capas: `DashboardController` → `CompanyDashboardService` → `CompanyDashboardAnalytics` + `ClientRepository`.
+
+| Bloque | Contenido |
+|--------|-----------|
+| Licencia | Franja compacta: cupo, ciclo, días a renovación, CTA facturación / ampliar |
+| KPIs cartera/ops | Conjuntos activos, vigilantes en turno, puestos abiertos, entradas vehiculares/peatonales hoy, novedades, correspondencia pendiente |
+| Alertas | Pánicos abiertos / hoy, bloqueos vehículos/personas activos, conjuntos archivados |
+| Revista | Cumplimiento % mes, realizadas vs esperadas hoy, sin revista en turno, supervisores en ruta |
+| Mapa | Marcadores por conjunto (geo); usa `GOOGLE_MAPS_API_KEY` (mismo config que `/admin`) |
+| Atención ahora | Cola priorizada (pánico, sin revista, sin asignación, etc.) |
+| Fuerza laboral | Vigilantes / supervisores activos y sin asignación |
+| Charts | Cumplimiento por conjunto, tendencia revistas, accesos por conjunto (hoy) — Chart.js |
+| Turnos abiertos | Tabla de `guard_shifts` abiertos + estado de revista |
+
+**Modelos / migraciones ops (v1):**
+
+- `clients.service_hours`, `clients.revista_target_per_day` — meta de revistas por día
+- `guard_logs.resolved_at` — cierre de pánico / novedad
+- `guard_shifts` — turnos de vigilante (inicio/fin, puesto, notas)
+- `supervisor_reviews` — revistas de supervisor (geo, observaciones, vínculo a turno)
+- `Blocklist`: scopes `active()`, `vehicles()`, `persons()` + tipado visitante/vehículo/residente
+
+Componente KPI: `x-company.kpi-stat`. Test: `tests/Feature/Company/CompanyDashboardTest.php`.
+
 ### Diseño UI — Panel Empresa (`/company`)
 
 Sistema visual unificado para el shell y formularios del panel empresa. **Guía completa:** [`docs/DISENO-UI-CONTROLA.md`](docs/DISENO-UI-CONTROLA.md)
@@ -366,8 +393,9 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 | Elemento | Detalle |
 |----------|---------|
 | Layout | `resources/views/layouts/company.blade.php` — shell `h-screen`; sidebar fijo al viewport (marca · nav · pie); scroll en columna derecha; header con título, empresa, **Portería** y **+ Conjunto** |
-| Dashboard | Franja de licencia, tabla de conjuntos (protagonista) y panel lateral **Cuenta** (ciclo, ampliar cupo, features) |
-| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields` |
+| Dashboard | Command Center operativo (KPIs, mapa, charts, turnos); licencia en franja secundaria |
+| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields`, `x-company.kpi-stat` |
+| Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` |
 | Contexto cupo | `CompanyLayoutComposer` inyecta `companyContext` en el layout |
 | Vistas migradas | `company/dashboard`, `company/clients/*`, `company/users/*`, `company/settings` |
 
@@ -477,8 +505,10 @@ Permite denegar acceso a personas o vehículos desde la portería:
 
 - **Tabla `blocklist`**: polimórfica (`blockable_type`/`blockable_id`) para visitantes, vehículos y residentes
 - **CRUD completo**: crear con búsqueda por tipo, listar activos, remover bloqueo
+- **Scopes**: `active()`, `vehicles()`, `persons()` — tipado unificado (string legacy + FQCN)
 - **Expiración opcional**: se puede establecer fecha de expiración del bloqueo
 - **Permiso**: `access.manage.blocklist` (asignado a guardia, supervisor, client-admin)
+- **Consumo empresa**: el Command Center agrega bloqueos activos por cartera de conjuntos
 
 ### Fase 2 — Salida Masiva
 
@@ -517,6 +547,7 @@ Suites relevantes:
 - `tests/Feature/Structure/StructureModuleTest.php`
 - `tests/Feature/Platform/PlatformDashboardTest.php`
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
+- `tests/Feature/Company/CompanyDashboardTest.php`
 - `tests/Feature/Billing/LocalPaymentCheckoutTest.php`
 - `tests/Feature/Public/PublicSignupFlowTest.php`
 - `tests/Feature/User/ScopedUserManagementTest.php`
@@ -584,17 +615,21 @@ app/
 ├── Repositories/
 ├── Services/Pricing/               # PriceCalculator, UpdatePlatformPricingService
 ├── Services/Platform/              # Dashboard analytics, archivo, retiro, lifecycle, purga, documentos
+├── Services/Company/               # CompanyDashboardService, CompanyDashboardAnalytics
 ├── Services/Public/                # CompletePublicSignupService
 ├── Services/User/                  # ManageScopedUserService
 ├── Services/Auth/                  # UserScopeResolver
 ├── Policies/UserPolicy.php         # SecurityCompanyPolicy
 ├── Services/Tenant/                # AssignCompanyPackageService, CreateClientService, EnterPorteriaService
+├── Models/GuardShift.php           # Turnos de vigilante
+├── Models/SupervisorReview.php     # Revistas de supervisor
 ├── Policies/
 ├── View/Components/
 ├── View/Composers/CompanyLayoutComposer.php
 └── Support/Tenancy/CompanyPackage.php
 
 resources/views/components/ui/     # x-ui.* (button, label, input, field-error)
+resources/views/components/company/ # x-company.kpi-stat
 
 config/billing.php                  # BILLING_MODE demo|live, prefijo factura demo
 
