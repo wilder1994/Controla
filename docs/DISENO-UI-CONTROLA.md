@@ -6,7 +6,9 @@ Referencia oficial del sistema visual. **Panel empresa** (`/company`, acento ind
 - Empresa: `resources/views/modules/company/dashboard.blade.php`
 - Plataforma: `resources/views/modules/admin/dashboard.blade.php`
 
-**Layouts:** `layouts/company.blade.php` · `layouts/admin.blade.php`
+**Layouts:** `layouts/company.blade.php` · `layouts/admin.blade.php` · `layouts/client.blade.php` · `layouts/access.blade.php`
+
+**Shell común (agosto 2026):** wrapper `h-screen flex overflow-hidden`. El `aside` ocupa la altura del viewport (`lg:h-full`), sin estirarse con el contenido. Tres zonas: marca (`shrink-0`) · nav (`flex-1`) · pie usuario (`shrink-0`, siempre visible). Scroll únicamente en la columna derecha (`min-h-0 overflow-y-auto`). En portería (`access`), el nav largo puede hacer scroll interno (`min-h-0 overflow-y-auto`) sin mover el pie.
 
 ---
 
@@ -258,9 +260,11 @@ Misma estructura `px-4 py-3` — solo cambia color semántico:
 ### Sidebar
 
 - Ancho: `w-64`
+- Alto: viewport completo (`lg:h-full` dentro de `h-screen`); **no** crece con el `main`
 - Nav item activo: `bg-indigo-600 text-white`
 - Nav item idle: `text-slate-300 hover:bg-slate-800`
-- Pie: nombre usuario + **Cerrar sesión** (`text-xs text-slate-500 hover:text-white`)
+- Pie: nombre usuario + **Cerrar sesión** (`text-xs text-slate-500 hover:text-white`), fijo abajo (`shrink-0`)
+- Sin scroll en el aside (pocos ítems)
 
 ### Flash messages
 
@@ -318,6 +322,10 @@ Al migrar client/access: duplicar patrones de este doc cambiando solo el color a
 
 | Elemento | Detalle |
 |----------|---------|
+| Wrapper | `h-screen flex overflow-hidden` — body `overflow-hidden` |
+| Aside | `lg:h-full lg:flex-col shrink-0` — altura viewport, sin stretch del contenido |
+| Zonas aside | Marca `shrink-0` · nav `flex-1` · pie usuario `shrink-0` (fijo abajo) |
+| Columna derecha | `min-h-0 overflow-y-auto` — único scroll de página |
 | Contenedor main | `max-w-[1600px]`, `flex flex-col min-h-0` para paneles con scroll interno |
 | Sidebar nav activo | `bg-violet-600 text-white` |
 | Header acciones | `x-ui.button variant="platform"` (Empresas) y `secondary` (Precios) |
@@ -327,8 +335,8 @@ Al migrar client/access: duplicar patrones de este doc cambiando solo el color a
 
 | Vista | Estado |
 |-------|--------|
-| `admin/dashboard` | ✅ Árbol, alertas, vista global, acciones archivo/retiro |
-| `admin/companies/index` | ✅ Tabla cartera + badges alerta |
+| `admin/dashboard` | ✅ Mapa, KPIs, cartera (6 segmentos), paquetes, TOP 5, tendencia MRR |
+| `admin/companies/index` | ✅ KPIs riesgo + totales; tabla cartera + badges |
 | `admin/companies/show` | ✅ Paquete + formulario `x-ui.*` |
 | `admin/pricing/edit` | ✅ Unitarios + matriz calculada |
 
@@ -341,4 +349,4 @@ focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30
 
 ---
 
-*Última actualización: julio 2026 — paneles empresa y plataforma.*
+*Última actualización: agosto 2026 — shell viewport-fixed en paneles admin/company/client/access.*

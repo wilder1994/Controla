@@ -11,9 +11,16 @@
                 <h3 class="mt-3 text-sm font-semibold text-white">{{ $company->trade_name }}</h3>
                 <p class="text-xs text-slate-500 mt-0.5">{{ $company->legal_name }} · NIT {{ $company->tax_id }}</p>
             </div>
-            <x-ui.button variant="secondary" :href="route('admin.dashboard', ['company' => $company->id])" size="sm">
-                Ver en resumen
-            </x-ui.button>
+            <div class="flex flex-wrap items-center gap-2">
+                <x-ui.button variant="secondary" :href="route('admin.dashboard', ['company' => $company->id])" size="sm">
+                    Ver en resumen
+                </x-ui.button>
+                @can('updateProfile', $company)
+                    <x-ui.button variant="platform" :href="route('admin.companies.profile.edit', $company)" size="sm">
+                        Perfil y ubicación
+                    </x-ui.button>
+                @endcan
+            </div>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">

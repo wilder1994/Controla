@@ -9,6 +9,7 @@ use App\Enums\BillingCycle;
 use App\Enums\ClientLifecycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\PackageModality;
+use App\Enums\PartyType;
 use App\Enums\SubscriptionStatus;
 use App\Support\Tenancy\CompanyPackage;
 use Illuminate\Database\Eloquent\Model;
@@ -23,8 +24,14 @@ class SecurityCompany extends Model
         'legal_name',
         'trade_name',
         'tax_id',
+        'party_type',
         'email',
         'phone',
+        'address',
+        'city',
+        'department',
+        'latitude',
+        'longitude',
         'logo_path',
         'is_active',
         'package_size',
@@ -33,6 +40,7 @@ class SecurityCompany extends Model
         'package_price_monthly',
         'max_clients',
         'billing_cycle',
+        'billing_day',
         'unit_price_snapshot',
         'volume_discount_pct',
         'annual_discount_pct',
@@ -51,12 +59,16 @@ class SecurityCompany extends Model
     {
         return [
             'is_active' => 'boolean',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
             'package_size' => 'integer',
             'package_modality' => PackageModality::class,
+            'party_type' => PartyType::class,
             'package_sku' => CompanyPackageSku::class,
             'package_price_monthly' => 'decimal:2',
             'max_clients' => 'integer',
             'billing_cycle' => BillingCycle::class,
+            'billing_day' => 'integer',
             'unit_price_snapshot' => 'decimal:2',
             'volume_discount_pct' => 'decimal:4',
             'annual_discount_pct' => 'decimal:4',
@@ -80,6 +92,41 @@ class SecurityCompany extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function subscriptionAcceptances(): HasMany
+    {
+        return $this->hasMany(SubscriptionAcceptance::class);
+    }
+
+    public function commercialPayments(): HasMany
+    {
+        return $this->hasMany(CommercialPayment::class);
+    }
+
+    public function platformDocuments(): HasMany
+    {
+        return $this->hasMany(PlatformDocument::class);
+    }
+
+    public function lifecycleEvidenceEvents(): HasMany
+    {
+        return $this->hasMany(LifecycleEvidenceEvent::class);
+    }
+
+    public function latestAcceptance(): ?SubscriptionAcceptance
+    {
+        return $this->subscriptionAcceptances()->latest('accepted_at')->first();
+    }
+
+    public function hasCompletedAcceptance(): bool
+    {
+        return $this->subscriptionAcceptances()->exists();
+    }
+
+    public function displayName(): string
+    {
+        return $this->trade_name ?: $this->legal_name;
     }
 
     public function activeClients(): HasMany

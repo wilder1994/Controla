@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -9,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('housing_units', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('client_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('building_id')->constrained()->cascadeOnDelete();
             $table->string('unit_number', 20);
             $table->string('floor', 10)->nullable();

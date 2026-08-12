@@ -10,6 +10,10 @@ use Carbon\CarbonImmutable;
 
 final class ReleaseClientService
 {
+    public function __construct(
+        private readonly RecordLifecycleEvidenceService $evidenceService,
+    ) {}
+
     public function execute(Client $client): Client
     {
         $now = CarbonImmutable::now();
@@ -19,6 +23,19 @@ final class ReleaseClientService
             'released_at' => $now,
             'is_active' => false,
         ]);
+
+        $this->evidenceService->record(
+            \App\Enums\EvidenceEventType::ClientReleased,
+            'Acta de retiro de conjunto',
+            [
+                'client_id' => $client->id,
+                'client_name' => $client->name,
+                'released_at' => $now->toIso8601String(),
+            ],
+            $client->security_company_id,
+            $client->id,
+            $now,
+        );
 
         return $client->fresh();
     }

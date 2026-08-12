@@ -9,10 +9,10 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased bg-slate-950 text-slate-100">
+<body class="font-sans antialiased bg-slate-950 text-slate-100 overflow-hidden">
     <div class="h-screen flex overflow-hidden">
-        <aside class="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 border-r border-slate-800">
-            <div class="px-6 py-5 border-b border-slate-800">
+        <aside class="hidden lg:flex lg:w-64 lg:h-full lg:flex-col bg-slate-900 border-r border-slate-800 shrink-0">
+            <div class="px-6 py-5 border-b border-slate-800 shrink-0">
                 <p class="text-xs uppercase tracking-wider text-slate-500">Controla</p>
                 <h1 class="text-lg font-semibold text-white">Control de Acceso</h1>
                 @isset($activeClient)
@@ -20,6 +20,7 @@
                 @endisset
             </div>
             <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll">
+            <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto">
                 @foreach (config('access.navigation.access.items', []) as $item)
                     @can($item['permission'])
                     <a href="{{ route($item['route']) }}"
@@ -53,6 +54,13 @@
 
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-20">
+            <div class="px-4 py-4 border-t border-slate-800 text-xs text-slate-500 shrink-0">
+                {{ Auth::user()->name }}
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
+            <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-20 shrink-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <span class="text-xs text-slate-500">{{ now()->format('D, d M Y') }}</span>

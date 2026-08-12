@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Schema;
 
 final class PurgeClientTenantDataService
 {
+    public function __construct(
+        private readonly RecordLifecycleEvidenceService $evidenceService,
+    ) {}
+
     public function execute(Client $client): Client
     {
         if ($client->tenant_data_purged_at !== null) {
@@ -38,6 +42,18 @@ final class PurgeClientTenantDataService
                 'login_suffix' => "purged-{$clientId}",
                 'tenant_data_purged_at' => $now,
             ]);
+
+            $this->evidenceService->record(
+                \App\Enums\EvidenceEventType::TenantPurged,
+                'Acta de purga operativa (censo tenant)',
+                [
+                    'client_id' => $clientId,
+                    'purged_at' => $now->toIso8601String(),
+                ],
+                $client->security_company_id,
+                $clientId,
+                $now,
+            );
 
             return $client->fresh();
         });

@@ -2,7 +2,7 @@
 
 Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo de cartera y retención legal de datos.
 
-**Última actualización:** julio 2026
+**Última actualización:** agosto 2026
 
 ---
 
@@ -13,37 +13,97 @@ Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo
 | `/admin` | `super-admin` | `platform.dashboard`, `platform.companies.view`, `platform.companies.manage` |
 
 Layout: `resources/views/layouts/admin.blade.php` (acento **violet**).  
+Shell: altura de viewport fija (`h-screen`); sidebar sin scroll; pie de usuario anclado abajo; scroll solo en la columna de contenido.  
+Módulo Documentos (definición + v1 implementado; fases futuras §12): [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md).  
 Guía visual: [`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md) §13.
 
 ---
 
 ## Dashboard (`GET /admin/dashboard`)
 
-Pantalla principal de cartera viva. **Sin scroll de página**; scroll solo en paneles internos (mapa árbol y tabla detalle).
+Pantalla analítica de la plataforma. Métricas comerciales, distribución geográfica y tendencias de facturación.
 
-### Filtros (server-side, query params)
+### Layout (v2 — julio 2026)
 
-| Parámetro | Valores | Efecto |
-|-----------|---------|--------|
-| `alert` | `current`, `due_soon`, `overdue`, `archived` | Filtra empresas/conjuntos por bucket de alerta |
-| `archive` | `recovery`, `cancelled` | Subfiltro cuando `alert=archived` |
-| `company` | ID empresa | Drill-down de una empresa |
-| `view` | `global` | Vista global (todas las filas de conjuntos) |
+| Bloque | Contenido |
+|--------|-----------|
+| **Fila superior** | Mapa (Google Maps) + 4 KPIs + donut estado de cartera |
+| **Paquetes** | Modalidad (manual/hardware), cupo contratado (1/5/10/50/100), ciclo (mensual/anual) |
+| **Facturación** | TOP 5 empresas por MRR, KPIs comerciales, nuevos vs retenidos |
+| **Tendencia** | Línea MRR (12 meses) + conjuntos activos (eje dual) |
 
-Alpine.js se usa **solo** para expand/collapse del árbol; el estado de filtros vive en la URL.
+Gráficas: **Chart.js 4** (CDN). Mapa: **Google Maps JavaScript API** con toggle **Empresa / Clientes**.
 
-### Buckets de alerta (`CompanyAlertBucket`)
+### KPIs principales
 
-| Bucket | Regla |
-|--------|--------|
-| **Al día** | Suscripción activa, vence en más de 30 días |
-| **Por vencer** | Vence en ≤ 30 días |
-| **Vencidos** | Gracia vencida o estado `expired` |
-| **Archivados** | `archived_at` o `subscription_status = suspended` |
+| Métrica | Fuente |
+|---------|--------|
+| Empresas activas | Empresas no archivadas |
+| Conjuntos operativos | `clients` con `lifecycle = active` |
+| MRR estimado | Suma mensualizada de paquetes (`package_price_monthly` o anual ÷ 12) |
+| Tasa retención | % empresas en bucket «Al día» |
 
-Motor: `App\Support\Tenancy\CompanySubscriptionState`
+### Estado de cartera
 
-### Acciones
+Donut / leyenda con estados alineados al ciclo de acceso:
+
+| Segmento | Criterio |
+|----------|----------|
+| Al día | Bucket `current` |
+| Por vencer | Bucket `due_soon` |
+| Vencidos | Gracia / vencido **con acceso** (`grace` / overdue, no suspended) |
+| Suspendidas | Acceso bloqueado (`subscription_status = suspended`) |
+| Archivadas | `archived_at` not null |
+| Eliminadas | Soft-delete (`onlyTrashed`) |
+
+Motor de buckets: `CompanySubscriptionState` · datos: `PlatformDashboardAnalytics::portfolioStatus`.
+
+### Mapa geográfico
+
+| Capa | Marcadores |
+|------|------------|
+| **Empresa** | `security_companies` (coordenadas propias o promedio de conjuntos) |
+| **Clientes** | `clients` con `latitude`/`longitude` |
+
+Configuración: `config/google-maps.php`
+
+```env
+GOOGLE_MAPS_API_KEY=
+GOOGLE_MAPS_DEFAULT_LAT=4.5709
+GOOGLE_MAPS_DEFAULT_LNG=-74.2973
+GOOGLE_MAPS_DEFAULT_ZOOM=6
+```
+
+Sin API key se muestra aviso en el contenedor del mapa.
+
+#### Alta de clave en Google Cloud
+
+1. Proyecto en [Google Cloud Console](https://console.cloud.google.com/).
+2. **APIs y servicios → Biblioteca** → buscar y habilitar **Maps JavaScript API** (única API requerida por Controla).
+3. **APIs y servicios → Credenciales → Crear credenciales → Clave de API**.
+4. Editar la clave creada:
+   - **Restricciones de aplicación:** Sitios web → agregar `http://controla.test/*` y `http://localhost/*` (ajustar dominio en producción).
+   - **Restricciones de API:** Restringir clave → marcar solo **Maps JavaScript API**.
+5. Copiar la clave a `.env` → `GOOGLE_MAPS_API_KEY=...`
+6. En el proyecto: `php artisan config:clear` y recargar `/admin`.
+
+**Facturación:** Google exige cuenta de facturación activa en el proyecto (incluye crédito gratuito mensual).
+
+| Error en consola del navegador | Causa habitual |
+|--------------------------------|----------------|
+| `RefererNotAllowedMapError` | Falta el referente HTTP del dominio local |
+| `ApiNotActivatedMapError` | Maps JavaScript API no habilitada |
+| `BillingNotEnabledMapError` | Facturación no vinculada al proyecto |
+
+**Datos demo:** `TenantSeeder` asigna coordenadas en Cali a SJ Seguridad y sus conjuntos piloto.
+
+### TOP empresas por facturación
+
+Tabla con altura fija (alineada a la columna derecha del grid). Scroll interno cuando hay más filas. Cabecera sticky.
+
+### Acciones de cartera (desde otras rutas)
+
+Las acciones de archivo y retiro de conjunto siguen disponibles en el detalle de empresa:
 
 | Acción | Ruta | Efecto |
 |--------|------|--------|
@@ -55,24 +115,53 @@ Motor: `App\Support\Tenancy\CompanySubscriptionState`
 
 ## Ciclo comercial de licencia
 
+Los **paquetes** (cupo × modalidad × ciclo mensual/anual) se mantienen. El ciclo de **acceso/cobranza** es independiente:
+
 ```
-Venta → vigencia → gracia (30 días) → sin pago → suspender → archivo por recuperar
-Cancelación voluntaria → archivo inmediato (motivo cancelled)
+Paquete activo → vencimiento → gracia (5 días) → suspensión (bloqueo)
+→ (configurable, default 90 días) → archivo por falta de pago
+→ retención legal → purga / eliminación
 ```
+
+**No existe** el concepto «cartera por recuperar». Reactivar = asignar/pagar de nuevo el paquete (`AssignCompanyPackageService`).
 
 ### Estados (`SubscriptionStatus`)
 
-`active` · `grace` · `expired` · `suspended`
+`active` · `grace` · `expired` (legacy) · `suspended`
 
 ### Campos empresa (`security_companies`)
 
 | Campo | Uso |
 |-------|-----|
+| `billing_cycle` | Mensual / anual del **paquete** |
+| `billing_day` | Día de corte (1–28); se setea al asignar paquete |
 | `package_ends_at` | Fin de vigencia contratada |
-| `grace_ends_at` | Fin del mes de gracia |
-| `suspended_at` | Fecha de suspensión |
-| `archived_at` | Fecha de archivo |
-| `archive_reason` | `cancelled` \| `recovery` |
+| `grace_ends_at` | Fin de gracia post-corte (`config/subscription.php` → `grace_days`) |
+| `suspended_at` | Inicio de bloqueo por falta de pago |
+| `archived_at` | Archivo comercial |
+| `archive_reason` | `cancelled` (baja voluntaria) \| `non_payment` (falta de pago) |
+
+Config:
+
+```env
+SUBSCRIPTION_GRACE_DAYS=5
+SUBSCRIPTION_REMINDER_DAYS=5
+SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS=90
+```
+
+Pendiente de producto: facturas/prorrateo de 1ª cuota, recordatorios por email/WhatsApp, pasarela de pago.
+
+### Vista Empresas (`GET /admin/companies`)
+
+Cabecera con **3 KPIs** (sin bloque de título textual):
+
+| KPI | Contenido |
+|-----|-----------|
+| **Riesgo comercial** | Suspendidas + Archivadas + Eliminadas (soft-delete) |
+| **Total empresas** | Total · Activas (`is_active`) · Archivadas |
+| **Total conjuntos** | Total · Operativos (`lifecycle=active`) · Archivados |
+
+Datos: `SecurityCompanyRepository::companiesIndexKpis()` (cartera completa, no solo la página).
 
 ### Campos conjunto (`clients`)
 
@@ -156,14 +245,25 @@ Servicios:
 
 | Método | Ruta | Función |
 |--------|------|---------|
-| GET | `/admin/dashboard` | Resumen cartera + árbol + detalle |
+| GET | `/admin/dashboard` | Dashboard analítico (mapa, KPIs, cartera, facturación) |
 | POST | `/admin/companies/{company}/archive` | Archivar empresa |
 | POST | `/admin/companies/{company}/clients/{client}/release` | Retirar conjunto |
 | GET | `/admin/pricing` | Tabla de precios |
 | PUT | `/admin/pricing` | Guardar unitarios |
 | GET | `/admin/companies` | Listado empresas |
+| GET/POST | `/admin/companies/create` | Alta empresa (paquete + geo) |
 | GET | `/admin/companies/{company}` | Detalle y cambio de paquete |
 | PUT | `/admin/companies/{company}/package` | Asignar SKU y ciclo |
+| GET | `/admin/documents` | Hub documental (KPIs) |
+| GET | `/admin/documents/normativa` | Normoteca (globales + contratos por SKU) |
+| GET/PUT | `/admin/documents/normativa/{corpus}` | Editar / publicar nueva versión |
+| GET | `/admin/documents/trd` | Tabla de retención documental |
+| POST | `/admin/documents/expedientes/{company}/acceptance` | Aceptación clickwrap |
+| POST | `/admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
+| GET | `/admin/documents/expedientes` | Listado expedientes |
+| GET | `/admin/documents/expedientes/{company}` | Detalle expediente (corpus congelado) |
+
+Permisos: `platform.documents.view`, `platform.documents.manage` (solo `super-admin` en v1).
 
 Archivo: `routes/modules/admin.php`
 
@@ -173,15 +273,29 @@ Archivo: `routes/modules/admin.php`
 
 ```
 app/Services/Platform/
-├── PlatformDashboardService.php      # Datos dashboard + filtros
+├── PlatformDashboardService.php      # Orquesta datos del dashboard
+├── PlatformDashboardAnalytics.php    # KPIs, gráficas, marcadores mapa, TOP facturación
 ├── ArchiveCompanyService.php         # Archivo en cascada
 ├── ReleaseClientService.php          # Retiro de conjunto
 ├── ProcessSubscriptionLifecycleService.php
+├── SuspendCompanyService.php
 ├── ProcessDataRetentionPurgeService.php
-└── PurgeClientTenantDataService.php
+├── PurgeClientTenantDataService.php
+├── PlatformDocumentsHubService.php
+├── BuildLegalCorpusSnapshotService.php
+├── PublishLegalCorpusVersionService.php
+├── RecordSubscriptionAcceptanceService.php
+├── RegisterCommercialPaymentService.php
+├── IssueDemoInvoiceService.php
+├── CreateCompanyService.php
+└── RecordLifecycleEvidenceService.php
+
+config/billing.php                    # BILLING_MODE, prefijo demo
+config/subscription.php               # gracia, recordatorio, archivo post-suspensión
+config/google-maps.php                # API key y centro por defecto (Colombia)
 
 app/Enums/
-├── ArchiveReason.php                 # cancelled, recovery
+├── ArchiveReason.php                 # cancelled, non_payment
 ├── ClientLifecycle.php               # active, released, archived_company
 ├── CompanyAlertBucket.php            # current, due_soon, overdue, archived
 └── SubscriptionStatus.php            # incluye Suspended
@@ -191,28 +305,34 @@ app/Support/Tenancy/CompanySubscriptionState.php
 
 ---
 
-## Migraciones (julio 2026)
+## Migraciones (baseline unificado — ago 2026)
 
-| Archivo | Cambios |
-|---------|---------|
-| `2026_07_20_160000_add_address_to_clients_table.php` | Campo `address` en conjuntos |
-| `2026_07_20_170000_add_archive_and_lifecycle_fields.php` | Archivo, gracia, lifecycle |
-| `2026_07_20_180000_add_data_retention_purge_fields.php` | `tenant_data_purged_at`, `commercial_anonymized_at` |
+Historial squasheado: creates con schema final (sin cascada de `add_*`). En local tras pull:
 
 ```bash
-php artisan migrate
+php artisan migrate:fresh --seed
 ```
 
+> Solo en desarrollo. Requiere autorización explícita si hay datos reales.
+
+Tablas clave incluyen de origen: geo (`city`/`department`), `service_started_at`, `supervisor_code` / `job_title` / `avatar_path`, paquete/ciclo en empresas, normoteca con `package_sku`, pagos con gateway fields.
 ---
 
 ## Tests
 
 ```bash
 php artisan test --filter=PlatformDashboardTest
+php artisan test --filter=PlatformCompaniesIndexTest
+php artisan test --filter=CreateCompanyTest
+php artisan test --filter=SubscriptionLifecycleTest
+php artisan test --filter=PlatformDocumentsTest
 php artisan test --filter=DataRetentionPurgeTest
 ```
 
 - `tests/Feature/Platform/PlatformDashboardTest.php`
+- `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
+- `tests/Feature/Platform/PlatformDocumentsTest.php`
+- `tests/Unit/Platform/SubscriptionLifecycleTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
 
 ---

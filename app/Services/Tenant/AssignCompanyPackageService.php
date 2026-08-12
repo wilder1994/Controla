@@ -29,12 +29,16 @@ final class AssignCompanyPackageService
             ? $startsAt->addYear()
             : $startsAt->addMonth();
 
+        $billingDayMax = max(1, (int) config('subscription.billing_day_max', 28));
+        $billingDay = min($billingDayMax, max(1, (int) $startsAt->day));
+
         $company->update([
             'package_sku' => $sku,
             'package_size' => $sku->size(),
             'package_modality' => $sku->modality(),
             'max_clients' => $sku->size(),
             'billing_cycle' => $cycle,
+            'billing_day' => $billingDay,
             'unit_price_snapshot' => $quote->unitPrice,
             'volume_discount_pct' => $quote->volumeDiscountPct,
             'annual_discount_pct' => $quote->annualDiscountPct,

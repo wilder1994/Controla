@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Company;
 
 use App\Models\Client;
+use App\Support\Geo\GeoAddressRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -45,8 +46,9 @@ final class UpdateClientRequest extends FormRequest
                     ->where('security_company_id', $companyId)
                     ->ignore($client->id),
             ],
-            'address' => ['nullable', 'string', 'max:255'],
+            ...GeoAddressRules::optional(),
             'access_url' => ['nullable', 'url', 'max:255'],
+            'service_started_at' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

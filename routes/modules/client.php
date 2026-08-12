@@ -8,6 +8,7 @@ use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\MemberController;
 use App\Http\Controllers\Client\PetController;
 use App\Http\Controllers\Client\StructureController;
+use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -100,4 +101,20 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::post('/app-users', [AppUserController::class, 'store'])
             ->middleware('permission:client.app_users.manage')
             ->name('app-users.store');
+
+        Route::get('/users', [UserController::class, 'index'])
+            ->middleware('permission:client.users.manage')
+            ->name('users.index');
+        Route::get('/users/create', [UserController::class, 'create'])
+            ->middleware('permission:client.users.manage')
+            ->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])
+            ->middleware('permission:client.users.manage')
+            ->name('users.store');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])
+            ->middleware('permission:client.users.manage')
+            ->name('users.edit');
+        Route::put('/users/{user}', [UserController::class, 'update'])
+            ->middleware('permission:client.users.manage')
+            ->name('users.update');
     });

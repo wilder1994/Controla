@@ -25,11 +25,16 @@ final class CreateClientService
             'slug' => Str::slug($data->slug),
             'login_suffix' => Str::lower($data->loginSuffix),
             'address' => $data->address,
+            'city' => $data->city,
+            'department' => $data->department,
+            'latitude' => $data->latitude,
+            'longitude' => $data->longitude,
             // Legacy columns retained; portfolio is unlimited commercially.
             'plan_tier' => ClientPlanTier::Economic,
             'max_structures' => ClientPlanTier::Economic->maxStructures(),
             'access_url' => $data->accessUrl,
             'is_active' => $data->isActive,
+            'service_started_at' => $data->serviceStartedAt ?? now()->toDateString(),
             'lifecycle' => ClientLifecycle::Active,
         ]);
     }

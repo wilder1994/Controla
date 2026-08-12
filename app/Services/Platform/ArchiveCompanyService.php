@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 final class ArchiveCompanyService
 {
+    public function __construct(
+        private readonly RecordLifecycleEvidenceService $evidenceService,
+    ) {}
+
     public function execute(SecurityCompany $company, ArchiveReason $reason): SecurityCompany
     {
         return DB::transaction(function () use ($company, $reason) {
@@ -35,6 +39,18 @@ final class ArchiveCompanyService
                     'archived_at' => $now,
                     'is_active' => false,
                 ]);
+
+            $this->evidenceService->record(
+                \App\Enums\EvidenceEventType::CompanyArchived,
+                'Acta de archivo comercial',
+                [
+                    'archive_reason' => $reason->value,
+                    'archived_at' => $now->toIso8601String(),
+                ],
+                $company->id,
+                null,
+                $now,
+            );
 
             return $company->fresh();
         });

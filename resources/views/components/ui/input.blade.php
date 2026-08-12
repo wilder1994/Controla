@@ -3,6 +3,7 @@
 @php
     $focusClasses = match ($accent) {
         'platform' => 'focus:border-violet-500 focus:ring-violet-500/30',
+        'client' => 'focus:border-teal-500 focus:ring-teal-500/30',
         default => 'focus:border-indigo-500 focus:ring-indigo-500/30',
     };
 @endphp

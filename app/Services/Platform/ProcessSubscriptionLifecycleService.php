@@ -9,6 +9,10 @@ use App\Enums\SubscriptionStatus;
 use App\Models\SecurityCompany;
 use Carbon\CarbonImmutable;
 
+/**
+ * Ciclo de acceso (no reemplaza paquetes):
+ * active → (vencimiento) → grace (N días) → suspended → (M días) → archived (non_payment).
+ */
 final class ProcessSubscriptionLifecycleService
 {
     public function execute(?CarbonImmutable $now = null): int
@@ -38,27 +42,44 @@ final class ProcessSubscriptionLifecycleService
             return false;
         }
 
+        $graceDays = max(0, (int) config('subscription.grace_days', 5));
+        $archiveAfterSuspended = max(1, (int) config('subscription.archive_after_suspended_days', 90));
+
+        // 1) Activa vencida → gracia
         if ($company->subscription_status === SubscriptionStatus::Active && $endsAt->isPast()) {
             $company->update([
                 'subscription_status' => SubscriptionStatus::Grace,
-                'grace_ends_at' => $endsAt->addMonth(),
+                'grace_ends_at' => $endsAt->addDays($graceDays),
             ]);
 
             return true;
         }
 
+        // 2) Gracia vencida → suspensión (bloqueo de acceso, sin archivar)
         if ($company->subscription_status === SubscriptionStatus::Grace) {
-            $graceEnds = $company->grace_ends_at ?? $endsAt->addMonth();
+            $graceEnds = $company->grace_ends_at ?? $endsAt->addDays($graceDays);
 
             if ($graceEnds->isPast()) {
-                app(ArchiveCompanyService::class)->execute($company, ArchiveReason::Recovery);
+                app(SuspendCompanyService::class)->execute($company, $now);
 
                 return true;
             }
         }
 
+        // 3) Expired legacy → suspensión (no archivo directo)
         if ($company->subscription_status === SubscriptionStatus::Expired && $endsAt->isPast()) {
-            app(ArchiveCompanyService::class)->execute($company, ArchiveReason::Recovery);
+            app(SuspendCompanyService::class)->execute($company, $now);
+
+            return true;
+        }
+
+        // 4) Suspendida demasiado tiempo → archivo por falta de pago
+        if (
+            $company->subscription_status === SubscriptionStatus::Suspended
+            && $company->suspended_at !== null
+            && CarbonImmutable::parse($company->suspended_at)->addDays($archiveAfterSuspended)->isPast()
+        ) {
+            app(ArchiveCompanyService::class)->execute($company, ArchiveReason::NonPayment);
 
             return true;
         }

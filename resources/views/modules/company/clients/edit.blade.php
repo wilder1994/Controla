@@ -25,15 +25,24 @@
                 </div>
             </div>
 
-            <div>
-                <x-ui.label for="address">Dirección del conjunto</x-ui.label>
-                <x-ui.input id="address" type="text" name="address" :value="old('address', $client->address)" placeholder="Calle, ciudad" />
-                <x-ui.field-error :messages="$errors->get('address')" />
-            </div>
+            <x-ui.geo-address-fields
+                :address="old('address', $client->address)"
+                :city="old('city', $client->city)"
+                :department="old('department', $client->department)"
+                :latitude="old('latitude', $client->latitude)"
+                :longitude="old('longitude', $client->longitude)"
+            />
 
             <div>
                 <x-ui.label for="access_url">URL acceso</x-ui.label>
                 <x-ui.input id="access_url" type="url" name="access_url" :value="old('access_url', $client->access_url)" />
+            </div>
+
+            <div>
+                <x-ui.label for="service_started_at">Inicio de servicio</x-ui.label>
+                <x-ui.input id="service_started_at" type="date" name="service_started_at" :value="old('service_started_at', $client->service_started_at?->format('Y-m-d'))" />
+                <p class="mt-1 text-[11px] text-slate-500">Controla no gestiona cobros de la empresa hacia este conjunto.</p>
+                <x-ui.field-error :messages="$errors->get('service_started_at')" />
             </div>
 
             <p class="text-xs text-slate-500">

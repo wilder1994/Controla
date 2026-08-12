@@ -41,6 +41,10 @@
                 <p class="mt-1 text-xs text-slate-500">Unidades, personas, mascotas y vehículos sin tope</p>
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+                <p class="text-xs uppercase text-slate-500">Inicio de servicio</p>
+                <p class="mt-2 text-sm text-slate-200">{{ $client->service_started_at?->format('d/m/Y') ?: '—' }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-xs uppercase text-slate-500">Usuarios asignados</p>
                 <p class="mt-2 text-2xl font-bold text-white">{{ $client->assignments_count }}</p>
             </div>
