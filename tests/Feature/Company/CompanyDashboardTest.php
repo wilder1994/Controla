@@ -23,25 +23,23 @@ final class CompanyDashboardTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Resumen empresa');
-        $response->assertSee('Cartera y operación');
-        $response->assertSee('Vigilantes en turno ahora');
-        $response->assertSee('Puestos con turno abierto');
-        $response->assertSee('Vehículos · entradas hoy');
-        $response->assertSee('Visitantes peatonales · entradas hoy');
-        $response->assertSee('Pánicos abiertos sin cerrar');
-        $response->assertSee('Bloqueos · vehículos activos');
-        $response->assertSee('Bloqueos · personas activas');
-        $response->assertSee('Conjuntos archivados');
-        $response->assertSee('Revista (KPIs)');
-        $response->assertSee('Cumplimiento revistas (mes)');
-        $response->assertSee('Sin revista en turno');
         $response->assertSee('Mapa de conjuntos');
-        $response->assertSee('Atención ahora');
-        $response->assertSee('Fuerza laboral');
-        $response->assertSee('Cumplimiento por conjunto');
-        $response->assertSee('Revistas: realizadas vs esperadas');
+        $response->assertSee('Cartera de clientes');
+        $response->assertSee('Plan activo');
+        $response->assertSee('Activos');
+        $response->assertSee('Archivados');
+        $response->assertSee('Disponibles');
+        $response->assertSee('Resumen de alertas y registros (hoy)');
+        $response->assertSee('Novedades');
+        $response->assertSee('Correspondencia');
+        $response->assertSee('Pánico');
+        $response->assertSee('Bloqueos');
+        $response->assertSee('Fuerza laboral actual');
         $response->assertSee('Accesos por conjunto (hoy)');
-        $response->assertSee('Turnos abiertos ahora');
+        $response->assertSee('Turnos abiertos');
+        $response->assertSee('Revistas mensuales');
+        $response->assertSee('Revistas de supervisión (7 días)');
+        $response->assertDontSee('Cumplimiento por conjunto');
         $response->assertDontSee('Próximamente');
     }
 

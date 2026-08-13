@@ -21,7 +21,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **3** | BI + vigilancia — Reportes mejorados con exportación | ✅ Implementada |
 | **4** | API REST (Sanctum) + Portal Residente web | ✅ Implementada |
 | **Comercial** | Paquetes empresa + tabla de precios + facturación mensual/anual | ✅ Implementada |
-| **UI Empresa** | Design system `x-ui.*`, Command Center operativo + licencia, nav Portería/Conjunto | ✅ Implementada (v2) |
+| **UI Empresa** | Design system `x-ui.*`, Command Center 3 filas (mapa/cartera/ops), nav Portería/Conjunto | ✅ Implementada (v3) |
 | **Ops empresa** | Turnos (`guard_shifts`), revistas (`supervisor_reviews`), KPIs pánico/bloqueo/revista | ✅ Implementada (v1) |
 | **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
@@ -346,7 +346,7 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 | Ruta | Función |
 |------|---------|
-| `GET /company/dashboard` | **Command Center**: KPIs operativos, mapa, atención, turnos, revistas, charts; franja de licencia secundaria |
+| `GET /company/dashboard` | **Command Center** (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de conjuntos (búsqueda, dirección, operar) |
 | `GET /company/clients?modo=operar` | Modo portería: elegir conjunto y entrar |
 | `GET /company/porteria` | Entrada inteligente a portería (auto si hay 1 conjunto) |
@@ -364,17 +364,32 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 Dashboard operativo multi-conjunto para `company-admin`. Capas: `DashboardController` → `CompanyDashboardService` → `CompanyDashboardAnalytics` + `ClientRepository`.
 
+Layout de **3 filas** con alturas fijas en desktop y ancho fluido (`1fr`); en `<lg` se apilan.
+
+| Fila | Paneles |
+|------|---------|
+| 1 | **Mapa de conjuntos** (~2/3) + **Cartera de clientes** + **Alertas y registros (hoy)** |
+| 2 | **Fuerza laboral** \| **Accesos por conjunto (hoy)** \| **Turnos abiertos** |
+| 3 | **Revistas mensuales** (8 meses) \| **Revistas de supervisión (7 días)** |
+
 | Bloque | Contenido |
 |--------|-----------|
-| Licencia | Franja compacta: cupo, ciclo, días a renovación, CTA facturación / ampliar |
-| KPIs cartera/ops | Conjuntos activos, vigilantes en turno, puestos abiertos, entradas vehiculares/peatonales hoy, novedades, correspondencia pendiente |
-| Alertas | Pánicos abiertos / hoy, bloqueos vehículos/personas activos, conjuntos archivados |
-| Revista | Cumplimiento % mes, realizadas vs esperadas hoy, sin revista en turno, supervisores en ruta |
-| Mapa | Marcadores por conjunto (geo); usa `GOOGLE_MAPS_API_KEY` (mismo config que `/admin`) |
-| Atención ahora | Cola priorizada (pánico, sin revista, sin asignación, etc.) |
-| Fuerza laboral | Vigilantes / supervisores activos y sin asignación |
-| Charts | Cumplimiento por conjunto, tendencia revistas, accesos por conjunto (hoy) — Chart.js |
-| Turnos abiertos | Tabla de `guard_shifts` abiertos + estado de revista |
+| Cartera | Plan activo, activos, archivados, disponibles (cupo − activos); enlace facturación |
+| Alertas hoy | Novedades, correspondencia pendiente, pánicos abiertos, bloqueos activos |
+| Fuerza laboral | Vigilantes, en turno, supervisores, sin asignación |
+| Accesos | Chart.js: vehículos vs visitantes peatonales por conjunto (hoy) |
+| Turnos | Tabla `guard_shifts` abiertos + última revista |
+| Revistas | Series meta / realizados / pendientes (mes y semana) — sin duplicar KPIs de cumplimiento |
+
+**Mapa (Google Maps):**
+
+- Requiere `GOOGLE_MAPS_API_KEY` (mismo config que `/admin`)
+- Default **satélite**; toggle cabecera **Satélite \| Terreno** (`MapTypeId.TERRAIN`)
+- Buscador de conjunto en la cabecera del panel (fuera del canvas)
+- Pins con nombre; **sin auto-abrir** el primero
+- Clic → nube custom (no InfoWindow nativo): revistas, turno, accesos, Ver / Operar
+- Zoom con rueda (`scrollwheel` + `gestureHandling: 'greedy'`) y controles `+`/`−`
+- Fallback SVG si no hay API key
 
 **Modelos / migraciones ops (v1):**
 
@@ -384,7 +399,8 @@ Dashboard operativo multi-conjunto para `company-admin`. Capas: `DashboardContro
 - `supervisor_reviews` — revistas de supervisor (geo, observaciones, vínculo a turno)
 - `Blocklist`: scopes `active()`, `vehicles()`, `persons()` + tipado visitante/vehículo/residente
 
-Componente KPI: `x-company.kpi-stat`. Test: `tests/Feature/Company/CompanyDashboardTest.php`.
+Analytics: `revista_monthly`, `revista_week`, `access_by_client`, `open_shifts_table`, `portfolio`.  
+Test: `tests/Feature/Company/CompanyDashboardTest.php`.
 
 ### Diseño UI — Panel Empresa (`/company`)
 
@@ -393,8 +409,8 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 | Elemento | Detalle |
 |----------|---------|
 | Layout | `resources/views/layouts/company.blade.php` — shell `h-screen`; sidebar fijo al viewport (marca · nav · pie); scroll en columna derecha; header con título, empresa, **Portería** y **+ Conjunto** |
-| Dashboard | Command Center operativo (KPIs, mapa, charts, turnos); licencia en franja secundaria |
-| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields`, `x-company.kpi-stat` |
+| Dashboard | Command Center v3: grid 3 filas, paneles altura fija, mapa satélite/terreno |
+| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields` |
 | Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` |
 | Contexto cupo | `CompanyLayoutComposer` inyecta `companyContext` en el layout |
 | Vistas migradas | `company/dashboard`, `company/clients/*`, `company/users/*`, `company/settings` |

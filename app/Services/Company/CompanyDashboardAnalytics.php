@@ -49,12 +49,16 @@ final class CompanyDashboardAnalytics
         $workforce = $this->workforce($companyId, $openShifts);
 
         $mapMarkers = $this->mapMarkers($activeClients, $reviewsToday, $openShifts);
+        $maxClients = (int) ($company->max_clients ?: 0);
+        $activeCount = $activeClients->count();
+        $blockTotal = $blockCounts['vehicles'] + $blockCounts['persons'];
 
         return [
             'kpis' => [
-                'active_clients' => $activeClients->count(),
-                'max_clients' => (int) ($company->max_clients ?: 0),
+                'active_clients' => $activeCount,
+                'max_clients' => $maxClients,
                 'archived_clients' => $archivedCount,
+                'available_slots' => max(0, $maxClients - $activeCount),
                 'vigilantes_on_shift' => $openShifts->pluck('user_id')->unique()->count(),
                 'posts_open' => $openShifts->count(),
                 'vehicle_entries_today' => $this->countAccessToday($activeClientIds, ['visitor_vehicle', 'resident_vehicle']),
@@ -65,6 +69,7 @@ final class CompanyDashboardAnalytics
                 'panics_today' => $panicsToday->count(),
                 'blocklist_vehicles' => $blockCounts['vehicles'],
                 'blocklist_persons' => $blockCounts['persons'],
+                'blocklist_total' => $blockTotal,
                 'revista_compliance_pct' => $revista['compliance_pct'],
                 'revistas_today_done' => $revista['today_done'],
                 'revistas_today_expected' => $revista['today_expected'],
@@ -79,30 +84,24 @@ final class CompanyDashboardAnalytics
                     : 'Portería manual · residentes a pie no se contabilizan sin hardware',
             ],
             'workforce' => $workforce,
-            'attention' => $this->attentionQueue(
-                $activeClients,
-                $panicsToday,
-                $panicsOpen,
-                $archivedCount,
-                $blockCounts,
-                $revista,
-                $openShifts,
-            ),
             'map_markers' => $mapMarkers,
             'google_maps' => [
                 'api_key' => config('google-maps.api_key'),
                 'center' => config('google-maps.default_center'),
                 'zoom' => config('google-maps.default_zoom'),
             ],
-            'compliance_by_client' => $this->complianceByClient($activeClients, $reviewsMonth),
-            'revista_trend' => $this->revistaTrend($activeClients, $activeClientIds),
+            'revista_monthly' => $this->revistaMonthly($activeClients, $activeClientIds),
+            'revista_week' => $this->revistaTrend($activeClients, $activeClientIds),
             'access_by_client' => $this->accessByClientToday($activeClients),
             'open_shifts_table' => $this->openShiftsTable($openShifts, $reviewsToday),
             'portfolio' => [
                 'with_geo' => $activeClients->filter(
                     fn (Client $c) => $c->latitude !== null && $c->longitude !== null
                 )->count(),
-                'active_total' => $activeClients->count(),
+                'active_total' => $activeCount,
+                'archived' => $archivedCount,
+                'max_clients' => $maxClients,
+                'available' => max(0, $maxClients - $activeCount),
             ],
         ];
     }
@@ -551,13 +550,14 @@ final class CompanyDashboardAnalytics
     /**
      * @param  Collection<int, Client>  $activeClients
      * @param  list<int>  $clientIds
-     * @return array{labels: list<string>, done: list<int>, expected: list<int>}
+     * @return array{labels: list<string>, done: list<int>, expected: list<int>, pending: list<int>}
      */
     private function revistaTrend(Collection $activeClients, array $clientIds): array
     {
         $labels = [];
         $done = [];
         $expected = [];
+        $pending = [];
         $dailyExpected = (int) $activeClients->sum(
             fn (Client $c) => max(1, (int) ($c->revista_target_per_day ?: 1))
         );
@@ -565,19 +565,69 @@ final class CompanyDashboardAnalytics
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $labels[] = $date->translatedFormat('D');
-            $expected[] = $dailyExpected;
-            $done[] = $clientIds === []
+            $dayDone = $clientIds === []
                 ? 0
                 : (int) SupervisorReview::query()
                     ->whereIn('client_id', $clientIds)
                     ->whereDate('reviewed_at', $date->toDateString())
                     ->count();
+            $expected[] = $dailyExpected;
+            $done[] = $dayDone;
+            $pending[] = max(0, $dailyExpected - $dayDone);
         }
 
         return [
             'labels' => $labels,
             'done' => $done,
             'expected' => $expected,
+            'pending' => $pending,
+        ];
+    }
+
+    /**
+     * Últimos 8 meses calendario: meta, realizadas y pendientes.
+     *
+     * @param  Collection<int, Client>  $activeClients
+     * @param  list<int>  $clientIds
+     * @return array{labels: list<string>, expected: list<int>, done: list<int>, pending: list<int>}
+     */
+    private function revistaMonthly(Collection $activeClients, array $clientIds): array
+    {
+        $labels = [];
+        $expected = [];
+        $done = [];
+        $pending = [];
+        $dailyTarget = (int) $activeClients->sum(
+            fn (Client $c) => max(1, (int) ($c->revista_target_per_day ?: 1))
+        );
+
+        for ($i = 7; $i >= 0; $i--) {
+            $month = now()->startOfMonth()->subMonths($i);
+            $daysInMonth = (int) $month->daysInMonth;
+            if ($i === 0) {
+                $daysInMonth = max(1, (int) now()->day);
+            }
+            $monthExpected = $dailyTarget * $daysInMonth;
+            $monthDone = $clientIds === []
+                ? 0
+                : (int) SupervisorReview::query()
+                    ->whereIn('client_id', $clientIds)
+                    ->whereYear('reviewed_at', $month->year)
+                    ->whereMonth('reviewed_at', $month->month)
+                    ->when($i === 0, fn ($q) => $q->whereDate('reviewed_at', '<=', today()->toDateString()))
+                    ->count();
+
+            $labels[] = $month->translatedFormat('M');
+            $expected[] = $monthExpected;
+            $done[] = $monthDone;
+            $pending[] = max(0, $monthExpected - $monthDone);
+        }
+
+        return [
+            'labels' => $labels,
+            'expected' => $expected,
+            'done' => $done,
+            'pending' => $pending,
         ];
     }
 
