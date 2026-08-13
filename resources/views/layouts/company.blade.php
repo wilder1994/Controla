@@ -8,6 +8,36 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        /* Rail de contenido: fluido (sin max-w-7xl); tope suave solo en ultra-wide */
+        .company-shell-rail {
+            width: 100%;
+            max-width: 100%;
+            margin-inline: auto;
+            padding-inline: 1rem;
+        }
+        @media (min-width: 640px) {
+            .company-shell-rail { padding-inline: 1.25rem; }
+        }
+        @media (min-width: 1024px) {
+            .company-shell-rail { padding-inline: 1.5rem; }
+        }
+        @media (min-width: 1280px) {
+            .company-shell-rail { padding-inline: 1.75rem; }
+        }
+        @media (min-width: 1536px) {
+            .company-shell-rail {
+                padding-inline: 2rem;
+                max-width: 100rem; /* ~1600px */
+            }
+        }
+        @media (min-width: 1920px) {
+            .company-shell-rail {
+                max-width: 110rem; /* ~1760px */
+                padding-inline: 2.5rem;
+            }
+        }
+    </style>
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100 overflow-hidden">
@@ -67,7 +97,7 @@
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
             <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-10 shrink-0">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+                <div class="company-shell-rail py-3 flex items-center justify-between gap-4">
                     <div class="min-w-0">
                         @isset($header)
                             {{ $header }}
@@ -96,17 +126,17 @@
             </header>
 
             @if (session('success'))
-                <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
+                <div class="company-shell-rail pt-4">
                     <div class="rounded-lg bg-emerald-900/40 border border-emerald-700 text-emerald-200 px-4 py-3 text-sm">{{ session('success') }}</div>
                 </div>
             @endif
             @if (session('warning'))
-                <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
+                <div class="company-shell-rail pt-4">
                     <div class="rounded-lg bg-amber-900/40 border border-amber-700 text-amber-200 px-4 py-3 text-sm">{{ session('warning') }}</div>
                 </div>
             @endif
 
-            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-5">
+            <main class="company-shell-rail flex-1 w-full py-4 sm:py-5">
                 {{ $slot }}
             </main>
         </div>

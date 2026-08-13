@@ -364,11 +364,18 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 Dashboard operativo multi-conjunto para `company-admin`. Capas: `DashboardController` → `CompanyDashboardService` → `CompanyDashboardAnalytics` + `ClientRepository`.
 
-Layout de **3 filas** con alturas fijas en desktop y ancho fluido (`1fr`); en `<lg` se apilan.
+Layout de **3 filas**. Ancho: rail `.company-shell-rail` en el layout empresa (header + flash + main alineados; **sin** `max-w-7xl`). Padding responsive; tope suave ~1600px (`2xl`) / ~1760px (`≥1920px`).
+
+| Breakpoint | Comportamiento |
+|------------|----------------|
+| `<768px` | Filas apiladas; mapa ~320px; paneles altura auto/fija móvil |
+| `768–1023` | Side cartera+alertas en 2 cols; fila 2 en 2+1; fila 3 en 2 cols |
+| `≥1024` | Grid desktop: mapa `1.75fr` + side; filas 2 (3 cols) y 3 (2 cols); alturas fijas |
+| `≥1280` / `≥1536` | Más peso al mapa (`2.05fr` → `2.25fr`); paneles más altos; buscador más ancho |
 
 | Fila | Paneles |
 |------|---------|
-| 1 | **Mapa de conjuntos** (~2/3) + **Cartera de clientes** + **Alertas y registros (hoy)** |
+| 1 | **Mapa de conjuntos** + **Cartera de clientes** + **Alertas y registros (hoy)** |
 | 2 | **Fuerza laboral** \| **Accesos por conjunto (hoy)** \| **Turnos abiertos** |
 | 3 | **Revistas mensuales** (8 meses) \| **Revistas de supervisión (7 días)** |
 
@@ -408,8 +415,8 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `resources/views/layouts/company.blade.php` — shell `h-screen`; sidebar fijo al viewport (marca · nav · pie); scroll en columna derecha; header con título, empresa, **Portería** y **+ Conjunto** |
-| Dashboard | Command Center v3: grid 3 filas, paneles altura fija, mapa satélite/terreno |
+| Layout | `resources/views/layouts/company.blade.php` — shell `h-screen`; sidebar fijo; rail fluido `.company-shell-rail` (sin `max-w-7xl`; tope ~1600–1760px solo en 2xl/1920+) |
+| Dashboard | Command Center v3: grid responsive (móvil → tablet 2 col → lg/xl/2xl densidades), alturas fijas desde `lg`, mapa satélite/terreno |
 | Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields` |
 | Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` |
 | Contexto cupo | `CompanyLayoutComposer` inyecta `companyContext` en el layout |
