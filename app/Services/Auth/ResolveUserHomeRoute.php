@@ -22,7 +22,7 @@ final class ResolveUserHomeRoute
             return route('client.dashboard');
         }
 
-        if ($user->hasAnyRole(['guardia', 'supervisor', 'admin-accesos'])) {
+        if ($user->hasAnyRole(['guardia', 'admin-accesos'])) {
             return route('access.dashboard');
         }
 

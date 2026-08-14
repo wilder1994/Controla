@@ -45,6 +45,8 @@ return [
         'access.manage.buildings',
         'access.manage.housing_units',
         'access.manage.residents',
+        'access.manage.supervision',
+        'access.manage.supervision_codes',
         'access.view.reports',
 
         // Residente
@@ -70,6 +72,8 @@ return [
             'company.settings.manage',
             'access.operations',
             'access.dashboard',
+            'access.manage.supervision',
+            'access.manage.supervision_codes',
             'access.view.reports',
         ],
 
@@ -96,21 +100,8 @@ return [
             'access.manage.pre_authorizations',
             'access.manage.correspondence',
             'access.manage.guard_logs',
-            'access.view.reports',
-        ],
-
-        'supervisor' => [
-            'access.operations',
-            'access.dashboard',
-            'access.manage.blocklist',
-            'access.register.entry',
-            'access.register.exit',
-            'access.manage.visitors',
-            'access.manage.vehicles',
-            'access.manage.vehicle_access',
-            'access.manage.residents',
-            'access.manage.correspondence',
-            'access.manage.guard_logs',
+            'access.manage.supervision',
+            'access.manage.supervision_codes',
             'access.view.reports',
         ],
 
@@ -126,6 +117,9 @@ return [
             'access.manage.residents',
             'access.manage.correspondence',
             'access.manage.guard_logs',
+            'access.manage.supervision',
+            'access.manage.supervision_codes',
+            'access.view.reports',
         ],
 
         'resident' => [
@@ -205,6 +199,7 @@ return [
                 ['label' => 'Pre-Autorizaciones', 'route' => 'access.pre_authorizations.index', 'permission' => 'access.manage.pre_authorizations'],
                 ['label' => 'Correspondencia', 'route' => 'access.correspondence.index', 'permission' => 'access.manage.correspondence'],
                 ['label' => 'Minutas', 'route' => 'access.guard_logs.index', 'permission' => 'access.manage.guard_logs'],
+                ['label' => 'Supervisión', 'route' => 'access.supervision.index', 'permission' => 'access.manage.supervision'],
                 ['label' => 'Ubicaciones', 'route' => 'access.locations.index', 'permission' => 'access.manage.locations'],
                 ['label' => 'Lista Bloqueo', 'route' => 'access.blocklist.index', 'permission' => 'access.manage.blocklist'],
                 ['label' => 'Reportes', 'route' => 'access.reports.index', 'permission' => 'access.view.reports'],

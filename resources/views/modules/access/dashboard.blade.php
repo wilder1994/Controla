@@ -1,5 +1,5 @@
 <x-access-layout title="Dashboard de Acceso">
-    <div class="-mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-6 pb-8 bg-gradient-to-r from-slate-800 to-indigo-900 mb-6">
+    <div class="-mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 bg-gradient-to-r from-slate-800 to-indigo-900 mb-4">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm font-medium text-indigo-300">Panel de Control</p>
@@ -140,17 +140,23 @@
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
             <h3 class="text-sm font-semibold text-white mb-1">Accesos diarios (últimos 7 días)</h3>
             <p class="text-xs text-slate-500 mb-4">Movimientos de entrada registrados por día</p>
-            <canvas id="dailyChart" height="180"></canvas>
+            <div class="relative h-64 overflow-y-auto">
+                <canvas id="dailyChart"></canvas>
+            </div>
         </div>
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
             <h3 class="text-sm font-semibold text-white mb-1">Distribución por tipo</h3>
             <p class="text-xs text-slate-500 mb-4">Visitantes peatonales vs vehiculares vs residentes</p>
-            <canvas id="typeChart" height="180"></canvas>
+            <div class="relative h-64 overflow-y-auto">
+                <canvas id="typeChart"></canvas>
+            </div>
         </div>
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 lg:col-span-2">
             <h3 class="text-sm font-semibold text-white mb-1">Actividad hoy por hora</h3>
             <p class="text-xs text-slate-500 mb-4">Distribución horaria de ingresos del día</p>
-            <canvas id="hourlyChart" height="120"></canvas>
+            <div class="relative h-56 overflow-y-auto">
+                <canvas id="hourlyChart"></canvas>
+            </div>
         </div>
     </div>
 

@@ -9,6 +9,8 @@ use App\Http\Controllers\Access\AccessLogController;
 use App\Http\Controllers\Access\PreAuthorizationController;
 use App\Http\Controllers\Access\CorrespondenceController;
 use App\Http\Controllers\Access\GuardLogController;
+use App\Http\Controllers\Access\SupervisionController;
+use App\Http\Controllers\Access\SupervisionCodeController;
 use App\Http\Controllers\Access\ReportController;
 use App\Http\Controllers\Access\BuildingController;
 use App\Http\Controllers\Access\HousingUnitController;
@@ -75,6 +77,34 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->pre
     // Guard Logs
     Route::resource('guard_logs', GuardLogController::class)->except(['edit', 'update']);
     Route::post('/guard_logs/panic', [GuardLogController::class, 'panic'])->name('guard_logs.panic');
+
+    // Supervision (módulo con acceso por código único de supervisor)
+    Route::middleware('permission:access.manage.supervision')->group(function () {
+        Route::get('/supervision/unlock', [SupervisionController::class, 'unlockForm'])->name('supervision.unlock');
+        Route::post('/supervision/unlock', [SupervisionController::class, 'unlock'])->name('supervision.unlock.submit');
+        Route::get('/supervision/exit', [SupervisionController::class, 'exit'])->name('supervision.exit');
+
+        Route::get('/supervision/codes', [SupervisionCodeController::class, 'index'])
+            ->middleware('permission:access.manage.supervision_codes')
+            ->name('supervision.codes.index');
+        Route::post('/supervision/codes', [SupervisionCodeController::class, 'store'])
+            ->middleware('permission:access.manage.supervision_codes')
+            ->name('supervision.codes.store');
+        Route::patch('/supervision/codes/{code}/toggle', [SupervisionCodeController::class, 'toggle'])
+            ->middleware('permission:access.manage.supervision_codes')
+            ->name('supervision.codes.toggle');
+        Route::delete('/supervision/codes/{code}', [SupervisionCodeController::class, 'destroy'])
+            ->middleware('permission:access.manage.supervision_codes')
+            ->name('supervision.codes.destroy');
+
+        Route::middleware('supervision.unlocked')->group(function () {
+            Route::get('/supervision', [SupervisionController::class, 'index'])->name('supervision.index');
+            Route::get('/supervision/create', [SupervisionController::class, 'create'])->name('supervision.create');
+            Route::post('/supervision', [SupervisionController::class, 'store'])->name('supervision.store');
+            Route::get('/supervision/{supervision}', [SupervisionController::class, 'show'])->name('supervision.show');
+            Route::delete('/supervision/{supervision}', [SupervisionController::class, 'destroy'])->name('supervision.destroy');
+        });
+    });
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
