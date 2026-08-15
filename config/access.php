@@ -134,6 +134,26 @@ return [
             'access.manage.zones',
         ],
 
+        'supervisor' => [
+            'access.operations',
+            'access.dashboard',
+            'access.manage.blocklist',
+            'access.register.entry',
+            'access.register.exit',
+            'access.manage.visitors',
+            'access.manage.vehicles',
+            'access.manage.vehicle_access',
+            'access.manage.residents',
+            'access.manage.correspondence',
+            'access.manage.guard_logs',
+            'access.manage.supervision',
+            'access.manage.supervision_codes',
+            'access.view.reports',
+            'access.view.audit',
+            'access.manage.turnos',
+            'access.manage.zones',
+        ],
+
         'resident' => [
             'resident.portal.access',
             'access.manage.pre_authorizations',
