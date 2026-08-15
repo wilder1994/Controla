@@ -10,11 +10,16 @@ class Location extends Model
 {
     use BelongsToClient, HasFactory, SoftDeletes;
 
-    protected $fillable = ['client_id', 'code', 'name', 'address', 'phone', 'type', 'is_active'];
+    protected $fillable = ['client_id', 'code', 'name', 'address', 'phone', 'latitude', 'longitude', 'geo_radius_m', 'type', 'is_active'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
+            'geo_radius_m' => 'integer',
+        ];
     }
 
     public function accessLogs()

@@ -40,16 +40,32 @@
         @endif
 
         @if($activeLogs->count())
+        @php $longStayCount = $activeLogs->where('alert_long_stay', true)->count(); @endphp
+        @if($longStayCount > 0)
+        <div class="mt-4 rounded-lg bg-red-900/40 border border-red-700 text-red-200 px-4 py-3 text-sm flex items-center justify-between gap-3">
+            <span>
+                <strong>{{ $longStayCount }}</strong> {{ $longStayCount === 1 ? 'persona lleva' : 'personas llevan' }} más de {{ config('access.alerts.long_stay_hours') }} horas dentro del conjunto.
+            </span>
+            <a href="{{ route('access.logs.exit.page') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-red-100 hover:text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition-colors">Registrar salidas →</a>
+        </div>
+        @endif
         <div class="mt-6 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                 <div>
                     <h3 class="text-base font-semibold text-white">Personas Dentro del Edificio</h3>
                     <p class="text-sm text-slate-500 mt-0.5">Registros activos con ingreso registrado</p>
                 </div>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-900/30 text-emerald-300 ring-1 ring-emerald-700">
-                    <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5"></span>
-                    <span x-text="activeCount">{{ $activeLogs->count() }}</span> dentro
-                </span>
+                <div class="flex items-center gap-2">
+                    @if($longStayCount > 0)
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-900/40 text-red-300 ring-1 ring-red-700">
+                        {{ $longStayCount }} alertas
+                    </span>
+                    @endif
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-900/30 text-emerald-300 ring-1 ring-emerald-700">
+                        <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5"></span>
+                        <span x-text="activeCount">{{ $activeLogs->count() }}</span> dentro
+                    </span>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-800">
@@ -74,10 +90,10 @@
                             $hoursInside = $log->entry_time->diffInHours(now());
                             $destination = $log->housingUnit?->full_label ?? $log->host?->name ?? '-';
                         @endphp
-                        <tr class="hover:bg-slate-800/40 transition-colors {{ $hoursInside > 12 ? 'bg-red-900/20' : '' }}">
+                        <tr class="hover:bg-slate-800/40 transition-colors {{ $log->alert_long_stay ? 'bg-red-900/20' : '' }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <div class="w-8 h-8 rounded-full {{ $hoursInside > 12 ? 'bg-gradient-to-br from-red-400 to-red-600' : 'bg-gradient-to-br from-indigo-500 to-indigo-700' }} flex items-center justify-center text-white text-xs font-bold">
+                                    <div class="w-8 h-8 rounded-full {{ $log->alert_long_stay ? 'bg-gradient-to-br from-red-400 to-red-600' : 'bg-gradient-to-br from-indigo-500 to-indigo-700' }} flex items-center justify-center text-white text-xs font-bold">
                                         {{ strtoupper(substr($personName, 0, 2)) }}
                                     </div>
                                     <div class="ml-3">
@@ -96,10 +112,10 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $log->entry_time->format('H:i') }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-1">
-                                    <span class="text-sm {{ $hoursInside > 12 ? 'text-red-400 font-semibold' : 'text-slate-400' }}">
+                                    <span class="text-sm {{ $log->alert_long_stay ? 'text-red-400 font-semibold' : 'text-slate-400' }}">
                                         {{ $log->entry_time->diffForHumans(now(), true) }}
                                     </span>
-                                    @if($hoursInside > 12)
+                                    @if($log->alert_long_stay)
                                     <svg class="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                                     @endif
                                 </div>
@@ -114,7 +130,7 @@
                                         '{{ $log->entry_time->format('H:i') }}',
                                         '{{ $log->entry_time->diffForHumans(now(), true) }}',
                                         '{{ strtoupper(substr($personName, 0, 2)) }}',
-                                        {{ $hoursInside > 12 ? 'true' : 'false' }}
+                                        {{ $log->alert_long_stay ? 'true' : 'false' }}
                                     )"
                                     class="inline-flex items-center px-3 py-1.5 bg-red-600 border border-transparent rounded-lg font-semibold text-xs text-white hover:bg-red-700 transition-colors"
                                 >

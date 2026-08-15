@@ -21,6 +21,14 @@
                 <form method="POST" action="{{ route('access.supervision.store') }}" enctype="multipart/form-data">
                     @csrf
 
+                    @if($errors->any())
+                    <div class="mb-5 rounded-lg bg-red-900/40 border border-red-700 text-red-200 px-4 py-3 text-sm">
+                        @foreach($errors->all() as $error)
+                            <p>{{ $error }}</p>
+                        @endforeach
+                    </div>
+                    @endif
+
                     @if ($activeSupervisor)
                     <div class="mb-5 flex items-center gap-3 bg-indigo-900/40 border border-indigo-700 rounded-lg p-4">
                         <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold flex-shrink-0">{{ strtoupper(substr($activeSupervisor, 0, 2)) }}</div>

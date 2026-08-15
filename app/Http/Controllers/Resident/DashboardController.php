@@ -44,7 +44,19 @@ final class DashboardController extends Controller
             ->where('status', 'pending')
             ->count();
 
-        // Chart: daily entries for last 7 days
+        $unitActivity = AccessLog::with(['visitor', 'resident', 'housingUnit.building', 'location'])
+            ->where('host_id', $user->id)
+            ->latest('entry_time')
+            ->take(10)
+            ->get()
+            ->map(function ($log) {
+                $log->person_name = $log->visitor?->full_name ?? $log->resident?->full_name ?? '-';
+                $log->person_doc = $log->visitor?->document_number ?? $log->resident?->document_number ?? '-';
+                return $log;
+            });
+
+        $myNotifications = $user->notifications()->latest()->take(8)->get();
+
         $dailyLabels = [];
         $dailyData = [];
         for ($i = 6; $i >= 0; $i--) {
@@ -56,6 +68,7 @@ final class DashboardController extends Controller
         return view('modules.resident.dashboard', compact(
             'preAuthorizations', 'pendingCorrespondence', 'unreadMessages',
             'activeEntries', 'todayEntries', 'monthEntries', 'activePreAuths',
+            'unitActivity', 'myNotifications',
             'dailyLabels', 'dailyData'
         ));
     }

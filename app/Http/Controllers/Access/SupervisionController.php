@@ -5,6 +5,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Location;
 use App\Models\Supervision;
 use App\Models\SupervisionCode;
+use App\Services\Access\AuditLogger;
+use App\Services\Access\GeoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -68,6 +70,8 @@ class SupervisionController extends Controller
 
     public function store(Request $request)
     {
+        $geoRequired = config('access.geo.required', true);
+
         $validated = $request->validate([
             'location_id' => 'required|exists:locations,id',
             'log_date' => 'required|date',
@@ -75,12 +79,26 @@ class SupervisionController extends Controller
             'shift_type' => 'required|in:diurno,nocturno',
             'supervisor_name' => 'nullable|string|max:255',
             'description' => 'required|string',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
+            'latitude' => [$geoRequired ? 'required' : 'nullable', 'numeric', 'between:-90,90'],
+            'longitude' => [$geoRequired ? 'required' : 'nullable', 'numeric', 'between:-180,180'],
             'signed' => 'accepted',
             'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:10240',
             'documents.*' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp|max:20480',
         ]);
+
+        $location = Location::find($validated['location_id']);
+
+        if ($location !== null && $geoRequired) {
+            $geoErrors = app(GeoService::class)->validateAgainstLocation(
+                $location,
+                $validated['latitude'] ?? null,
+                $validated['longitude'] ?? null
+            );
+
+            if (! empty($geoErrors)) {
+                return back()->withErrors(['geo' => implode(' ', $geoErrors)])->withInput();
+            }
+        }
 
         $supervision = Supervision::create([
             'user_id' => auth()->id(),
@@ -98,6 +116,12 @@ class SupervisionController extends Controller
 
         $this->storeAttachments($supervision, $request, 'photos', 'photo');
         $this->storeAttachments($supervision, $request, 'documents', 'document');
+
+        app(AuditLogger::class)->record($supervision, 'supervision.create', null, [
+            'type' => $supervision->type,
+            'location_id' => $supervision->location_id,
+            'log_time' => $supervision->log_time?->toDateTimeString(),
+        ]);
 
         return redirect()->route('access.supervision.show', $supervision)
             ->with('success', 'Registro de supervisión creado exitosamente.');

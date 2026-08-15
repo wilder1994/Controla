@@ -24,7 +24,7 @@ class OperationsController extends Controller
             ->map(function ($log) {
                 $hoursInside = $log->entry_time->diffInHours(now());
                 $log->hours_inside = $hoursInside;
-                $log->alert_long_stay = $hoursInside >= 12;
+                $log->alert_long_stay = $hoursInside >= (int) config('access.alerts.long_stay_hours');
                 $log->person_name = $log->visitor?->full_name ?? $log->resident?->full_name ?? $log->user?->name ?? '-';
                 $log->person_doc = $log->visitor && $log->visitor->document_type
                     ? $log->visitor->document_type . ' ' . $log->visitor->document_number

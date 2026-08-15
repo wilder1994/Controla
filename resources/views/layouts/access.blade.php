@@ -67,6 +67,42 @@
                 </div>
             </header>
 
+            @php
+                $shiftUser = Auth::user();
+                $turnoService = new \App\Services\Access\TurnoService();
+                $shiftRequired = config('access.shifts.enforced') && $shiftUser && ! $turnoService->isShiftOptionalFor($shiftUser);
+                $activeShift = $shiftRequired ? $turnoService->currentFor($shiftUser) : null;
+            @endphp
+            @if($shiftRequired)
+                @if($activeShift)
+                    <div class="bg-emerald-900/50 border-b border-emerald-700/60">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3">
+                            <p class="text-xs text-emerald-200">
+                                <span class="inline-flex items-center gap-1 font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Turno activo desde las {{ $activeShift->started_at->format('H:i') }}
+                                </span>
+                                @if($activeShift->location)
+                                    · {{ $activeShift->location->name }}
+                                @endif
+                            </p>
+                            <form method="POST" action="{{ route('access.turnos.close') }}" class="inline" onsubmit="return confirm('¿Cerrar el turno actual?');">
+                                @csrf
+                                <input type="hidden" name="end_notes" value="">
+                                <button type="submit" class="text-xs font-semibold text-emerald-300 hover:text-emerald-100">Cerrar turno</button>
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <div class="bg-amber-900/40 border-b border-amber-700/60">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3">
+                            <p class="text-xs text-amber-200 font-medium">No tienes un turno abierto. Para operar la portería debes iniciar tu turno.</p>
+                            <a href="{{ route('access.turnos.open') }}" class="text-xs font-semibold text-amber-100 hover:text-white bg-amber-700/70 hover:bg-amber-600/80 px-3 py-1.5 rounded-lg transition-colors">Abrir turno</a>
+                        </div>
+                    </div>
+                @endif
+            @endif
+
             @if (session('success'))
                 <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
                     <div class="rounded-lg bg-emerald-900/40 border border-emerald-700 text-emerald-200 px-4 py-3 text-sm">{{ session('success') }}</div>

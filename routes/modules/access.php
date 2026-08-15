@@ -17,6 +17,9 @@ use App\Http\Controllers\Access\HousingUnitController;
 use App\Http\Controllers\Access\ResidentController;
 use App\Http\Controllers\Access\OperationsController;
 use App\Http\Controllers\Access\BlocklistController;
+use App\Http\Controllers\Access\TurnoController;
+use App\Http\Controllers\Access\AuditController;
+use App\Http\Controllers\Access\ZoneController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->prefix('access')->name('access.')->group(function () {
@@ -54,17 +57,33 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->pre
     Route::get('vehicles/search/resident/json', [VehicleController::class, 'searchResidentVehicleJson'])->name('vehicles.search.resident.json');
 
     // Vehicle Access (residentes/propietarios)
-    Route::get('/vehicle-access', [VehicleAccessController::class, 'index'])->name('vehicle_access.index');
-    Route::get('/vehicle-access/entry', [VehicleAccessController::class, 'entry'])->name('vehicle_access.entry');
-    Route::post('/vehicle-access/entry', [VehicleAccessController::class, 'storeEntry'])->name('vehicle_access.entry.store');
-    Route::patch('/vehicle-access/{accessLog}/exit', [VehicleAccessController::class, 'markExit'])->name('vehicle_access.exit');
-    Route::get('/vehicle-access/search', [VehicleAccessController::class, 'searchVehicleJson'])->name('vehicle_access.search');
+    Route::middleware('shift.open')->group(function () {
+        Route::get('/vehicle-access', [VehicleAccessController::class, 'index'])->name('vehicle_access.index');
+        Route::get('/vehicle-access/entry', [VehicleAccessController::class, 'entry'])->name('vehicle_access.entry');
+        Route::post('/vehicle-access/entry', [VehicleAccessController::class, 'storeEntry'])->name('vehicle_access.entry.store');
+        Route::patch('/vehicle-access/{accessLog}/exit', [VehicleAccessController::class, 'markExit'])->name('vehicle_access.exit');
+        Route::get('/vehicle-access/search', [VehicleAccessController::class, 'searchVehicleJson'])->name('vehicle_access.search');
+    });
 
     // Access Logs (ingreso/salida)
-    Route::get('/logs', [AccessLogController::class, 'index'])->name('logs.index');
-    Route::get('/logs/entry', [AccessLogController::class, 'entry'])->name('logs.entry');
-    Route::post('/logs/entry', [AccessLogController::class, 'storeEntry'])->name('logs.entry.store');
-    Route::patch('/logs/{accessLog}/exit', [AccessLogController::class, 'markExit'])->name('logs.exit');
+    Route::get('/logs', [AccessLogController::class, 'index'])
+        ->middleware('shift.open')
+        ->name('logs.index');
+    Route::get('/logs/entry', [AccessLogController::class, 'entry'])
+        ->middleware('shift.open')
+        ->name('logs.entry');
+    Route::get('/logs/exit', [AccessLogController::class, 'exitPage'])
+        ->middleware('shift.open')
+        ->name('logs.exit.page');
+    Route::post('/logs/entry', [AccessLogController::class, 'storeEntry'])
+        ->middleware('shift.open')
+        ->name('logs.entry.store');
+    Route::patch('/logs/{accessLog}/exit', [AccessLogController::class, 'markExit'])
+        ->middleware('shift.open')
+        ->name('logs.exit');
+    Route::post('/logs/scan-exit', [AccessLogController::class, 'scanExit'])
+        ->middleware('shift.open')
+        ->name('logs.scan-exit');
 
     // Pre-authorizations
     Route::resource('pre_authorizations', PreAuthorizationController::class)->except(['edit', 'update']);
@@ -75,7 +94,8 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->pre
     Route::patch('correspondence/{correspondence}/deliver', [CorrespondenceController::class, 'markDelivered'])->name('correspondence.deliver');
 
     // Guard Logs
-    Route::resource('guard_logs', GuardLogController::class)->except(['edit', 'update']);
+    Route::resource('guard_logs', GuardLogController::class)->except(['edit', 'update'])
+        ->middleware('shift.open');
     Route::post('/guard_logs/panic', [GuardLogController::class, 'panic'])->name('guard_logs.panic');
 
     // Supervision (módulo con acceso por código único de supervisor)
@@ -109,6 +129,7 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->pre
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/printable', [ReportController::class, 'printable'])->name('reports.printable');
 
     // Blocklist
     Route::get('/blocklist', [BlocklistController::class, 'index'])->name('blocklist.index');
@@ -117,6 +138,38 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->pre
     Route::get('/blocklist/search', [BlocklistController::class, 'searchJson'])->name('blocklist.search');
     Route::delete('/blocklist/{blocklist}', [BlocklistController::class, 'destroy'])->name('blocklist.destroy');
 
+    // Turnos de guardia
+    Route::get('/turnos', [TurnoController::class, 'index'])
+        ->middleware('permission:access.manage.turnos')
+        ->name('turnos.index');
+    Route::get('/turnos/open', [TurnoController::class, 'open'])
+        ->middleware('permission:access.manage.turnos')
+        ->name('turnos.open');
+    Route::post('/turnos', [TurnoController::class, 'store'])
+        ->middleware('permission:access.manage.turnos')
+        ->name('turnos.store');
+    Route::post('/turnos/close', [TurnoController::class, 'close'])
+        ->middleware('permission:access.manage.turnos')
+        ->name('turnos.close');
+
+    // Auditoría de seguridad
+    Route::get('/audit', [AuditController::class, 'index'])
+        ->middleware('permission:access.view.audit')
+        ->name('audit.index');
+
+    // Zonas comunes (portería)
+    Route::middleware('permission:access.manage.zones')->group(function () {
+        Route::get('/zones', [ZoneController::class, 'index'])->name('zones.index');
+        Route::get('/zones/create', [ZoneController::class, 'create'])->name('zones.create');
+        Route::post('/zones', [ZoneController::class, 'store'])->name('zones.store');
+        Route::delete('/zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
+        Route::post('/zones/checkin', [ZoneController::class, 'checkin'])->name('zones.checkin');
+        Route::post('/zones/{booking}/complete', [ZoneController::class, 'complete'])->name('zones.complete');
+        Route::post('/zones/{booking}/cancel', [ZoneController::class, 'cancel'])->name('zones.cancel');
+    });
+
     // Bulk Exit
-    Route::post('/logs/bulk-exit', [AccessLogController::class, 'bulkExit'])->name('logs.bulk-exit');
+    Route::post('/logs/bulk-exit', [AccessLogController::class, 'bulkExit'])
+        ->middleware('shift.open')
+        ->name('logs.bulk-exit');
 });

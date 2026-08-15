@@ -10,6 +10,7 @@ use App\Http\Controllers\Client\PetController;
 use App\Http\Controllers\Client\StructureController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\VehicleController;
+use App\Http\Controllers\Client\ZoneBookingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'client.admin'])
@@ -117,4 +118,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::put('/users/{user}', [UserController::class, 'update'])
             ->middleware('permission:client.users.manage')
             ->name('users.update');
+
+        // Zonas comunes
+        Route::middleware('permission:client.zones.book')->group(function () {
+            Route::get('/zones', [ZoneBookingController::class, 'index'])->name('zones.index');
+            Route::get('/zones/book', [ZoneBookingController::class, 'create'])->name('zones.book');
+            Route::post('/zones', [ZoneBookingController::class, 'store'])->name('zones.store');
+            Route::post('/zones/{booking}/cancel', [ZoneBookingController::class, 'cancel'])->name('zones.cancel');
+        });
     });

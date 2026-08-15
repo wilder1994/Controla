@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'supervision.unlocked' => \App\Http\Middleware\EnsureSupervisionUnlocked::class,
+            'shift.open' => \App\Http\Middleware\EnsureOpenShift::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

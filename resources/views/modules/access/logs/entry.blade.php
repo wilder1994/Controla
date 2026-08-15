@@ -9,6 +9,13 @@
         </div>
     </div>
 
+    <div class="mb-4 flex justify-end">
+        <a href="{{ route('access.logs.exit.page') }}" class="inline-flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            Kiosco de salida rápida
+        </a>
+    </div>
+
     <div class="max-w-4xl">
         <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-800">
@@ -45,6 +52,9 @@
                                 @include('modules.access.partials.qr-scan-field')
                             </div>
 
+                            <div x-show="scanError" class="mb-3 p-3 bg-red-900/40 border border-red-700 rounded-lg">
+                                <p class="text-sm text-red-200 font-medium" x-text="scanError"></p>
+                            </div>
                             <div class="relative">
                                 <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                 <input type="text" x-model="search" @input.debounce="searchVisitor()" placeholder="Buscar por documento o nombre..." class="block w-full pl-10 rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
@@ -139,6 +149,9 @@
                                 @include('modules.access.partials.qr-scan-field')
                             </div>
 
+                            <div x-show="scanError" class="mb-3 p-3 bg-red-900/40 border border-red-700 rounded-lg">
+                                <p class="text-sm text-red-200 font-medium" x-text="scanError"></p>
+                            </div>
                             <div class="relative">
                                 <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                 <input type="text" x-model="vsearch" @input.debounce="searchVisitor()" placeholder="Buscar por documento o nombre..." class="block w-full pl-10 rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
@@ -264,6 +277,7 @@
                 searchResults: [],
                 selectedVisitorId: null,
                 selectedVisitor: null,
+                scanError: '',
                 get selectedVisitorLabel() {
                     if (!this.selectedVisitor) return '';
                     return this.selectedVisitor.document_type + ' ' + this.selectedVisitor.document_number + ' - ' + this.selectedVisitor.first_name + ' ' + this.selectedVisitor.last_name;
@@ -280,12 +294,14 @@
                     this.selectedVisitorId = v.id;
                     this.search = v.document_number + ' - ' + v.first_name + ' ' + v.last_name;
                     this.searchResults = [];
+                    this.scanError = '';
                 },
                 clearSelection() {
                     this.selectedVisitor = null;
                     this.selectedVisitorId = null;
                     this.search = '';
                     this.searchResults = [];
+                    this.scanError = '';
                 },
                 async handleScan() {
                     let parts = this.scanBuffer.trim().split(/[|\t]/);
@@ -302,6 +318,10 @@
                             body: JSON.stringify({ document_number: numero, first_name: nombreCompleto, last_name: apellidoCompleto })
                         });
                         const data = await res.json();
+                        if (data.blocked) {
+                            this.scanError = data.message + ' ' + (data.reason || '');
+                            return;
+                        }
                         this.selectVisitor(data.visitor);
                     } catch(e) {}
                 }
@@ -315,6 +335,7 @@
                 visitorResults: [],
                 selectedVisitorId: null,
                 selectedVisitor: null,
+                scanError: '',
                 psearch: '',
                 plateResults: [],
                 selectedVehicleId: null,
@@ -341,12 +362,14 @@
                     this.selectedVisitorId = v.id;
                     this.vsearch = v.document_number + ' - ' + v.first_name + ' ' + v.last_name;
                     this.visitorResults = [];
+                    this.scanError = '';
                 },
                 clearVisitor() {
                     this.selectedVisitor = null;
                     this.selectedVisitorId = null;
                     this.vsearch = '';
                     this.visitorResults = [];
+                    this.scanError = '';
                 },
                 async searchPlate() {
                     if (this.psearch.length < 1) { this.plateResults = []; return; }
@@ -382,6 +405,10 @@
                             body: JSON.stringify({ document_number: numero, first_name: nombreCompleto, last_name: apellidoCompleto })
                         });
                         const data = await res.json();
+                        if (data.blocked) {
+                            this.scanError = data.message + ' ' + (data.reason || '');
+                            return;
+                        }
                         this.selectVisitor(data.visitor);
                     } catch(e) {}
                 }

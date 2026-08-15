@@ -68,10 +68,31 @@
                             <label class="block text-sm font-medium text-slate-300">Fecha Programada</label>
                             <input type="date" name="scheduled_date" value="{{ old('scheduled_date', date('Y-m-d')) }}" min="{{ date('Y-m-d') }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" required>
                         </div>
-                        <div>
+<div>
                             <label class="block text-sm font-medium text-slate-300">Hora (opcional)</label>
                             <input type="time" name="scheduled_time" value="{{ old('scheduled_time') }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
+                    </div>
+                    <div class="mt-4" x-data="{ recurrence: '{{ old('recurrence', 'puntual') }}' }">
+                        <label class="block text-sm font-medium text-slate-300">Recurrencia</label>
+                        <select name="recurrence" x-model="recurrence" class="mt-1 block w-full max-w-xs rounded-lg bg-slate-950 border-slate-700 text-white focus:border-purple-500 focus:ring-purple-500">
+                            <option value="puntual">Puntual (una sola vez)</option>
+                            <option value="diario">Diaria</option>
+                            <option value="semanal">Semanal</option>
+                            <option value="bisemanal">Bisemanal</option>
+                            <option value="mensual">Mensual</option>
+                        </select>
+                        <div x-show="recurrence !== 'puntual'" x-cloak class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300">Válido hasta</label>
+                                <input type="date" name="valid_until" value="{{ old('valid_until') }}" min="{{ date('Y-m-d') }}" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-purple-500 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300">Ingresos por día</label>
+                                <input type="number" name="entries_per_day" value="{{ old('entries_per_day') }}" min="1" max="99" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-purple-500 focus:ring-purple-500" placeholder="1">
+                            </div>
+                        </div>
+                    </div>
                     </div>
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-slate-300">Notas</label>
