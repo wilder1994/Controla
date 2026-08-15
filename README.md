@@ -23,6 +23,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Comercial** | Paquetes empresa + tabla de precios + facturación mensual/anual | ✅ Implementada |
 | **UI Empresa** | Design system `x-ui.*`, Command Center 3 filas (mapa/cartera/ops), nav Portería/Conjunto | ✅ Implementada (v3) |
 | **Ops empresa** | Turnos (`guard_shifts`), revistas (`supervisor_reviews`), KPIs pánico/bloqueo/revista | ✅ Implementada (v1) |
+| **Ops portería+** | Minuta supervisión + evidencias, turnos, zonas comunes, auditoría, reportes imprimibles | ✅ Implementada (v1) |
 | **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
@@ -45,6 +46,8 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
+
+**Roles Spatie (`config/access.php`):** `super-admin`, `company-admin`, `client-admin`, `guardia`, **`supervisor`**, `resident`, más alias legacy (`admin-accesos`, `anfitrion`). El seeder **elimina** roles que no estén en ese archivo; mantener siempre `supervisor` (demo + revistas empresa).
 
 ---
 
@@ -545,8 +548,25 @@ Botón `Salida Masiva` en la vista de Ingreso/Salida que marca como `completed` 
 
 - **Nuevos filtros**: tipo de acceso (visitante, vehicular, residente) además de fecha, estado y ubicación
 - **Exportación a Excel**: botón `Exportar Excel` que descarga los resultados filtrados como `.xlsx`
+- **Vista imprimible**: `resources/views/modules/access/reports/printable.blade.php`
 - **Nuevas estadísticas**: total ingresos, dentro, hoy, visitantes, promedio de estadía
 - Clase `AccessLogsExport` con `FromQuery`, `WithMapping`, `WithHeadings`, `ShouldAutoSize`
+
+### Ops portería+ (ago 2026) — supervisión, turnos, zonas, auditoría
+
+Integrado en `main` / `creawilder` (rama Manuel + Command Center). Roles en `config/access.php` (incl. **`supervisor`** — no eliminar: `RoleAndPermissionSeeder` borra roles ausentes del config).
+
+| Módulo | Rutas / piezas clave | Notas |
+|--------|----------------------|--------|
+| **Supervisión (minuta)** | `/access/supervision/*`, códigos `/access/supervision/codes` | Unlock por código, evidencias (`supervision_attachments`), firma en minuta |
+| **Turnos portería** | `/access/turnos` | Apertura/cierre; middleware `EnsureOpenShift` |
+| **Zonas comunes** | `/access/zones`, reserva cliente `/client/zones` | `common_zones` + bookings; permiso `access.manage.zones` / `client.zones.book` |
+| **Auditoría** | `/access/audit` | `audit_logs` + `AuditLogger` |
+| **Geo / recurrencia** | Locations con geo; pre-autorizaciones con recurrencia | `GeoService`, `RecurrenceService` |
+| **Notificaciones** | Portal residente | `notifications` + `CorrespondenciaRecibida` / `AlertaOperativa` |
+
+Migraciones batch (tras pull): `2026_08_07_0100*` (supervisión) + `2026_08_14_1000*` (zonas, audit, geo, recurrencia, notifications).  
+Tras permisos nuevos: `php artisan db:seed --class=RoleAndPermissionSeeder`.
 
 ---
 
@@ -639,6 +659,7 @@ app/
 ├── Services/Pricing/               # PriceCalculator, UpdatePlatformPricingService
 ├── Services/Platform/              # Dashboard analytics, archivo, retiro, lifecycle, purga, documentos
 ├── Services/Company/               # CompanyDashboardService, CompanyDashboardAnalytics
+├── Services/Access/                # TurnoService, ZoneBookingService, AuditLogger, GeoService, RecurrenceService, BlocklistGuard
 ├── Services/Public/                # CompletePublicSignupService
 ├── Services/User/                  # ManageScopedUserService
 ├── Services/Auth/                  # UserScopeResolver
