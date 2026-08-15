@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Access;
 use App\Http\Controllers\Controller;
 use App\Models\Visitor;
 use App\Models\Vehicle;
+use App\Services\Access\BlocklistGuard;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -126,11 +127,32 @@ class VisitorController extends Controller
             'birth_date' => 'nullable|date',
         ]);
 
+        $blocked = function (Visitor $visitor) use ($validated): ?array {
+            $entry = app(BlocklistGuard::class)->checkPerson($visitor);
+
+            if ($entry === null) {
+                return null;
+            }
+
+            return [
+                'blocked' => true,
+                'reason' => $entry->reason,
+                'message' => '🚫 Acceso denegado por lista de bloqueo.',
+                'visitor' => $visitor->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
+            ];
+        };
+
         $visitor = Visitor::whereNull('deleted_at')
             ->where('document_number', $validated['document_number'])
             ->first();
 
         if ($visitor) {
+            $fields = $blocked($visitor);
+
+            if ($fields !== null) {
+                return response()->json($fields);
+            }
+
             return response()->json([
                 'found' => true,
                 'visitor' => $visitor->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
@@ -148,6 +170,13 @@ class VisitorController extends Controller
                 'last_name' => $validated['last_name'] ?? '',
                 'birth_date' => $validated['birth_date'] ?? null,
             ]);
+
+            $fields = $blocked($existingSoftDeleted);
+
+            if ($fields !== null) {
+                return response()->json($fields);
+            }
+
             return response()->json([
                 'found' => false,
                 'visitor' => $existingSoftDeleted->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
@@ -162,6 +191,12 @@ class VisitorController extends Controller
             'visitor_type' => 'persona',
             'birth_date' => $validated['birth_date'] ?? null,
         ]);
+
+        $fields = $blocked($visitor);
+
+        if ($fields !== null) {
+            return response()->json($fields);
+        }
 
         return response()->json([
             'found' => false,

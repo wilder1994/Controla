@@ -8,6 +8,8 @@ use App\Models\Location;
 use App\Models\Visitor;
 use App\Models\Resident;
 use App\Models\HousingUnit;
+use App\Notifications\CorrespondenciaRecibida;
+use App\Services\Access\AuditLogger;
 use Illuminate\Http\Request;
 
 class CorrespondenceController extends Controller
@@ -49,7 +51,20 @@ class CorrespondenceController extends Controller
         $validated['received_by'] = auth()->id();
         $validated['status'] = 'pending';
 
-        Correspondence::create($validated);
+        $correspondence = Correspondence::create($validated);
+
+        if ($correspondence->host_id !== null) {
+            $correspondence->host->notify(new CorrespondenciaRecibida($correspondence));
+        } elseif ($correspondence->resident?->user !== null) {
+            $correspondence->resident->user->notify(new CorrespondenciaRecibida($correspondence));
+        }
+
+        app(AuditLogger::class)->record($correspondence, 'correspondence.create', null, [
+            'housing_unit_id' => $correspondence->housing_unit_id,
+            'resident_id' => $correspondence->resident_id,
+            'package_type' => $correspondence->package_type,
+            'carrier' => $correspondence->carrier,
+        ]);
 
         return redirect()->route('access.correspondence.index')
             ->with('success', 'Correspondencia registrada exitosamente.');
@@ -74,6 +89,11 @@ class CorrespondenceController extends Controller
             'delivered_at' => now(),
             'delivered_by' => auth()->id(),
             'status' => 'delivered',
+        ]);
+
+        app(AuditLogger::class)->record($correspondence, 'correspondence.deliver', null, [
+            'delivered_at' => $correspondence->delivered_at?->toDateTimeString(),
+            'delivered_by' => $correspondence->delivered_by,
         ]);
 
         return redirect()->route('access.correspondence.index')

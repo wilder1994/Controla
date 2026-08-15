@@ -126,6 +126,51 @@
                 </table>
             </div>
         </div>
+
+        <div class="grid lg:grid-cols-2 gap-6">
+            <div class="rounded-xl border border-slate-800 overflow-hidden">
+                <div class="px-4 py-3 bg-slate-950/60 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="text-sm font-semibold text-white">Actividad de mi unidad</h3>
+                    <span class="text-xs text-slate-500">{{ $unitActivity->count() }} registros</span>
+                </div>
+                <table class="min-w-full text-sm">
+                    <tbody class="divide-y divide-slate-800">
+                        @forelse ($unitActivity as $log)
+                            <tr>
+                                <td class="px-4 py-3 text-white">{{ $log->person_name }}</td>
+                                <td class="px-4 py-3 text-slate-400">{{ $log->person_doc }}</td>
+                                <td class="px-4 py-3 text-slate-400">{{ $log->housingUnit?->full_label ?? $log->location?->name }}</td>
+                                <td class="px-4 py-3 text-slate-400 whitespace-nowrap">{{ $log->entry_time->format('d/m H:i') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">Aún no hay actividad en tu unidad.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="rounded-xl border border-slate-800 overflow-hidden">
+                <div class="px-4 py-3 bg-slate-950/60 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="text-sm font-semibold text-white">Notificaciones</h3>
+                    <a href="{{ route('resident.notifications.index') }}" class="text-xs text-teal-400 hover:text-teal-300">Ver todas</a>
+                </div>
+                <div class="divide-y divide-slate-800">
+                    @forelse ($myNotifications as $n)
+                        @php $data = $n->data; @endphp
+                        <div class="px-4 py-3 flex items-start gap-3 {{ $n->read_at ? 'opacity-60' : '' }}">
+                            <span class="mt-0.5 w-2 h-2 rounded-full flex-shrink-0 {{ $n->read_at ? 'bg-slate-700' : 'bg-teal-400' }}"></span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-white">{{ $data['title'] ?? 'Notificación' }}</p>
+                                <p class="text-xs text-slate-400">{{ $data['message'] ?? '' }}</p>
+                                <p class="mt-1 text-[10px] text-slate-500">{{ $n->created_at->diffForHumans() }}</p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-4 py-6 text-center text-sm text-slate-500">No tienes notificaciones.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
     </div>
 
     @push('scripts')

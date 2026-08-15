@@ -19,7 +19,7 @@
                     <p class="text-xs text-indigo-300 mt-1">{{ $activeClient->name }}</p>
                 @endisset
             </div>
-            <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto">
+<nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll">
                 @foreach (config('access.navigation.access.items', []) as $item)
                     @can($item['permission'])
                     <a href="{{ route($item['route']) }}"
@@ -35,12 +35,24 @@
                 </a>
                 @endcan
             </nav>
-            <div class="px-4 py-4 border-t border-slate-800 text-xs text-slate-500 shrink-0">
-                {{ Auth::user()->name }}
+<div class="px-4 py-4 border-t border-slate-800 shrink-0">
+                <p class="text-xs text-slate-500 mb-3 truncate">{{ Auth::user()->name }}</p>
+                <button
+                    type="button"
+                    @click="$dispatch('open-panic')"
+                    class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-950/60 to-red-900/40 hover:from-red-900/70 hover:to-red-800/50 border border-red-800/70 transition-colors group"
+                >
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                        <span class="text-sm font-semibold text-red-300 group-hover:text-red-100">Botón de Pánico</span>
+                    </span>
+                    <svg class="w-3.5 h-3.5 text-red-500/70 group-hover:text-red-300 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                </button>
             </div>
         </aside>
 
-        <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-20 shrink-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
@@ -55,6 +67,42 @@
                     </div>
                 </div>
             </header>
+
+            @php
+                $shiftUser = Auth::user();
+                $turnoService = new \App\Services\Access\TurnoService();
+                $shiftRequired = config('access.shifts.enforced') && $shiftUser && ! $turnoService->isShiftOptionalFor($shiftUser);
+                $activeShift = $shiftRequired ? $turnoService->currentFor($shiftUser) : null;
+            @endphp
+            @if($shiftRequired)
+                @if($activeShift)
+                    <div class="bg-emerald-900/50 border-b border-emerald-700/60">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3">
+                            <p class="text-xs text-emerald-200">
+                                <span class="inline-flex items-center gap-1 font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Turno activo desde las {{ $activeShift->started_at->format('H:i') }}
+                                </span>
+                                @if($activeShift->location)
+                                    · {{ $activeShift->location->name }}
+                                @endif
+                            </p>
+                            <form method="POST" action="{{ route('access.turnos.close') }}" class="inline" onsubmit="return confirm('¿Cerrar el turno actual?');">
+                                @csrf
+                                <input type="hidden" name="end_notes" value="">
+                                <button type="submit" class="text-xs font-semibold text-emerald-300 hover:text-emerald-100">Cerrar turno</button>
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <div class="bg-amber-900/40 border-b border-amber-700/60">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3">
+                            <p class="text-xs text-amber-200 font-medium">No tienes un turno abierto. Para operar la portería debes iniciar tu turno.</p>
+                            <a href="{{ route('access.turnos.open') }}" class="text-xs font-semibold text-amber-100 hover:text-white bg-amber-700/70 hover:bg-amber-600/80 px-3 py-1.5 rounded-lg transition-colors">Abrir turno</a>
+                        </div>
+                    </div>
+                @endif
+            @endif
 
             @if (session('success'))
                 <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
@@ -72,8 +120,10 @@
                 </div>
             @endif
 
-            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
-                {{ $slot }}
+            <main class="flex-1 min-w-0 overflow-y-scroll">
+                <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+                    {{ $slot }}
+                </div>
             </main>
         </div>
     </div>

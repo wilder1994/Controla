@@ -45,7 +45,13 @@ return [
         'access.manage.buildings',
         'access.manage.housing_units',
         'access.manage.residents',
+        'access.manage.supervision',
+        'access.manage.supervision_codes',
         'access.view.reports',
+        'access.view.audit',
+        'access.manage.turnos',
+        'access.manage.zones',
+        'client.zones.book',
 
         // Residente
         'resident.portal.access',
@@ -70,7 +76,12 @@ return [
             'company.settings.manage',
             'access.operations',
             'access.dashboard',
+            'access.manage.supervision',
+            'access.manage.supervision_codes',
             'access.view.reports',
+            'access.view.audit',
+            'access.manage.turnos',
+            'access.manage.zones',
         ],
 
         'client-admin' => [
@@ -96,22 +107,12 @@ return [
             'access.manage.pre_authorizations',
             'access.manage.correspondence',
             'access.manage.guard_logs',
+            'access.manage.supervision',
+            'access.manage.supervision_codes',
             'access.view.reports',
-        ],
-
-        'supervisor' => [
-            'access.operations',
-            'access.dashboard',
-            'access.manage.blocklist',
-            'access.register.entry',
-            'access.register.exit',
-            'access.manage.visitors',
-            'access.manage.vehicles',
-            'access.manage.vehicle_access',
-            'access.manage.residents',
-            'access.manage.correspondence',
-            'access.manage.guard_logs',
-            'access.view.reports',
+            'access.view.audit',
+            'access.manage.turnos',
+            'access.manage.zones',
         ],
 
         'guardia' => [
@@ -126,11 +127,17 @@ return [
             'access.manage.residents',
             'access.manage.correspondence',
             'access.manage.guard_logs',
+            'access.manage.supervision',
+            'access.manage.supervision_codes',
+            'access.view.reports',
+            'access.manage.turnos',
+            'access.manage.zones',
         ],
 
         'resident' => [
             'resident.portal.access',
             'access.manage.pre_authorizations',
+            'client.zones.book',
         ],
 
         // Compatibilidad temporal con roles existentes
@@ -158,11 +165,15 @@ return [
             'access.manage.correspondence',
             'access.manage.guard_logs',
             'access.view.reports',
+            'access.view.audit',
+            'access.manage.turnos',
+            'access.manage.zones',
         ],
 
         'anfitrion' => [
             'resident.portal.access',
             'access.manage.pre_authorizations',
+            'client.zones.book',
         ],
     ],
 
@@ -205,8 +216,11 @@ return [
                 ['label' => 'Pre-Autorizaciones', 'route' => 'access.pre_authorizations.index', 'permission' => 'access.manage.pre_authorizations'],
                 ['label' => 'Correspondencia', 'route' => 'access.correspondence.index', 'permission' => 'access.manage.correspondence'],
                 ['label' => 'Minutas', 'route' => 'access.guard_logs.index', 'permission' => 'access.manage.guard_logs'],
+                ['label' => 'Turnos', 'route' => 'access.turnos.index', 'permission' => 'access.manage.turnos'],
                 ['label' => 'Ubicaciones', 'route' => 'access.locations.index', 'permission' => 'access.manage.locations'],
                 ['label' => 'Lista Bloqueo', 'route' => 'access.blocklist.index', 'permission' => 'access.manage.blocklist'],
+                ['label' => 'Zonas comunes', 'route' => 'access.zones.index', 'permission' => 'access.manage.zones'],
+                ['label' => 'Auditoría', 'route' => 'access.audit.index', 'permission' => 'access.view.audit'],
                 ['label' => 'Reportes', 'route' => 'access.reports.index', 'permission' => 'access.view.reports'],
             ],
         ],
@@ -222,7 +236,27 @@ return [
                 ['label' => 'Autorizaciones', 'route' => 'client.authorizations.index', 'permission' => 'client.authorizations.manage'],
                 ['label' => 'Usuarios portal', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
                 ['label' => 'Usuarios APP', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],
+                ['label' => 'Zonas comunes', 'route' => 'client.zones.index', 'permission' => 'client.zones.book'],
             ],
         ],
+    ],
+
+    'shifts' => [
+        'enforced' => env('ACCESS_SHIFTS_ENFORCED', true),
+        'daily_target_hours' => (float) env('ACCESS_SHIFTS_DAILY_TARGET_HOURS', 8.0),
+    ],
+
+    'geo' => [
+        'required' => env('ACCESS_GEO_REQUIRED', true),
+        'default_radius_m' => (int) env('ACCESS_GEO_RADIUS_M', 250),
+    ],
+
+    'alerts' => [
+        'long_stay_hours' => (int) env('ACCESS_ALERT_LONG_STAY_HOURS', 12),
+        'container_hours' => (int) env('ACCESS_ALERT_CONTAINER_HOURS', 24),
+    ],
+
+    'notifications' => [
+        'email' => (bool) env('ACCESS_NOTIFICATIONS_EMAIL', false),
     ],
 ];

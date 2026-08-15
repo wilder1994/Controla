@@ -71,10 +71,16 @@
                 @if($guardLog->signed_at)
                 <div class="mb-6 rounded-lg bg-emerald-900/40 border border-emerald-700 p-4 flex items-center gap-3">
                     <svg class="w-5 h-5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <div>
+                    <div class="flex-1">
                         <p class="text-sm font-medium text-emerald-200">Firmada digitalmente por {{ $guardLog->user->name }}</p>
                         <p class="text-xs text-emerald-400">{{ $guardLog->signed_at->format('d/m/Y H:i:s') }}</p>
                     </div>
+                    @if($guardLog->supervisor_name)
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-indigo-200">Validada por {{ $guardLog->supervisor_name }}</p>
+                            <p class="text-xs text-indigo-400">Firma de supervisor (código registrado)</p>
+                        </div>
+                    @endif
                 </div>
                 @endif
 

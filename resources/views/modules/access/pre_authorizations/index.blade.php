@@ -48,7 +48,12 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $pa->host->name }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $pa->location->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $pa->scheduled_date->format('d/m/Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                                {{ $pa->scheduled_date->format('d/m/Y') }}
+                                @if(($pa->recurrence ?? 'puntual') !== 'puntual')
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-900/30 text-purple-300 ring-1 ring-purple-700">{{ ucfirst($pa->recurrence) }}</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1
                                     @if($pa->status == 'pending') bg-amber-900/30 text-amber-300 ring-amber-700

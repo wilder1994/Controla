@@ -6,6 +6,7 @@ use App\Models\Blocklist;
 use App\Models\Visitor;
 use App\Models\Vehicle;
 use App\Models\Resident;
+use App\Services\Access\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -42,7 +43,7 @@ class BlocklistController extends Controller
             'expires_at' => 'nullable|date|after:now',
         ]);
 
-        Blocklist::create([
+        $entry = Blocklist::create([
             'client_id' => session('active_client_id'),
             'blockable_type' => $validated['blockable_type'],
             'blockable_id' => $validated['blockable_id'],
@@ -51,6 +52,12 @@ class BlocklistController extends Controller
             'blocked_at' => now(),
             'expires_at' => $validated['expires_at'],
             'is_active' => true,
+        ]);
+
+        app(AuditLogger::class)->record($entry, 'blocklist.create', null, [
+            'blockable_type' => $entry->blockable_type,
+            'blockable_id' => $entry->blockable_id,
+            'reason' => $entry->reason,
         ]);
 
         return redirect()->route('access.blocklist.index')
@@ -87,6 +94,13 @@ class BlocklistController extends Controller
     public function destroy(Blocklist $blocklist): RedirectResponse
     {
         $blocklist->update(['is_active' => false]);
+
+        app(AuditLogger::class)->record($blocklist, 'blocklist.remove', [
+            'is_active' => true,
+        ], [
+            'is_active' => false,
+            'reason' => $blocklist->reason,
+        ]);
 
         return redirect()->route('access.blocklist.index')
             ->with('success', 'Bloqueo removido.');

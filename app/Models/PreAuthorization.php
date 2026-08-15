@@ -12,6 +12,7 @@ class PreAuthorization extends Model
     protected $fillable = [
         'client_id', 'visitor_id', 'host_id', 'location_id',
         'scheduled_date', 'scheduled_time', 'expires_at',
+        'recurrence', 'valid_until', 'entries_per_day',
         'status', 'qr_code', 'notes',
     ];
 
@@ -21,6 +22,8 @@ class PreAuthorization extends Model
             'scheduled_date' => 'date',
             'scheduled_time' => 'datetime',
             'expires_at' => 'datetime',
+            'valid_until' => 'date',
+            'entries_per_day' => 'integer',
         ];
     }
 

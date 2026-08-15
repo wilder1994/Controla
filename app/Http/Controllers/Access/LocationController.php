@@ -25,9 +25,16 @@ class LocationController extends Controller
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'geo_radius_m' => 'nullable|integer|min:10',
             'type' => 'required|in:porteria,edificio,sede,bodega',
             'is_active' => 'boolean',
         ]);
+
+        if (($validated['latitude'] ?? null) !== null xor ($validated['longitude'] ?? null) !== null) {
+            return back()->withErrors(['geo' => 'Latitud y longitud deben ir juntas.'])->withInput();
+        }
 
         Location::create($validated);
 
@@ -47,9 +54,16 @@ class LocationController extends Controller
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'geo_radius_m' => 'nullable|integer|min:10',
             'type' => 'required|in:porteria,edificio,sede,bodega',
             'is_active' => 'boolean',
         ]);
+
+        if (($validated['latitude'] ?? null) !== null xor ($validated['longitude'] ?? null) !== null) {
+            return back()->withErrors(['geo' => 'Latitud y longitud deben ir juntas.'])->withInput();
+        }
 
         $location->update($validated);
 

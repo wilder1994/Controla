@@ -6,6 +6,7 @@ use App\Models\AccessLog;
 use App\Models\Vehicle;
 use App\Models\Location;
 use App\Models\User;
+use App\Services\Access\BlocklistGuard;
 use Illuminate\Http\Request;
 
 class VehicleAccessController extends Controller
@@ -44,6 +45,14 @@ class VehicleAccessController extends Controller
             'purpose' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
+
+        $vehicleBlock = app(BlocklistGuard::class)->checkVehicle(
+            vehicle: Vehicle::find($validated['vehicle_id'])
+        );
+
+        if ($vehicleBlock !== null) {
+            return back()->withErrors(['vehicle_id' => '🚫 Vehículo en lista de bloqueo: '.$vehicleBlock->reason])->withInput();
+        }
 
         $validated['authorized_by'] = auth()->id();
         $validated['entry_time'] = now();

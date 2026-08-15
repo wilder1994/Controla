@@ -183,6 +183,48 @@
         </a>
         @endcan
 
+        @can('access.manage.turnos')
+        <a href="{{ route('access.turnos.index') }}" class="group relative bg-slate-900 rounded-xl border border-slate-800 hover:border-lime-700 p-4 transition-all duration-200">
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0 w-10 h-10 bg-lime-900/50 rounded-lg flex items-center justify-center group-hover:bg-lime-800/50 transition-colors">
+                    <svg class="w-5 h-5 text-lime-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-white group-hover:text-lime-300">Turnos</p>
+                    <p class="text-xs text-slate-500">Planillas y rotación de guardias</p>
+                </div>
+            </div>
+        </a>
+        @endcan
+
+        @can('access.manage.zones')
+        <a href="{{ route('access.zones.index') }}" class="group relative bg-slate-900 rounded-xl border border-slate-800 hover:border-violet-700 p-4 transition-all duration-200">
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0 w-10 h-10 bg-violet-900/50 rounded-lg flex items-center justify-center group-hover:bg-violet-800/50 transition-colors">
+                    <svg class="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-white group-hover:text-violet-300">Zonas</p>
+                    <p class="text-xs text-slate-500">Áreas y sectores de vigilancia</p>
+                </div>
+            </div>
+        </a>
+        @endcan
+
+        @can('access.view.audit')
+        <a href="{{ route('access.audit.index') }}" class="group relative bg-slate-900 rounded-xl border border-slate-800 hover:border-stone-600 p-4 transition-all duration-200">
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0 w-10 h-10 bg-stone-800 rounded-lg flex items-center justify-center group-hover:bg-stone-700 transition-colors">
+                    <svg class="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-white group-hover:text-stone-300">Auditoría</p>
+                    <p class="text-xs text-slate-500">Traza de acciones del sistema</p>
+                </div>
+            </div>
+        </a>
+        @endcan
+
         @can('access.view.reports')
         <a href="{{ route('access.reports.index') }}" class="group relative bg-slate-900 rounded-xl border border-slate-800 hover:border-rose-700 p-4 transition-all duration-200">
             <div class="flex items-center space-x-3">

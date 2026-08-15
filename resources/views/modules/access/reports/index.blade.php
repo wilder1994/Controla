@@ -29,24 +29,6 @@
         @endforeach
     </div>
 
-    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
-            <h3 class="text-sm font-semibold text-white mb-1">Accesos diarios (14 días)</h3>
-            <p class="text-xs text-slate-500 mb-4">Tendencia de ingresos</p>
-            <canvas id="reportDailyChart" height="180"></canvas>
-        </div>
-        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
-            <h3 class="text-sm font-semibold text-white mb-1">Distribución por tipo</h3>
-            <p class="text-xs text-slate-500 mb-4">Visitantes vs vehiculares vs residentes</p>
-            <canvas id="reportTypeChart" height="180"></canvas>
-        </div>
-        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 lg:col-span-2">
-            <h3 class="text-sm font-semibold text-white mb-1">Top ubicaciones</h3>
-            <p class="text-xs text-slate-500 mb-4">Las 5 ubicaciones con más actividad</p>
-            <canvas id="reportLocChart" height="120"></canvas>
-        </div>
-    </div>
-
     <div class="mt-8 bg-slate-900 rounded-xl border border-slate-800 p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-sm font-semibold text-white">Filtros</h3>
@@ -156,6 +138,30 @@
         </div>
     </div>
     <div class="mt-4">{{ $logs->links() }}</div>
+
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
+            <h3 class="text-sm font-semibold text-white mb-1">Accesos diarios (14 días)</h3>
+            <p class="text-xs text-slate-500 mb-4">Tendencia de ingresos</p>
+            <div class="relative h-64 overflow-y-auto">
+                <canvas id="reportDailyChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5">
+            <h3 class="text-sm font-semibold text-white mb-1">Distribución por tipo</h3>
+            <p class="text-xs text-slate-500 mb-4">Visitantes vs vehiculares vs residentes</p>
+            <div class="relative h-64 overflow-y-auto">
+                <canvas id="reportTypeChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 lg:col-span-2">
+            <h3 class="text-sm font-semibold text-white mb-1">Top ubicaciones</h3>
+            <p class="text-xs text-slate-500 mb-4">Las 5 ubicaciones con más actividad</p>
+            <div class="relative h-56 overflow-y-auto">
+                <canvas id="reportLocChart"></canvas>
+            </div>
+        </div>
+    </div>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>

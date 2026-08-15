@@ -39,8 +39,10 @@ class ReportController extends Controller
         $todayEntries = AccessLog::whereDate('entry_time', today())->count();
         $totalVisitors = Visitor::count();
         $avgDuration = AccessLog::whereNotNull('exit_time')
-            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) as avg_minutes')
-            ->value('avg_minutes');
+            ->get(['entry_time', 'exit_time'])
+            ->map(fn ($log) => $log->exit_time?->diffInMinutes($log->entry_time))
+            ->filter()
+            ->avg();
 
         $locations = Location::where('is_active', true)->get();
 
@@ -82,5 +84,41 @@ class ReportController extends Controller
             new AccessLogsExport($request),
             'reporte-accesos.xlsx',
         );
+    }
+
+    public function printable(Request $request)
+    {
+        $query = AccessLog::with(['visitor', 'host', 'location', 'resident', 'housingUnit.building', 'vehicle', 'user'])
+            ->latest('entry_time');
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('entry_time', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('entry_time', '<=', $request->date_to);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('location_id')) {
+            $query->where('location_id', $request->location_id);
+        }
+        if ($request->filled('access_type')) {
+            $query->where('access_type', $request->access_type);
+        }
+
+        $logs = $query->get();
+
+        $total = $logs->count();
+        $completed = $logs->where('status', 'completed')->count();
+        $active = $logs->where('status', 'active')->count();
+
+        $client = null;
+        $clientId = app(\App\Support\Tenancy\TenantContext::class)->clientId();
+        if ($clientId !== null) {
+            $client = \App\Models\Client::query()->withoutGlobalScopes()->find($clientId);
+        }
+
+        return view('modules.access.reports.printable', compact('logs', 'total', 'completed', 'active', 'client'));
     }
 }

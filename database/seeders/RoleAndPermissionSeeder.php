@@ -25,6 +25,14 @@ final class RoleAndPermissionSeeder extends Seeder
             }
         }
 
+        foreach (Role::all() as $role) {
+            if (! array_key_exists($role->name, config('access.roles', []))) {
+                $role->users()->sync([]);
+                $role->permissions()->sync([]);
+                $role->delete();
+            }
+        }
+
         $superAdmin = Role::findByName('super-admin');
         $superAdmin->syncPermissions(Permission::all());
     }
