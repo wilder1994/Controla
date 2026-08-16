@@ -27,16 +27,7 @@
         </div>
     </header>
 
-    @if (session('success'))
-        <div class="mx-auto max-w-5xl px-4 pt-4 sm:px-6">
-            <div class="rounded-lg border border-emerald-700 bg-emerald-900/40 px-4 py-3 text-sm text-emerald-200">{{ session('success') }}</div>
-        </div>
-    @endif
-    @if (session('warning'))
-        <div class="mx-auto max-w-5xl px-4 pt-4 sm:px-6">
-            <div class="rounded-lg border border-amber-700 bg-amber-900/40 px-4 py-3 text-sm text-amber-200">{{ session('warning') }}</div>
-        </div>
-    @endif
+    <x-ui.flash-toasts rail="mx-auto max-w-5xl px-4 sm:px-6" />
 
     <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         @yield('content')

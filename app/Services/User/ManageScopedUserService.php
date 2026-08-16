@@ -11,6 +11,7 @@ use App\Models\ClientUserAssignment;
 use App\Models\User;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
+use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -201,9 +202,7 @@ final class ManageScopedUserService
 
     private function scopeCompanyId(User $actor): ?int
     {
-        $id = $actor->security_company_id;
-
-        return $id ? (int) $id : null;
+        return app(ActingCompanyResolver::class)->id($actor);
     }
 
     /**

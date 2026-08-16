@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant;
 
+use App\Enums\ClientLifecycle;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -34,16 +35,14 @@ final class EnterPorteriaService
         }
 
         if ($clients->count() === 1) {
-            $client = $clients->first();
-            $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
-
             return redirect()
-                ->route('access.dashboard')
-                ->with('success', "Operando en: {$client->name}");
+                ->route('company.clients.show', $clients->first())
+                ->with('success', 'Abre «Operar portería» desde el expediente del conjunto.');
         }
 
         return redirect()
-            ->route('company.clients.index', ['modo' => 'operar']);
+            ->route('company.clients.index')
+            ->with('success', 'Elige un conjunto y usa «Operar portería» en su expediente.');
     }
 
     private function emptyClientsRedirect(User $user): RedirectResponse
@@ -54,14 +53,8 @@ final class EnterPorteriaService
                 ->with('warning', 'No hay conjuntos activos para operar portería.');
         }
 
-        if ($user->hasRole('company-admin')) {
-            return redirect()
-                ->route('company.clients.index', ['modo' => 'operar'])
-                ->with('warning', 'No hay conjuntos activos para operar. Crea o activa un conjunto en cartera.');
-        }
-
         return redirect()
-            ->route('company.clients.index', ['modo' => 'operar'])
-            ->with('warning', 'No tienes conjuntos asignados para operar portería.');
+            ->route('company.clients.index')
+            ->with('warning', 'No hay conjuntos activos para operar. Crea o activa un conjunto en cartera.');
     }
 }

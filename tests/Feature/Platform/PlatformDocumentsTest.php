@@ -7,6 +7,8 @@ namespace Tests\Feature\Platform;
 use App\Models\SecurityCompany;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 final class PlatformDocumentsTest extends TestCase
@@ -65,12 +67,19 @@ final class PlatformDocumentsTest extends TestCase
         $company->refresh();
         $this->assertTrue($company->hasCompletedAcceptance());
 
+        Storage::fake('local');
+        $intent = $company->isUpToDate() ? 'anticipate' : 'renew';
+
         $paymentResponse = $this->actingAs($admin)->post(
             route('admin.documents.expedientes.payment.manual', $company),
-            ['reference' => 'TRANS-TEST-001'],
+            [
+                'reference' => 'TRANS-TEST-001',
+                'intent' => $intent,
+                'proof' => UploadedFile::fake()->create('comprobante.pdf', 120, 'application/pdf'),
+            ],
         );
 
-        $paymentResponse->assertRedirect(route('admin.documents.expedientes.show', $company));
+        $paymentResponse->assertRedirect(route('admin.companies.historial', $company));
         $paymentResponse->assertSessionHas('success');
 
         $this->assertDatabaseHas('commercial_payments', [

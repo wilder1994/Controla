@@ -53,6 +53,13 @@ class SecurityCompany extends Model
         'archive_reason',
         'commercial_anonymized_at',
         'subscription_status',
+        'cancel_at_period_end',
+        'cancelled_at',
+        'cancellation_reason',
+        'scheduled_package_sku',
+        'scheduled_billing_cycle',
+        'scheduled_change_at',
+        'scheduled_change_payment_id',
     ];
 
     protected function casts(): array
@@ -81,7 +88,43 @@ class SecurityCompany extends Model
             'archive_reason' => ArchiveReason::class,
             'commercial_anonymized_at' => 'datetime',
             'subscription_status' => SubscriptionStatus::class,
+            'cancel_at_period_end' => 'boolean',
+            'cancelled_at' => 'datetime',
+            'scheduled_change_at' => 'datetime',
         ];
+    }
+
+    public function isUpToDate(?\Carbon\CarbonImmutable $now = null): bool
+    {
+        $now ??= \Carbon\CarbonImmutable::now();
+
+        if ($this->package_ends_at === null) {
+            return false;
+        }
+
+        return $this->package_ends_at->greaterThan($now);
+    }
+
+    public function hasPendingCancellation(): bool
+    {
+        return (bool) $this->cancel_at_period_end && $this->cancelled_at !== null;
+    }
+
+    /** Cancelación programada y el periodo aún no vence: se puede deshacer sin pago. */
+    public function canUndoCancellation(?\Carbon\CarbonImmutable $now = null): bool
+    {
+        return $this->hasPendingCancellation() && $this->isUpToDate($now);
+    }
+
+    /** Tras cancelar (o con flags de baja) y periodo vencido: reactivar exige pago. */
+    public function needsPaidReactivation(?\Carbon\CarbonImmutable $now = null): bool
+    {
+        return $this->hasPendingCancellation() && ! $this->isUpToDate($now);
+    }
+
+    public function hasScheduledPackageChange(): bool
+    {
+        return $this->scheduled_package_sku !== null && $this->scheduled_billing_cycle !== null;
     }
 
     public function clients(): HasMany

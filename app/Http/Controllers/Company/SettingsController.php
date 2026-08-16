@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\UpdateCompanySettingsRequest;
 use App\Models\SecurityCompany;
 use App\Services\Tenant\UpdateCompanyProfileService;
+use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,7 +22,7 @@ final class SettingsController extends Controller
 
     public function edit(Request $request): View
     {
-        $company = SecurityCompany::query()->findOrFail($request->user()->security_company_id);
+        $company = $this->resolveCompany($request);
         $this->authorize('updateProfile', $company);
 
         return view('modules.company.settings.edit', compact('company'));
@@ -29,19 +30,26 @@ final class SettingsController extends Controller
 
     public function update(UpdateCompanySettingsRequest $request): RedirectResponse
     {
-        $company = SecurityCompany::query()->findOrFail($request->user()->security_company_id);
+        $company = $this->resolveCompany($request);
         $this->authorize('updateProfile', $company);
 
         $this->updateCompanyProfileService->assertTaxIdImmutable($company, $request->input('tax_id'));
 
         $this->updateCompanyProfileService->execute(
             $company,
-            $request->safe()->except(\App\Domain\Geo\GeoAddressData::formKeys()),
+            $request->safe()->except(GeoAddressData::formKeys()),
             GeoAddressData::fromValidated($request->validated()),
         );
 
         return redirect()
             ->route('company.settings.edit')
             ->with('success', 'Datos de la empresa actualizados.');
+    }
+
+    private function resolveCompany(Request $request): SecurityCompany
+    {
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
+
+        return SecurityCompany::query()->findOrFail($companyId);
     }
 }

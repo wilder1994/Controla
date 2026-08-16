@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('access_url')->nullable();
             $table->boolean('is_active')->default(true);
             $table->date('service_started_at')->nullable();
+            $table->unsignedTinyInteger('service_hours')->default(24);
+            $table->unsignedSmallInteger('revista_target_per_day')->default(1);
             $table->string('lifecycle', 30)->default('active');
             $table->timestamp('released_at')->nullable();
             $table->timestamp('archived_at')->nullable();

@@ -10,15 +10,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('clients', function (Blueprint $table): void {
-            $table->unsignedTinyInteger('service_hours')->default(24)->after('service_started_at');
-            $table->unsignedSmallInteger('revista_target_per_day')->default(1)->after('service_hours');
-        });
-
-        Schema::table('guard_logs', function (Blueprint $table): void {
-            $table->timestamp('resolved_at')->nullable()->after('is_panic');
-        });
-
         Schema::create('guard_shifts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
@@ -56,13 +47,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('supervisor_reviews');
         Schema::dropIfExists('guard_shifts');
-
-        Schema::table('guard_logs', function (Blueprint $table): void {
-            $table->dropColumn('resolved_at');
-        });
-
-        Schema::table('clients', function (Blueprint $table): void {
-            $table->dropColumn(['service_hours', 'revista_target_per_day']);
-        });
     }
 };

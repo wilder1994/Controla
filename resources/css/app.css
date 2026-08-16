@@ -34,3 +34,64 @@
 .sidebar-scroll::-webkit-scrollbar {
     display: none;
 }
+
+/* Pestañas invertidas: mismo tono del nav, borde oscuro, cuelgan del borde inferior */
+.admin-header-tab {
+    --admin-tab-border: #1e293b; /* slate-800 = borde del header */
+    --admin-tab-bg: #0f172a;
+    --admin-tab-bg-active: #1e293b;
+    --admin-tab-bg-hover: #1e293b;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 9.5rem;
+    min-height: 2.35rem;
+    padding: 0.5rem 1.5rem 0.6rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: #e2e8f0;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    isolation: isolate;
+}
+
+.admin-header-tab::before,
+.admin-header-tab::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
+    z-index: -1;
+}
+
+.admin-header-tab::before {
+    background: var(--admin-tab-border);
+}
+
+.admin-header-tab::after {
+    inset: 1.5px;
+    background: var(--admin-tab-bg);
+    clip-path: polygon(0.35% 0, 99.65% 0, 85.5% 100%, 14.5% 100%);
+}
+
+.admin-header-tab:hover::after {
+    background: var(--admin-tab-bg-hover);
+}
+
+.admin-header-tab.is-active {
+    color: #f8fafc;
+    font-weight: 600;
+}
+
+.admin-header-tab.is-active::after {
+    background: var(--admin-tab-bg-active);
+}
+
+.admin-header-tab:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
+}

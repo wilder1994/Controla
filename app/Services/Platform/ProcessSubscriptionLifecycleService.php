@@ -11,7 +11,8 @@ use Carbon\CarbonImmutable;
 
 /**
  * Ciclo de acceso (no reemplaza paquetes):
- * active → (vencimiento) → grace (N días) → suspended → (M días) → archived (non_payment).
+ * active/cancelled → (vencimiento) → grace (N días) → suspended → (M días) → archived.
+ * Si hay cambio de plan programado, se aplica al llegar scheduled_change_at.
  */
 final class ProcessSubscriptionLifecycleService
 {
@@ -19,6 +20,8 @@ final class ProcessSubscriptionLifecycleService
     {
         $now ??= CarbonImmutable::now();
         $processed = 0;
+
+        $processed += app(ScheduleCompanyPackageChangeService::class)->applyDueChanges($now);
 
         SecurityCompany::query()
             ->whereNull('archived_at')
@@ -44,6 +47,17 @@ final class ProcessSubscriptionLifecycleService
 
         $graceDays = max(0, (int) config('subscription.grace_days', 5));
         $archiveAfterSuspended = max(1, (int) config('subscription.archive_after_suspended_days', 90));
+
+        // Cancelada al fin de periodo: al vencer, suspende (sin gracia comercial).
+        if (
+            $company->subscription_status === SubscriptionStatus::Cancelled
+            && $company->cancel_at_period_end
+            && $endsAt->isPast()
+        ) {
+            app(SuspendCompanyService::class)->execute($company, $now);
+
+            return true;
+        }
 
         // 1) Activa vencida → gracia
         if ($company->subscription_status === SubscriptionStatus::Active && $endsAt->isPast()) {
@@ -73,13 +87,16 @@ final class ProcessSubscriptionLifecycleService
             return true;
         }
 
-        // 4) Suspendida demasiado tiempo → archivo por falta de pago
+        // 4) Suspendida demasiado tiempo → archivo
         if (
             $company->subscription_status === SubscriptionStatus::Suspended
             && $company->suspended_at !== null
             && CarbonImmutable::parse($company->suspended_at)->addDays($archiveAfterSuspended)->isPast()
         ) {
-            app(ArchiveCompanyService::class)->execute($company, ArchiveReason::NonPayment);
+            $reason = $company->cancel_at_period_end
+                ? ArchiveReason::Cancelled
+                : ArchiveReason::NonPayment;
+            app(ArchiveCompanyService::class)->execute($company, $reason);
 
             return true;
         }

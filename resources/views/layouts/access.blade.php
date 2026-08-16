@@ -104,21 +104,7 @@
                 @endif
             @endif
 
-            @if (session('success'))
-                <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
-                    <div class="rounded-lg bg-emerald-900/40 border border-emerald-700 text-emerald-200 px-4 py-3 text-sm">{{ session('success') }}</div>
-                </div>
-            @endif
-            @if (session('warning'))
-                <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
-                    <div class="rounded-lg bg-amber-900/40 border border-amber-700 text-amber-200 px-4 py-3 text-sm">{{ session('warning') }}</div>
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4">
-                    <div class="rounded-lg bg-red-900/40 border border-red-700 text-red-200 px-4 py-3 text-sm">{{ session('error') }}</div>
-                </div>
-            @endif
+            <x-ui.flash-toasts rail="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8" />
 
             <main class="flex-1 min-w-0 overflow-y-scroll">
                 <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">

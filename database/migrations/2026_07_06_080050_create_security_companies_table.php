@@ -44,6 +44,13 @@ return new class extends Migration
             $table->string('archive_reason', 20)->nullable();
             $table->timestamp('commercial_anonymized_at')->nullable();
             $table->string('subscription_status', 20)->default('active');
+            $table->boolean('cancel_at_period_end')->default(false);
+            $table->timestamp('cancelled_at')->nullable();
+            $table->string('cancellation_reason', 500)->nullable();
+            $table->string('scheduled_package_sku', 40)->nullable();
+            $table->string('scheduled_billing_cycle', 20)->nullable();
+            $table->timestamp('scheduled_change_at')->nullable();
+            $table->unsignedBigInteger('scheduled_change_payment_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

@@ -40,7 +40,7 @@ final class LoginCsrfTest extends TestCase
         $response = $this->actingAs($user)->get(route('admin.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Panel de plataforma');
+        $response->assertSee('Panel Plataforma');
     }
 
     public function test_super_admin_can_operate_porteria_via_porteria_entry(): void
@@ -51,7 +51,7 @@ final class LoginCsrfTest extends TestCase
         $client = \App\Models\Client::query()->where('slug', 'palmas-del-ingenio')->first();
 
         $response = $this->actingAs($user)->get(route('company.porteria.enter'));
-        $response->assertRedirect(route('company.clients.index', ['modo' => 'operar']));
+        $response->assertRedirect(route('company.clients.index'));
 
         $response = $this->actingAs($user)->post(route('company.clients.activate', $client));
         $response->assertRedirect(route('access.dashboard'));

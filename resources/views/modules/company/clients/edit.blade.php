@@ -1,8 +1,15 @@
-<x-company-layout :title="'Editar: '.$client->name">
-    <div class="max-w-2xl">
-        <a href="{{ route('company.clients.show', $client) }}" class="text-sm text-slate-400 hover:text-white">&larr; Detalle cliente</a>
+<x-company-layout :title="$client->name">
+    @include('modules.company.clients.partials.nav-slots', [
+        'client' => $client,
+        'clientNavActive' => 'editar',
+        'canOperate' => $canOperate,
+        'canOperateClientPanel' => $canOperateClientPanel,
+        'canUpdate' => $canUpdate,
+        'companyContext' => $companyContext ?? ['is_quota_full' => true],
+    ])
 
-        <form method="POST" action="{{ route('company.clients.update', $client) }}" class="mt-6 space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
+    <div class="max-w-2xl">
+        <form method="POST" action="{{ route('company.clients.update', $client) }}" class="space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             @csrf
             @method('PUT')
 

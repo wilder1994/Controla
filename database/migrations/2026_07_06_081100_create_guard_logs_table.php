@@ -23,6 +23,9 @@ return new class extends Migration
             $table->decimal('longitude', 10, 7)->nullable();
             $table->dateTime('signed_at')->nullable();
             $table->boolean('is_panic')->default(false);
+            $table->timestamp('resolved_at')->nullable();
+            $table->unsignedBigInteger('supervision_code_id')->nullable();
+            $table->string('supervisor_name', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

@@ -6,6 +6,7 @@ namespace App\Services\Auth;
 
 use App\Models\Client;
 use App\Models\User;
+use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Database\Eloquent\Builder;
 
 final class UserScopeResolver
@@ -13,6 +14,21 @@ final class UserScopeResolver
     public function scopedQuery(User $actor): Builder
     {
         if ($actor->hasRole('super-admin')) {
+            $supportCompanyId = app(ActingCompanyResolver::class)->id($actor);
+
+            if ($supportCompanyId !== null) {
+                return User::query()
+                    ->where(function (Builder $query) use ($supportCompanyId): void {
+                        $query->where('security_company_id', $supportCompanyId)
+                            ->orWhereHas('clients', function (Builder $clientQuery) use ($supportCompanyId): void {
+                                $clientQuery->where('security_company_id', $supportCompanyId);
+                            });
+                    })
+                    ->whereDoesntHave('roles', function (Builder $roleQuery): void {
+                        $roleQuery->where('name', 'super-admin');
+                    });
+            }
+
             return User::query();
         }
 

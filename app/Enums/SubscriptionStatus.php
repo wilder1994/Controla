@@ -10,6 +10,7 @@ enum SubscriptionStatus: string
     case Grace = 'grace';
     case Expired = 'expired';
     case Suspended = 'suspended';
+    case Cancelled = 'cancelled';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum SubscriptionStatus: string
             self::Grace => 'En gracia',
             self::Expired => 'Vencida',
             self::Suspended => 'Suspendida',
+            self::Cancelled => 'Cancelada (fin de periodo)',
         };
     }
 }

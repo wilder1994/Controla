@@ -22,6 +22,10 @@ class CommercialPayment extends Model
         'gateway_status',
         'status',
         'reference',
+        'proof_path',
+        'covers_period_start',
+        'covers_period_end',
+        'payment_intent',
         'paid_at',
         'recorded_by_user_id',
         'initiated_by_user_id',
@@ -35,6 +39,8 @@ class CommercialPayment extends Model
             'method' => PaymentMethod::class,
             'status' => PaymentStatus::class,
             'paid_at' => 'datetime',
+            'covers_period_start' => 'datetime',
+            'covers_period_end' => 'datetime',
             'metadata' => 'array',
         ];
     }

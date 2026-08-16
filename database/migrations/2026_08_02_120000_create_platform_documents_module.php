@@ -66,11 +66,22 @@ return new class extends Migration
             $table->string('gateway_status', 40)->nullable();
             $table->string('status', 20);
             $table->string('reference')->nullable();
+            $table->string('proof_path')->nullable();
+            $table->timestamp('covers_period_start')->nullable();
+            $table->timestamp('covers_period_end')->nullable();
+            $table->string('payment_intent', 30)->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->foreignId('recorded_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('initiated_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->json('metadata')->nullable();
             $table->timestamps();
+        });
+
+        Schema::table('security_companies', function (Blueprint $table) {
+            $table->foreign('scheduled_change_payment_id')
+                ->references('id')
+                ->on('commercial_payments')
+                ->nullOnDelete();
         });
 
         Schema::create('platform_documents', function (Blueprint $table) {
@@ -109,6 +120,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::table('security_companies', function (Blueprint $table) {
+            $table->dropForeign(['scheduled_change_payment_id']);
+        });
+
         Schema::dropIfExists('lifecycle_evidence_events');
         Schema::dropIfExists('platform_documents');
         Schema::dropIfExists('commercial_payments');

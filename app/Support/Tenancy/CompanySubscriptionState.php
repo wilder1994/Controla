@@ -27,6 +27,20 @@ final class CompanySubscriptionState
             return CompanyAlertBucket::Suspended;
         }
 
+        // Cancelada al fin de periodo: sigue vigente hasta package_ends_at.
+        if ($company->subscription_status === SubscriptionStatus::Cancelled) {
+            $endsAt = $company->package_ends_at;
+            if ($endsAt !== null && ! $endsAt->isPast()) {
+                $daysLeft = (int) $now->startOfDay()->diffInDays($endsAt->startOfDay(), false);
+
+                return $daysLeft <= self::DUE_SOON_DAYS
+                    ? CompanyAlertBucket::DueSoon
+                    : CompanyAlertBucket::Current;
+            }
+
+            return CompanyAlertBucket::Overdue;
+        }
+
         if ($company->subscription_status === SubscriptionStatus::Expired) {
             return CompanyAlertBucket::Overdue;
         }

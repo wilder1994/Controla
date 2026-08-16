@@ -9,6 +9,10 @@ enum EvidenceEventType: string
     case SubscriptionAccepted = 'subscription_accepted';
     case PaymentRecorded = 'payment_recorded';
     case InvoiceIssued = 'invoice_issued';
+    case MembershipCancelled = 'membership_cancelled';
+    case MembershipReactivated = 'membership_reactivated';
+    case PackageChangeScheduled = 'package_change_scheduled';
+    case PackageChangeApplied = 'package_change_applied';
     case CompanySuspended = 'company_suspended';
     case CompanyArchived = 'company_archived';
     case ClientReleased = 'client_released';
@@ -20,6 +24,10 @@ enum EvidenceEventType: string
             self::SubscriptionAccepted => 'Aceptación contractual',
             self::PaymentRecorded => 'Pago registrado',
             self::InvoiceIssued => 'Factura emitida',
+            self::MembershipCancelled => 'Cancelación de membresía',
+            self::MembershipReactivated => 'Reactivación de membresía',
+            self::PackageChangeScheduled => 'Cambio de plan programado',
+            self::PackageChangeApplied => 'Cambio de plan aplicado',
             self::CompanySuspended => 'Suspensión',
             self::CompanyArchived => 'Archivo comercial',
             self::ClientReleased => 'Retiro de conjunto',

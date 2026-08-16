@@ -18,6 +18,9 @@ return new class extends Migration
             $table->foreignId('location_id')->constrained()->cascadeOnDelete();
             $table->date('scheduled_date');
             $table->time('scheduled_time')->nullable();
+            $table->string('recurrence', 20)->default('puntual');
+            $table->date('valid_until')->nullable();
+            $table->unsignedInteger('entries_per_day')->default(1);
             $table->dateTime('expires_at')->nullable();
             $table->string('status', 20)->default('pending');
             $table->string('qr_code', 100)->unique();

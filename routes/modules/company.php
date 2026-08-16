@@ -27,6 +27,18 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             ->middleware('permission:company.dashboard')
             ->name('billing.checkout');
 
+        Route::post('/billing/membership/cancel', [BillingController::class, 'cancelMembership'])
+            ->middleware('permission:company.dashboard')
+            ->name('billing.membership.cancel');
+
+        Route::post('/billing/membership/undo-cancel', [BillingController::class, 'undoCancellation'])
+            ->middleware('permission:company.dashboard')
+            ->name('billing.membership.undo-cancel');
+
+        Route::post('/billing/package/schedule', [BillingController::class, 'schedulePackageChange'])
+            ->middleware('permission:company.dashboard')
+            ->name('billing.package.schedule');
+
         Route::get('/settings', [SettingsController::class, 'edit'])
             ->middleware('permission:company.settings.manage')
             ->name('settings.edit');
@@ -58,6 +70,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
 
         Route::post('/clients/{client}/activate', [ClientController::class, 'activate'])
             ->name('clients.activate');
+
+        Route::post('/clients/{client}/operate-client', [ClientController::class, 'operateClient'])
+            ->name('clients.operate-client');
 
         Route::resource('clients', ClientController::class);
     });

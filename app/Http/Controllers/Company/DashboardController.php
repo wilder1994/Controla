@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use App\Models\SecurityCompany;
 use App\Services\Company\CompanyDashboardService;
+use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,12 +23,13 @@ final class DashboardController extends Controller
         $user = $request->user();
         abort_unless($user->can('company.dashboard'), 403);
 
-        if ($user->hasRole('super-admin')) {
+        $companyId = app(ActingCompanyResolver::class)->id($user);
+
+        if ($user->hasRole('super-admin') && $companyId === null) {
             return redirect()->route('admin.dashboard');
         }
 
-        $companyId = (int) $user->security_company_id;
-        abort_unless($companyId > 0, 403, 'Usuario sin empresa de seguridad asignada.');
+        abort_unless($companyId !== null && $companyId > 0, 403, 'Usuario sin empresa de seguridad asignada.');
 
         $company = SecurityCompany::query()->findOrFail($companyId);
         $payload = $this->dashboardService->build($company);

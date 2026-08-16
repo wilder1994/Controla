@@ -1,6 +1,10 @@
-<x-admin-layout :title="'Perfil: '.$company->trade_name">
+<x-admin-layout :title="'Empresa: '.$company->displayName()">
+    @include('modules.admin.companies.partials.nav-slots', [
+        'company' => $company,
+        'companyNavActive' => 'profile',
+    ])
+
     <div class="max-w-2xl space-y-4">
-        <x-ui.button variant="secondary" :href="route('admin.companies.show', $company)" size="sm">← Empresa</x-ui.button>
         <p class="text-xs text-slate-500">Datos legales, contacto y ubicación para mapa y expediente.</p>
         @include('modules.shared.company-profile-form', [
             'company' => $company,

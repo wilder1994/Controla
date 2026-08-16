@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\View\Composers;
 
+use App\Models\SecurityCompany;
 use App\Repositories\ClientRepository;
+use App\Support\Platform\ActingCompanyResolver;
+use App\Support\Platform\SupportCompanyContext;
 use Illuminate\View\View;
 
 final class CompanyLayoutComposer
@@ -22,14 +25,38 @@ final class CompanyLayoutComposer
             'is_quota_full' => true,
         ];
 
-        if ($user !== null && $user->security_company_id && ! $user->hasRole('super-admin')) {
-            $metrics = $this->clientRepository->metricsForCompany((int) $user->security_company_id);
-            $companyContext = [
-                'company_name' => $metrics['company_name'],
-                'is_quota_full' => (bool) $metrics['is_quota_full'],
-            ];
+        $supportMode = [
+            'active' => false,
+            'company_name' => null,
+            'company_id' => null,
+        ];
+
+        if ($user !== null) {
+            $companyId = app(ActingCompanyResolver::class)->id($user);
+
+            if ($companyId !== null) {
+                $metrics = $this->clientRepository->metricsForCompany($companyId);
+                $companyContext = [
+                    'company_name' => $metrics['company_name'],
+                    'is_quota_full' => (bool) $metrics['is_quota_full'],
+                ];
+            }
+
+            if ($user->hasRole('super-admin') && SupportCompanyContext::isActive()) {
+                $actingId = SupportCompanyContext::companyId();
+                $company = $actingId !== null
+                    ? SecurityCompany::query()->find($actingId)
+                    : null;
+
+                $supportMode = [
+                    'active' => true,
+                    'company_name' => $company?->displayName() ?? $companyContext['company_name'],
+                    'company_id' => $actingId,
+                ];
+            }
         }
 
         $view->with('companyContext', $companyContext);
+        $view->with('supportMode', $supportMode);
     }
 }

@@ -20,10 +20,21 @@ return new class extends Migration
             $table->softDeletes();
             $table->unique(['client_id', 'code']);
         });
+
+        Schema::table('guard_logs', function (Blueprint $table) {
+            $table->foreign('supervision_code_id')
+                ->references('id')
+                ->on('supervision_codes')
+                ->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('guard_logs', function (Blueprint $table) {
+            $table->dropForeign(['supervision_code_id']);
+        });
+
         Schema::dropIfExists('supervision_codes');
     }
 };

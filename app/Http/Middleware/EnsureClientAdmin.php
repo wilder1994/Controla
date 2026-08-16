@@ -22,7 +22,7 @@ final class EnsureClientAdmin
             return $next($request);
         }
 
-        if ($user->hasAnyRole(['client-admin', 'admin-accesos'])) {
+        if ($user->hasAnyRole(['client-admin', 'admin-accesos', 'company-admin'])) {
             return $next($request);
         }
 

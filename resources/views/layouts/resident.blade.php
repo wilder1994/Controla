@@ -29,12 +29,7 @@
         </header>
 
         <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex-1">
-            @if(session('success'))
-                <div class="mb-4 rounded-lg bg-emerald-900/40 border border-emerald-800 px-4 py-3 text-sm text-emerald-300">{{ session('success') }}</div>
-            @endif
-            @if(session('warning'))
-                <div class="mb-4 rounded-lg bg-amber-900/40 border border-amber-800 px-4 py-3 text-sm text-amber-300">{{ session('warning') }}</div>
-            @endif
+            <x-ui.flash-toasts rail="w-full mb-1" />
 
             <nav class="flex gap-6 mb-8 text-sm border-b border-slate-800 pb-3">
                 <a href="{{ route('resident.dashboard') }}" class="{{ request()->routeIs('resident.dashboard') ? 'text-teal-400 border-b-2 border-teal-400' : 'text-slate-400 hover:text-white' }} pb-3 -mb-3">Resumen</a>

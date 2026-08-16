@@ -9,7 +9,6 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        /* Rail de contenido: fluido (sin max-w-7xl); tope suave solo en ultra-wide */
         .company-shell-rail {
             width: 100%;
             max-width: 100%;
@@ -28,12 +27,12 @@
         @media (min-width: 1536px) {
             .company-shell-rail {
                 padding-inline: 2rem;
-                max-width: 100rem; /* ~1600px */
+                max-width: 100rem;
             }
         }
         @media (min-width: 1920px) {
             .company-shell-rail {
-                max-width: 110rem; /* ~1760px */
+                max-width: 110rem;
                 padding-inline: 2.5rem;
             }
         }
@@ -47,6 +46,7 @@
             || request()->routeIs('company.clients.create')
             || request()->routeIs('company.clients.edit');
         $companyContext = $companyContext ?? ['company_name' => null, 'is_quota_full' => true];
+        $supportMode = $supportMode ?? ['active' => false, 'company_name' => null, 'company_id' => null];
     @endphp
     <div class="h-screen flex overflow-hidden">
         <aside class="hidden lg:flex lg:w-64 lg:h-full lg:flex-col bg-slate-900 border-r border-slate-800 shrink-0">
@@ -96,45 +96,67 @@
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
-            <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-10 shrink-0">
-                <div class="company-shell-rail py-3 flex items-center justify-between gap-4">
-                    <div class="min-w-0">
-                        @isset($header)
-                            {{ $header }}
-                        @else
-                            <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Panel Empresa' }}</h2>
-                            @if ($companyContext['company_name'])
-                                <p class="text-xs text-slate-500 truncate">{{ $companyContext['company_name'] }}</p>
-                            @endif
-                        @endisset
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        @can('access.dashboard')
-                            <x-ui.button variant="secondary" :href="route('company.porteria.enter')">
-                                Portería
+            @if (! empty($supportMode['active']))
+                <div class="shrink-0 border-b border-amber-800/60 bg-amber-950/50">
+                    <div class="company-shell-rail py-2.5 flex flex-wrap items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-amber-100 truncate">
+                                Entraste como · {{ $supportMode['company_name'] ?? 'Empresa' }}
+                            </p>
+                            <p class="text-xs text-amber-200/70">
+                                Panel empresa · súper admin en sesión de soporte · auditado
+                            </p>
+                        </div>
+                        <form method="POST" action="{{ route('admin.support.exit') }}" class="shrink-0">
+                            @csrf
+                            <x-ui.button type="submit" variant="secondary" size="sm">
+                                Salir al panel plataforma
                             </x-ui.button>
-                        @endcan
-                        @can('company.clients.manage')
-                            @if (! $companyContext['is_quota_full'])
-                                <x-ui.button :href="route('company.clients.create')">
-                                    + Conjunto
-                                </x-ui.button>
-                            @endif
-                        @endcan
+                        </form>
                     </div>
                 </div>
+            @endif
+            <header class="sticky top-0 z-10 shrink-0">
+                <div class="bg-slate-900/80 border-b border-slate-800 backdrop-blur">
+                    <div class="company-shell-rail py-3 flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            @isset($header)
+                                {{ $header }}
+                            @else
+                                <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Panel Empresa' }}</h2>
+                                <div class="mt-0.5 text-xs flex flex-wrap items-center gap-x-4 gap-y-0.5">
+                                    @isset($subtitle)
+                                        {{ $subtitle }}
+                                    @elseif ($companyContext['company_name'])
+                                        <span class="text-slate-500 truncate">{{ $companyContext['company_name'] }}</span>
+                                    @endif
+                                </div>
+                            @endisset
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                            @isset($actions)
+                                {{ $actions }}
+                            @elseif (request()->routeIs('company.clients.*'))
+                                @can('company.clients.manage')
+                                    @if (! $companyContext['is_quota_full'])
+                                        <x-ui.button :href="route('company.clients.create')" size="sm">
+                                            + Conjunto
+                                        </x-ui.button>
+                                    @endif
+                                @endcan
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                @isset($headerTabs)
+                    <div class="company-shell-rail flex flex-wrap items-start gap-1.5 -mt-px pt-0 pb-3">
+                        {{ $headerTabs }}
+                    </div>
+                @endisset
             </header>
 
-            @if (session('success'))
-                <div class="company-shell-rail pt-4">
-                    <div class="rounded-lg bg-emerald-900/40 border border-emerald-700 text-emerald-200 px-4 py-3 text-sm">{{ session('success') }}</div>
-                </div>
-            @endif
-            @if (session('warning'))
-                <div class="company-shell-rail pt-4">
-                    <div class="rounded-lg bg-amber-900/40 border border-amber-700 text-amber-200 px-4 py-3 text-sm">{{ session('warning') }}</div>
-                </div>
-            @endif
+            <x-ui.flash-toasts rail="company-shell-rail" />
 
             <main class="company-shell-rail flex-1 w-full py-4 sm:py-5">
                 {{ $slot }}

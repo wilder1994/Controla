@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace App\Services\Platform;
 
+use App\Enums\BillingCycle;
+use App\Enums\ClientLifecycle;
 use App\Enums\EvidenceEventType;
+use App\Enums\ManualPaymentIntent;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\SubscriptionStatus;
+use App\Models\Client;
 use App\Models\CommercialPayment;
 use App\Models\SecurityCompany;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -24,51 +30,118 @@ final class RegisterCommercialPaymentService
     public function executeManual(
         SecurityCompany $company,
         User $recordedBy,
-        ?string $reference = null,
+        string $reference,
+        UploadedFile $proof,
+        ManualPaymentIntent $intent = ManualPaymentIntent::Renew,
+        ?float $amountOverride = null,
+        ?BillingCycle $cycleOverride = null,
     ): CommercialPayment {
         $this->assertAcceptanceCompleted($company);
 
-        return DB::transaction(function () use ($company, $recordedBy, $reference) {
+        if ($company->isUpToDate() && $intent === ManualPaymentIntent::Renew) {
+            throw new \InvalidArgumentException(
+                'La cuenta está al día. Si desea anticipar el próximo periodo, elija esa opción.'
+            );
+        }
+
+        if (! $company->isUpToDate() && $intent === ManualPaymentIntent::Anticipate) {
+            throw new \InvalidArgumentException(
+                'La cuenta no está al día. Use renovar o reactivar según corresponda.'
+            );
+        }
+
+        if ($intent === ManualPaymentIntent::PlanChange && ! $company->isUpToDate()) {
+            throw new \InvalidArgumentException(
+                'Sin periodo vigente no se puede programar un cambio de plan diferido.'
+            );
+        }
+
+        return DB::transaction(function () use ($company, $recordedBy, $reference, $proof, $intent, $amountOverride, $cycleOverride) {
             $now = CarbonImmutable::now();
-            $amount = $company->contractedAmount();
+            $period = $this->resolveCoveredPeriod($company, $intent, $now);
+            $proofPath = $proof->store('payment-proofs/'.$company->id, 'local');
+            $cycle = $cycleOverride ?? $company->billing_cycle;
+            $amount = $amountOverride ?? $company->contractedAmount();
 
             $payment = CommercialPayment::query()->create([
                 'security_company_id' => $company->id,
                 'amount' => $amount,
                 'currency' => config('billing.currency', 'COP'),
-                'billing_cycle' => $company->billing_cycle?->value,
+                'billing_cycle' => $cycle?->value,
                 'method' => PaymentMethod::Manual,
                 'status' => PaymentStatus::Completed,
-                'reference' => $reference ?: 'MANUAL-'.$now->format('YmdHis'),
+                'reference' => $reference,
+                'proof_path' => $proofPath,
+                'covers_period_start' => $period['start'],
+                'covers_period_end' => $period['end'],
+                'payment_intent' => $intent->value,
                 'paid_at' => $now,
                 'recorded_by_user_id' => $recordedBy->id,
                 'initiated_by_user_id' => $recordedBy->id,
-                'metadata' => ['source' => 'admin_manual'],
+                'metadata' => [
+                    'source' => 'admin_manual',
+                    'intent' => $intent->value,
+                    'proof_original_name' => $proof->getClientOriginalName(),
+                ],
             ]);
 
-            $this->finalizeCompletedPayment($payment, $recordedBy);
+            $this->finalizeCompletedPayment($payment, $recordedBy, $intent);
 
             return $payment;
         });
     }
 
-    public function initiateLocalCheckout(SecurityCompany $company, User $initiatedBy): CommercialPayment
-    {
+    public function initiateLocalCheckout(
+        SecurityCompany $company,
+        User $initiatedBy,
+        ?ManualPaymentIntent $intent = null,
+        ?float $amountOverride = null,
+        ?BillingCycle $cycleOverride = null,
+        array $metadata = [],
+    ): CommercialPayment {
         $this->assertAcceptanceCompleted($company);
         $this->assertLocalGatewayDriver();
 
+        $intent ??= $company->isUpToDate()
+            ? ManualPaymentIntent::Anticipate
+            : ($company->hasPendingCancellation() || $company->subscription_status === SubscriptionStatus::Suspended
+                ? ManualPaymentIntent::Reactivate
+                : ManualPaymentIntent::Renew);
+
+        if ($company->isUpToDate() && $intent === ManualPaymentIntent::Renew) {
+            throw new \InvalidArgumentException(
+                'La cuenta está al día. Use anticipar el próximo periodo o programar un cambio de plan.'
+            );
+        }
+
+        if (! $company->isUpToDate() && $intent === ManualPaymentIntent::Anticipate) {
+            throw new \InvalidArgumentException(
+                'La cuenta no está al día. Use renovar o reactivar según corresponda.'
+            );
+        }
+
+        if ($intent === ManualPaymentIntent::PlanChange && ! $company->isUpToDate()) {
+            throw new \InvalidArgumentException(
+                'Sin periodo vigente no se puede programar un cambio de plan diferido.'
+            );
+        }
+
+        $cycle = $cycleOverride ?? $company->billing_cycle;
+        $amount = $amountOverride ?? $company->contractedAmount();
+
         return CommercialPayment::query()->create([
             'security_company_id' => $company->id,
-            'amount' => $company->contractedAmount(),
+            'amount' => $amount,
             'currency' => config('billing.currency', 'COP'),
-            'billing_cycle' => $company->billing_cycle?->value,
+            'billing_cycle' => $cycle?->value,
             'method' => PaymentMethod::Gateway,
             'gateway_driver' => 'local',
             'gateway_transaction_id' => (string) Str::uuid(),
             'gateway_status' => 'checkout_created',
             'status' => PaymentStatus::Pending,
+            'payment_intent' => $intent->value,
             'initiated_by_user_id' => $initiatedBy->id,
-            'metadata' => ['source' => 'local_simulator'],
+            'metadata' => array_merge(['source' => 'local_simulator'], $metadata),
         ]);
     }
 
@@ -78,22 +151,40 @@ final class RegisterCommercialPaymentService
 
         return DB::transaction(function () use ($payment, $actor) {
             $now = CarbonImmutable::now();
+            $company = $payment->company ?? SecurityCompany::query()->findOrFail($payment->security_company_id);
+            $intent = ManualPaymentIntent::tryFrom((string) ($payment->payment_intent ?? ''))
+                ?? ($company->isUpToDate() ? ManualPaymentIntent::Anticipate : ManualPaymentIntent::Renew);
+            $cycleOverride = BillingCycle::tryFrom((string) ($payment->billing_cycle ?? ''));
+            $period = $this->resolveCoveredPeriod($company, $intent, $now, $cycleOverride);
 
             $payment->update([
                 'status' => PaymentStatus::Completed,
                 'gateway_status' => 'approved',
-                'reference' => 'LOCAL-'.Str::upper(Str::substr($payment->gateway_transaction_id ?? '', 0, 12)),
                 'paid_at' => $now,
                 'recorded_by_user_id' => $actor->id,
+                'reference' => 'LOCAL-'.Str::upper(Str::substr($payment->gateway_transaction_id ?? '', 0, 12)),
+                'covers_period_start' => $period['start'],
+                'covers_period_end' => $period['end'],
+                'payment_intent' => $intent->value,
             ]);
 
-            $this->finalizeCompletedPayment($payment->fresh(), $actor);
+            $fresh = $payment->fresh();
+            $this->finalizeCompletedPayment($fresh, $actor, $intent);
+
+            if ($intent === ManualPaymentIntent::PlanChange) {
+                app(ScheduleCompanyPackageChangeService::class)->attachFromCompletedPayment($fresh);
+            }
 
             return $payment->fresh();
         });
     }
 
     public function failLocalCheckout(CommercialPayment $payment, User $actor): CommercialPayment
+    {
+        return $this->rejectLocalCheckout($payment, $actor);
+    }
+
+    public function rejectLocalCheckout(CommercialPayment $payment, User $actor): CommercialPayment
     {
         $this->assertLocalPendingPayment($payment);
 
@@ -109,9 +200,90 @@ final class RegisterCommercialPaymentService
         return $payment->fresh();
     }
 
-    private function finalizeCompletedPayment(CommercialPayment $payment, User $recordedBy): void
-    {
+    /**
+     * @return array{start: CarbonImmutable, end: CarbonImmutable}
+     */
+    private function resolveCoveredPeriod(
+        SecurityCompany $company,
+        ManualPaymentIntent $intent,
+        CarbonImmutable $now,
+        ?BillingCycle $cycleOverride = null,
+    ): array {
+        $cycle = $cycleOverride ?? $company->billing_cycle ?? BillingCycle::Monthly;
+        $currentEnd = $company->package_ends_at
+            ? CarbonImmutable::parse($company->package_ends_at)
+            : null;
+
+        if ($intent === ManualPaymentIntent::Anticipate && $currentEnd !== null && $currentEnd->greaterThan($now)) {
+            $start = $currentEnd;
+            $end = $cycle === BillingCycle::Annual ? $start->addYear() : $start->addMonth();
+
+            return ['start' => $start, 'end' => $end];
+        }
+
+        if ($intent === ManualPaymentIntent::PlanChange && $currentEnd !== null) {
+            $start = $currentEnd;
+            $end = $cycle === BillingCycle::Annual ? $start->addYear() : $start->addMonth();
+
+            return ['start' => $start, 'end' => $end];
+        }
+
+        $start = $now;
+        $end = $cycle === BillingCycle::Annual ? $start->addYear() : $start->addMonth();
+
+        return ['start' => $start, 'end' => $end];
+    }
+
+    private function finalizeCompletedPayment(
+        CommercialPayment $payment,
+        User $recordedBy,
+        ManualPaymentIntent $intent,
+    ): void {
         $company = $payment->company ?? SecurityCompany::query()->findOrFail($payment->security_company_id);
+        $periodEnd = $payment->covers_period_end
+            ? CarbonImmutable::parse($payment->covers_period_end)
+            : null;
+        $periodStart = $payment->covers_period_start
+            ? CarbonImmutable::parse($payment->covers_period_start)
+            : CarbonImmutable::now();
+
+        // Plan change diferido: no mueve package_ends_at del plan actual.
+        if ($intent !== ManualPaymentIntent::PlanChange) {
+            $company->update([
+                'package_starts_at' => $company->package_starts_at ?? $periodStart,
+                'package_ends_at' => $periodEnd ?? $company->package_ends_at,
+                'grace_ends_at' => null,
+                'suspended_at' => null,
+                'archived_at' => null,
+                'archive_reason' => null,
+                'subscription_status' => SubscriptionStatus::Active,
+                'is_active' => true,
+                'cancel_at_period_end' => false,
+                'cancelled_at' => null,
+                'cancellation_reason' => null,
+            ]);
+        }
+
+        if ($intent === ManualPaymentIntent::Reactivate) {
+            Client::query()
+                ->where('security_company_id', $company->id)
+                ->where('lifecycle', ClientLifecycle::ArchivedCompany)
+                ->update([
+                    'lifecycle' => ClientLifecycle::Active,
+                    'archived_at' => null,
+                    'is_active' => true,
+                ]);
+
+            $this->evidenceService->record(
+                EvidenceEventType::MembershipReactivated,
+                'Membresía reactivada',
+                [
+                    'payment_id' => $payment->id,
+                    'package_ends_at' => $periodEnd?->toIso8601String(),
+                ],
+                $company->id,
+            );
+        }
 
         $this->evidenceService->record(
             EvidenceEventType::PaymentRecorded,
@@ -123,12 +295,14 @@ final class RegisterCommercialPaymentService
                 'amount' => (float) $payment->amount,
                 'reference' => $payment->reference,
                 'method' => $payment->method->value,
+                'intent' => $intent->value,
+                'covers_period_end' => $periodEnd?->toIso8601String(),
                 'gateway_driver' => $payment->gateway_driver,
             ],
             $company->id,
         );
 
-        $this->issueDemoInvoiceService->execute($company, $recordedBy, $payment);
+        $this->issueDemoInvoiceService->execute($company->fresh(), $recordedBy, $payment);
     }
 
     private function assertAcceptanceCompleted(SecurityCompany $company): void

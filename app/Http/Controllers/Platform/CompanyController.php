@@ -7,17 +7,32 @@ namespace App\Http\Controllers\Platform;
 use App\Enums\BillingCycle;
 use App\Enums\ClientLifecycle;
 use App\Enums\CompanyPackageSku;
+use App\Enums\ManualPaymentIntent;
+use App\Enums\PaymentStatus;
+use App\Enums\PlatformDocumentType;
 use App\Domain\Geo\GeoAddressData;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\CancelCompanyMembershipRequest;
+use App\Http\Requests\Platform\SchedulePackageChangeRequest;
 use App\Http\Requests\Platform\StoreCompanyRequest;
+use App\Http\Requests\Platform\StoreManualPaymentRequest;
 use App\Http\Requests\Platform\UpdateCompanyPackageRequest;
 use App\Http\Requests\Platform\UpdateCompanyProfileRequest;
+use App\Models\CommercialPayment;
+use App\Models\PlatformDocument;
 use App\Models\SecurityCompany;
+use App\Models\User;
 use App\Repositories\SecurityCompanyRepository;
+use App\Services\Platform\CancelCompanyMembershipService;
+use App\Services\Platform\EnterCompanyAsSupportService;
+use App\Services\Platform\RegisterCommercialPaymentService;
+use App\Services\Platform\ScheduleCompanyPackageChangeService;
+use App\Services\Platform\UndoCompanyMembershipCancellationService;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Tenant\AssignCompanyPackageService;
 use App\Services\Tenant\CreateCompanyService;
 use App\Services\Tenant\UpdateCompanyProfileService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,6 +45,11 @@ final class CompanyController extends Controller
         private readonly PriceCalculator $priceCalculator,
         private readonly UpdateCompanyProfileService $updateCompanyProfileService,
         private readonly CreateCompanyService $createCompanyService,
+        private readonly EnterCompanyAsSupportService $enterCompanyAsSupportService,
+        private readonly RegisterCommercialPaymentService $paymentService,
+        private readonly CancelCompanyMembershipService $cancelCompanyMembershipService,
+        private readonly UndoCompanyMembershipCancellationService $undoCompanyMembershipCancellationService,
+        private readonly ScheduleCompanyPackageChangeService $scheduleCompanyPackageChangeService,
     ) {}
 
     public function index(): View
@@ -69,6 +89,7 @@ final class CompanyController extends Controller
             ->loadCount([
                 'clients as operational_clients_count' => fn ($q) => $q->where('lifecycle', ClientLifecycle::Active),
             ]);
+
         $packageOptions = CompanyPackageSku::options();
         $cycleOptions = BillingCycle::options();
 
@@ -79,13 +100,227 @@ final class CompanyController extends Controller
         $quote = $this->priceCalculator->quote($previewSku->modality(), $previewSku->size(), $previewCycle);
         $quoteAnnual = $this->priceCalculator->quote($previewSku->modality(), $previewSku->size(), BillingCycle::Annual);
 
-        return view('modules.admin.companies.show', compact(
-            'company',
-            'packageOptions',
-            'cycleOptions',
-            'quote',
-            'quoteAnnual',
-        ));
+        $clients = $company->clients()
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'lifecycle', 'latitude', 'longitude', 'city']);
+
+        $pendingPaymentsCount = CommercialPayment::query()
+            ->where('security_company_id', $company->id)
+            ->where('status', PaymentStatus::Pending)
+            ->count();
+
+        $paidInvoicesCount = CommercialPayment::query()
+            ->where('security_company_id', $company->id)
+            ->where('status', PaymentStatus::Completed)
+            ->count();
+
+        $latestPayment = CommercialPayment::query()
+            ->where('security_company_id', $company->id)
+            ->latest('created_at')
+            ->first();
+
+        $companyAdminEmail = $this->resolveCompanyAdminEmail($company);
+
+        $maxClients = max(1, (int) $company->max_clients);
+        $operational = (int) ($company->operational_clients_count ?? 0);
+        $quotaPct = (int) min(100, round(($operational / $maxClients) * 100));
+
+        $daysToRenewal = null;
+        if ($company->package_ends_at !== null) {
+            $daysToRenewal = (int) CarbonImmutable::now()->startOfDay()
+                ->diffInDays(CarbonImmutable::parse($company->package_ends_at)->startOfDay(), false);
+        }
+
+        $riskLabel = match (true) {
+            $pendingPaymentsCount > 0 || ($daysToRenewal !== null && $daysToRenewal < 15) => 'Alto',
+            $quotaPct >= 90 || ($daysToRenewal !== null && $daysToRenewal < 45) => 'Medio',
+            default => 'Bajo',
+        };
+
+        return view('modules.admin.companies.show', [
+            'company' => $company,
+            'packageOptions' => $packageOptions,
+            'cycleOptions' => $cycleOptions,
+            'quote' => $quote,
+            'quoteAnnual' => $quoteAnnual,
+            'portfolioClients' => $clients,
+            'paidInvoicesCount' => $paidInvoicesCount,
+            'pendingPaymentsCount' => $pendingPaymentsCount,
+            'latestPayment' => $latestPayment,
+            'companyAdminEmail' => $companyAdminEmail,
+            'quotaPct' => $quotaPct,
+            'daysToRenewal' => $daysToRenewal,
+            'riskLabel' => $riskLabel,
+            'hasAcceptance' => $company->hasCompletedAcceptance(),
+            'isUpToDate' => $company->isUpToDate(),
+            'opsAlertsCount' => 0,
+        ]);
+    }
+
+    public function historial(SecurityCompany $company): View
+    {
+        abort_unless(auth()->user()?->can('platform.companies.view'), 403);
+
+        $payments = CommercialPayment::query()
+            ->where('security_company_id', $company->id)
+            ->latest('created_at')
+            ->get();
+
+        $invoices = PlatformDocument::query()
+            ->where('security_company_id', $company->id)
+            ->where('type', PlatformDocumentType::Invoice)
+            ->latest('issued_at')
+            ->latest('id')
+            ->get();
+
+        $invoiceByPaymentId = $invoices
+            ->filter(fn (PlatformDocument $doc) => ! empty($doc->metadata['payment_id']))
+            ->keyBy(fn (PlatformDocument $doc) => (int) $doc->metadata['payment_id']);
+
+        $timeline = $company->lifecycleEvidenceEvents()
+            ->latest('occurred_at')
+            ->limit(50)
+            ->get();
+
+        $completedCount = $payments->where('status', PaymentStatus::Completed)->count();
+        $pendingCount = $payments->where('status', PaymentStatus::Pending)->count();
+        $invoicesCount = $invoices->count();
+
+        return view('modules.admin.companies.historial', [
+            'company' => $company,
+            'payments' => $payments,
+            'invoices' => $invoices,
+            'invoiceByPaymentId' => $invoiceByPaymentId,
+            'timeline' => $timeline,
+            'completedCount' => $completedCount,
+            'pendingCount' => $pendingCount,
+            'invoicesCount' => $invoicesCount,
+        ]);
+    }
+
+    public function enterAsSupport(SecurityCompany $company): RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+
+        $this->enterCompanyAsSupportService->enter(auth()->user(), $company);
+
+        return redirect()
+            ->route('company.dashboard')
+            ->with('success', "Entraste como «{$company->displayName()}».");
+    }
+
+    public function exitSupport(): RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+
+        $companyId = $this->enterCompanyAsSupportService->exit(auth()->user());
+
+        if ($companyId !== null) {
+            return redirect()
+                ->route('admin.companies.show', $companyId)
+                ->with('success', 'Saliste del modo soporte.');
+        }
+
+        return redirect()
+            ->route('admin.companies.index')
+            ->with('success', 'Saliste del modo soporte.');
+    }
+
+    public function storeManualPayment(
+        StoreManualPaymentRequest $request,
+        SecurityCompany $company,
+    ): RedirectResponse {
+        try {
+            $intent = ManualPaymentIntent::from($request->validated('intent'));
+            $this->paymentService->executeManual(
+                $company,
+                $request->user(),
+                $request->validated('reference'),
+                $request->file('proof'),
+                $intent,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('warning', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.companies.historial', $company)
+            ->with('success', 'Pago manual registrado. Factura demo generada.');
+    }
+
+    public function cancelMembership(
+        CancelCompanyMembershipRequest $request,
+        SecurityCompany $company,
+    ): RedirectResponse {
+        try {
+            $this->cancelCompanyMembershipService->execute(
+                $company,
+                $request->user(),
+                $request->validated('reason'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->withInput()
+                ->with('warning', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with('success', 'Membresía cancelada. El acceso continúa hasta el fin del periodo contratado.');
+    }
+
+    public function undoMembershipCancellation(SecurityCompany $company): RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+
+        try {
+            $this->undoCompanyMembershipCancellationService->execute($company, auth()->user());
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->with('warning', $e->getMessage());
+        }
+
+        $ends = $company->fresh()->package_ends_at?->format('d/m/Y');
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with(
+                'success',
+                $ends
+                    ? "Cancelación deshecha. La membresía sigue activa hasta el {$ends}."
+                    : 'Cancelación deshecha. La membresía quedó activa.',
+            );
+    }
+
+    public function schedulePackageChange(
+        SchedulePackageChangeRequest $request,
+        SecurityCompany $company,
+    ): RedirectResponse {
+        try {
+            $this->scheduleCompanyPackageChangeService->scheduleWithManualPayment(
+                $company,
+                $request->user(),
+                CompanyPackageSku::from($request->validated('package_sku')),
+                BillingCycle::from($request->validated('billing_cycle')),
+                $request->validated('reference'),
+                $request->file('proof'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->withInput()
+                ->with('warning', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with('success', 'Cambio de plan programado. Se aplicará al finalizar el periodo actual.');
     }
 
     public function updatePackage(UpdateCompanyPackageRequest $request, SecurityCompany $company): RedirectResponse
@@ -119,5 +354,16 @@ final class CompanyController extends Controller
         return redirect()
             ->route('admin.companies.profile.edit', $company)
             ->with('success', 'Perfil de empresa actualizado.');
+    }
+
+    private function resolveCompanyAdminEmail(SecurityCompany $company): string
+    {
+        $admin = User::query()
+            ->where('security_company_id', $company->id)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'company-admin'))
+            ->orderBy('id')
+            ->first();
+
+        return $admin?->email ?: ($company->email ?: '—');
     }
 }

@@ -10,8 +10,10 @@ use App\Http\Requests\Company\StoreClientRequest;
 use App\Http\Requests\Company\UpdateClientRequest;
 use App\Models\Client;
 use App\Repositories\ClientRepository;
+use App\Services\Tenant\BuildClientExpedienteService;
 use App\Services\Tenant\CreateClientService;
 use App\Services\Tenant\UpdateClientService;
+use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,6 +24,7 @@ final class ClientController extends Controller
         private readonly ClientRepository $clientRepository,
         private readonly CreateClientService $createClientService,
         private readonly UpdateClientService $updateClientService,
+        private readonly BuildClientExpedienteService $buildClientExpedienteService,
     ) {}
 
     public function index(Request $request): View
@@ -44,7 +47,30 @@ final class ClientController extends Controller
         }
 
         if ($user->hasRole('super-admin')) {
-            abort_unless($operateMode, 403, 'Use el panel de plataforma para gestionar empresas.');
+            $companyId = app(ActingCompanyResolver::class)->id($user);
+            abort_unless($companyId !== null || $operateMode, 403, 'Use el panel de plataforma para gestionar empresas.');
+
+            if ($companyId !== null) {
+                if ($operateMode && $status === 'all') {
+                    $status = 'active';
+                }
+
+                $clients = $this->clientRepository->paginateForCompany(
+                    $companyId,
+                    15,
+                    $search !== '' ? $search : null,
+                    $status !== 'all' ? $status : null,
+                );
+                $metrics = $this->clientRepository->metricsForCompany($companyId);
+
+                return view('modules.company.clients.index', compact(
+                    'clients',
+                    'metrics',
+                    'search',
+                    'status',
+                    'operateMode',
+                ));
+            }
 
             $clients = $this->clientRepository->paginateOperableForUser(
                 $user,
@@ -151,9 +177,16 @@ final class ClientController extends Controller
         $this->assertCompanyOwnership($request, $client);
 
         $client->load(['securityCompany']);
-        $client->loadCount('assignments');
+        $expediente = $this->buildClientExpedienteService->execute($client);
 
-        return view('modules.company.clients.show', compact('client'));
+        return view('modules.company.clients.show', [
+            'client' => $client,
+            'expediente' => $expediente,
+            'canOperate' => $request->user()->can('operate', $client),
+            'canUpdate' => $request->user()->can('update', $client),
+            'canOperateClientPanel' => $request->user()->can('client.structures.manage')
+                && $request->user()->can('operate', $client),
+        ]);
     }
 
     public function edit(Request $request, Client $client): View
@@ -163,7 +196,13 @@ final class ClientController extends Controller
 
         $client->load('securityCompany');
 
-        return view('modules.company.clients.edit', compact('client'));
+        return view('modules.company.clients.edit', [
+            'client' => $client,
+            'canOperate' => $request->user()->can('operate', $client),
+            'canUpdate' => true,
+            'canOperateClientPanel' => $request->user()->can('client.structures.manage')
+                && $request->user()->can('operate', $client),
+        ]);
     }
 
     public function update(UpdateClientRequest $request, Client $client): RedirectResponse
@@ -185,18 +224,24 @@ final class ClientController extends Controller
 
         return redirect()
             ->route('access.dashboard')
-            ->with('success', "Operando en: {$client->name}");
+            ->with('success', "Operando portería en: {$client->name}");
+    }
+
+    public function operateClient(Request $request, Client $client): RedirectResponse
+    {
+        $this->authorize('operate', $client);
+        abort_unless($request->user()?->can('client.structures.manage'), 403);
+
+        $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
+
+        return redirect()
+            ->route('client.dashboard')
+            ->with('success', "Operando panel del conjunto: {$client->name}");
     }
 
     private function companyId(Request $request): int
     {
-        $user = $request->user();
-
-        if ($user->hasRole('super-admin')) {
-            abort(403, 'Use el panel de plataforma para gestionar empresas.');
-        }
-
-        return (int) $user->security_company_id;
+        return app(ActingCompanyResolver::class)->requireId($request->user());
     }
 
     private function assertCompanyOwnership(Request $request, Client $client): void

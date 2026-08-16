@@ -15,6 +15,7 @@ use App\Repositories\UserRepository;
 use App\Services\User\ManageScopedUserService;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
+use App\Support\Platform\ActingCompanyResolver;
 use App\Support\User\UserAvatarUploader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,7 @@ final class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $companyId = (int) $request->user()->security_company_id;
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $clients = Client::query()
             ->where('security_company_id', $companyId)
             ->orderBy('name')
@@ -59,13 +60,14 @@ final class UserController extends Controller
 
     public function store(StoreUserRequest $request): RedirectResponse
     {
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $user = $this->manageUserService->create(
             new CreateUserData(
                 name: $request->validated('name'),
                 email: $request->validated('email'),
                 password: $request->validated('password'),
                 role: $request->validated('role'),
-                securityCompanyId: (int) $request->user()->security_company_id,
+                securityCompanyId: $companyId,
                 clientIds: array_map('intval', $request->input('client_ids', [])),
                 isActive: $request->boolean('is_active', true),
                 jobTitle: $request->validated('job_title'),
@@ -90,7 +92,7 @@ final class UserController extends Controller
         $this->authorize('update', $user);
 
         $user->load(['roles', 'clients']);
-        $companyId = (int) $request->user()->security_company_id;
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $clients = Client::query()
             ->where('security_company_id', $companyId)
             ->orderBy('name')

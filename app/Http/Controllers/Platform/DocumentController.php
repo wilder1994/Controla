@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Platform;
 
 use App\Enums\LegalCorpusType;
+use App\Enums\ManualPaymentIntent;
+use App\Enums\PlatformDocumentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\PublishLegalCorpusVersionRequest;
 use App\Http\Requests\Platform\StoreManualPaymentRequest;
@@ -116,10 +118,10 @@ final class DocumentController extends Controller
 
         return view('modules.admin.documents.expediente', [
             'company' => $company,
-            'timeline' => $detail['timeline'],
-            'documents' => $detail['documents'],
+            'legalDocuments' => $detail['documents']
+                ->filter(fn ($doc) => $doc->type !== PlatformDocumentType::Invoice)
+                ->values(),
             'acceptance' => $detail['acceptance'],
-            'payments' => $detail['payments'],
             'corpus' => $corpus,
             'frozenCorpus' => $detail['acceptance']?->corpus_snapshot ?? null,
         ]);
@@ -159,16 +161,19 @@ final class DocumentController extends Controller
                 $company,
                 $request->user(),
                 $request->validated('reference'),
+                $request->file('proof'),
+                ManualPaymentIntent::from($request->validated('intent')),
             );
         } catch (\InvalidArgumentException $e) {
             return redirect()
-                ->route('admin.documents.expedientes.show', $company)
+                ->route('admin.companies.historial', $company)
+                ->withInput()
                 ->with('warning', $e->getMessage());
         }
 
         return redirect()
-            ->route('admin.documents.expedientes.show', $company)
-            ->with('success', 'Pago manual registrado. Factura demo generada en expediente.');
+            ->route('admin.companies.historial', $company)
+            ->with('success', 'Pago manual registrado. Factura demo generada.');
     }
 
     public function storeLocalCheckout(
@@ -180,7 +185,7 @@ final class DocumentController extends Controller
             $payment = $this->paymentService->initiateLocalCheckout($company, auth()->user());
         } catch (\InvalidArgumentException|\RuntimeException $e) {
             return redirect()
-                ->route('admin.documents.expedientes.show', $company)
+                ->route('admin.companies.historial', $company)
                 ->with('warning', $e->getMessage());
         }
 

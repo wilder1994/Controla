@@ -21,10 +21,12 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **3** | BI + vigilancia — Reportes mejorados con exportación | ✅ Implementada |
 | **4** | API REST (Sanctum) + Portal Residente web | ✅ Implementada |
 | **Comercial** | Paquetes empresa + tabla de precios + facturación mensual/anual | ✅ Implementada |
-| **UI Empresa** | Design system `x-ui.*`, Command Center 3 filas (mapa/cartera/ops), nav Portería/Conjunto | ✅ Implementada (v3) |
+| **UI Empresa** | Design system `x-ui.*`, Command Center, header tabs colgantes, toasts flash | ✅ Implementada (v4) |
 | **Ops empresa** | Turnos (`guard_shifts`), revistas (`supervisor_reviews`), KPIs pánico/bloqueo/revista | ✅ Implementada (v1) |
 | **Ops portería+** | Minuta supervisión + evidencias, turnos, zonas comunes, auditoría, reportes imprimibles | ✅ Implementada (v1) |
-| **UI Plataforma** | Dashboard analítico + vista Empresas con KPIs de riesgo | ✅ Implementada (v2) |
+| **UI Plataforma** | Dashboard analítico + empresa expediente (Resumen/Perfil/Docs/Historial) + soporte | ✅ Implementada (v3) |
+| **Membresía** | Pago manual/online, cancelar al fin de periodo, reactivar, cambio de plan diferido | ✅ Implementada (v1) |
+| **Expediente conjunto** | Cartera → Ver: KPIs censo/app/vehículos, charts, Operar portería / Operar cliente | ✅ Implementada (v1) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
@@ -315,8 +317,15 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `POST /admin/companies/{id}/clients/{client}/release` | Retirar conjunto y liberar cupo |
 | `GET /admin/pricing` | Tabla de precios (editar unitarios, matriz calculada) |
 | `PUT /admin/pricing` | Guardar unitarios manual/hardware |
-| `GET /admin/companies/{id}` | Detalle y cambio de paquete + ciclo |
-| `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación |
+| `GET /admin/companies/{id}` | **Resumen** empresa: KPIs, paquete (solo lectura), Pagar / Cancelar / Programar cambio / Reactivar |
+| `GET /admin/companies/{id}/historial` | Historial comercial (solo lectura): pagos, facturas, timeline |
+| `POST /admin/companies/{id}/payments/manual` | Pago manual (ref + soporte PDF/imagen + intent) |
+| `POST /admin/companies/{id}/membership/cancel` | Cancelar membresía (acceso hasta fin de periodo) |
+| `POST /admin/companies/{id}/membership/undo-cancel` | Deshacer cancelación sin pago (si aún al día) |
+| `POST /admin/companies/{id}/package/schedule` | Programar cambio de plan (pago ahora, aplica al corte) |
+| `POST /admin/companies/{id}/enter` | Entrar como empresa (soporte, sesión + banner + audit) |
+| `POST /admin/support/exit` | Salir del modo soporte |
+| `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación (legacy; preferir programar cambio) |
 | `GET /admin/companies/{id}/profile` | Perfil legal, contacto y ubicación |
 | `PUT /admin/companies/{id}/profile` | Guardar perfil empresa |
 | `GET /admin/users` | Usuarios globales |
@@ -333,9 +342,11 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 
 **Pagos locales (sin proveedor):** `BILLING_GATEWAY_DRIVER=local` abre checkout interno (`/billing/checkout/{payment}`) con Aprobar/Rechazar. Manual súper admin + online simulado convergen en `commercial_payments`. Guía: [`docs/BILLING-LOCAL-Y-MIGRACION.md`](docs/BILLING-LOCAL-Y-MIGRACION.md).
 
+**Membresía (v1):** en Resumen se gestionan intents `renew` / `anticipate` / `reactivate` / `plan_change`. Cancelación = `cancel_at_period_end` (sigue operativa hasta `package_ends_at`); al vencer, lifecycle suspende **sin gracia**. Historial es solo lectura (los pagos manuales del súper admin sí aparecen).
+
 **Módulo Documentos (v1.1):** normoteca con **contrato por plan (SKU)** y documentos globales (T&C, privacidad, procedimiento); versionado desde admin; al aceptar se congela contenido + hash en expediente (**inmutable** ante cambios posteriores de Normoteca); clickwrap, pago manual y factura demo (`BILLING_MODE=demo`). Sin export PDF/HTML en v1. Detalle: [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md).
 
-**Ciclo comercial (acceso):** gracia 5 días → suspensión (bloqueo) → archivo por falta de pago tras N días (`SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS`, default 90) → retención → purga. Job `subscriptions:process-lifecycle` (diario 02:00).
+**Ciclo comercial (acceso):** gracia 5 días → suspensión (bloqueo) → archivo por falta de pago tras N días (`SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS`, default 90) → retención → purga. Job `subscriptions:process-lifecycle` (diario 02:00). Canceladas al fin de periodo: sin gracia al vencer.
 
 **Paquetes:** cupo × modalidad × ciclo mensual/anual **no se eliminan**; son independientes del motor de acceso. Reactivar = reasignar paquete (`AssignCompanyPackageService`). Ya no existe «cartera por recuperar» (`archive_reason`: `cancelled` \| `non_payment`).
 
@@ -350,18 +361,41 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 | Ruta | Función |
 |------|---------|
 | `GET /company/dashboard` | **Command Center** (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
-| `GET /company/clients` | Cartera de conjuntos (búsqueda, dirección, operar) |
-| `GET /company/clients?modo=operar` | Modo portería: elegir conjunto y entrar |
-| `GET /company/porteria` | Entrada inteligente a portería (auto si hay 1 conjunto) |
+| `GET /company/clients` | Cartera de conjuntos (acción única: **Ver**) |
+| `GET /company/clients/{id}` | **Expediente del conjunto**: KPIs, charts, Operar portería / Operar cliente / Editar |
+| `POST /company/clients/{id}/activate` | Activar contexto → panel portería (`/access`) |
+| `POST /company/clients/{id}/operate-client` | Activar contexto → panel censo (`/client`) |
+| `GET /company/porteria` | Atajo: redirige a cartera o al expediente del único conjunto operable |
 | `POST /company/clients` | Alta de cliente (bloqueada si cupo lleno) |
-| `GET /company/billing` | Facturación licencia + pago online simulado |
-| `POST /company/billing/checkout` | Crea pago `pending` → checkout local |
+| `GET /company/billing` | **Facturación** unificada: membresía + historial + pago **solo online** |
+| `POST /company/billing/checkout` | Checkout online (intent renew/anticipate/reactivate) |
+| `POST /company/billing/membership/cancel` | Cancelar membresía (acceso hasta corte) |
+| `POST /company/billing/membership/undo-cancel` | Deshacer cancelación sin pago |
+| `POST /company/billing/package/schedule` | Programar cambio de plan (cobra online, aplica al corte) |
 | `GET /company/users` | Usuarios de la empresa y conjuntos asignados |
 | `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped |
 | `GET /company/settings` | Perfil legal y ubicación de la empresa |
 | `PUT /company/settings` | Guardar perfil empresa |
 
 `/company/clients/select` redirige a `/company/porteria` (vista eliminada).
+
+#### Facturación empresa (`/company/billing`)
+
+Misma fuente que el historial plataforma (`commercial_payments`, facturas, evidencias). La empresa **no** registra consignación manual: solo checkout online; si el súper admin registra un pago manual, aparece en su historial.
+
+Acciones: anticipar/renovar/reactivar online · cancelar · deshacer cancelación · programar cambio de plan (pago online diferido).
+
+#### Expediente de conjunto (`/company/clients/{id}`)
+
+| Concepto UI | Fuente |
+|-------------|--------|
+| Unidades | `structures` desglosadas por `StructureType` (apto, casa, torre…) |
+| Personas (censo) | `structure_members` por `MemberType` (propietario, familiar…) |
+| Usuarios app | `structure_app_users` activos (no confundir con `residents` legacy) |
+| Porterías | `locations` con `type = porteria` |
+| Parque vehicular | `vehicles.is_visitor_vehicle` + `access_logs` (adentro = sin `exit_time`) |
+
+Header con pestañas colgantes (mismo patrón que `/admin` empresas): Resumen · Operar portería · Operar cliente · Editar. Botones **← Cartera** / **+ Conjunto** en la barra.
 
 #### Command Center (`/company/dashboard`)
 
@@ -418,12 +452,13 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `resources/views/layouts/company.blade.php` — shell `h-screen`; sidebar fijo; rail fluido `.company-shell-rail` (sin `max-w-7xl`; tope ~1600–1760px solo en 2xl/1920+) |
-| Dashboard | Command Center v3: grid responsive (móvil → tablet 2 col → lg/xl/2xl densidades), alturas fijas desde `lg`, mapa satélite/terreno |
-| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields` |
-| Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` |
-| Contexto cupo | `CompanyLayoutComposer` inyecta `companyContext` en el layout |
-| Vistas migradas | `company/dashboard`, `company/clients/*`, `company/users/*`, `company/settings` |
+| Layout | `layouts/company.blade.php` — shell `h-screen`; sidebar; rail `.company-shell-rail`; slots `subtitle` / `actions` / `headerTabs` (pestañas colgantes bajo el borde del header) |
+| Dashboard | Command Center v3: grid responsive, mapa satélite/terreno |
+| Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields`, `x-ui.flash-toasts` |
+| Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
+| Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` · expediente conjunto: `BuildClientExpedienteService` |
+| Contexto | `CompanyLayoutComposer` inyecta `companyContext` + `supportMode` |
+| Vistas | `company/dashboard`, `company/clients/*`, `company/billing`, `company/users/*`, `company/settings` |
 
 Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `platform` (violet en `/admin`). Tamaños: `sm`, `md`.
 
@@ -591,10 +626,13 @@ Suites relevantes:
 - `tests/Feature/Platform/PlatformDashboardTest.php`
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
 - `tests/Feature/Company/CompanyDashboardTest.php`
+- `tests/Feature/Company/CompanyBillingTest.php`
+- `tests/Feature/Company/CompanyClientExpedienteTest.php`
 - `tests/Feature/Billing/LocalPaymentCheckoutTest.php`
 - `tests/Feature/Public/PublicSignupFlowTest.php`
 - `tests/Feature/User/ScopedUserManagementTest.php`
 - `tests/Feature/Platform/PlatformDocumentsTest.php`
+- `tests/Feature/Platform/EnterCompanyAsSupportTest.php`
 - `tests/Unit/Platform/DataRetentionPurgeTest.php`
 - `tests/Unit/Platform/SubscriptionLifecycleTest.php`
 - `tests/Feature/Auth/LoginCsrfTest.php`

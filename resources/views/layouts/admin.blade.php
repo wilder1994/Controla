@@ -39,30 +39,35 @@
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
-            <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-10 shrink-0">
-                <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
-                    <div class="min-w-0">
-                        <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Panel Plataforma' }}</h2>
-                        <p class="text-xs text-slate-500">Plataforma · Súper Admin</p>
-                    </div>
-                    @isset($actions)
-                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                            {{ $actions }}
+            <header class="sticky top-0 z-10 shrink-0">
+                <div class="bg-slate-900 border-b border-slate-800">
+                    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Panel Plataforma' }}</h2>
+                            <div class="mt-0.5 text-xs flex flex-wrap items-center gap-x-4 gap-y-0.5">
+                                @isset($subtitle)
+                                    {{ $subtitle }}
+                                @else
+                                    <span class="text-slate-500">Plataforma · Súper Admin</span>
+                                @endisset
+                            </div>
                         </div>
-                    @endisset
+                        @isset($actions)
+                            <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                                {{ $actions }}
+                            </div>
+                        @endisset
+                    </div>
                 </div>
+
+                @isset($headerTabs)
+                    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-start gap-1.5 -mt-px pt-0 pb-3">
+                        {{ $headerTabs }}
+                    </div>
+                @endisset
             </header>
 
-            @if (session('success'))
-                <div class="max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-3 shrink-0">
-                    <div class="rounded-lg bg-emerald-900/40 border border-emerald-700 text-emerald-200 px-4 py-3 text-sm">{{ session('success') }}</div>
-                </div>
-            @endif
-            @if (session('warning'))
-                <div class="max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-3 shrink-0">
-                    <div class="rounded-lg bg-amber-900/40 border border-amber-700 text-amber-200 px-4 py-3 text-sm">{{ session('warning') }}</div>
-                </div>
-            @endif
+            <x-ui.flash-toasts />
 
             <main class="flex-1 max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 min-h-0 flex flex-col">
                 {{ $slot }}

@@ -7,7 +7,7 @@
     <div class="space-y-4">
         @if ($operateMode)
             <div class="rounded-lg border border-emerald-800/50 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-200">
-                Elige el conjunto y pulsa <strong>Operar</strong> para activar el contexto de portería.
+                Abre un conjunto con <strong>Ver</strong> y elige <strong>Operar portería</strong> o <strong>Operar cliente</strong> desde su expediente.
             </div>
         @endif
 
@@ -93,7 +93,7 @@
                                 <th class="px-4 py-2.5 text-right font-medium">Usuarios</th>
                             @endif
                             <th class="px-4 py-2.5 text-left font-medium">Estado</th>
-                            <th class="px-4 py-2.5 text-right font-medium">{{ $operateMode ? 'Portería' : 'Acciones' }}</th>
+                            <th class="px-4 py-2.5 text-right font-medium">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800">
@@ -145,26 +145,8 @@
                                         <span class="inline-flex rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-500">Inactivo</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-right whitespace-nowrap space-x-3">
-                                    @if ($operateMode)
-                                        @can('operate', $client)
-                                            <form action="{{ route('company.clients.activate', $client) }}" method="POST" class="inline">
-                                                @csrf
-                                                <x-ui.button type="submit" variant="success" size="sm">Operar</x-ui.button>
-                                            </form>
-                                        @endcan
-                                    @else
-                                        <a href="{{ route('company.clients.show', $client) }}" class="text-xs text-indigo-400 hover:text-indigo-300">Ver</a>
-                                        @can('operate', $client)
-                                            <form action="{{ route('company.clients.activate', $client) }}" method="POST" class="inline">
-                                                @csrf
-                                                <button type="submit" class="text-xs text-emerald-400 hover:text-emerald-300">Operar</button>
-                                            </form>
-                                        @endcan
-                                        @can('update', $client)
-                                            <a href="{{ route('company.clients.edit', $client) }}" class="text-xs text-slate-400 hover:text-slate-300">Editar</a>
-                                        @endcan
-                                    @endif
+                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                    <a href="{{ route('company.clients.show', $client) }}" class="text-xs text-indigo-400 hover:text-indigo-300">Ver</a>
                                 </td>
                             </tr>
                         @empty

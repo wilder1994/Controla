@@ -49,6 +49,34 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
             ->middleware('permission:platform.companies.view')
             ->name('companies.show');
 
+        Route::get('/companies/{company}/historial', [CompanyController::class, 'historial'])
+            ->middleware('permission:platform.companies.view')
+            ->name('companies.historial');
+
+        Route::post('/companies/{company}/enter', [CompanyController::class, 'enterAsSupport'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.enter');
+
+        Route::post('/support/exit', [CompanyController::class, 'exitSupport'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('support.exit');
+
+        Route::post('/companies/{company}/payments/manual', [CompanyController::class, 'storeManualPayment'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.payment.manual');
+
+        Route::post('/companies/{company}/membership/cancel', [CompanyController::class, 'cancelMembership'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.membership.cancel');
+
+        Route::post('/companies/{company}/membership/undo-cancel', [CompanyController::class, 'undoMembershipCancellation'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.membership.undo-cancel');
+
+        Route::post('/companies/{company}/package/schedule', [CompanyController::class, 'schedulePackageChange'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.package.schedule');
+
         Route::put('/companies/{company}/package', [CompanyController::class, 'updatePackage'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.package.update');
