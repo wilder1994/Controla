@@ -41,6 +41,7 @@
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
+            @include('partials.operate-return-banner')
             <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-10 shrink-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
                     <div>

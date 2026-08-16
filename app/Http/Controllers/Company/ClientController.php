@@ -13,6 +13,7 @@ use App\Repositories\ClientRepository;
 use App\Services\Tenant\BuildClientExpedienteService;
 use App\Services\Tenant\CreateClientService;
 use App\Services\Tenant\UpdateClientService;
+use App\Support\Company\CompanyOperateContext;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -221,6 +222,7 @@ final class ClientController extends Controller
         $this->authorize('operate', $client);
 
         $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
+        CompanyOperateContext::enter((int) $client->id, CompanyOperateContext::MODE_PORTERIA);
 
         return redirect()
             ->route('access.dashboard')
@@ -233,10 +235,26 @@ final class ClientController extends Controller
         abort_unless($request->user()?->can('client.structures.manage'), 403);
 
         $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
+        CompanyOperateContext::enter((int) $client->id, CompanyOperateContext::MODE_CLIENTE);
 
         return redirect()
             ->route('client.dashboard')
             ->with('success', "Operando panel del conjunto: {$client->name}");
+    }
+
+    public function exitOperate(Request $request): RedirectResponse
+    {
+        $clientId = CompanyOperateContext::clientId();
+        abort_unless($clientId !== null, 404);
+
+        $client = Client::query()->findOrFail($clientId);
+        $this->authorize('view', $client);
+
+        CompanyOperateContext::exit();
+
+        return redirect()
+            ->route('company.clients.show', $client)
+            ->with('success', 'Volviste al expediente del conjunto.');
     }
 
     private function companyId(Request $request): int

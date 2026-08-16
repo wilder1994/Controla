@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
-use App\Enums\StructureType;
 use App\Models\Structure;
+use App\Models\StructureType;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +17,10 @@ final class StructureRepository
         return Structure::query()
             ->where('client_id', $clientId)
             ->whereNull('parent_id')
-            ->with(['children' => fn ($q) => $q->with('children')->orderBy('name')])
+            ->with([
+                'structureType',
+                'children' => fn ($q) => $q->with(['structureType', 'children.structureType'])->orderBy('name'),
+            ])
             ->orderBy('name')
             ->get();
     }
@@ -65,28 +68,23 @@ final class StructureRepository
 
     public function leafUnitsCount(int $clientId): int
     {
+        $unitTypeIds = StructureType::query()->where('is_unit', true)->pluck('id');
+
         return Structure::query()
             ->where('client_id', $clientId)
-            ->whereIn('type', [
-                StructureType::Apartment->value,
-                StructureType::House->value,
-                StructureType::Office->value,
-                StructureType::CommercialStore->value,
-            ])
+            ->whereIn('structure_type_id', $unitTypeIds)
             ->count();
     }
 
     /** @return Collection<int, Structure> */
     public function leafUnitsForClient(int $clientId): Collection
     {
+        $unitTypeIds = StructureType::query()->where('is_unit', true)->pluck('id');
+
         return Structure::query()
             ->where('client_id', $clientId)
-            ->whereIn('type', [
-                StructureType::Apartment->value,
-                StructureType::House->value,
-                StructureType::Office->value,
-                StructureType::CommercialStore->value,
-            ])
+            ->whereIn('structure_type_id', $unitTypeIds)
+            ->with('structureType')
             ->orderBy('name')
             ->get();
     }

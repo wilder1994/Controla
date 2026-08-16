@@ -18,7 +18,7 @@ final class CreateStructureService
                 'parent_id' => $data->parentId,
                 'name' => $data->name,
                 'code' => $data->code,
-                'type' => $data->type,
+                'structure_type_id' => $data->structureTypeId,
                 'max_occupancy' => $data->maxOccupancy,
                 'is_active' => $data->isActive,
                 'metadata' => $data->metadata,

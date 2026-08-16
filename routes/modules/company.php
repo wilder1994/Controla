@@ -74,5 +74,8 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::post('/clients/{client}/operate-client', [ClientController::class, 'operateClient'])
             ->name('clients.operate-client');
 
+        Route::post('/operate/exit', [ClientController::class, 'exitOperate'])
+            ->name('operate.exit');
+
         Route::resource('clients', ClientController::class);
     });

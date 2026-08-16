@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Client;
 
 use App\Domain\Structure\Data\CreateStructureData;
-use App\Enums\StructureType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreStructureRequest;
 use App\Models\Structure;
+use App\Models\StructureType;
 use App\Repositories\StructureRepository;
 use App\Services\Structure\CreateStructureService;
 use App\Support\Tenancy\TenantContext;
@@ -30,8 +30,8 @@ final class StructureController extends Controller
         $clientId = (int) $this->tenantContext->clientId();
         $tree = $this->structureRepository->treeForClient($clientId);
         $census = $this->structureRepository->censusCounts($clientId);
-        $types = StructureType::options();
-        $parents = Structure::query()->orderBy('name')->get();
+        $types = StructureType::optionsForSelect();
+        $parents = Structure::query()->with('structureType')->orderBy('name')->get();
 
         return view('modules.client.structures.index', compact('tree', 'census', 'types', 'parents'));
     }
@@ -45,7 +45,7 @@ final class StructureController extends Controller
             parentId: $request->validated('parent_id'),
             name: $request->validated('name'),
             code: $request->validated('code'),
-            type: StructureType::from($request->validated('type')),
+            structureTypeId: (int) $request->validated('structure_type_id'),
             maxOccupancy: (int) $request->validated('max_occupancy', 0),
             isActive: $request->boolean('is_active', true),
         ));
@@ -59,7 +59,7 @@ final class StructureController extends Controller
     {
         $this->authorize('view', $structure);
 
-        $structure->load(['members', 'pets', 'vehicles', 'parent']);
+        $structure->load(['members', 'pets', 'vehicles', 'parent', 'structureType']);
 
         return view('modules.client.structures.show', compact('structure'));
     }

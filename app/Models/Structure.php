@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\StructureType;
 use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,9 +17,9 @@ final class Structure extends Model
     protected $fillable = [
         'client_id',
         'parent_id',
+        'structure_type_id',
         'name',
         'code',
-        'type',
         'max_occupancy',
         'metadata',
         'is_active',
@@ -29,11 +28,15 @@ final class Structure extends Model
     protected function casts(): array
     {
         return [
-            'type' => StructureType::class,
             'metadata' => 'array',
             'is_active' => 'boolean',
             'max_occupancy' => 'integer',
         ];
+    }
+
+    public function structureType(): BelongsTo
+    {
+        return $this->belongsTo(StructureType::class);
     }
 
     public function parent(): BelongsTo

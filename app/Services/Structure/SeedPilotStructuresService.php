@@ -9,12 +9,12 @@ use App\Models\Structure;
 use App\Models\StructureAppUser;
 use App\Models\StructureMember;
 use App\Models\StructurePet;
+use App\Models\StructureType;
 use App\Models\Vehicle;
 use App\Models\VisitorPreAuthorization;
 use App\Enums\AuthorizationStatus;
 use App\Enums\MemberType;
 use App\Enums\PetSpecies;
-use App\Enums\StructureType;
 use App\Enums\VisitorCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -27,13 +27,17 @@ final class SeedPilotStructuresService
             return;
         }
 
-        DB::transaction(function () use ($client): void {
+        $generalAreaId = StructureType::idByCode('general_area');
+        $blockId = StructureType::idByCode('block');
+        $apartmentId = StructureType::idByCode('apartment');
+
+        DB::transaction(function () use ($client, $generalAreaId, $blockId, $apartmentId): void {
             $root = Structure::query()->firstOrCreate(
                 ['client_id' => $client->id, 'code' => $client->slug],
                 [
                     'parent_id' => null,
                     'name' => $client->name,
-                    'type' => StructureType::GeneralArea,
+                    'structure_type_id' => $generalAreaId,
                     'is_active' => true,
                 ]
             );
@@ -43,7 +47,7 @@ final class SeedPilotStructuresService
                 [
                     'parent_id' => $root->id,
                     'name' => 'Torre A',
-                    'type' => StructureType::Block,
+                    'structure_type_id' => $blockId,
                     'is_active' => true,
                 ]
             );
@@ -56,7 +60,7 @@ final class SeedPilotStructuresService
                     [
                         'parent_id' => $tower->id,
                         'name' => "Apto {$i}01",
-                        'type' => StructureType::Apartment,
+                        'structure_type_id' => $apartmentId,
                         'max_occupancy' => 4,
                         'is_active' => true,
                     ]

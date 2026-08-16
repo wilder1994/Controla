@@ -31,9 +31,9 @@
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Tipo</label>
-                        <select name="type" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                            @foreach ($types as $value => $label)
-                                <option value="{{ $value }}">{{ $label }}</option>
+                        <select name="structure_type_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+                            @foreach ($types as $id => $label)
+                                <option value="{{ $id }}" @selected(old('structure_type_id') == $id)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

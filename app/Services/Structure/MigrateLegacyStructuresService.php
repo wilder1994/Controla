@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Structure;
 
-use App\Enums\StructureType;
 use App\Enums\MemberType;
 use App\Models\Building;
 use App\Models\Client;
 use App\Models\Structure;
 use App\Models\StructureMember;
+use App\Models\StructureType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -27,13 +27,17 @@ final class MigrateLegacyStructuresService
             return ['skipped' => true, 'structures' => 0, 'members' => 0];
         }
 
-        return DB::transaction(function () use ($client): array {
+        $generalAreaId = StructureType::idByCode('general_area');
+        $blockId = StructureType::idByCode('block');
+        $apartmentId = StructureType::idByCode('apartment');
+
+        return DB::transaction(function () use ($client, $generalAreaId, $blockId, $apartmentId): array {
             $root = Structure::query()->create([
                 'client_id' => $client->id,
                 'parent_id' => null,
                 'name' => $client->name,
                 'code' => $client->slug,
-                'type' => StructureType::GeneralArea,
+                'structure_type_id' => $generalAreaId,
                 'is_active' => true,
             ]);
 
@@ -48,7 +52,7 @@ final class MigrateLegacyStructuresService
                     'parent_id' => $root->id,
                     'name' => $building->name,
                     'code' => $building->code,
-                    'type' => StructureType::Block,
+                    'structure_type_id' => $blockId,
                     'is_active' => $building->is_active,
                 ]);
                 $this->buildingMap[$building->id] = $block->id;
@@ -60,7 +64,7 @@ final class MigrateLegacyStructuresService
                         'parent_id' => $block->id,
                         'name' => "Apto {$unit->unit_number}",
                         'code' => "{$building->code}-{$unit->unit_number}",
-                        'type' => StructureType::Apartment,
+                        'structure_type_id' => $apartmentId,
                         'metadata' => ['floor' => $unit->floor, 'legacy_housing_unit_id' => $unit->id],
                         'is_active' => $unit->is_active,
                     ]);

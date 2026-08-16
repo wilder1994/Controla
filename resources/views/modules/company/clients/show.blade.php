@@ -41,9 +41,8 @@
                 <p class="mt-1 text-lg font-semibold text-white tabular-nums">{{ $expediente['pets_count'] }}</p>
             </div>
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
-                <p class="text-[10px] uppercase tracking-wide text-slate-500">Porterías</p>
-                <p class="mt-1 text-lg font-semibold text-white tabular-nums">{{ $expediente['porterias_count'] }}</p>
-                <p class="text-[10px] text-slate-600">{{ $expediente['locations_count'] }} ubicaciones</p>
+                <p class="text-[10px] uppercase tracking-wide text-slate-500">Puntos de acceso</p>
+                <p class="mt-1 text-lg font-semibold text-white tabular-nums">{{ $expediente['access_points_count'] }}</p>
             </div>
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
                 <p class="text-[10px] uppercase tracking-wide text-slate-500">Bloqueados</p>

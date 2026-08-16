@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->unsignedInteger('geo_radius_m')->default(250);
-            $table->string('type', 20)->default('porteria');
+            $table->string('type', 20)->default('access_point');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();

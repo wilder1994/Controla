@@ -3,7 +3,7 @@
         <div>
             <a href="{{ route('client.structures.index') }}" class="text-sm text-teal-400 hover:text-teal-300">← Volver al árbol</a>
             <h2 class="text-2xl font-bold text-white mt-2">{{ $structure->name }}</h2>
-            <p class="text-sm text-slate-400">{{ $structure->full_path }} · {{ $structure->type->label() }}</p>
+            <p class="text-sm text-slate-400">{{ $structure->full_path }} · {{ $structure->structureType?->name }}</p>
         </div>
 
         <div class="border-b border-slate-800">

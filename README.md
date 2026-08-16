@@ -26,7 +26,8 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Ops portería+** | Minuta supervisión + evidencias, turnos, zonas comunes, auditoría, reportes imprimibles | ✅ Implementada (v1) |
 | **UI Plataforma** | Dashboard analítico + empresa expediente (Resumen/Perfil/Docs/Historial) + soporte | ✅ Implementada (v3) |
 | **Membresía** | Pago manual/online, cancelar al fin de periodo, reactivar, cambio de plan diferido | ✅ Implementada (v1) |
-| **Expediente conjunto** | Cartera → Ver: KPIs censo/app/vehículos, charts, Operar portería / Operar cliente | ✅ Implementada (v1) |
+| **Expediente conjunto** | Cartera → Ver: KPIs, charts, Operar portería/cliente + banner «Volver al expediente» | ✅ Implementada (v2) |
+| **Ajustes plataforma** | Catálogo `structure_types` (CRUD) + puntos de acceso (locations) sin tipología edificio/sede | ✅ Implementada (v1) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
@@ -40,10 +41,10 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
-| **Plataforma** | `/admin` | `super-admin` | Dashboard analítico, precios, empresas, paquetes y documentos |
-| **Empresa** | `/company` | `company-admin` | Licencia, cupo de clientes, cartera de conjuntos |
-| **Conjunto** | `/client` | `client-admin` | Censo: estructuras, personas, vehículos, mascotas, autorizaciones |
-| **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Operación diaria: hub operaciones, bloqueo, reportes |
+| **Plataforma** | `/admin` | `super-admin` | Dashboard, precios, empresas, documentos, **Ajustes** (tipos de estructura) |
+| **Empresa** | `/company` | `company-admin` | Licencia, cupo, cartera; desde expediente → operar portería/censo con retorno |
+| **Conjunto** | `/client` | `client-admin` | Censo: estructuras (catálogo plataforma), personas, vehículos, mascotas, autorizaciones |
+| **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **puntos de acceso** (puertas/porterías, nombre libre) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia |
 
@@ -175,11 +176,12 @@ Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa 
 Los usuarios demo se crean en `DemoUsersSeeder` (idempotente con `updateOrCreate`). Orden de ejecución en `DatabaseSeeder`:
 
 1. `RoleAndPermissionSeeder` — roles y permisos Spatie
-2. `LocationSeeder` — ubicaciones base
-3. `TenantSeeder` — empresa + clientes piloto
-4. `PlatformDocumentsSeeder` — normoteca (globales + contrato por SKU) + TRD inicial
-5. `DemoUsersSeeder` — usuarios demo (plataforma, empresa, supervisor, vigilante, conjunto, residente)
-6. `StructureSeeder` — árbol residencial y censo piloto
+2. `StructureTypeSeeder` — catálogo de tipos de estructura (plataforma)
+3. `LocationSeeder` — puntos de acceso base
+4. `TenantSeeder` — empresa + clientes piloto
+5. `PlatformDocumentsSeeder` — normoteca (globales + contrato por SKU) + TRD inicial
+6. `DemoUsersSeeder` — usuarios demo (plataforma, empresa, supervisor, vigilante, conjunto, residente)
+7. `StructureSeeder` — árbol residencial y censo piloto
 
 ```bash
 php artisan db:seed --class=PlatformDocumentsSeeder  # solo normoteca + TRD
@@ -324,7 +326,10 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `POST /admin/companies/{id}/membership/undo-cancel` | Deshacer cancelación sin pago (si aún al día) |
 | `POST /admin/companies/{id}/package/schedule` | Programar cambio de plan (pago ahora, aplica al corte) |
 | `POST /admin/companies/{id}/enter` | Entrar como empresa (soporte, sesión + banner + audit) |
-| `POST /admin/support/exit` | Salir del modo soporte |
+| `POST /admin/support/exit` | Salir del modo soporte → expediente empresa |
+| `GET /admin/settings/structure-types` | **Ajustes**: catálogo de tipos de estructura |
+| `POST /admin/settings/structure-types` | Crear tipo (`code`, `name`, `is_unit`, `is_active`, orden) |
+| `PUT/DELETE /admin/settings/structure-types/{id}` | Actualizar / eliminar (bloqueado si hay estructuras usando el tipo) |
 | `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación (legacy; preferir programar cambio) |
 | `GET /admin/companies/{id}/profile` | Perfil legal, contacto y ubicación |
 | `PUT /admin/companies/{id}/profile` | Guardar perfil empresa |
@@ -363,8 +368,9 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 | `GET /company/dashboard` | **Command Center** (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de conjuntos (acción única: **Ver**) |
 | `GET /company/clients/{id}` | **Expediente del conjunto**: KPIs, charts, Operar portería / Operar cliente / Editar |
-| `POST /company/clients/{id}/activate` | Activar contexto → panel portería (`/access`) |
-| `POST /company/clients/{id}/operate-client` | Activar contexto → panel censo (`/client`) |
+| `POST /company/clients/{id}/activate` | Operar portería: tenant + `CompanyOperateContext` → `/access` |
+| `POST /company/clients/{id}/operate-client` | Operar cliente: tenant + contexto → `/client` |
+| `POST /company/operate/exit` | Salir de operación → expediente del conjunto (banner ámbar) |
 | `GET /company/porteria` | Atajo: redirige a cartera o al expediente del único conjunto operable |
 | `POST /company/clients` | Alta de cliente (bloqueada si cupo lleno) |
 | `GET /company/billing` | **Facturación** unificada: membresía + historial + pago **solo online** |
@@ -389,13 +395,24 @@ Acciones: anticipar/renovar/reactivar online · cancelar · deshacer cancelació
 
 | Concepto UI | Fuente |
 |-------------|--------|
-| Unidades | `structures` desglosadas por `StructureType` (apto, casa, torre…) |
+| Unidades | `structures` desglosadas por catálogo `structure_types` (apto, casa, torre, bodega…) |
 | Personas (censo) | `structure_members` por `MemberType` (propietario, familiar…) |
 | Usuarios app | `structure_app_users` activos (no confundir con `residents` legacy) |
-| Porterías | `locations` con `type = porteria` |
+| Puntos de acceso | `locations` (`type = access_point`); nombre libre del cliente |
 | Parque vehicular | `vehicles.is_visitor_vehicle` + `access_logs` (adentro = sin `exit_time`) |
 
 Header con pestañas colgantes (mismo patrón que `/admin` empresas): Resumen · Operar portería · Operar cliente · Editar. Botones **← Cartera** / **+ Conjunto** en la barra.
+
+**Retorno al expediente (v2):** al operar portería o cliente se activa `CompanyOperateContext` (sesión). Los layouts `access` y `client` muestran un banner ámbar (mismo estilo que el modo soporte del súper admin) con **Volver al expediente** → `POST /company/operate/exit`. Composer: `OperateReturnLayoutComposer`.
+
+#### Catálogo de estructuras y puntos de acceso
+
+| Concepto | Dónde | Detalle |
+|----------|-------|---------|
+| Tipos de estructura | `/admin/settings/structure-types` | Tabla `structure_types`; el censo del cliente elige `structure_type_id` activo |
+| Unidades vs contenedores | flag `is_unit` | Apartamento/casa/local/bodega = unidad; torre/PH/zona = contenedor |
+| Puntos de acceso | `/access/locations` | Solo puertas/accesos (`type = access_point`); nombre libre (ej. «Puerta de vidrio») |
+| Seed | `StructureTypeSeeder` + `LocationSeeder` | Catálogo base + 4 puntos demo (asignados al piloto en `TenantSeeder`) |
 
 #### Command Center (`/company/dashboard`)
 
@@ -457,7 +474,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 | Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields`, `x-ui.flash-toasts` |
 | Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
 | Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` · expediente conjunto: `BuildClientExpedienteService` |
-| Contexto | `CompanyLayoutComposer` inyecta `companyContext` + `supportMode` |
+| Contexto | `CompanyLayoutComposer` → `companyContext` + `supportMode`; `OperateReturnLayoutComposer` → banner en access/client |
 | Vistas | `company/dashboard`, `company/clients/*`, `company/billing`, `company/users/*`, `company/settings` |
 
 Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `platform` (violet en `/admin`). Tamaños: `sm`, `md`.
@@ -627,7 +644,8 @@ Suites relevantes:
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
 - `tests/Feature/Company/CompanyDashboardTest.php`
 - `tests/Feature/Company/CompanyBillingTest.php`
-- `tests/Feature/Company/CompanyClientExpedienteTest.php`
+- `tests/Feature/Company/CompanyClientExpedienteTest.php` (operar + volver al expediente)
+- `tests/Feature/Platform/StructureTypeSettingsTest.php`
 - `tests/Feature/Billing/LocalPaymentCheckoutTest.php`
 - `tests/Feature/Public/PublicSignupFlowTest.php`
 - `tests/Feature/User/ScopedUserManagementTest.php`

@@ -1,6 +1,6 @@
 <x-access-layout>
     <div class="-mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-6 pb-8 bg-gradient-to-r from-slate-800 to-indigo-900 mb-6">
-        <h2 class="font-semibold text-xl text-white leading-tight">Editar Ubicación</h2>
+        <h2 class="font-semibold text-xl text-white leading-tight">Editar punto de acceso</h2>
     </div>
     <div class="py-6">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,14 +38,6 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Teléfono</label>
                             <input type="text" name="phone" value="{{ old('phone', $location->phone) }}" class="mt-1 block w-full rounded-md bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300">Tipo</label>
-                            <select name="type" class="mt-1 block w-full rounded-md bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                @foreach(['porteria','edificio','sede','bodega'] as $t)
-                                <option value="{{ $t }}" {{ old('type', $location->type) == $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
-                                @endforeach
-                            </select>
                         </div>
                         <div>
                             <label class="inline-flex items-center">

@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Structure;
 
-use App\Enums\MemberType;
-use App\Enums\StructureType;
 use App\Models\Client;
 use App\Models\Structure;
 use App\Models\StructureMember;
+use App\Models\StructureType;
 use App\Models\User;
-use App\Models\Vehicle;
 use App\Support\Tenancy\TenantContext;
+use App\Enums\MemberType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,6 +24,7 @@ final class StructureModuleTest extends TestCase
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
         $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
+        $blockTypeId = StructureType::idByCode('block');
 
         $this->assertNotNull($client);
         $this->assertNotNull($admin);
@@ -34,7 +34,7 @@ final class StructureModuleTest extends TestCase
             ->post(route('client.structures.store'), [
                 'name' => 'Torre Piloto Test',
                 'code' => 'TORRE-TEST',
-                'type' => StructureType::Block->value,
+                'structure_type_id' => $blockTypeId,
                 'is_active' => true,
             ]);
 
@@ -46,6 +46,7 @@ final class StructureModuleTest extends TestCase
 
         $this->assertNotNull($structure);
         $this->assertSame($client->id, $structure->client_id);
+        $this->assertSame($blockTypeId, $structure->structure_type_id);
     }
 
     public function test_member_and_vehicle_are_isolated_by_client(): void
@@ -60,7 +61,7 @@ final class StructureModuleTest extends TestCase
             'client_id' => $clientB->id,
             'name' => 'Apto B1',
             'code' => 'B1-TEST',
-            'type' => StructureType::Apartment,
+            'structure_type_id' => StructureType::idByCode('apartment'),
             'is_active' => true,
         ]);
 

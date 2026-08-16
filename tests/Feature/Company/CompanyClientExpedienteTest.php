@@ -6,6 +6,7 @@ namespace Tests\Feature\Company;
 
 use App\Models\Client;
 use App\Models\User;
+use App\Support\Company\CompanyOperateContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -62,5 +63,73 @@ final class CompanyClientExpedienteTest extends TestCase
             $client->id,
             session(config('tenancy.session.active_client_key')),
         );
+        $this->assertSame((int) $client->id, CompanyOperateContext::clientId());
+        $this->assertSame(CompanyOperateContext::MODE_CLIENTE, CompanyOperateContext::mode());
+    }
+
+    public function test_operate_porteria_and_exit_returns_to_expediente(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+
+        $enter = $this->actingAs($user)->post(route('company.clients.activate', $client));
+        $enter->assertRedirect(route('access.dashboard'));
+        $this->assertSame(CompanyOperateContext::MODE_PORTERIA, CompanyOperateContext::mode());
+
+        $dashboard = $this->actingAs($user)
+            ->withSession([
+                config('tenancy.session.active_client_key') => $client->id,
+                CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+                CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_PORTERIA,
+            ])
+            ->get(route('access.dashboard'));
+
+        $dashboard->assertOk();
+        $dashboard->assertSee('Volver al expediente');
+        $dashboard->assertSee($client->name);
+
+        $exit = $this->actingAs($user)
+            ->withSession([
+                CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+                CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_PORTERIA,
+            ])
+            ->post(route('company.operate.exit'));
+
+        $exit->assertRedirect(route('company.clients.show', $client));
+        $this->assertNull(CompanyOperateContext::clientId());
+    }
+
+    public function test_operate_client_and_exit_returns_to_expediente(): void
+    {
+        $this->seed();
+
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+
+        $this->actingAs($user)->post(route('company.clients.operate-client', $client));
+
+        $dashboard = $this->actingAs($user)
+            ->withSession([
+                config('tenancy.session.active_client_key') => $client->id,
+                CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+                CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_CLIENTE,
+            ])
+            ->get(route('client.dashboard'));
+
+        $dashboard->assertOk();
+        $dashboard->assertSee('Volver al expediente');
+        $dashboard->assertSee('panel del conjunto');
+
+        $exit = $this->actingAs($user)
+            ->withSession([
+                CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+                CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_CLIENTE,
+            ])
+            ->post(route('company.operate.exit'));
+
+        $exit->assertRedirect(route('company.clients.show', $client));
+        $this->assertNull(CompanyOperateContext::clientId());
     }
 }

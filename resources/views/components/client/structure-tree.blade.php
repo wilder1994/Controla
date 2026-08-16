@@ -11,7 +11,7 @@
                     <a href="{{ route('client.structures.show', $node) }}" class="font-medium text-white hover:text-teal-300">
                         {{ $node->name }}
                     </a>
-                    <p class="text-xs text-slate-500">{{ $node->type->label() }} @if($node->code)<span class="font-mono">· {{ $node->code }}</span>@endif</p>
+                    <p class="text-xs text-slate-500">{{ $node->structureType?->name }} @if($node->code)<span class="font-mono">· {{ $node->code }}</span>@endif</p>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs">
                     <span class="rounded-full bg-indigo-900/50 px-2 py-0.5 text-indigo-200" title="Personas">{{ $counts['members'] }} personas</span>

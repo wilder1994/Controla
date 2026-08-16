@@ -14,9 +14,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->unsignedBigInteger('parent_id')->nullable();
+            $table->foreignId('structure_type_id')->constrained('structure_types')->restrictOnDelete();
             $table->string('name', 100);
             $table->string('code', 50)->nullable();
-            $table->string('type', 30);
             $table->unsignedInteger('max_occupancy')->nullable()->default(0);
             $table->json('metadata')->nullable();
             $table->boolean('is_active')->default(true);
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->foreign('parent_id')->references('id')->on('structures')->cascadeOnDelete();
-            $table->index(['client_id', 'type', 'is_active']);
+            $table->index(['client_id', 'structure_type_id', 'is_active']);
             $table->unique(['client_id', 'code']);
         });
     }

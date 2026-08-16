@@ -6,6 +6,7 @@ use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\DocumentController;
 use App\Http\Controllers\Platform\PricingController;
+use App\Http\Controllers\Platform\StructureTypeController;
 use App\Http\Controllers\Platform\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -144,4 +145,20 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::post('/documents/expedientes/{company}/payments/local-checkout', [DocumentController::class, 'storeLocalCheckout'])
             ->middleware('permission:platform.documents.manage')
             ->name('documents.expedientes.payment.local-checkout');
+
+        Route::get('/settings/structure-types', [StructureTypeController::class, 'index'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.structure-types.index');
+
+        Route::post('/settings/structure-types', [StructureTypeController::class, 'store'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.structure-types.store');
+
+        Route::put('/settings/structure-types/{structureType}', [StructureTypeController::class, 'update'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.structure-types.update');
+
+        Route::delete('/settings/structure-types/{structureType}', [StructureTypeController::class, 'destroy'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.structure-types.destroy');
     });

@@ -12,6 +12,7 @@ return [
         'platform.users.manage',
         'platform.documents.view',
         'platform.documents.manage',
+        'platform.settings.manage',
 
         // Empresa de seguridad
         'company.dashboard',
@@ -66,6 +67,7 @@ return [
             'platform.users.manage',
             'platform.documents.view',
             'platform.documents.manage',
+            'platform.settings.manage',
         ],
 
         'company-admin' => [
@@ -227,6 +229,7 @@ return [
                 ['label' => 'Empresas', 'route' => 'admin.companies.index', 'permission' => 'platform.companies.view'],
                 ['label' => 'Usuarios', 'route' => 'admin.users.index', 'permission' => 'platform.users.view'],
                 ['label' => 'Documentos', 'route' => 'admin.documents.index', 'permission' => 'platform.documents.view'],
+                ['label' => 'Ajustes', 'route' => 'admin.settings.structure-types.index', 'permission' => 'platform.settings.manage'],
             ],
         ],
         'company' => [
@@ -257,7 +260,7 @@ return [
                 ['label' => 'Correspondencia', 'route' => 'access.correspondence.index', 'permission' => 'access.manage.correspondence'],
                 ['label' => 'Minutas', 'route' => 'access.guard_logs.index', 'permission' => 'access.manage.guard_logs'],
                 ['label' => 'Turnos', 'route' => 'access.turnos.index', 'permission' => 'access.manage.turnos'],
-                ['label' => 'Ubicaciones', 'route' => 'access.locations.index', 'permission' => 'access.manage.locations'],
+                ['label' => 'Puntos de acceso', 'route' => 'access.locations.index', 'permission' => 'access.manage.locations'],
                 ['label' => 'Lista Bloqueo', 'route' => 'access.blocklist.index', 'permission' => 'access.manage.blocklist'],
                 ['label' => 'Zonas comunes', 'route' => 'access.zones.index', 'permission' => 'access.manage.zones'],
                 ['label' => 'Auditoría', 'route' => 'access.audit.index', 'permission' => 'access.view.audit'],

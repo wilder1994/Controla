@@ -262,8 +262,25 @@ Servicios:
 | POST | `/admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
 | GET | `/admin/documents/expedientes` | Listado expedientes |
 | GET | `/admin/documents/expedientes/{company}` | Detalle expediente (corpus congelado) |
+| GET | `/admin/settings/structure-types` | Ajustes: catálogo de tipos de estructura |
+| POST | `/admin/settings/structure-types` | Crear tipo |
+| PUT | `/admin/settings/structure-types/{structureType}` | Actualizar tipo |
+| DELETE | `/admin/settings/structure-types/{structureType}` | Eliminar (si no hay estructuras) |
 
-Permisos: `platform.documents.view`, `platform.documents.manage` (solo `super-admin` en v1).
+Permisos: `platform.documents.view`, `platform.documents.manage`, `platform.settings.manage` (solo `super-admin` en v1).
+
+### Ajustes — tipos de estructura
+
+Sidebar **Ajustes** → CRUD de `structure_types` (código, nombre, descripción, `is_unit`, activo, orden).  
+Los clientes usan ese catálogo al crear nodos en `/client/structures` (`structure_type_id`).  
+Servicio: `ManageStructureTypeService` · seed: `StructureTypeSeeder`.
+
+**Separación de conceptos:**
+
+| Concepto | Tabla | Quién define |
+|----------|-------|--------------|
+| Tipología del sitio (apto, bodega, PH…) | `structure_types` → `structures` | Plataforma (catálogo) + cliente (árbol) |
+| Puntos de acceso / puertas | `locations` (`access_point`) | Cliente / portería (nombre libre) |
 
 Archivo: `routes/modules/admin.php`
 
@@ -275,6 +292,7 @@ Archivo: `routes/modules/admin.php`
 app/Services/Platform/
 ├── PlatformDashboardService.php      # Orquesta datos del dashboard
 ├── PlatformDashboardAnalytics.php    # KPIs, gráficas, marcadores mapa, TOP facturación
+├── ManageStructureTypeService.php    # CRUD catálogo structure_types (Ajustes)
 ├── ArchiveCompanyService.php         # Archivo en cascada
 ├── ReleaseClientService.php          # Retiro de conjunto
 ├── ProcessSubscriptionLifecycleService.php

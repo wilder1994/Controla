@@ -1,34 +1,53 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\Location;
+use App\Support\Tenancy\TenantContext;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
-class LocationController extends Controller
+final class LocationController extends Controller
 {
-    public function index()
+    public function __construct(
+        private readonly TenantContext $tenantContext,
+    ) {}
+
+    public function index(): View
     {
-        $locations = Location::latest()->paginate(15);
+        $locations = Location::query()->latest()->paginate(15);
+
         return view('modules.access.locations.index', compact('locations'));
     }
 
-    public function create()
+    public function create(): View
     {
         return view('modules.access.locations.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
+        $clientId = $this->tenantContext->clientId();
+        abort_if($clientId === null, 422, 'Seleccione un cliente/conjunto activo.');
+
         $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:locations,code',
+            'code' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('locations', 'code')->where(fn ($q) => $q->where('client_id', $clientId)),
+            ],
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'geo_radius_m' => 'nullable|integer|min:10',
-            'type' => 'required|in:porteria,edificio,sede,bodega',
             'is_active' => 'boolean',
         ]);
 
@@ -36,28 +55,39 @@ class LocationController extends Controller
             return back()->withErrors(['geo' => 'Latitud y longitud deben ir juntas.'])->withInput();
         }
 
-        Location::create($validated);
+        Location::query()->create([
+            ...$validated,
+            'client_id' => $clientId,
+            'type' => 'access_point',
+            'is_active' => $request->boolean('is_active', true),
+        ]);
 
         return redirect()->route('access.locations.index')
-            ->with('success', 'Ubicación creada exitosamente.');
+            ->with('success', 'Punto de acceso creado correctamente.');
     }
 
-    public function edit(Location $location)
+    public function edit(Location $location): View
     {
         return view('modules.access.locations.edit', compact('location'));
     }
 
-    public function update(Request $request, Location $location)
+    public function update(Request $request, Location $location): RedirectResponse
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:locations,code,' . $location->id,
+            'code' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('locations', 'code')
+                    ->where(fn ($q) => $q->where('client_id', $location->client_id))
+                    ->ignore($location->id),
+            ],
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'geo_radius_m' => 'nullable|integer|min:10',
-            'type' => 'required|in:porteria,edificio,sede,bodega',
             'is_active' => 'boolean',
         ]);
 
@@ -65,16 +95,21 @@ class LocationController extends Controller
             return back()->withErrors(['geo' => 'Latitud y longitud deben ir juntas.'])->withInput();
         }
 
-        $location->update($validated);
+        $location->update([
+            ...$validated,
+            'type' => 'access_point',
+            'is_active' => $request->boolean('is_active', $location->is_active),
+        ]);
 
         return redirect()->route('access.locations.index')
-            ->with('success', 'Ubicación actualizada exitosamente.');
+            ->with('success', 'Punto de acceso actualizado correctamente.');
     }
 
-    public function destroy(Location $location)
+    public function destroy(Location $location): RedirectResponse
     {
         $location->delete();
+
         return redirect()->route('access.locations.index')
-            ->with('success', 'Ubicación eliminada exitosamente.');
+            ->with('success', 'Punto de acceso eliminado correctamente.');
     }
 }

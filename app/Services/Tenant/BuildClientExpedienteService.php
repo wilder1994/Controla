@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Tenant;
 
 use App\Enums\MemberType;
-use App\Enums\StructureType;
 use App\Models\AccessLog;
 use App\Models\Blocklist;
 use App\Models\Client;
@@ -14,11 +13,11 @@ use App\Models\Structure;
 use App\Models\StructureAppUser;
 use App\Models\StructureMember;
 use App\Models\StructurePet;
+use App\Models\StructureType;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Visitor;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 
 final class BuildClientExpedienteService
 {
@@ -33,15 +32,17 @@ final class BuildClientExpedienteService
 
         $structureByType = Structure::query()
             ->where('client_id', $clientId)
-            ->selectRaw('type, COUNT(*) as aggregate')
-            ->groupBy('type')
-            ->pluck('aggregate', 'type');
+            ->selectRaw('structure_type_id, COUNT(*) as aggregate')
+            ->groupBy('structure_type_id')
+            ->pluck('aggregate', 'structure_type_id');
 
-        $structuresBreakdown = collect(StructureType::cases())
+        $structuresBreakdown = StructureType::query()
+            ->orderBy('sort_order')
+            ->get()
             ->map(fn (StructureType $type) => [
-                'type' => $type->value,
-                'label' => $type->label(),
-                'count' => (int) ($structureByType[$type->value] ?? 0),
+                'type' => $type->code,
+                'label' => $type->name,
+                'count' => (int) ($structureByType[$type->id] ?? 0),
             ])
             ->filter(fn (array $row) => $row['count'] > 0)
             ->values()
@@ -154,8 +155,7 @@ final class BuildClientExpedienteService
             'members_breakdown' => $membersBreakdown,
             'app_users_count' => StructureAppUser::query()->where('client_id', $clientId)->where('is_active', true)->count(),
             'pets_count' => StructurePet::query()->where('client_id', $clientId)->count(),
-            'porterias_count' => Location::query()->where('client_id', $clientId)->where('type', 'porteria')->count(),
-            'locations_count' => Location::query()->where('client_id', $clientId)->count(),
+            'access_points_count' => Location::query()->where('client_id', $clientId)->count(),
             'visitors_registered' => Visitor::query()->where('client_id', $clientId)->count(),
             'visitor_vehicles_registered' => $visitorVehiclesRegistered,
             'resident_vehicles_registered' => $residentVehiclesRegistered,
