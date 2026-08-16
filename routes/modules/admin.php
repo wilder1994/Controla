@@ -6,6 +6,7 @@ use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\DocumentController;
 use App\Http\Controllers\Platform\PricingController;
+use App\Http\Controllers\Platform\IdentityDocumentTypeController;
 use App\Http\Controllers\Platform\StructureTypeController;
 use App\Http\Controllers\Platform\UserController;
 use Illuminate\Support\Facades\Route;
@@ -158,7 +159,39 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
             ->middleware('permission:platform.settings.manage')
             ->name('settings.structure-types.update');
 
+        Route::post('/settings/structure-types/{structureType}/move-up', [StructureTypeController::class, 'moveUp'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.structure-types.move-up');
+
+        Route::post('/settings/structure-types/{structureType}/move-down', [StructureTypeController::class, 'moveDown'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.structure-types.move-down');
+
         Route::delete('/settings/structure-types/{structureType}', [StructureTypeController::class, 'destroy'])
             ->middleware('permission:platform.settings.manage')
             ->name('settings.structure-types.destroy');
+
+        Route::get('/settings/document-types', [IdentityDocumentTypeController::class, 'index'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.document-types.index');
+
+        Route::post('/settings/document-types', [IdentityDocumentTypeController::class, 'store'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.document-types.store');
+
+        Route::put('/settings/document-types/{documentType}', [IdentityDocumentTypeController::class, 'update'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.document-types.update');
+
+        Route::post('/settings/document-types/{documentType}/move-up', [IdentityDocumentTypeController::class, 'moveUp'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.document-types.move-up');
+
+        Route::post('/settings/document-types/{documentType}/move-down', [IdentityDocumentTypeController::class, 'moveDown'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.document-types.move-down');
+
+        Route::delete('/settings/document-types/{documentType}', [IdentityDocumentTypeController::class, 'destroy'])
+            ->middleware('permission:platform.settings.manage')
+            ->name('settings.document-types.destroy');
     });

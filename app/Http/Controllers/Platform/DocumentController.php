@@ -12,6 +12,7 @@ use App\Http\Requests\Platform\PublishLegalCorpusVersionRequest;
 use App\Http\Requests\Platform\StoreManualPaymentRequest;
 use App\Http\Requests\Platform\StoreSubscriptionAcceptanceRequest;
 use App\Models\DocumentRetentionSeries;
+use App\Models\IdentityDocumentType;
 use App\Models\LegalCorpusVersion;
 use App\Models\SecurityCompany;
 use App\Services\Platform\PlatformDocumentsHubService;
@@ -115,6 +116,7 @@ final class DocumentController extends Controller
 
         $detail = $this->hubService->expedienteDetail($company);
         $corpus = LegalCorpusVersion::currentForPackage($company->package_sku);
+        $documentTypes = IdentityDocumentType::optionsForSelect();
 
         return view('modules.admin.documents.expediente', [
             'company' => $company,
@@ -123,6 +125,7 @@ final class DocumentController extends Controller
                 ->values(),
             'acceptance' => $detail['acceptance'],
             'corpus' => $corpus,
+            'documentTypes' => $documentTypes,
             'frozenCorpus' => $detail['acceptance']?->corpus_snapshot ?? null,
         ]);
     }

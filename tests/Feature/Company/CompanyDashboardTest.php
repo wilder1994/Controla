@@ -14,7 +14,7 @@ final class CompanyDashboardTest extends TestCase
 
     public function test_company_admin_sees_command_center_kpis(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->first();
         $this->assertNotNull($admin);
@@ -45,7 +45,7 @@ final class CompanyDashboardTest extends TestCase
 
     public function test_guard_cannot_access_company_dashboard(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $guard = User::query()->where('email', 'guardia@control-acceso.test')->first();
         $this->assertNotNull($guard);

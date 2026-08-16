@@ -20,7 +20,7 @@ final class DataRetentionPurgeTest extends TestCase
 
     public function test_purges_tenant_data_after_retention_period(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
         $client->update([
@@ -43,7 +43,7 @@ final class DataRetentionPurgeTest extends TestCase
 
     public function test_does_not_purge_active_clients(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
         $this->assertSame(ClientLifecycle::Active, $client->lifecycle);
@@ -56,7 +56,7 @@ final class DataRetentionPurgeTest extends TestCase
 
     public function test_anonymizes_archived_company_after_commercial_retention(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
         $company->update([

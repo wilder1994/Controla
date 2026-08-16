@@ -16,7 +16,7 @@ final class CompanyClientExpedienteTest extends TestCase
 
     public function test_clients_index_only_shows_ver_action(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
 
@@ -30,7 +30,7 @@ final class CompanyClientExpedienteTest extends TestCase
 
     public function test_client_show_renders_expediente_and_operate_actions(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
@@ -51,7 +51,7 @@ final class CompanyClientExpedienteTest extends TestCase
 
     public function test_operate_client_opens_client_panel(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
@@ -69,7 +69,7 @@ final class CompanyClientExpedienteTest extends TestCase
 
     public function test_operate_porteria_and_exit_returns_to_expediente(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
@@ -103,7 +103,7 @@ final class CompanyClientExpedienteTest extends TestCase
 
     public function test_operate_client_and_exit_returns_to_expediente(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();

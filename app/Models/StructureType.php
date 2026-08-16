@@ -34,6 +34,11 @@ final class StructureType extends Model
         return $this->hasMany(Structure::class);
     }
 
+    public function clients(): HasMany
+    {
+        return $this->hasMany(Client::class);
+    }
+
     /** @param Builder<self> $query */
     public function scopeActive(Builder $query): Builder
     {

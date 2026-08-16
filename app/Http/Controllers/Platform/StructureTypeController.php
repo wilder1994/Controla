@@ -34,10 +34,8 @@ final class StructureTypeController extends Controller
     public function store(StoreStructureTypeRequest $request): RedirectResponse
     {
         $this->manageStructureTypeService->create([
-            ...$request->validated(),
-            'is_unit' => $request->boolean('is_unit'),
+            'name' => $request->validated('name'),
             'is_active' => $request->boolean('is_active', true),
-            'sort_order' => (int) $request->validated('sort_order', 0),
         ]);
 
         return redirect()
@@ -48,15 +46,31 @@ final class StructureTypeController extends Controller
     public function update(UpdateStructureTypeRequest $request, StructureType $structureType): RedirectResponse
     {
         $this->manageStructureTypeService->update($structureType, [
-            ...$request->validated(),
-            'is_unit' => $request->boolean('is_unit'),
+            'name' => $request->validated('name'),
             'is_active' => $request->boolean('is_active'),
-            'sort_order' => (int) $request->validated('sort_order', $structureType->sort_order),
         ]);
 
         return redirect()
             ->route('admin.settings.structure-types.index')
             ->with('success', 'Tipo de estructura actualizado.');
+    }
+
+    public function moveUp(StructureType $structureType): RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.settings.manage'), 403);
+
+        $this->manageStructureTypeService->moveUp($structureType);
+
+        return redirect()->route('admin.settings.structure-types.index');
+    }
+
+    public function moveDown(StructureType $structureType): RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.settings.manage'), 403);
+
+        $this->manageStructureTypeService->moveDown($structureType);
+
+        return redirect()->route('admin.settings.structure-types.index');
     }
 
     public function destroy(StructureType $structureType): RedirectResponse

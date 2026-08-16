@@ -14,6 +14,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('security_company_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->string('party_type', 20)->default('legal_entity');
+            $table->string('legal_name')->nullable();
+            $table->string('document_type', 20)->nullable();
+            $table->string('tax_id', 40)->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone', 40)->nullable();
+            $table->string('representative_name')->nullable();
+            $table->string('representative_email')->nullable();
             $table->string('slug', 80);
             $table->string('login_suffix', 80);
             $table->string('address')->nullable();

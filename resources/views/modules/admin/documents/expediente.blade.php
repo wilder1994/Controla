@@ -86,22 +86,11 @@
             @elseif ($canManage)
                 <p class="text-xs text-slate-500 mt-1">Representante legal y aceptación de corpus vigente antes del pago.</p>
 
-                @if ($corpus->isNotEmpty())
-                    <details class="mt-3 text-xs text-slate-500">
-                        <summary class="cursor-pointer hover:text-slate-300">Corpus a aceptar ({{ $corpus->count() }} documentos)</summary>
-                        <ul class="mt-2 space-y-2">
-                            @foreach ($corpus as $item)
-                                <li class="rounded border border-slate-800 p-2">
-                                    <p class="text-slate-300 font-medium">{{ $item->title }} (v{{ $item->version }})</p>
-                                    <p class="text-slate-500 mt-1 line-clamp-3">{{ $item->content }}</p>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </details>
-                @endif
-
                 <form method="POST" action="{{ route('admin.documents.expedientes.acceptance', $company) }}" class="mt-4 space-y-3">
                     @csrf
+
+                    @include('partials.corpus-accept-docs', ['corpus' => $corpus])
+
                     <div>
                         <x-ui.label for="representative_name">Nombre representante</x-ui.label>
                         <x-ui.input id="representative_name" name="representative_name" accent="platform" value="{{ old('representative_name') }}" required />
@@ -115,7 +104,13 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <x-ui.label for="representative_document_type">Tipo documento</x-ui.label>
-                            <x-ui.input id="representative_document_type" name="representative_document_type" accent="platform" placeholder="CC / NIT" value="{{ old('representative_document_type') }}" required />
+                            <select id="representative_document_type" name="representative_document_type" required
+                                    class="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-violet-500 focus:ring-violet-500">
+                                <option value="">Seleccione…</option>
+                                @foreach ($documentTypes as $code => $label)
+                                    <option value="{{ $code }}" @selected(old('representative_document_type') === $code)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                             <x-ui.field-error name="representative_document_type" />
                         </div>
                         <div>
@@ -123,20 +118,6 @@
                             <x-ui.input id="representative_document_number" name="representative_document_number" accent="platform" value="{{ old('representative_document_number') }}" required />
                             <x-ui.field-error name="representative_document_number" />
                         </div>
-                    </div>
-                    <div class="space-y-2 pt-2">
-                        <label class="flex items-start gap-2 text-xs text-slate-400">
-                            <input type="checkbox" name="accept_contract" value="1" class="mt-0.5 rounded border-slate-600 bg-slate-950" required />
-                            <span>Acepto el contrato de licencia SaaS vigente.</span>
-                        </label>
-                        <label class="flex items-start gap-2 text-xs text-slate-400">
-                            <input type="checkbox" name="accept_terms" value="1" class="mt-0.5 rounded border-slate-600 bg-slate-950" required />
-                            <span>Acepto los términos y condiciones de uso.</span>
-                        </label>
-                        <label class="flex items-start gap-2 text-xs text-slate-400">
-                            <input type="checkbox" name="accept_privacy" value="1" class="mt-0.5 rounded border-slate-600 bg-slate-950" required />
-                            <span>Acepto la política de tratamiento de datos.</span>
-                        </label>
                     </div>
                     <x-ui.button type="submit" variant="platform" size="md" class="w-full mt-2">Registrar aceptación</x-ui.button>
                 </form>

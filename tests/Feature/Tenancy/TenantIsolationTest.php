@@ -18,7 +18,7 @@ final class TenantIsolationTest extends TestCase
 
     public function test_guard_only_sees_locations_for_active_client(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $company = SecurityCompany::query()->first();
         $this->assertNotNull($company);
@@ -48,7 +48,7 @@ final class TenantIsolationTest extends TestCase
 
     public function test_company_admin_can_access_company_panel(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->first();
         $this->assertNotNull($admin);

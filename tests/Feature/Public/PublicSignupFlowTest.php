@@ -53,9 +53,7 @@ final class PublicSignupFlowTest extends TestCase
             'representative_role' => 'Gerente',
             'representative_document_type' => 'CC',
             'representative_document_number' => '52123456',
-            'accept_contract' => '1',
-            'accept_terms' => '1',
-            'accept_privacy' => '1',
+            ...$this->acceptAllCorpusDocs(CompanyPackageSku::Pack1Manual),
         ])->assertRedirect(route('signup.summary', $intent));
 
         $this->post(route('signup.pay', $intent))
@@ -95,9 +93,7 @@ final class PublicSignupFlowTest extends TestCase
             'representative_role' => 'Rep. Legal',
             'representative_document_type' => 'CC',
             'representative_document_number' => '80123456',
-            'accept_contract' => '1',
-            'accept_terms' => '1',
-            'accept_privacy' => '1',
+            ...$this->acceptAllCorpusDocs(CompanyPackageSku::Pack1Manual),
         ]);
 
         $this->post(route('signup.pay', $intent));

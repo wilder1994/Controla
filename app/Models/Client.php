@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\ClientLifecycle;
 use App\Enums\ClientPlanTier;
+use App\Enums\PartyType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -19,6 +20,15 @@ class Client extends Model
     protected $fillable = [
         'security_company_id',
         'name',
+        'party_type',
+        'legal_name',
+        'document_type',
+        'tax_id',
+        'email',
+        'phone',
+        'representative_name',
+        'representative_email',
+        'structure_type_id',
         'slug',
         'login_suffix',
         'address',
@@ -43,6 +53,7 @@ class Client extends Model
     protected function casts(): array
     {
         return [
+            'party_type' => PartyType::class,
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'plan_tier' => ClientPlanTier::class,
@@ -61,6 +72,11 @@ class Client extends Model
     public function securityCompany(): BelongsTo
     {
         return $this->belongsTo(SecurityCompany::class);
+    }
+
+    public function structureType(): BelongsTo
+    {
+        return $this->belongsTo(StructureType::class);
     }
 
     public function assignments(): HasMany

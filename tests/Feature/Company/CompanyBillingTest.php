@@ -15,7 +15,7 @@ final class CompanyBillingTest extends TestCase
 
     public function test_billing_page_shows_membership_and_history(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $companyUser = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
 
@@ -31,7 +31,7 @@ final class CompanyBillingTest extends TestCase
 
     public function test_company_can_cancel_and_undo_membership(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $companyUser = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();

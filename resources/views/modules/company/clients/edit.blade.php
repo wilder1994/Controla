@@ -1,3 +1,7 @@
+@php
+    use App\Enums\PartyType;
+@endphp
+
 <x-company-layout :title="$client->name">
     @include('modules.company.clients.partials.nav-slots', [
         'client' => $client,
@@ -14,21 +18,85 @@
             @method('PUT')
 
             <div>
-                <x-ui.label for="name">Nombre</x-ui.label>
+                <x-ui.label for="party_type">Tipo de cliente</x-ui.label>
+                <select name="party_type" id="party_type" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
+                    @foreach (PartyType::cases() as $type)
+                        <option value="{{ $type->value }}" @selected(old('party_type', $client->party_type?->value ?? PartyType::LegalEntity->value) === $type->value)>
+                            {{ $type->label() }}
+                        </option>
+                    @endforeach
+                </select>
+                <x-ui.field-error :messages="$errors->get('party_type')" />
+            </div>
+
+            <div>
+                <x-ui.label for="structure_type_id">Tipo de estructura</x-ui.label>
+                <select name="structure_type_id" id="structure_type_id" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
+                    <option value="">Seleccione…</option>
+                    @foreach ($structureTypes as $id => $label)
+                        <option value="{{ $id }}" @selected((string) old('structure_type_id', $client->structure_type_id) === (string) $id)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-[11px] text-slate-500">Queda fijo para este cliente; los nodos del árbol heredan este tipo.</p>
+                <x-ui.field-error :messages="$errors->get('structure_type_id')" />
+            </div>
+
+            <div>
+                <x-ui.label for="name">Nombre comercial</x-ui.label>
                 <x-ui.input id="name" type="text" name="name" :value="old('name', $client->name)" required />
                 <x-ui.field-error :messages="$errors->get('name')" />
             </div>
 
+            <div>
+                <x-ui.label for="legal_name">Razón social / nombre legal</x-ui.label>
+                <x-ui.input id="legal_name" type="text" name="legal_name" :value="old('legal_name', $client->legal_name)" />
+                <x-ui.field-error :messages="$errors->get('legal_name')" />
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <x-ui.label for="slug">Slug</x-ui.label>
-                    <x-ui.input id="slug" type="text" name="slug" :value="old('slug', $client->slug)" required />
-                    <x-ui.field-error :messages="$errors->get('slug')" />
+                    <x-ui.label for="document_type">Tipo de documento</x-ui.label>
+                    <select name="document_type" id="document_type" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
+                        <option value="">Seleccione…</option>
+                        @foreach ($documentTypes as $code => $label)
+                            <option value="{{ $code }}" @selected(old('document_type', $client->document_type) === $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <x-ui.field-error :messages="$errors->get('document_type')" />
                 </div>
                 <div>
-                    <x-ui.label for="login_suffix">Sufijo login</x-ui.label>
-                    <x-ui.input id="login_suffix" type="text" name="login_suffix" :value="old('login_suffix', $client->login_suffix)" required />
-                    <x-ui.field-error :messages="$errors->get('login_suffix')" />
+                    <x-ui.label for="tax_id">Número de documento</x-ui.label>
+                    <x-ui.input id="tax_id" type="text" name="tax_id" :value="old('tax_id', $client->tax_id)" required />
+                    <x-ui.field-error :messages="$errors->get('tax_id')" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-ui.label for="email">Correo de contacto</x-ui.label>
+                    <x-ui.input id="email" type="email" name="email" :value="old('email', $client->email)" required />
+                    <x-ui.field-error :messages="$errors->get('email')" />
+                </div>
+                <div>
+                    <x-ui.label for="phone">Teléfono</x-ui.label>
+                    <x-ui.input id="phone" type="text" name="phone" :value="old('phone', $client->phone)" />
+                    <x-ui.field-error :messages="$errors->get('phone')" />
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-4 space-y-4">
+                <p class="text-xs font-medium text-slate-400">Representante legal</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <x-ui.label for="representative_name">Nombre</x-ui.label>
+                        <x-ui.input id="representative_name" type="text" name="representative_name" :value="old('representative_name', $client->representative_name)" />
+                        <x-ui.field-error :messages="$errors->get('representative_name')" />
+                    </div>
+                    <div>
+                        <x-ui.label for="representative_email">Correo</x-ui.label>
+                        <x-ui.input id="representative_email" type="email" name="representative_email" :value="old('representative_email', $client->representative_email)" />
+                        <x-ui.field-error :messages="$errors->get('representative_email')" />
+                    </div>
                 </div>
             </div>
 
@@ -41,20 +109,15 @@
             />
 
             <div>
-                <x-ui.label for="access_url">URL acceso</x-ui.label>
-                <x-ui.input id="access_url" type="url" name="access_url" :value="old('access_url', $client->access_url)" />
-            </div>
-
-            <div>
                 <x-ui.label for="service_started_at">Inicio de servicio</x-ui.label>
                 <x-ui.input id="service_started_at" type="date" name="service_started_at" :value="old('service_started_at', $client->service_started_at?->format('Y-m-d'))" />
-                <p class="mt-1 text-[11px] text-slate-500">Controla no gestiona cobros de la empresa hacia este conjunto.</p>
+                <p class="mt-1 text-[11px] text-slate-500">Controla no gestiona cobros de la empresa hacia este cliente.</p>
                 <x-ui.field-error :messages="$errors->get('service_started_at')" />
             </div>
 
             <p class="text-xs text-slate-500">
-                Modalidad del conjunto: {{ $client->securityCompany?->package_modality?->label() ?? '—' }}
-                (heredada del paquete de la empresa). Portafolio sin límite de unidades.
+                Modalidad: {{ $client->securityCompany?->package_modality?->label() ?? '—' }}
+                (heredada del paquete de la empresa).
             </p>
 
             <label class="inline-flex items-center gap-2 text-sm text-slate-300">

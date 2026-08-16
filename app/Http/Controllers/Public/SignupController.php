@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\StoreSignupDataRequest;
 use App\Http\Requests\Public\StoreSignupLegalRequest;
 use App\Models\CommercialSignupIntent;
+use App\Models\IdentityDocumentType;
 use App\Models\LegalCorpusVersion;
 use App\Services\Platform\BuildLegalCorpusSnapshotService;
 use App\Services\Public\StartSignupIntentService;
@@ -89,8 +90,9 @@ final class SignupController extends Controller
         }
 
         $corpus = LegalCorpusVersion::currentForPackage($intent->package_sku);
+        $documentTypes = IdentityDocumentType::optionsForSelect();
 
-        return view('modules.public.signup.legal', compact('intent', 'corpus'));
+        return view('modules.public.signup.legal', compact('intent', 'corpus', 'documentTypes'));
     }
 
     public function storeLegal(StoreSignupLegalRequest $request, CommercialSignupIntent $intent): RedirectResponse

@@ -19,7 +19,7 @@ final class PortfolioStatusTest extends TestCase
 
     public function test_suspended_is_not_overdue_bucket(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
         $company->update([
             'subscription_status' => SubscriptionStatus::Suspended,
@@ -36,7 +36,7 @@ final class PortfolioStatusTest extends TestCase
 
     public function test_portfolio_status_includes_six_segments(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
         $companies = SecurityCompany::query()->with('clients')->get();
         $portfolio = app(PlatformDashboardAnalytics::class)->build($companies)['portfolio_status'];
 

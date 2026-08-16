@@ -22,7 +22,7 @@
     <x-ui.button variant="secondary" :href="route('company.clients.index')" size="sm">← Cartera</x-ui.button>
     @can('company.clients.manage')
         @if (! ($companyContext['is_quota_full'] ?? true))
-            <x-ui.button :href="route('company.clients.create')" size="sm">+ Conjunto</x-ui.button>
+            <x-ui.button :href="route('company.clients.create')" size="sm">+ Cliente</x-ui.button>
         @endif
     @endcan
 </x-slot:actions>

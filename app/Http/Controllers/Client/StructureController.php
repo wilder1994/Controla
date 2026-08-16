@@ -7,8 +7,8 @@ namespace App\Http\Controllers\Client;
 use App\Domain\Structure\Data\CreateStructureData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreStructureRequest;
+use App\Models\Client;
 use App\Models\Structure;
-use App\Models\StructureType;
 use App\Repositories\StructureRepository;
 use App\Services\Structure\CreateStructureService;
 use App\Support\Tenancy\TenantContext;
@@ -28,12 +28,12 @@ final class StructureController extends Controller
         $this->authorize('viewAny', Structure::class);
 
         $clientId = (int) $this->tenantContext->clientId();
+        $client = Client::query()->with('structureType')->findOrFail($clientId);
         $tree = $this->structureRepository->treeForClient($clientId);
         $census = $this->structureRepository->censusCounts($clientId);
-        $types = StructureType::optionsForSelect();
         $parents = Structure::query()->with('structureType')->orderBy('name')->get();
 
-        return view('modules.client.structures.index', compact('tree', 'census', 'types', 'parents'));
+        return view('modules.client.structures.index', compact('client', 'tree', 'census', 'parents'));
     }
 
     public function store(StoreStructureRequest $request): RedirectResponse
@@ -42,10 +42,11 @@ final class StructureController extends Controller
 
         $this->createStructureService->execute(new CreateStructureData(
             clientId: $clientId,
-            parentId: $request->validated('parent_id'),
+            parentId: $request->validated('parent_id') !== null
+                ? (int) $request->validated('parent_id')
+                : null,
             name: $request->validated('name'),
             code: $request->validated('code'),
-            structureTypeId: (int) $request->validated('structure_type_id'),
             maxOccupancy: (int) $request->validated('max_occupancy', 0),
             isActive: $request->boolean('is_active', true),
         ));

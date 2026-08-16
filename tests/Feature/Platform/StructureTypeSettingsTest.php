@@ -22,42 +22,62 @@ final class StructureTypeSettingsTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.settings.structure-types.index'))
             ->assertOk()
-            ->assertSee('Tipos de estructura');
+            ->assertSee('Tipos de estructura')
+            ->assertDontSee('Es unidad ocupable')
+            ->assertDontSee('Descripción');
 
         $this->actingAs($admin)
             ->post(route('admin.settings.structure-types.store'), [
-                'code' => 'clinic',
                 'name' => 'Clínica',
-                'description' => 'Local clínico',
-                'is_unit' => true,
                 'is_active' => true,
-                'sort_order' => 120,
             ])
             ->assertRedirect(route('admin.settings.structure-types.index'));
 
-        $this->assertDatabaseHas('structure_types', [
-            'code' => 'clinic',
-            'name' => 'Clínica',
-            'is_unit' => 1,
-        ]);
-
-        $type = StructureType::query()->where('code', 'clinic')->firstOrFail();
+        $type = StructureType::query()->where('name', 'Clínica')->firstOrFail();
+        $this->assertSame('clinica', $type->code);
+        $this->assertTrue($type->is_active);
 
         $this->actingAs($admin)
             ->put(route('admin.settings.structure-types.update', $type), [
-                'code' => 'clinic',
                 'name' => 'Clínica ambulatoria',
-                'description' => 'Local clínico',
-                'is_unit' => true,
                 'is_active' => false,
-                'sort_order' => 125,
             ])
             ->assertRedirect(route('admin.settings.structure-types.index'));
 
         $this->assertDatabaseHas('structure_types', [
-            'code' => 'clinic',
+            'id' => $type->id,
+            'code' => 'clinica',
             'name' => 'Clínica ambulatoria',
             'is_active' => 0,
         ]);
+    }
+
+    public function test_super_admin_can_reorder_structure_types(): void
+    {
+        $this->seed();
+
+        $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
+
+        $first = StructureType::query()->create([
+            'code' => 'alpha',
+            'name' => 'Alpha',
+            'is_active' => true,
+            'is_unit' => false,
+            'sort_order' => 10,
+        ]);
+        $second = StructureType::query()->create([
+            'code' => 'beta',
+            'name' => 'Beta',
+            'is_active' => true,
+            'is_unit' => false,
+            'sort_order' => 20,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.settings.structure-types.move-up', $second))
+            ->assertRedirect(route('admin.settings.structure-types.index'));
+
+        $this->assertSame(10, $second->fresh()->sort_order);
+        $this->assertSame(20, $first->fresh()->sort_order);
     }
 }

@@ -136,11 +136,11 @@
                         <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                             @isset($actions)
                                 {{ $actions }}
-                            @elseif (request()->routeIs('company.clients.*'))
+                            @elseif (request()->routeIs('company.clients.*') && ! request()->routeIs('company.clients.create'))
                                 @can('company.clients.manage')
                                     @if (! $companyContext['is_quota_full'])
                                         <x-ui.button :href="route('company.clients.create')" size="sm">
-                                            + Conjunto
+                                            + Cliente
                                         </x-ui.button>
                                     @endif
                                 @endcan

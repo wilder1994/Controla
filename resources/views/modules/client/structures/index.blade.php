@@ -3,7 +3,14 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h2 class="text-2xl font-bold text-white">Estructura residencial</h2>
-                <p class="text-sm text-slate-400 mt-1">Árbol de unidades con badges de censo — §1.2.1 Residencial.</p>
+                <p class="text-sm text-slate-400 mt-1">
+                    Árbol de nodos del cliente.
+                    @if ($client->structureType)
+                        Tipo fijo: <span class="text-teal-300">{{ $client->structureType->name }}</span>.
+                    @else
+                        <span class="text-amber-300">Sin tipo de estructura asignado en la ficha del cliente.</span>
+                    @endif
+                </p>
             </div>
         </div>
 
@@ -31,11 +38,9 @@
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Tipo</label>
-                        <select name="structure_type_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                            @foreach ($types as $id => $label)
-                                <option value="{{ $id }}" @selected(old('structure_type_id') == $id)>{{ $label }}</option>
-                            @endforeach
-                        </select>
+                        <p class="w-full rounded-lg bg-slate-950/60 border border-slate-800 px-3 py-2 text-sm text-slate-300">
+                            {{ $client->structureType?->name ?? 'Sin asignar (configurar en ficha del cliente)' }}
+                        </p>
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Padre (opcional)</label>

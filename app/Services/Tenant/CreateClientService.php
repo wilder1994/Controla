@@ -19,24 +19,69 @@ final class CreateClientService
         $company = SecurityCompany::query()->findOrFail($data->securityCompanyId);
         $this->assertWithinQuota($company);
 
+        $slug = $this->uniqueSlug($data->securityCompanyId, $data->name);
+        $loginSuffix = $this->uniqueLoginSuffix($data->securityCompanyId, $slug);
+
         return Client::query()->create([
             'security_company_id' => $data->securityCompanyId,
             'name' => $data->name,
-            'slug' => Str::slug($data->slug),
-            'login_suffix' => Str::lower($data->loginSuffix),
+            'party_type' => $data->partyType,
+            'legal_name' => $data->legalName ?: $data->name,
+            'document_type' => $data->documentType,
+            'tax_id' => $data->taxId,
+            'email' => $data->email,
+            'phone' => $data->phone,
+            'representative_name' => $data->representativeName,
+            'representative_email' => $data->representativeEmail,
+            'structure_type_id' => $data->structureTypeId,
+            'slug' => $slug,
+            'login_suffix' => $loginSuffix,
             'address' => $data->address,
             'city' => $data->city,
             'department' => $data->department,
             'latitude' => $data->latitude,
             'longitude' => $data->longitude,
-            // Legacy columns retained; portfolio is unlimited commercially.
             'plan_tier' => ClientPlanTier::Economic,
             'max_structures' => ClientPlanTier::Economic->maxStructures(),
-            'access_url' => $data->accessUrl,
+            'access_url' => null,
             'is_active' => $data->isActive,
             'service_started_at' => $data->serviceStartedAt ?? now()->toDateString(),
             'lifecycle' => ClientLifecycle::Active,
         ]);
+    }
+
+    private function uniqueSlug(int $companyId, string $name): string
+    {
+        $base = Str::slug($name) ?: 'cliente';
+        $slug = $base;
+        $i = 2;
+
+        while (Client::query()
+            ->where('security_company_id', $companyId)
+            ->where('slug', $slug)
+            ->exists()) {
+            $slug = $base.'-'.$i;
+            $i++;
+        }
+
+        return $slug;
+    }
+
+    private function uniqueLoginSuffix(int $companyId, string $slug): string
+    {
+        $base = Str::lower(preg_replace('/[^a-z0-9]+/i', '', $slug) ?: 'cliente');
+        $suffix = $base;
+        $i = 2;
+
+        while (Client::query()
+            ->where('security_company_id', $companyId)
+            ->where('login_suffix', $suffix)
+            ->exists()) {
+            $suffix = $base.$i;
+            $i++;
+        }
+
+        return $suffix;
     }
 
     private function assertWithinQuota(SecurityCompany $company): void

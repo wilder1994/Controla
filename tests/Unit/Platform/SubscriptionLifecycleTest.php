@@ -20,7 +20,7 @@ final class SubscriptionLifecycleTest extends TestCase
     {
         config(['subscription.grace_days' => 5]);
 
-        $this->seed();
+        $this->seedWithPilot();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
         $endsAt = CarbonImmutable::parse('2026-07-01');
 
@@ -48,7 +48,7 @@ final class SubscriptionLifecycleTest extends TestCase
     {
         config(['subscription.grace_days' => 5]);
 
-        $this->seed();
+        $this->seedWithPilot();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
 
         $company->update([
@@ -79,7 +79,7 @@ final class SubscriptionLifecycleTest extends TestCase
             'subscription.archive_after_suspended_days' => 90,
         ]);
 
-        $this->seed();
+        $this->seedWithPilot();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
 
         $company->update([

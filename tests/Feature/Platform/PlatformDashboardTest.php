@@ -14,7 +14,7 @@ final class PlatformDashboardTest extends TestCase
 
     public function test_super_admin_sees_platform_metrics(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->first();
 
@@ -30,7 +30,7 @@ final class PlatformDashboardTest extends TestCase
 
     public function test_guard_cannot_access_platform_dashboard(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $guard = User::query()->where('email', 'guardia@control-acceso.test')->first();
 

@@ -269,17 +269,25 @@ Servicios:
 
 Permisos: `platform.documents.view`, `platform.documents.manage`, `platform.settings.manage` (solo `super-admin` en v1).
 
-### Ajustes — tipos de estructura
+### Ajustes — tipos de estructura y documentos
 
-Sidebar **Ajustes** → CRUD de `structure_types` (código, nombre, descripción, `is_unit`, activo, orden).  
-Los clientes usan ese catálogo al crear nodos en `/client/structures` (`structure_type_id`).  
-Servicio: `ManageStructureTypeService` · seed: `StructureTypeSeeder`.
+Sidebar **Ajustes** con pestañas:
+
+| Catálogo | Ruta | Notas |
+|----------|------|--------|
+| Tipos de estructura | `/admin/settings/structure-types` | Nombre + activo; código auto; orden ↑↓. No eliminar si hay **clientes** o nodos. |
+| Tipos de documento | `/admin/settings/document-types` | CC, CE, NIT, PA… Usado en alta de cliente y aceptación legal. |
+
+**Tipo fijo del cliente:** al crear/editar cliente en `/company/clients` se elige `structure_type_id`. Los nodos nuevos en `/client/structures` **heredan** ese tipo (ya no se elige por nodo).
+
+Dominio completo: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 **Separación de conceptos:**
 
 | Concepto | Tabla | Quién define |
 |----------|-------|--------------|
-| Tipología del sitio (apto, bodega, PH…) | `structure_types` → `structures` | Plataforma (catálogo) + cliente (árbol) |
+| Tipo del sitio / cliente | `structure_types` → `clients.structure_type_id` | Plataforma (catálogo) + empresa (alta cliente) |
+| Nodos del árbol | `structures` (`parent_id`) | Panel cliente |
 | Puntos de acceso / puertas | `locations` (`access_point`) | Cliente / portería (nombre libre) |
 
 Archivo: `routes/modules/admin.php`
@@ -293,6 +301,7 @@ app/Services/Platform/
 ├── PlatformDashboardService.php      # Orquesta datos del dashboard
 ├── PlatformDashboardAnalytics.php    # KPIs, gráficas, marcadores mapa, TOP facturación
 ├── ManageStructureTypeService.php    # CRUD catálogo structure_types (Ajustes)
+├── ManageIdentityDocumentTypeService.php # CRUD tipos de documento identidad
 ├── ArchiveCompanyService.php         # Archivo en cascada
 ├── ReleaseClientService.php          # Retiro de conjunto
 ├── ProcessSubscriptionLifecycleService.php

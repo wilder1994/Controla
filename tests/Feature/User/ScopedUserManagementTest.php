@@ -16,7 +16,7 @@ final class ScopedUserManagementTest extends TestCase
 
     public function test_company_admin_can_create_guard_for_own_client(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
@@ -46,7 +46,7 @@ final class ScopedUserManagementTest extends TestCase
 
     public function test_company_admin_can_create_supervisor_with_code_without_client(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
 
@@ -71,7 +71,7 @@ final class ScopedUserManagementTest extends TestCase
 
     public function test_reassigning_vigilante_requires_new_password(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
@@ -106,7 +106,7 @@ final class ScopedUserManagementTest extends TestCase
 
     public function test_company_admin_cannot_edit_super_admin_user(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $super = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
@@ -118,7 +118,7 @@ final class ScopedUserManagementTest extends TestCase
 
     public function test_client_admin_can_create_resident_for_conjunto(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
 
@@ -137,7 +137,7 @@ final class ScopedUserManagementTest extends TestCase
 
     public function test_company_settings_updates_geo_fields(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
 

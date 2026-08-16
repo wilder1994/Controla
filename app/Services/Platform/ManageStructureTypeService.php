@@ -6,48 +6,128 @@ namespace App\Services\Platform;
 
 use App\Models\StructureType;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class ManageStructureTypeService
 {
-    /** @param array{code: string, name: string, description?: ?string, is_unit?: bool, is_active?: bool, sort_order?: int} $data */
+    /** @param array{name: string, is_active?: bool} $data */
     public function create(array $data): StructureType
     {
+        $name = trim($data['name']);
+
         return StructureType::query()->create([
-            'code' => $data['code'],
-            'name' => $data['name'],
-            'description' => $data['description'] ?? null,
-            'is_unit' => (bool) ($data['is_unit'] ?? false),
+            'code' => $this->uniqueCodeFromName($name),
+            'name' => $name,
+            'description' => null,
+            'is_unit' => false,
             'is_active' => (bool) ($data['is_active'] ?? true),
-            'sort_order' => (int) ($data['sort_order'] ?? 0),
+            'sort_order' => $this->nextSortOrder(),
         ]);
     }
 
-    /** @param array{code?: string, name?: string, description?: ?string, is_unit?: bool, is_active?: bool, sort_order?: int} $data */
+    /** @param array{name?: string, is_active?: bool} $data */
     public function update(StructureType $type, array $data): StructureType
     {
-        $type->update([
-            'code' => $data['code'] ?? $type->code,
-            'name' => $data['name'] ?? $type->name,
-            'description' => array_key_exists('description', $data) ? $data['description'] : $type->description,
-            'is_unit' => array_key_exists('is_unit', $data) ? (bool) $data['is_unit'] : $type->is_unit,
-            'is_active' => array_key_exists('is_active', $data) ? (bool) $data['is_active'] : $type->is_active,
-            'sort_order' => array_key_exists('sort_order', $data) ? (int) $data['sort_order'] : $type->sort_order,
-        ]);
+        $payload = [];
+
+        if (array_key_exists('name', $data) && is_string($data['name'])) {
+            $payload['name'] = trim($data['name']);
+        }
+
+        if (array_key_exists('is_active', $data)) {
+            $payload['is_active'] = (bool) $data['is_active'];
+        }
+
+        if ($payload !== []) {
+            $type->update($payload);
+        }
 
         return $type->refresh();
     }
 
+    public function moveUp(StructureType $type): void
+    {
+        $this->swapWithNeighbor($type, direction: 'up');
+    }
+
+    public function moveDown(StructureType $type): void
+    {
+        $this->swapWithNeighbor($type, direction: 'down');
+    }
+
     public function delete(StructureType $type): void
     {
-        if ($type->structures()->exists()) {
+        if ($type->structures()->exists() || $type->clients()->exists()) {
             throw ValidationException::withMessages([
-                'structure_type' => 'No se puede eliminar: hay estructuras usando este tipo.',
+                'structure_type' => 'No se puede eliminar: hay clientes o estructuras usando este tipo.',
             ]);
         }
 
         DB::transaction(static function () use ($type): void {
             $type->delete();
+        });
+    }
+
+    private function nextSortOrder(): int
+    {
+        return ((int) StructureType::query()->max('sort_order')) + 10;
+    }
+
+    private function uniqueCodeFromName(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name, '_');
+        if ($base === '') {
+            $base = 'tipo';
+        }
+
+        $base = Str::limit($base, 45, '');
+        $code = $base;
+        $suffix = 2;
+
+        while ($this->codeExists($code, $ignoreId)) {
+            $code = Str::limit($base, 40, '').'_'.$suffix;
+            $suffix++;
+        }
+
+        return $code;
+    }
+
+    private function codeExists(string $code, ?int $ignoreId = null): bool
+    {
+        $query = StructureType::query()->where('code', $code);
+
+        if ($ignoreId !== null) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
+    private function swapWithNeighbor(StructureType $type, string $direction): void
+    {
+        DB::transaction(function () use ($type, $direction): void {
+            $ordered = StructureType::query()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->lockForUpdate()
+                ->get();
+
+            $index = $ordered->search(fn (StructureType $row) => $row->id === $type->id);
+            if ($index === false) {
+                return;
+            }
+
+            $neighborIndex = $direction === 'up' ? $index - 1 : $index + 1;
+            if ($neighborIndex < 0 || $neighborIndex >= $ordered->count()) {
+                return;
+            }
+
+            /** @var StructureType $neighbor */
+            $neighbor = $ordered[$neighborIndex];
+            $currentOrder = $type->sort_order;
+            $type->update(['sort_order' => $neighbor->sort_order]);
+            $neighbor->update(['sort_order' => $currentOrder]);
         });
     }
 }

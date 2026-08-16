@@ -17,7 +17,7 @@ final class PlatformDocumentsTest extends TestCase
 
     public function test_super_admin_can_access_documents_hub(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->first();
 
@@ -30,7 +30,7 @@ final class PlatformDocumentsTest extends TestCase
 
     public function test_guard_cannot_access_documents(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $guard = User::query()->where('email', 'guardia@control-acceso.test')->first();
 
@@ -41,7 +41,7 @@ final class PlatformDocumentsTest extends TestCase
 
     public function test_acceptance_and_manual_payment_flow(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->first();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -55,9 +55,7 @@ final class PlatformDocumentsTest extends TestCase
                 'representative_role' => 'Gerente General',
                 'representative_document_type' => 'CC',
                 'representative_document_number' => '1234567890',
-                'accept_contract' => '1',
-                'accept_terms' => '1',
-                'accept_privacy' => '1',
+                ...$this->acceptAllCorpusDocs($company->package_sku),
             ],
         );
 
@@ -96,7 +94,7 @@ final class PlatformDocumentsTest extends TestCase
 
     public function test_publishing_normativa_does_not_alter_frozen_acceptance(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->first();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -108,9 +106,7 @@ final class PlatformDocumentsTest extends TestCase
                 'representative_role' => 'Gerente General',
                 'representative_document_type' => 'CC',
                 'representative_document_number' => '1234567890',
-                'accept_contract' => '1',
-                'accept_terms' => '1',
-                'accept_privacy' => '1',
+                ...$this->acceptAllCorpusDocs($company->package_sku),
             ],
         )->assertRedirect();
 
@@ -147,17 +143,24 @@ final class PlatformDocumentsTest extends TestCase
 
     public function test_manual_payment_requires_acceptance(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->first();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
+        $this->assertFalse($company->hasCompletedAcceptance());
+
+        Storage::fake('local');
 
         $response = $this->actingAs($admin)->post(
             route('admin.documents.expedientes.payment.manual', $company),
-            ['reference' => 'SIN-ACEPTACION'],
+            [
+                'reference' => 'SIN-ACEPTACION',
+                'intent' => 'renew',
+                'proof' => UploadedFile::fake()->create('comprobante.pdf', 120, 'application/pdf'),
+            ],
         );
 
-        $response->assertRedirect(route('admin.documents.expedientes.show', $company));
+        $response->assertRedirect(route('admin.companies.historial', $company));
         $response->assertSessionHas('warning');
     }
 }

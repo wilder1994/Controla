@@ -11,7 +11,7 @@ final readonly class CreateStructureData
         public ?int $parentId,
         public string $name,
         public ?string $code,
-        public int $structureTypeId,
+        public ?int $structureTypeId = null,
         public int $maxOccupancy = 0,
         public bool $isActive = true,
         public ?array $metadata = null,

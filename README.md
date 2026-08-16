@@ -27,13 +27,14 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **UI Plataforma** | Dashboard analítico + empresa expediente (Resumen/Perfil/Docs/Historial) + soporte | ✅ Implementada (v3) |
 | **Membresía** | Pago manual/online, cancelar al fin de periodo, reactivar, cambio de plan diferido | ✅ Implementada (v1) |
 | **Expediente conjunto** | Cartera → Ver: KPIs, charts, Operar portería/cliente + banner «Volver al expediente» | ✅ Implementada (v2) |
-| **Ajustes plataforma** | Catálogo `structure_types` (CRUD) + puntos de acceso (locations) sin tipología edificio/sede | ✅ Implementada (v1) |
+| **Ajustes plataforma** | Catálogo `structure_types` + `identity_document_types` (CRUD) + puntos de acceso | ✅ Implementada (v2) |
+| **Cliente comercial** | Alta empresa: party_type, documento, contactos, representante; `structure_type_id` fijo; slug/login auto | ✅ Implementada (v1) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
-| **Perfiles** | Empresa/conjunto: dirección, ciudad/depto y geo; `service_started_at` en conjuntos (sin cobro al cliente en Controla) | ✅ Implementada |
+| **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
+Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
 
 ---
 
@@ -41,9 +42,9 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
-| **Plataforma** | `/admin` | `super-admin` | Dashboard, precios, empresas, documentos, **Ajustes** (tipos de estructura) |
-| **Empresa** | `/company` | `company-admin` | Licencia, cupo, cartera; desde expediente → operar portería/censo con retorno |
-| **Conjunto** | `/client` | `client-admin` | Censo: estructuras (catálogo plataforma), personas, vehículos, mascotas, autorizaciones |
+| **Plataforma** | `/admin` | `super-admin` | Dashboard, precios, empresas, documentos, **Ajustes** (tipos de estructura + tipos de documento) |
+| **Empresa** | `/company` | `company-admin` | Licencia, cupo, cartera; alta comercial de cliente + tipo de estructura; operar portería/censo con retorno |
+| **Cliente** | `/client` | `client-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones |
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **puntos de acceso** (puertas/porterías, nombre libre) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia |
@@ -160,32 +161,50 @@ Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa 
 
 ---
 
-## Credenciales demo (tras `db:seed`)
+## Credenciales y seed (tras `db:seed`)
+
+### Seed mínimo (por defecto)
+
+| Qué | Contenido |
+|-----|-----------|
+| Roles/permisos | Todos los de `config/access.php` |
+| Documentos | Normoteca (globales + contratos por SKU) + TRD |
+| Usuario | Solo súper admin |
 
 | Rol | Email | Contraseña | Home |
 |-----|-------|------------|------|
 | Súper Admin | `admin@control-acceso.test` | `Admin123!` | `/admin/dashboard` |
-| Admin Empresa | `empresa@sj-seguridad.test` | `Empresa123!` | `/company/dashboard` |
-| Admin Cliente | `admin@palmasdelingenio.test` | `Cliente123!` | `/client/dashboard` |
-| Vigilante (`guardia`) | `guardia@control-acceso.test` | `Guardia123!` | `/access/operations` |
-| Supervisor de vigilancia | `supervisor@sj-seguridad.test` | `Super123!` | `/access/operations` (código revista `123456`) |
-| Residente | `anfitrion@control-acceso.test` | `Anfitrion123!` | `/resident/dashboard` |
 
-**Datos piloto:** empresa SJ Seguridad, clientes *Palmas del Ingenio* y *Torres de la Loma*, Torre A + 10 apartamentos, 20 personas en censo.
+**Se siembran en mínimo:** roles, normoteca+TRD, tipos de documento de identidad (CC/CE/NIT/PA), súper admin.
 
-Los usuarios demo se crean en `DemoUsersSeeder` (idempotente con `updateOrCreate`). Orden de ejecución en `DatabaseSeeder`:
+**No se siembran en mínimo:** empresas, clientes, tipos de estructura, puntos de acceso, censo ni otros usuarios. Se crean desde la UI (precios: al abrir la tabla se generan defaults editables). Tipos de estructura: Ajustes o `PilotDemoSeeder`.
 
-1. `RoleAndPermissionSeeder` — roles y permisos Spatie
-2. `StructureTypeSeeder` — catálogo de tipos de estructura (plataforma)
-3. `LocationSeeder` — puntos de acceso base
-4. `TenantSeeder` — empresa + clientes piloto
-5. `PlatformDocumentsSeeder` — normoteca (globales + contrato por SKU) + TRD inicial
-6. `DemoUsersSeeder` — usuarios demo (plataforma, empresa, supervisor, vigilante, conjunto, residente)
-7. `StructureSeeder` — árbol residencial y censo piloto
+Orden en `DatabaseSeeder`:
+
+1. `RoleAndPermissionSeeder`
+2. `PlatformDocumentsSeeder`
+3. `IdentityDocumentTypeSeeder` — CC, CE, NIT, Pasaporte
+4. `DemoUsersSeeder` (solo súper admin)
+
+### Datos piloto opcionales (tests / demos)
+
+```bash
+php artisan db:seed --class=PilotDemoSeeder
+```
+
+Incluye: catálogo `structure_types`, puntos de acceso, empresa SJ Seguridad (`900123456-1`), clientes Palmas/Torres, censo Torre A, y usuarios:
+
+| Rol | Email | Contraseña |
+|-----|-------|------------|
+| Admin Empresa | `empresa@sj-seguridad.test` | `Empresa123!` |
+| Admin Cliente | `admin@palmasdelingenio.test` | `Cliente123!` |
+| Vigilante | `guardia@control-acceso.test` | `Guardia123!` |
+| Supervisor | `supervisor@sj-seguridad.test` | `Super123!` (código revista `123456`) |
+| Residente | `anfitrion@control-acceso.test` | `Anfitrion123!` |
 
 ```bash
 php artisan db:seed --class=PlatformDocumentsSeeder  # solo normoteca + TRD
-php artisan db:seed --class=DemoUsersSeeder   # solo usuarios demo
+php artisan db:seed --class=DemoUsersSeeder           # solo súper admin
 ```
 
 ---
@@ -266,7 +285,7 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 ### Base de datos
 
 - `security_companies` — empresas de seguridad + **paquete comercial** (`package_sku`, `package_size`, `package_modality`, `max_clients`, `package_price_monthly`)
-- `clients` — conjuntos (`login_suffix`; columnas legacy `plan_tier`/`max_structures` ya no limitan el portafolio)
+- `clients` — clientes comerciales (`party_type`, documento, `structure_type_id`, `login_suffix` auto; legacy `plan_tier`/`max_structures` no limitan portafolio)
 - `client_user_assignments` — asignación usuario ↔ cliente
 - `client_id` en tablas operativas (locations, buildings, residents, vehicles, etc.)
 
@@ -328,8 +347,10 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `POST /admin/companies/{id}/enter` | Entrar como empresa (soporte, sesión + banner + audit) |
 | `POST /admin/support/exit` | Salir del modo soporte → expediente empresa |
 | `GET /admin/settings/structure-types` | **Ajustes**: catálogo de tipos de estructura |
-| `POST /admin/settings/structure-types` | Crear tipo (`code`, `name`, `is_unit`, `is_active`, orden) |
-| `PUT/DELETE /admin/settings/structure-types/{id}` | Actualizar / eliminar (bloqueado si hay estructuras usando el tipo) |
+| `POST /admin/settings/structure-types` | Crear tipo (`name`, `is_active`; código auto) |
+| `PUT/DELETE /admin/settings/structure-types/{id}` | Actualizar / eliminar (bloqueado si hay clientes o estructuras) |
+| `GET /admin/settings/document-types` | **Ajustes**: tipos de documento de identidad |
+| `POST/PUT/DELETE /admin/settings/document-types/{id}` | CRUD + reordenar |
 | `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación (legacy; preferir programar cambio) |
 | `GET /admin/companies/{id}/profile` | Perfil legal, contacto y ubicación |
 | `PUT /admin/companies/{id}/profile` | Guardar perfil empresa |
@@ -401,18 +422,31 @@ Acciones: anticipar/renovar/reactivar online · cancelar · deshacer cancelació
 | Puntos de acceso | `locations` (`type = access_point`); nombre libre del cliente |
 | Parque vehicular | `vehicles.is_visitor_vehicle` + `access_logs` (adentro = sin `exit_time`) |
 
-Header con pestañas colgantes (mismo patrón que `/admin` empresas): Resumen · Operar portería · Operar cliente · Editar. Botones **← Cartera** / **+ Conjunto** en la barra.
+Header con pestañas colgantes (mismo patrón que `/admin` empresas): Resumen · Operar portería · Operar cliente · Editar. Botones **← Cartera** / **+ Cliente** en la barra.
 
 **Retorno al expediente (v2):** al operar portería o cliente se activa `CompanyOperateContext` (sesión). Los layouts `access` y `client` muestran un banner ámbar (mismo estilo que el modo soporte del súper admin) con **Volver al expediente** → `POST /company/operate/exit`. Composer: `OperateReturnLayoutComposer`.
+
+#### Alta comercial de cliente
+
+Ver [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
+
+| Campo UI | Notas |
+|----------|--------|
+| Tipo de cliente | `party_type` (jurídica / natural) |
+| Documento | Catálogo `identity_document_types` + `tax_id` |
+| Tipo de estructura | Obligatorio; queda en `clients.structure_type_id` |
+| Slug / sufijo login | No en formulario; auto en `CreateClientService` |
 
 #### Catálogo de estructuras y puntos de acceso
 
 | Concepto | Dónde | Detalle |
 |----------|-------|---------|
-| Tipos de estructura | `/admin/settings/structure-types` | Tabla `structure_types`; el censo del cliente elige `structure_type_id` activo |
-| Unidades vs contenedores | flag `is_unit` | Apartamento/casa/local/bodega = unidad; torre/PH/zona = contenedor |
-| Puntos de acceso | `/access/locations` | Solo puertas/accesos (`type = access_point`); nombre libre (ej. «Puerta de vidrio») |
-| Seed | `StructureTypeSeeder` + `LocationSeeder` | Catálogo base + 4 puntos demo (asignados al piloto en `TenantSeeder`) |
+| Tipos de estructura | `/admin/settings/structure-types` | Nombre + activo; código interno automático; orden ↑↓; no borrar si hay clientes o nodos |
+| Tipos de documento | `/admin/settings/document-types` | CC/CE/NIT…; alta cliente + clickwrap legal |
+| Tipo fijo del cliente | Alta/edición `/company/clients` | Los nodos nuevos heredan ese tipo |
+| Puntos de acceso | `/access/locations` | Solo `access_point`; nombre libre |
+| Seed mínimo | `IdentityDocumentTypeSeeder` | Documentos de identidad |
+| Seed opcional | `PilotDemoSeeder` | `structure_types` + puntos + empresa/clientes/censo |
 
 #### Command Center (`/company/dashboard`)
 
@@ -502,29 +536,31 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 
 ### Modelo unificado `structures`
 
-Árbol autoreferencial: conjunto → torre → apartamento (tipos: `general_area`, `block`, `apartment`, `house`, `office`, `commercial_store`).
+Árbol autoreferencial bajo el **cliente**: nodo raíz → hijos (subnodos). El **tipo** del cliente (`clients.structure_type_id`) se fija en el alta comercial; los nodos creados desde UI **heredan** ese tipo.
+
+Detalle de dominio y glosario: [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
 
 Tablas relacionadas:
 
-- `structure_members` — personas del censo + `access_code` (QR)
+- `structure_members` — personas del censo + `access_code` (QR); **requieren** `structure_id`
 - `structure_pets` — mascotas
 - `visitor_pre_authorizations` — pre-autorizaciones con `qr_auth_token`
 - `structure_app_users` — usuarios APP (`usuario@login_suffix`)
 - `vehicles.structure_id` — vehículos vinculados a unidad
 
-### Panel Conjunto (`/client`)
+### Panel Cliente (`/client`)
 
 | Ruta | Módulo |
 |------|--------|
-| `/client/dashboard` | Resumen unidades |
-| `/client/structures` | Árbol residencial + badges censo (incluye conteo de mascotas) |
+| `/client/dashboard` | Resumen |
+| `/client/structures` | Árbol de nodos (copy UI «Residencial» pendiente de renombrar) |
 | `/client/members` | Directorio personas + QR + **Exportar listado asamblea** |
 | `/client/pets` | Directorio de mascotas por unidad |
 | `/client/vehicles` | Directorio vehicular |
 | `/client/authorizations` | Pre-autorizaciones |
 | `/client/authorizations/import` | Import Excel (`maatwebsite/excel`) |
 | `/client/app-users` | Usuarios APP móvil (`structure_app_users`) |
-| `/client/users` | Usuarios portal web (residentes, guardias del conjunto) |
+| `/client/users` | Usuarios portal web (residentes, vigilantes del cliente) |
 
 ### Mascotas (`/client/pets`) — CRUD completo
 

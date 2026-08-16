@@ -16,7 +16,7 @@ final class LocalPaymentCheckoutTest extends TestCase
 
     public function test_company_admin_can_complete_simulated_online_payment(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -29,9 +29,7 @@ final class LocalPaymentCheckoutTest extends TestCase
                 'representative_role' => 'Gerente',
                 'representative_document_type' => 'CC',
                 'representative_document_number' => '1098765432',
-                'accept_contract' => '1',
-                'accept_terms' => '1',
-                'accept_privacy' => '1',
+                ...$this->acceptAllCorpusDocs($company->package_sku),
             ],
         )->assertRedirect();
 
@@ -62,7 +60,7 @@ final class LocalPaymentCheckoutTest extends TestCase
 
     public function test_reject_simulated_payment_does_not_create_invoice(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -75,9 +73,7 @@ final class LocalPaymentCheckoutTest extends TestCase
                 'representative_role' => 'Gerente',
                 'representative_document_type' => 'CC',
                 'representative_document_number' => '1098765432',
-                'accept_contract' => '1',
-                'accept_terms' => '1',
-                'accept_privacy' => '1',
+                ...$this->acceptAllCorpusDocs($company->package_sku),
             ],
         );
 
@@ -105,7 +101,7 @@ final class LocalPaymentCheckoutTest extends TestCase
 
     public function test_cannot_checkout_without_acceptance(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $companyUser = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
 

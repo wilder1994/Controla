@@ -25,11 +25,6 @@ final class StoreStructureRequest extends FormRequest
             'parent_id' => ['nullable', 'integer', Rule::exists('structures', 'id')->where('client_id', $clientId)],
             'name' => ['required', 'string', 'max:100'],
             'code' => ['nullable', 'string', 'max:50'],
-            'structure_type_id' => [
-                'required',
-                'integer',
-                Rule::exists('structure_types', 'id')->where('is_active', true),
-            ],
             'max_occupancy' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
         ];

@@ -20,21 +20,21 @@ final class StructureModuleTest extends TestCase
 
     public function test_client_admin_can_create_structure_with_tenant_scope(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
         $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
-        $blockTypeId = StructureType::idByCode('block');
+        $expectedTypeId = StructureType::idByCode('ph');
 
         $this->assertNotNull($client);
         $this->assertNotNull($admin);
+        $this->assertSame($expectedTypeId, (int) $client->structure_type_id);
 
         $response = $this->actingAs($admin)
             ->withSession(['tenancy.active_client_id' => $client->id])
             ->post(route('client.structures.store'), [
                 'name' => 'Torre Piloto Test',
                 'code' => 'TORRE-TEST',
-                'structure_type_id' => $blockTypeId,
                 'is_active' => true,
             ]);
 
@@ -46,12 +46,12 @@ final class StructureModuleTest extends TestCase
 
         $this->assertNotNull($structure);
         $this->assertSame($client->id, $structure->client_id);
-        $this->assertSame($blockTypeId, $structure->structure_type_id);
+        $this->assertSame($expectedTypeId, $structure->structure_type_id);
     }
 
     public function test_member_and_vehicle_are_isolated_by_client(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $clientA = Client::query()->where('slug', 'palmas-del-ingenio')->first();
         $clientB = Client::query()->where('slug', 'torres-loma')->first();
@@ -85,7 +85,7 @@ final class StructureModuleTest extends TestCase
 
     public function test_client_admin_can_access_structures_index(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
         $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
@@ -100,7 +100,7 @@ final class StructureModuleTest extends TestCase
 
     public function test_pilot_seed_creates_tower_and_members(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
 

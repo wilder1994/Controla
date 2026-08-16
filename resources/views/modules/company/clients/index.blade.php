@@ -83,7 +83,7 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/60 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th class="px-4 py-2.5 text-left font-medium">Conjunto</th>
+                            <th class="px-4 py-2.5 text-left font-medium">Cliente</th>
                             @if ($operateMode && auth()->user()?->hasRole('super-admin'))
                                 <th class="px-4 py-2.5 text-left font-medium hidden lg:table-cell">Empresa</th>
                             @endif

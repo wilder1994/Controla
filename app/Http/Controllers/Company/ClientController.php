@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Company;
 
 use App\Domain\Tenant\Data\CreateClientData;
+use App\Enums\PartyType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\StoreClientRequest;
 use App\Http\Requests\Company\UpdateClientRequest;
 use App\Models\Client;
+use App\Models\IdentityDocumentType;
+use App\Models\StructureType;
 use App\Repositories\ClientRepository;
 use App\Services\Tenant\BuildClientExpedienteService;
 use App\Services\Tenant\CreateClientService;
@@ -145,7 +148,10 @@ final class ClientController extends Controller
                 ->with('error', 'Has alcanzado el cupo de clientes de tu paquete. Solicita ampliación a plataforma.');
         }
 
-        return view('modules.company.clients.create', compact('metrics'));
+        $documentTypes = IdentityDocumentType::optionsForSelect();
+        $structureTypes = StructureType::optionsForSelect();
+
+        return view('modules.company.clients.create', compact('metrics', 'documentTypes', 'structureTypes'));
     }
 
     public function store(StoreClientRequest $request): RedirectResponse
@@ -155,14 +161,20 @@ final class ClientController extends Controller
         $client = $this->createClientService->execute(new CreateClientData(
             securityCompanyId: $companyId,
             name: $request->validated('name'),
-            slug: $request->validated('slug'),
-            loginSuffix: $request->validated('login_suffix'),
+            partyType: PartyType::from((string) $request->validated('party_type')),
+            legalName: $request->validated('legal_name'),
+            documentType: $request->validated('document_type'),
+            taxId: $request->validated('tax_id'),
+            email: $request->validated('email'),
+            phone: $request->validated('phone'),
+            representativeName: $request->validated('representative_name'),
+            representativeEmail: $request->validated('representative_email'),
+            structureTypeId: (int) $request->validated('structure_type_id'),
             address: $request->validated('address'),
             city: $request->validated('city'),
             department: $request->validated('department'),
             latitude: $request->filled('latitude') ? (float) $request->validated('latitude') : null,
             longitude: $request->filled('longitude') ? (float) $request->validated('longitude') : null,
-            accessUrl: $request->validated('access_url'),
             isActive: $request->boolean('is_active', true),
             serviceStartedAt: $request->validated('service_started_at'),
         ));
@@ -199,6 +211,8 @@ final class ClientController extends Controller
 
         return view('modules.company.clients.edit', [
             'client' => $client,
+            'documentTypes' => IdentityDocumentType::optionsForSelect(),
+            'structureTypes' => StructureType::optionsForSelect(),
             'canOperate' => $request->user()->can('operate', $client),
             'canUpdate' => true,
             'canOperateClientPanel' => $request->user()->can('client.structures.manage')

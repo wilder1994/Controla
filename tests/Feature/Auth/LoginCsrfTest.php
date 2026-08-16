@@ -14,7 +14,7 @@ final class LoginCsrfTest extends TestCase
 
     public function test_super_admin_login_redirects_to_platform_dashboard(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'admin@control-acceso.test')->first();
         $this->assertNotNull($user);
@@ -33,7 +33,7 @@ final class LoginCsrfTest extends TestCase
 
     public function test_super_admin_can_access_platform_dashboard(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'admin@control-acceso.test')->first();
 
@@ -45,7 +45,7 @@ final class LoginCsrfTest extends TestCase
 
     public function test_super_admin_can_operate_porteria_via_porteria_entry(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'admin@control-acceso.test')->first();
         $client = \App\Models\Client::query()->where('slug', 'palmas-del-ingenio')->first();
@@ -59,7 +59,7 @@ final class LoginCsrfTest extends TestCase
 
     public function test_legacy_dashboard_url_redirects_to_home(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $user = User::query()->where('email', 'admin@control-acceso.test')->first();
 

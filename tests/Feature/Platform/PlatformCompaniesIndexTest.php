@@ -14,7 +14,7 @@ final class PlatformCompaniesIndexTest extends TestCase
 
     public function test_super_admin_sees_companies_kpis(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->first();
 
@@ -35,7 +35,7 @@ final class PlatformCompaniesIndexTest extends TestCase
 
     public function test_guard_cannot_access_companies_index(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $guard = User::query()->where('email', 'guardia@control-acceso.test')->first();
 

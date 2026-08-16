@@ -18,7 +18,7 @@ final class EnterCompanyAsSupportTest extends TestCase
 
     public function test_super_admin_can_enter_company_panel_and_exit(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -49,7 +49,7 @@ final class EnterCompanyAsSupportTest extends TestCase
 
     public function test_company_show_renders_expediente_without_ver_en_resumen(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -65,7 +65,7 @@ final class EnterCompanyAsSupportTest extends TestCase
 
     public function test_manual_payment_from_company_show_redirects_back(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -77,9 +77,7 @@ final class EnterCompanyAsSupportTest extends TestCase
                 'representative_role' => 'Gerente General',
                 'representative_document_type' => 'CC',
                 'representative_document_number' => '1234567890',
-                'accept_contract' => '1',
-                'accept_terms' => '1',
-                'accept_privacy' => '1',
+                ...$this->acceptAllCorpusDocs($company->package_sku),
             ],
         );
 
@@ -106,7 +104,7 @@ final class EnterCompanyAsSupportTest extends TestCase
 
     public function test_can_cancel_membership_with_reason(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -124,7 +122,7 @@ final class EnterCompanyAsSupportTest extends TestCase
 
     public function test_can_undo_membership_cancellation_without_payment(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
@@ -150,7 +148,7 @@ final class EnterCompanyAsSupportTest extends TestCase
 
     public function test_historial_tab_is_reachable(): void
     {
-        $this->seed();
+        $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();

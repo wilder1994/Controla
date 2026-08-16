@@ -24,7 +24,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 
 Controla **no** factura ni muestra deuda del conjunto hacia la empresa de seguridad. Ese cobro es externo (contrato de vigilancia).
 
-En el cliente solo se registra **`service_started_at`**: fecha en que se aperturó / inició el servicio en Controla.
+En el cliente se registran datos comerciales (`party_type`, documento, contactos, representante) y **`service_started_at`**: fecha en que se aperturó / inició el servicio en Controla. El **tipo de estructura** se fija en el alta (`structure_type_id`). Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 ---
 

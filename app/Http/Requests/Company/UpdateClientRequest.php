@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Company;
 
+use App\Enums\PartyType;
 use App\Models\Client;
 use App\Support\Geo\GeoAddressRules;
+use App\Support\Legal\CorpusAcceptanceRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,31 +27,49 @@ final class UpdateClientRequest extends FormRequest
         /** @var Client $client */
         $client = $this->route('client');
         $companyId = (int) $client->security_company_id;
+        $isLegalEntity = $this->input('party_type') === PartyType::LegalEntity->value;
 
         return [
+            'party_type' => ['required', Rule::enum(PartyType::class)],
             'name' => ['required', 'string', 'max:150'],
-            'slug' => [
+            'legal_name' => [$isLegalEntity ? 'required' : 'nullable', 'string', 'max:150'],
+            'document_type' => CorpusAcceptanceRules::documentTypeRule(),
+            'tax_id' => [
                 'required',
                 'string',
-                'max:80',
-                'alpha_dash',
-                Rule::unique('clients', 'slug')
+                'max:40',
+                Rule::unique('clients', 'tax_id')
                     ->where('security_company_id', $companyId)
                     ->ignore($client->id),
             ],
-            'login_suffix' => [
+            'email' => ['required', 'email', 'max:150'],
+            'phone' => ['nullable', 'string', 'max:40'],
+            'representative_name' => [$isLegalEntity ? 'required' : 'nullable', 'string', 'max:150'],
+            'representative_email' => [$isLegalEntity ? 'required' : 'nullable', 'email', 'max:150'],
+            'structure_type_id' => [
                 'required',
-                'string',
-                'max:80',
-                'regex:/^[a-z0-9][a-z0-9\-\.]+$/i',
-                Rule::unique('clients', 'login_suffix')
-                    ->where('security_company_id', $companyId)
-                    ->ignore($client->id),
+                'integer',
+                Rule::exists('structure_types', 'id')->where('is_active', true),
             ],
             ...GeoAddressRules::optional(),
-            'access_url' => ['nullable', 'url', 'max:255'],
             'service_started_at' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'party_type' => 'tipo de cliente',
+            'name' => 'nombre comercial',
+            'legal_name' => 'razón social',
+            'document_type' => 'tipo de documento',
+            'tax_id' => 'número de documento',
+            'email' => 'correo de contacto',
+            'representative_name' => 'representante legal',
+            'representative_email' => 'correo del representante',
+            'structure_type_id' => 'tipo de estructura',
         ];
     }
 }

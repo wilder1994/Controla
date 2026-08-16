@@ -18,6 +18,7 @@ use App\Models\PreAuthorization;
 use App\Models\PricingSettings;
 use App\Models\Resident;
 use App\Models\SecurityCompany;
+use App\Models\StructureType;
 use App\Models\Vehicle;
 use App\Models\Visitor;
 use App\Services\Tenant\AssignCompanyPackageService;
@@ -58,6 +59,14 @@ final class TenantSeeder extends Seeder
             ['security_company_id' => $company->id, 'slug' => 'palmas-del-ingenio'],
             [
                 'name' => 'Palmas del Ingenio',
+                'party_type' => 'legal_entity',
+                'legal_name' => 'Conjunto Residencial Palmas del Ingenio PH',
+                'document_type' => 'NIT',
+                'tax_id' => '900111222-1',
+                'email' => 'admin@palmas.test',
+                'representative_name' => 'Ana Admin',
+                'representative_email' => 'ana@palmas.test',
+                'structure_type_id' => StructureType::idByCode('ph'),
                 'login_suffix' => 'palmasdelingenio',
                 'address' => 'Cra 100 # 14-25, Cali',
                 'latitude' => 3.3678,
@@ -74,6 +83,14 @@ final class TenantSeeder extends Seeder
             ['security_company_id' => $company->id, 'slug' => 'torres-loma'],
             [
                 'name' => 'Torres de la Loma',
+                'party_type' => 'legal_entity',
+                'legal_name' => 'Torres de la Loma PH',
+                'document_type' => 'NIT',
+                'tax_id' => '900333444-2',
+                'email' => 'admin@torres.test',
+                'representative_name' => 'Luis Torres',
+                'representative_email' => 'luis@torres.test',
+                'structure_type_id' => StructureType::idByCode('ph'),
                 'login_suffix' => 'torresloma',
                 'address' => 'Av 6N # 28-90, Cali',
                 'latitude' => 3.3742,
