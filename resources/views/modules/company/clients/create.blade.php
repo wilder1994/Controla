@@ -9,12 +9,19 @@
 
     <div class="max-w-2xl space-y-4">
         <p class="text-sm text-slate-400">
-            Alta comercial del cliente. Cupo restante: {{ $metrics['clients_remaining'] }} de {{ $metrics['max_clients'] }}
-            ({{ $metrics['package_modality_label'] }}).
+            Alta comercial. Puedes crear todas las fichas que necesites.
+            Accesos: {{ $metrics['clients_remaining'] }} de {{ $metrics['max_clients'] }}
+            · Pro: {{ $metrics['supervision_remaining'] ?? 0 }} de {{ $metrics['max_supervision_clients'] ?? 0 }}.
         </p>
 
         <form method="POST" action="{{ route('company.clients.store') }}" class="space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             @csrf
+
+            @include('modules.company.clients.partials.service-lines', [
+                'metrics' => $metrics,
+                'accessDefault' => false,
+                'proDefault' => false,
+            ])
 
             <div>
                 <x-ui.label for="party_type">Tipo de cliente</x-ui.label>

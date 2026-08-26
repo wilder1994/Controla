@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Public;
 
 use App\Enums\CompanyPackageSku;
+use App\Enums\SupervisionPackageSku;
 use App\Models\CommercialSignupIntent;
+use App\Models\PricingSettings;
+use App\Models\SecurityCompany;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -108,5 +111,51 @@ final class PublicSignupFlowTest extends TestCase
 
         $user = User::query()->where('email', 'admin@norte-vigilancia.test')->first();
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_public_signup_with_pro_assigns_supervision_package(): void
+    {
+        $this->seed();
+
+        PricingSettings::query()->latest('id')->firstOrFail()->update([
+            'unit_price_supervision' => 50_000,
+        ]);
+
+        $this->get(route('signup.create', [
+            'sku' => CompanyPackageSku::Pack1Manual->value,
+            'sup' => SupervisionPackageSku::Sit5->value,
+            'cycle' => 'monthly',
+        ]));
+
+        $intent = CommercialSignupIntent::query()->firstOrFail();
+        $this->assertSame(SupervisionPackageSku::Sit5, $intent->supervision_package_sku);
+        $this->assertGreaterThan(80_000, (float) $intent->amount);
+
+        $this->post(route('signup.data.store', $intent), [
+            'party_type' => 'legal_entity',
+            'legal_name' => 'Andes Pro S.A.S.',
+            'trade_name' => 'Andes Pro',
+            'tax_id' => '901777666-3',
+            'admin_name' => 'Admin Andes',
+            'email' => 'admin@andes-pro.test',
+            'password' => 'Empresa123!',
+            'password_confirmation' => 'Empresa123!',
+        ]);
+
+        $this->post(route('signup.legal.store', $intent), [
+            'representative_name' => 'Ana Ruiz',
+            'representative_role' => 'Gerente',
+            'representative_document_type' => 'CC',
+            'representative_document_number' => '52111000',
+            ...$this->acceptAllCorpusDocs(CompanyPackageSku::Pack1Manual),
+        ]);
+
+        $this->post(route('signup.pay', $intent));
+        $this->post(route('signup.checkout.approve', $intent))
+            ->assertRedirect(route('company.dashboard'));
+
+        $company = SecurityCompany::query()->where('tax_id', '901777666-3')->firstOrFail();
+        $this->assertSame(SupervisionPackageSku::Sit5, $company->supervision_package_sku);
+        $this->assertSame(5, (int) $company->max_supervision_clients);
     }
 }

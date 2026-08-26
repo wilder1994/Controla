@@ -9,6 +9,7 @@ use App\Domain\User\UpdateUserData;
 use App\Models\Client;
 use App\Models\ClientUserAssignment;
 use App\Models\User;
+use App\Services\Auth\UserScopeResolver;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
 use App\Support\Platform\ActingCompanyResolver;
@@ -18,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 final class ManageScopedUserService
 {
     public function __construct(
-        private readonly \App\Services\Auth\UserScopeResolver $scopeResolver,
+        private readonly UserScopeResolver $scopeResolver,
     ) {}
 
     public function create(CreateUserData $data, User $actor, UserManagementContext $context): User
@@ -41,6 +42,7 @@ final class ManageScopedUserService
                 'password' => $data->password,
                 'is_active' => $data->isActive,
                 'security_company_id' => $companyId,
+                'employee_id' => $data->employeeId,
                 'job_title' => $data->jobTitle,
                 'avatar_path' => $data->avatarPath,
                 'email_verified_at' => now(),

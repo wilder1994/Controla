@@ -41,6 +41,8 @@ class Client extends Model
         'logo_path',
         'access_url',
         'is_active',
+        'has_access',
+        'has_supervision',
         'service_started_at',
         'service_hours',
         'revista_target_per_day',
@@ -59,6 +61,8 @@ class Client extends Model
             'plan_tier' => ClientPlanTier::class,
             'max_structures' => 'integer',
             'is_active' => 'boolean',
+            'has_access' => 'boolean',
+            'has_supervision' => 'boolean',
             'service_started_at' => 'date',
             'service_hours' => 'integer',
             'revista_target_per_day' => 'integer',
@@ -94,5 +98,15 @@ class Client extends Model
     public function loginDomain(): string
     {
         return '@'.$this->login_suffix;
+    }
+
+    public function isCatalogOnly(): bool
+    {
+        return ! $this->has_access && ! $this->has_supervision;
+    }
+
+    public function supervisorShiftReviews(): HasMany
+    {
+        return $this->hasMany(SupervisorShiftReview::class);
     }
 }

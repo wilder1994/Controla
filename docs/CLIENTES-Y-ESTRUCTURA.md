@@ -25,9 +25,10 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 1. **Plataforma** mantiene catálogos en Ajustes:
    - Tipos de estructura → `/admin/settings/structure-types`
    - Tipos de documento de identidad → `/admin/settings/document-types`
-2. **Empresa** da de alta el cliente en `/company/clients/create`:
+2. **Empresa** da de alta el cliente en `/company/clients/create` o por **Carga masiva** (`Formato` Excel → preview → aceptar):
    - Datos comerciales (`party_type`, razón social, documento, contactos, representante, ubicación, inicio de servicio)
-   - **Tipo de estructura** obligatorio (queda fijo)
+   - **Líneas de servicio** opcionales: Accesos / Supervisión Pro (el cupo es por línea, no por ficha)
+   - **Tipo de estructura** obligatorio (queda fijo; el Excel no crea tipos)
    - `slug` / `login_suffix` se generan en backend (no van en el formulario)
 3. **Panel cliente** (`/client/structures`): se crean **nodos** del árbol; el tipo se **hereda** del cliente (no se elige por nodo).
 4. **Personas** se asignan a **un** nodo del árbol (casa, apto, oficina…). No hay asignación dual nodo+subnodo ni persona “solo al cliente” sin nodo.
@@ -55,7 +56,7 @@ También válido: nodo hoja directo (casa sin torre) → persona en ese nodo.
 | `email`, `phone` | Contacto |
 | `representative_name`, `representative_email` | Representante (exigido si jurídica) |
 | `structure_type_id` | Tipo de estructura fijado |
-| `service_started_at` | Inicio de servicio en Controla |
+| `has_access`, `has_supervision` | Líneas de servicio (cupo Accesos / Pro) |
 | `slug`, `login_suffix` | Internos (APP / tenants); auto |
 
 Migraciones relevantes:  

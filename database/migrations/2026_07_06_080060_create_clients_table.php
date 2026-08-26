@@ -34,6 +34,8 @@ return new class extends Migration
             $table->string('logo_path')->nullable();
             $table->string('access_url')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('has_access')->default(false);
+            $table->boolean('has_supervision')->default(false);
             $table->date('service_started_at')->nullable();
             $table->unsignedTinyInteger('service_hours')->default(24);
             $table->unsignedSmallInteger('revista_target_per_day')->default(1);
@@ -47,6 +49,8 @@ return new class extends Migration
             $table->unique(['security_company_id', 'slug']);
             $table->unique(['security_company_id', 'login_suffix']);
             $table->index(['security_company_id', 'is_active']);
+            $table->index(['security_company_id', 'has_access']);
+            $table->index(['security_company_id', 'has_supervision']);
         });
 
         Schema::table('users', function (Blueprint $table) {

@@ -20,6 +20,7 @@ return [
         'company.clients.manage',
         'company.users.assign',
         'company.settings.manage',
+        'company.supervision.view',
 
         // Cliente / censo (fase 1+)
         'client.structures.manage',
@@ -76,6 +77,7 @@ return [
             'company.clients.manage',
             'company.users.assign',
             'company.settings.manage',
+            'company.supervision.view',
             'client.structures.manage',
             'client.members.manage',
             'client.pets.manage',
@@ -236,11 +238,14 @@ return [
             'label' => 'Panel Empresa',
             'permission' => 'company.dashboard',
             'items' => [
-                ['label' => 'Resumen', 'route' => 'company.dashboard', 'permission' => 'company.dashboard'],
+                ['label' => 'Mi empresa', 'route' => 'company.dashboard', 'permission' => 'company.dashboard'],
                 ['label' => 'Facturación', 'route' => 'company.billing.index', 'permission' => 'company.dashboard'],
                 ['label' => 'Clientes', 'route' => 'company.clients.index', 'permission' => 'company.clients.view'],
+                ['label' => 'Supervisión', 'route' => 'company.supervision.index', 'permission' => 'company.supervision.view'],
+                ['label' => 'Empleados', 'route' => 'company.employees.index', 'permission' => 'company.settings.manage'],
                 ['label' => 'Usuarios', 'route' => 'company.users.index', 'permission' => 'company.users.assign'],
-                ['label' => 'Mi empresa', 'route' => 'company.settings.edit', 'permission' => 'company.settings.manage'],
+                ['label' => 'Mis datos', 'route' => 'company.settings.edit', 'permission' => 'company.settings.manage'],
+                ['label' => 'Ajustes', 'route' => 'company.job-titles.index', 'permission' => 'company.settings.manage'],
             ],
         ],
         'access' => [

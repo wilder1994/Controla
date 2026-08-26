@@ -27,7 +27,7 @@
     $shiftsCount = count($openShiftsTable);
 @endphp
 
-<x-company-layout title="Resumen empresa">
+<x-company-layout title="Mi empresa">
     @push('styles')
     <style>
         .company-cc {
@@ -457,8 +457,12 @@
                                 <span class="font-semibold text-slate-300 tabular-nums">{{ $portfolio['archived'] ?? 0 }}</span>
                             </div>
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-slate-500">Disponibles</span>
-                                <span class="font-semibold text-indigo-300 tabular-nums">{{ $portfolio['available'] ?? 0 }}</span>
+                                <span class="text-slate-500">Disponibles Accesos</span>
+                                <span class="font-semibold text-indigo-300 tabular-nums">{{ $metrics['clients_remaining'] ?? $portfolio['available'] ?? 0 }}</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-slate-500">Disponibles Pro</span>
+                                <span class="font-semibold text-amber-300 tabular-nums">{{ $metrics['supervision_remaining'] ?? 0 }}</span>
                             </div>
                             @if ($endsAt)
                                 <p class="text-xs text-slate-600 pt-1 border-t border-slate-800">

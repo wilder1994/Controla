@@ -29,11 +29,13 @@ final class PricingController extends Controller
         $cycle = BillingCycle::tryFrom((string) $request->query('cycle', 'monthly'))
             ?? BillingCycle::Monthly;
         $matrix = $this->priceCalculator->matrix($cycle, $settings);
+        $supervisionMatrix = $this->priceCalculator->matrixSupervision($cycle, $settings);
         $annualDiscount = (float) config('tenancy.pricing.annual_discount', 0.17);
 
         return view('modules.admin.pricing.edit', compact(
             'settings',
             'matrix',
+            'supervisionMatrix',
             'cycle',
             'annualDiscount',
         ));
@@ -44,6 +46,7 @@ final class PricingController extends Controller
         $this->updatePlatformPricingService->execute(
             unitManual: (float) $request->validated('unit_price_manual'),
             unitHardware: (float) $request->validated('unit_price_hardware'),
+            unitSupervision: (float) $request->validated('unit_price_supervision'),
             actor: $request->user(),
         );
 

@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\PreAuthorizationController;
 use App\Http\Controllers\Api\CorrespondenceController;
+use App\Http\Controllers\Api\PreAuthorizationController;
+use App\Http\Controllers\Api\SupervisorShiftController;
 use App\Http\Controllers\Api\VisitorController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/supervision/login', [SupervisorShiftController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -19,4 +21,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('correspondence/{correspondence}', [CorrespondenceController::class, 'show']);
 
     Route::get('visitors/search', [VisitorController::class, 'search']);
+
+    Route::middleware('supervisor.pro')->prefix('supervision')->group(function () {
+        Route::get('/shifts/current', [SupervisorShiftController::class, 'current']);
+        Route::get('/sites', [SupervisorShiftController::class, 'sites']);
+        Route::post('/shifts/open', [SupervisorShiftController::class, 'open']);
+        Route::post('/shifts/ping', [SupervisorShiftController::class, 'ping']);
+        Route::post('/shifts/close', [SupervisorShiftController::class, 'close']);
+        Route::post('/reviews', [SupervisorShiftController::class, 'review']);
+    });
 });

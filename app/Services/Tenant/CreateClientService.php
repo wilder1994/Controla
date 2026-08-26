@@ -10,14 +10,13 @@ use App\Enums\ClientPlanTier;
 use App\Models\Client;
 use App\Models\SecurityCompany;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 final class CreateClientService
 {
     public function execute(CreateClientData $data): Client
     {
         $company = SecurityCompany::query()->findOrFail($data->securityCompanyId);
-        $this->assertWithinQuota($company);
+        app(AssertClientServiceSeats::class)->execute($company, $data->hasAccess, $data->hasSupervision);
 
         $slug = $this->uniqueSlug($data->securityCompanyId, $data->name);
         $loginSuffix = $this->uniqueLoginSuffix($data->securityCompanyId, $slug);
@@ -45,6 +44,8 @@ final class CreateClientService
             'max_structures' => ClientPlanTier::Economic->maxStructures(),
             'access_url' => null,
             'is_active' => $data->isActive,
+            'has_access' => $data->hasAccess,
+            'has_supervision' => $data->hasSupervision,
             'service_started_at' => $data->serviceStartedAt ?? now()->toDateString(),
             'lifecycle' => ClientLifecycle::Active,
         ]);
@@ -82,17 +83,5 @@ final class CreateClientService
         }
 
         return $suffix;
-    }
-
-    private function assertWithinQuota(SecurityCompany $company): void
-    {
-        $maxClients = (int) ($company->max_clients ?: 10);
-        $current = $company->operationalClientsCount();
-
-        if ($current >= $maxClients) {
-            throw ValidationException::withMessages([
-                'name' => "Has alcanzado el cupo de tu paquete ({$current}/{$maxClients} clientes). Amplía el paquete desde plataforma.",
-            ]);
-        }
     }
 }

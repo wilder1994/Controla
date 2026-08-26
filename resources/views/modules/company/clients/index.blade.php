@@ -4,6 +4,22 @@
 @endphp
 
 <x-company-layout :title="$pageTitle">
+    @if (! $operateMode)
+        <x-slot:actions>
+            @can('company.clients.manage')
+                <x-ui.button variant="secondary" :href="route('company.clients.template')" size="sm">Formato</x-ui.button>
+                <button
+                    type="button"
+                    class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-700 px-4 text-sm font-medium text-slate-200 hover:bg-slate-800"
+                    onclick="window.dispatchEvent(new CustomEvent('open-client-import'))"
+                >
+                    Carga masiva
+                </button>
+                <x-ui.button :href="route('company.clients.create')" size="sm">+ Cliente</x-ui.button>
+            @endcan
+        </x-slot:actions>
+    @endif
+
     <div class="space-y-4">
         @if ($operateMode)
             <div class="rounded-lg border border-emerald-800/50 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-200">
@@ -43,7 +59,8 @@
             @if ($metrics)
                 <p class="text-xs text-slate-500 sm:ml-auto sm:text-right whitespace-nowrap">
                     {{ $clients->total() }} {{ $clients->total() === 1 ? 'conjunto' : 'conjuntos' }}
-                    · {{ $metrics['clients_remaining'] }} cupos libres
+                    · Accesos {{ $metrics['clients_remaining'] }}/{{ $metrics['max_clients'] }}
+                    · Pro {{ $metrics['supervision_remaining'] ?? 0 }}/{{ $metrics['max_supervision_clients'] ?? 0 }}
                 </p>
             @else
                 <p class="text-xs text-slate-500 sm:ml-auto sm:text-right whitespace-nowrap">
@@ -54,9 +71,10 @@
 
         @if ($metrics && $metrics['is_quota_full'] && ! $operateMode)
             <div class="rounded-lg border border-amber-800/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
-                Has alcanzado el cupo de tu paquete ({{ $metrics['total'] }}/{{ $metrics['max_clients'] }}).
+                Cupo de Accesos lleno ({{ $metrics['access_used'] ?? $metrics['total'] }}/{{ $metrics['max_clients'] }}).
+                Puedes seguir creando fichas; no podrás marcar Accesos hasta ampliar.
                 <a href="{{ route('company.dashboard') }}" class="text-amber-100 underline hover:no-underline">
-                    Ver opciones de ampliación en Resumen
+                    Ver opciones en Mi empresa
                 </a>
             </div>
         @endif
@@ -69,7 +87,7 @@
             <h3 class="text-sm font-semibold text-white">{{ $operateMode ? 'Conjuntos disponibles' : 'Cartera' }}</h3>
             @if (! $operateMode && $metrics)
                 <a href="{{ route('company.dashboard') }}" class="text-xs text-indigo-400 hover:text-indigo-300">
-                    Ir al Resumen
+                    Ir a Mi empresa
                 </a>
             @elseif ($operateMode && auth()->user()?->can('company.clients.view'))
                 <a href="{{ route('company.clients.index') }}" class="text-xs text-indigo-400 hover:text-indigo-300">
@@ -102,6 +120,19 @@
                                 <td class="px-4 py-3">
                                     <p class="font-medium text-slate-200">{{ $client->name }}</p>
                                     <p class="text-xs text-slate-600">{{ $client->slug }}</p>
+                                    @if (! $operateMode)
+                                        <p class="mt-1 flex flex-wrap gap-1">
+                                            @if ($client->has_access)
+                                                <span class="inline-flex rounded-full bg-indigo-900/40 px-2 py-0.5 text-[10px] text-indigo-300">Accesos</span>
+                                            @endif
+                                            @if ($client->has_supervision)
+                                                <span class="inline-flex rounded-full bg-amber-900/30 px-2 py-0.5 text-[10px] text-amber-300">Pro</span>
+                                            @endif
+                                            @if ($client->isCatalogOnly())
+                                                <span class="inline-flex rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-500">Ficha</span>
+                                            @endif
+                                        </p>
+                                    @endif
                                     @if ($client->address)
                                         <p class="text-xs text-slate-500 mt-1 md:hidden truncate max-w-[200px]" title="{{ $client->address }}">
                                             {{ $client->address }}
@@ -168,24 +199,20 @@
                                                         Ir a Clientes
                                                     </x-ui.button>
                                                 @endcan
-                                                @if ($metrics && ! $metrics['is_quota_full'])
-                                                    <x-ui.button :href="route('company.clients.create')" size="md">
-                                                        Crear conjunto
-                                                    </x-ui.button>
-                                                @endif
+                                                <x-ui.button :href="route('company.clients.create')" size="md">
+                                                    Crear conjunto
+                                                </x-ui.button>
                                             </div>
                                         @endcan
                                     @else
                                         <p class="text-sm font-medium text-slate-300">Aún no tienes conjuntos en cartera</p>
                                         <p class="text-sm text-slate-500 mt-1">Crea el primero para operar portería y censo residencial.</p>
                                         @can('create', App\Models\Client::class)
-                                            @if ($metrics && ! $metrics['is_quota_full'])
-                                                <div class="mt-4">
-                                                    <x-ui.button :href="route('company.clients.create')" size="md">
-                                                        Crear conjunto
-                                                    </x-ui.button>
-                                                </div>
-                                            @endif
+                                            <div class="mt-4">
+                                                <x-ui.button :href="route('company.clients.create')" size="md">
+                                                    Crear conjunto
+                                                </x-ui.button>
+                                            </div>
                                         @endcan
                                     @endif
                                 </td>

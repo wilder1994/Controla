@@ -2,7 +2,11 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de conjuntos.
 
-**Última actualización:** agosto 2026
+**Última actualización:** 25 agosto 2026
+
+La **ficha de empleado** (maestro, Excel) vive en el sidebar **Empleados**. Cargos y tipos: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md). Este documento cubre **usuarios** (`users`): login y roles.
+
+Sidebar empresa: **Mi empresa** (dashboard) · **Empleados** · **Mis datos** (este perfil) · **Ajustes** (cargos/tipos).
 
 ---
 
@@ -13,7 +17,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 | Nombre de producto | Rol Spatie (`users`) | Pertenece a | Resumen |
 |--------------------|----------------------|-------------|---------|
 | **Vigilante** | `guardia` | Empresa | Opera un **puesto/cliente** a la vez. Login usuario+contraseña = control de quién está de turno. |
-| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre puestos. Firma **revista/minuta** con **código numérico de 6 dígitos** en la sesión del vigilante (sin app propia por ahora). |
+| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre puestos. Firma revista en puesto (código 6 dígitos) si el sitio solo tiene Accesos. Con Supervisión Pro en ese sitio, firma en la app Pro (llena la misma minuta). Login API: `/api/supervision/login`. |
 | **Administrador conjunto** | `client-admin` | Cliente (conjunto) | Administra el conjunto. **No** es supervisor ni vigilante. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
@@ -45,7 +49,7 @@ Slug técnico: `guardia`. Label UI: **Vigilante**.
 1. Pertenece a la **empresa** (`security_company_id`). **No** requiere asignación fija a un conjunto.
 2. Al crear el usuario se genera un **`supervisor_code`**: numérico, **6 dígitos**, **permanente** hasta regeneración deliberada.
 3. El código es único **por empresa**.
-4. **Revista (fase actual):** solo firma de minuta en la sesión del vigilante (doble factor por código). Sin modo/app supervisor propio todavía.
+4. **Revista:** si el sitio solo tiene Accesos, firma en la sesión del vigilante (código). Si el sitio tiene Pro, la revista se hace en la app; no se vuelve a firmar en puesto.
 5. No confundir con admin del conjunto ni con el vigilante de turno.
 
 Slug técnico: `supervisor`. Label UI: **Supervisor de vigilancia**.
@@ -133,7 +137,7 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 | `GET /company/users` | Listado scoped |
 | `GET/POST /company/users/create` | Crear usuario empresa / vigilante / supervisor |
 | `GET/PUT /company/users/{user}/edit` | Editar (foto, cargo, reasignación, código supervisor) |
-| `GET /company/settings` | Perfil de mi empresa |
+| `GET /company/settings` | **Mis datos**: perfil legal y ubicación |
 | `PUT /company/settings` | Guardar perfil + ubicación |
 | `GET/POST /company/clients` | Cartera de conjuntos (`service_started_at`) |
 
@@ -167,7 +171,7 @@ JS: `resources/js/geo-address-picker.js` (Places Autocomplete + Geocoding; requi
 
 Icono: `resources/images/ui/map-pin.png` → servir en `public/images/ui/` (carpeta `public/images` ignorada por git).
 
-Usado en: signup paso 1, `/company/settings`, perfil/alta admin empresa, alta/edición de conjuntos.
+Usado en: signup paso 1, **Mis datos** (`/company/settings`), perfil/alta admin empresa, alta/edición de conjuntos.
 
 ### Reglas de negocio empresa
 
@@ -206,4 +210,4 @@ php artisan test --filter=ScopedUserManagementTest
 
 ---
 
-Ver también: [`LANDING-Y-CONTRATACION.md`](LANDING-Y-CONTRATACION.md) · [`PLATAFORMA-ADMIN.md`](PLATAFORMA-ADMIN.md) · [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md)
+Ver también: [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) · [`LANDING-Y-CONTRATACION.md`](LANDING-Y-CONTRATACION.md) · [`PLATAFORMA-ADMIN.md`](PLATAFORMA-ADMIN.md) · [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md)

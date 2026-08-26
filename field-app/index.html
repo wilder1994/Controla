@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>Controla Supervisión</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: system-ui, sans-serif; background: #020617; color: #e2e8f0; margin: 0; padding: 1rem; }
+        input, select, textarea, button { width: 100%; margin: .35rem 0; padding: .6rem; border-radius: .5rem; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; }
+        button { background: #4f46e5; border: 0; font-weight: 600; }
+        button.secondary { background: #334155; }
+        .card { background: #0f172a; border: 1px solid #1e293b; border-radius: .75rem; padding: 1rem; margin-bottom: 1rem; }
+        .ok { color: #6ee7b7; } .err { color: #fca5a5; }
+        h1 { font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <h1>Controla Supervisión</h1>
+    <p id="status" class="ok"></p>
+    <div id="login" class="card">
+        <input id="email" type="email" placeholder="Correo" autocomplete="username">
+        <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
+        <button type="button" id="btn-login">Entrar</button>
+    </div>
+    <div id="ops" class="card" hidden>
+        <button type="button" id="btn-open">Abrir turno</button>
+        <button type="button" class="secondary" id="btn-close">Cerrar turno</button>
+        <select id="site"></select>
+        <textarea id="notes" rows="3" placeholder="Notas de revista"></textarea>
+        <button type="button" id="btn-review">Registrar revista</button>
+        <button type="button" class="secondary" id="btn-logout">Salir</button>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

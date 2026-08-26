@@ -5,16 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Enums\BillingCycle;
+use App\Enums\CompanyPackageSku;
 use App\Enums\PackageModality;
-use App\Enums\SignupIntentStatus;
 use App\Http\Controllers\Controller;
-use App\Models\CommercialSignupIntent;
 use App\Models\PricingSettings;
 use App\Services\Pricing\PriceCalculator;
-use App\Services\Public\CompletePublicSignupService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 final class PlansController extends Controller
@@ -32,17 +28,22 @@ final class PlansController extends Controller
             ?? PackageModality::Manual;
 
         $matrix = $this->priceCalculator->matrix($cycle, $settings);
+        $supervisionMatrix = $this->priceCalculator->matrixSupervision($cycle, $settings);
         $annualDiscount = (float) config('tenancy.pricing.annual_discount', 0.17);
 
         $minMonthly = $this->priceCalculator->quote(PackageModality::Manual, 1, BillingCycle::Monthly, $settings);
+        $comboSku = CompanyPackageSku::tryFrom((string) $request->query('sku'))
+            ?? CompanyPackageSku::fromParts(1, $modality);
 
         return view('modules.public.plans.index', compact(
             'settings',
             'matrix',
+            'supervisionMatrix',
             'cycle',
             'modality',
             'annualDiscount',
             'minMonthly',
+            'comboSku',
         ));
     }
 }

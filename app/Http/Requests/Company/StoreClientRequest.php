@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Company;
 
 use App\Enums\PartyType;
+use App\Models\Client;
 use App\Support\Geo\GeoAddressRules;
 use App\Support\Legal\CorpusAcceptanceRules;
 use App\Support\Platform\ActingCompanyResolver;
@@ -15,7 +16,7 @@ final class StoreClientRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', \App\Models\Client::class) ?? false;
+        return $this->user()?->can('create', Client::class) ?? false;
     }
 
     /** @return array<string, mixed> */
@@ -47,6 +48,8 @@ final class StoreClientRequest extends FormRequest
             ...GeoAddressRules::optional(),
             'service_started_at' => ['nullable', 'date'],
             'is_active' => ['sometimes', 'boolean'],
+            'has_access' => ['sometimes', 'boolean'],
+            'has_supervision' => ['sometimes', 'boolean'],
         ];
     }
 

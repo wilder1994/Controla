@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Platform;
 
+use App\Domain\Geo\GeoAddressData;
 use App\Enums\BillingCycle;
 use App\Enums\ClientLifecycle;
-use App\Enums\CompanyPackageSku;
 use App\Enums\ManualPaymentIntent;
 use App\Enums\PaymentStatus;
 use App\Enums\PlatformDocumentType;
-use App\Domain\Geo\GeoAddressData;
+use App\Enums\SupervisionPackageSku;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\CancelCompanyMembershipRequest;
 use App\Http\Requests\Platform\SchedulePackageChangeRequest;
 use App\Http\Requests\Platform\StoreCompanyRequest;
 use App\Http\Requests\Platform\StoreManualPaymentRequest;
-use App\Http\Requests\Platform\UpdateCompanyPackageRequest;
 use App\Http\Requests\Platform\UpdateCompanyProfileRequest;
+use App\Http\Requests\Platform\UpdateCompanySupervisionPackageRequest;
 use App\Models\CommercialPayment;
 use App\Models\PlatformDocument;
 use App\Models\SecurityCompany;
@@ -30,6 +30,7 @@ use App\Services\Platform\ScheduleCompanyPackageChangeService;
 use App\Services\Platform\UndoCompanyMembershipCancellationService;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Tenant\AssignCompanyPackageService;
+use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use App\Services\Tenant\CreateCompanyService;
 use App\Services\Tenant\UpdateCompanyProfileService;
 use Carbon\CarbonImmutable;
@@ -42,6 +43,7 @@ final class CompanyController extends Controller
     public function __construct(
         private readonly SecurityCompanyRepository $securityCompanyRepository,
         private readonly AssignCompanyPackageService $assignCompanyPackageService,
+        private readonly AssignCompanySupervisionPackageService $assignCompanySupervisionPackageService,
         private readonly PriceCalculator $priceCalculator,
         private readonly UpdateCompanyProfileService $updateCompanyProfileService,
         private readonly CreateCompanyService $createCompanyService,
@@ -332,6 +334,21 @@ final class CompanyController extends Controller
         return redirect()
             ->route('admin.companies.show', $company)
             ->with('success', "Paquete actualizado a «{$sku->label()}» ({$cycle->label()}).");
+    }
+
+    public function updateSupervisionPackage(
+        UpdateCompanySupervisionPackageRequest $request,
+        SecurityCompany $company,
+    ): RedirectResponse {
+        $skuValue = $request->validated('supervision_package_sku');
+        $sku = $skuValue ? SupervisionPackageSku::from($skuValue) : null;
+        $this->assignCompanySupervisionPackageService->execute($company, $sku);
+
+        $label = $sku?->label() ?? 'sin Supervisión Pro';
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with('success', "Paquete Pro actualizado: {$label}.");
     }
 
     public function editProfile(SecurityCompany $company): View

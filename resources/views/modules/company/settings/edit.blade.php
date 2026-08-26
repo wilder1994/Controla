@@ -1,4 +1,4 @@
-<x-company-layout title="Mi empresa">
+<x-company-layout title="Mis datos">
     <div class="max-w-2xl space-y-4">
         <p class="text-sm text-slate-400">Datos legales, contacto y ubicación de tu empresa de seguridad.</p>
         @include('modules.shared.company-profile-form', [

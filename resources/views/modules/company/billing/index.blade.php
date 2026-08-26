@@ -48,6 +48,11 @@
                     <h2 class="text-base font-semibold text-white mt-0.5">{{ $company->displayName() }}</h2>
                     <p class="text-xs text-slate-500 mt-1">
                         {{ $company->package_sku?->label() ?? 'Sin paquete' }}
+                        @if ($company->supervision_package_sku)
+                            · {{ $company->supervision_package_sku->label() }}
+                        @else
+                            · Sin Supervisión Pro
+                        @endif
                         · {{ $company->billing_cycle?->label() ?? '—' }}
                         · {{ $statusLabel }}
                     </p>
@@ -83,6 +88,23 @@
                     <p class="text-base font-semibold text-white">−{{ $quote->volumeDiscountLabel() }}</p>
                 </div>
             </div>
+
+            <form method="POST" action="{{ route('company.billing.supervision.update') }}" class="rounded-lg border border-amber-800/40 bg-amber-950/10 p-4 space-y-3">
+                @csrf
+                <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+                    <div class="flex-1">
+                        <x-ui.label for="supervision_package_sku">Supervisión Pro</x-ui.label>
+                        <select id="supervision_package_sku" name="supervision_package_sku" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            <option value="">Sin Supervisión Pro</option>
+                            @foreach ($supervisionOptions as $value => $label)
+                                <option value="{{ $value }}" @selected(old('supervision_package_sku', $company->supervision_package_sku?->value) === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">Independiente del cupo Accesos. El cobro siguiente usa Accesos + Pro.</p>
+                    </div>
+                    <x-ui.button type="submit" variant="secondary" size="sm">Guardar Pro</x-ui.button>
+                </div>
+            </form>
 
             @if (! $hasAcceptance)
                 <p class="text-sm text-amber-300 rounded-lg border border-amber-800/50 bg-amber-900/20 px-3 py-2">

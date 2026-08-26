@@ -42,7 +42,7 @@ final class TenantIsolationTest extends TestCase
 
         $visibleCodes = Location::query()->pluck('code')->all();
 
-        $this->assertContains('PORT-01', $visibleCodes);
+        $this->assertContains('PA-01', $visibleCodes);
         $this->assertNotContains('PORT-B', $visibleCodes);
     }
 
@@ -56,7 +56,7 @@ final class TenantIsolationTest extends TestCase
         $response = $this->actingAs($admin)->get(route('company.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Resumen empresa');
-        $response->assertSee('Cartera y operación');
+        $response->assertSee('Mi empresa');
+        $response->assertSee('Cartera de clientes');
     }
 }

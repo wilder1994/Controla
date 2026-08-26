@@ -5,8 +5,8 @@ declare(strict_types=1);
 use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\DocumentController;
-use App\Http\Controllers\Platform\PricingController;
 use App\Http\Controllers\Platform\IdentityDocumentTypeController;
+use App\Http\Controllers\Platform\PricingController;
 use App\Http\Controllers\Platform\StructureTypeController;
 use App\Http\Controllers\Platform\UserController;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +82,10 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::put('/companies/{company}/package', [CompanyController::class, 'updatePackage'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.package.update');
+
+        Route::put('/companies/{company}/supervision-package', [CompanyController::class, 'updateSupervisionPackage'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.supervision-package.update');
 
         Route::get('/companies/{company}/profile', [CompanyController::class, 'editProfile'])
             ->middleware('permission:platform.companies.manage')

@@ -6,13 +6,17 @@ namespace App\Http\Controllers\Company;
 
 use App\Domain\Tenant\Data\CreateClientData;
 use App\Enums\PartyType;
+use App\Exports\ClientImportTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Company\PreviewClientImportRequest;
 use App\Http\Requests\Company\StoreClientRequest;
 use App\Http\Requests\Company\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\IdentityDocumentType;
 use App\Models\StructureType;
 use App\Repositories\ClientRepository;
+use App\Services\Company\CommitClientImportService;
+use App\Services\Company\PreviewClientImportService;
 use App\Services\Tenant\BuildClientExpedienteService;
 use App\Services\Tenant\CreateClientService;
 use App\Services\Tenant\UpdateClientService;
@@ -20,7 +24,11 @@ use App\Support\Company\CompanyOperateContext;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use InvalidArgumentException;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ClientController extends Controller
 {
@@ -29,6 +37,8 @@ final class ClientController extends Controller
         private readonly CreateClientService $createClientService,
         private readonly UpdateClientService $updateClientService,
         private readonly BuildClientExpedienteService $buildClientExpedienteService,
+        private readonly PreviewClientImportService $previewClientImportService,
+        private readonly CommitClientImportService $commitClientImportService,
     ) {}
 
     public function index(Request $request): View
@@ -64,6 +74,7 @@ final class ClientController extends Controller
                     15,
                     $search !== '' ? $search : null,
                     $status !== 'all' ? $status : null,
+                    $operateMode,
                 );
                 $metrics = $this->clientRepository->metricsForCompany($companyId);
 
@@ -104,6 +115,7 @@ final class ClientController extends Controller
                 15,
                 $search !== '' ? $search : null,
                 $status !== 'all' ? $status : null,
+                $operateMode,
             );
             $metrics = $this->clientRepository->metricsForCompany($companyId);
 
@@ -135,18 +147,79 @@ final class ClientController extends Controller
         abort(403);
     }
 
+    public function downloadTemplate(Request $request): BinaryFileResponse
+    {
+        $this->authorize('create', Client::class);
+
+        return Excel::download(new ClientImportTemplateExport, 'formato-clientes-controla.xlsx');
+    }
+
+    public function storeImportPreview(PreviewClientImportRequest $request): RedirectResponse
+    {
+        $companyId = $this->companyId($request);
+
+        try {
+            $preview = $request->file('file') !== null
+                ? $this->previewClientImportService->previewFile($request->file('file'), $companyId)
+                : $this->previewClientImportService->previewPaste((string) $request->input('paste'), $companyId);
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('company.clients.index')
+                ->with('error', $e->getMessage());
+        }
+
+        $this->previewClientImportService->put($companyId, (int) $request->user()->id, $preview);
+
+        return redirect()->route('company.clients.import.preview');
+    }
+
+    public function showImportPreview(Request $request): View|RedirectResponse
+    {
+        $this->authorize('create', Client::class);
+        $preview = $this->previewClientImportService->get($this->companyId($request), (int) $request->user()->id);
+
+        if ($preview === null) {
+            return redirect()
+                ->route('company.clients.index')
+                ->with('error', 'No hay una revisión vigente. Vuelve a cargar el archivo.');
+        }
+
+        return view('modules.company.clients.import-preview', compact('preview'));
+    }
+
+    public function commitImport(Request $request): RedirectResponse
+    {
+        $this->authorize('create', Client::class);
+        try {
+            $count = $this->commitClientImportService->execute(
+                $this->companyId($request),
+                (int) $request->user()->id,
+            );
+        } catch (ValidationException $e) {
+            return redirect()
+                ->route('company.clients.import.preview')
+                ->with('error', $e->validator->errors()->first() ?: 'No se pudo cargar.');
+        }
+
+        return redirect()
+            ->route('company.clients.index')
+            ->with('success', $count === 1 ? '1 cliente cargado.' : $count.' clientes cargados.');
+    }
+
+    public function cancelImport(Request $request): RedirectResponse
+    {
+        $this->authorize('create', Client::class);
+        $this->previewClientImportService->forget($this->companyId($request), (int) $request->user()->id);
+
+        return redirect()->route('company.clients.index');
+    }
+
     public function create(Request $request): View|RedirectResponse
     {
         $this->authorize('create', Client::class);
 
         $companyId = $this->companyId($request);
         $metrics = $this->clientRepository->metricsForCompany($companyId);
-
-        if ($metrics['is_quota_full']) {
-            return redirect()
-                ->route('company.clients.index')
-                ->with('error', 'Has alcanzado el cupo de clientes de tu paquete. Solicita ampliación a plataforma.');
-        }
 
         $documentTypes = IdentityDocumentType::optionsForSelect();
         $structureTypes = StructureType::optionsForSelect();
@@ -176,6 +249,8 @@ final class ClientController extends Controller
             latitude: $request->filled('latitude') ? (float) $request->validated('latitude') : null,
             longitude: $request->filled('longitude') ? (float) $request->validated('longitude') : null,
             isActive: $request->boolean('is_active', true),
+            hasAccess: $request->boolean('has_access'),
+            hasSupervision: $request->boolean('has_supervision'),
             serviceStartedAt: $request->validated('service_started_at'),
         ));
 
@@ -190,14 +265,24 @@ final class ClientController extends Controller
         $this->assertCompanyOwnership($request, $client);
 
         $client->load(['securityCompany']);
-        $expediente = $this->buildClientExpedienteService->execute($client);
+        $vista = $this->resolveClientVista($request, $client);
+        $expediente = $vista === 'accesos'
+            ? $this->buildClientExpedienteService->execute($client)
+            : null;
+
+        $proReviews = $vista === 'supervision'
+            ? $client->supervisorShiftReviews()->with('shift.user')->latest('recorded_at')->limit(20)->get()
+            : collect();
 
         return view('modules.company.clients.show', [
             'client' => $client,
+            'vista' => $vista,
             'expediente' => $expediente,
-            'canOperate' => $request->user()->can('operate', $client),
+            'proReviews' => $proReviews,
+            'canOperate' => $client->has_access && $request->user()->can('operate', $client),
             'canUpdate' => $request->user()->can('update', $client),
-            'canOperateClientPanel' => $request->user()->can('client.structures.manage')
+            'canOperateClientPanel' => $client->has_access
+                && $request->user()->can('client.structures.manage')
                 && $request->user()->can('operate', $client),
         ]);
     }
@@ -208,14 +293,17 @@ final class ClientController extends Controller
         $this->assertCompanyOwnership($request, $client);
 
         $client->load('securityCompany');
+        $metrics = $this->clientRepository->metricsForCompany((int) $client->security_company_id);
 
         return view('modules.company.clients.edit', [
             'client' => $client,
+            'metrics' => $metrics,
             'documentTypes' => IdentityDocumentType::optionsForSelect(),
             'structureTypes' => StructureType::optionsForSelect(),
-            'canOperate' => $request->user()->can('operate', $client),
+            'canOperate' => $client->has_access && $request->user()->can('operate', $client),
             'canUpdate' => true,
-            'canOperateClientPanel' => $request->user()->can('client.structures.manage')
+            'canOperateClientPanel' => $client->has_access
+                && $request->user()->can('client.structures.manage')
                 && $request->user()->can('operate', $client),
         ]);
     }
@@ -234,6 +322,7 @@ final class ClientController extends Controller
     public function activate(Request $request, Client $client): RedirectResponse
     {
         $this->authorize('operate', $client);
+        abort_unless($client->has_access, 403);
 
         $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
         CompanyOperateContext::enter((int) $client->id, CompanyOperateContext::MODE_PORTERIA);
@@ -246,6 +335,7 @@ final class ClientController extends Controller
     public function operateClient(Request $request, Client $client): RedirectResponse
     {
         $this->authorize('operate', $client);
+        abort_unless($client->has_access, 403);
         abort_unless($request->user()?->can('client.structures.manage'), 403);
 
         $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
@@ -269,6 +359,29 @@ final class ClientController extends Controller
         return redirect()
             ->route('company.clients.show', $client)
             ->with('success', 'Volviste al expediente del conjunto.');
+    }
+
+    private function resolveClientVista(Request $request, Client $client): string
+    {
+        $allowed = ['cliente'];
+        if ($client->has_access) {
+            $allowed[] = 'accesos';
+        }
+        if ($client->has_supervision) {
+            $allowed[] = 'supervision';
+        }
+
+        $vista = $request->string('vista')->toString();
+        if (in_array($vista, $allowed, true)) {
+            return $vista;
+        }
+
+        return match (true) {
+            $client->has_access && $client->has_supervision => 'cliente',
+            (bool) $client->has_access => 'accesos',
+            (bool) $client->has_supervision => 'supervision',
+            default => 'cliente',
+        };
     }
 
     private function companyId(Request $request): int

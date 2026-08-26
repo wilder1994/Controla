@@ -58,7 +58,7 @@
                 @can('company.dashboard')
                 <a href="{{ route('company.dashboard') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.dashboard') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
-                    <span>Resumen</span>
+                    <span>Mi empresa</span>
                 </a>
                 <a href="{{ route('company.billing.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.billing.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
@@ -71,6 +71,18 @@
                     <span>Clientes</span>
                 </a>
                 @endcan
+                @can('company.supervision.view')
+                <a href="{{ route('company.supervision.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.supervision.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Supervisión</span>
+                </a>
+                @endcan
+                @can('company.settings.manage')
+                <a href="{{ route('company.employees.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.employees.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Empleados</span>
+                </a>
+                @endcan
                 @can('company.users.assign')
                 <a href="{{ route('company.users.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.users.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
@@ -78,9 +90,17 @@
                 </a>
                 @endcan
                 @can('company.settings.manage')
+                @php
+                    $onAjustes = request()->routeIs('company.job-titles.*')
+                        || request()->routeIs('company.collaborator-types.*');
+                @endphp
                 <a href="{{ route('company.settings.edit') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.settings.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
-                    <span>Mi empresa</span>
+                    <span>Mis datos</span>
+                </a>
+                <a href="{{ route('company.job-titles.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onAjustes ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Ajustes</span>
                 </a>
                 @endcan
             </nav>
@@ -138,11 +158,9 @@
                                 {{ $actions }}
                             @elseif (request()->routeIs('company.clients.*') && ! request()->routeIs('company.clients.create'))
                                 @can('company.clients.manage')
-                                    @if (! $companyContext['is_quota_full'])
-                                        <x-ui.button :href="route('company.clients.create')" size="sm">
-                                            + Cliente
-                                        </x-ui.button>
-                                    @endif
+                                    <x-ui.button :href="route('company.clients.create')" size="sm">
+                                        + Cliente
+                                    </x-ui.button>
                                 @endcan
                             @endif
                         </div>
@@ -163,6 +181,13 @@
             </main>
         </div>
     </div>
+    @stack('modals')
+    @if (request()->routeIs('company.employees.index'))
+        @include('modules.company.employees.partials.import-modal')
+    @endif
+    @if (request()->routeIs('company.clients.index'))
+        @include('modules.company.clients.partials.import-modal')
+    @endif
     @stack('scripts')
 </body>
 </html>

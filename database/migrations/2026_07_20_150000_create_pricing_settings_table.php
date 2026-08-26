@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->decimal('unit_price_manual', 12, 2);
             $table->decimal('unit_price_hardware', 12, 2);
+            $table->decimal('unit_price_supervision', 12, 2)->default(0);
             $table->string('currency', 3)->default('COP');
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
@@ -23,6 +24,7 @@ return new class extends Migration
         DB::table('pricing_settings')->insert([
             'unit_price_manual' => config('tenancy.pricing.default_unit_manual', 80_000),
             'unit_price_hardware' => config('tenancy.pricing.default_unit_hardware', 150_000),
+            'unit_price_supervision' => config('tenancy.pricing.default_unit_supervision', 0),
             'currency' => config('tenancy.pricing.currency', 'COP'),
             'created_at' => now(),
             'updated_at' => now(),

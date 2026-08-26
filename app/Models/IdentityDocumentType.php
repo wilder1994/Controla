@@ -40,6 +40,24 @@ final class IdentityDocumentType extends Model
             ->all();
     }
 
+    public static function resolveActiveCode(string $raw): ?string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $found = self::query()
+            ->active()
+            ->where(function ($query) use ($raw): void {
+                $query->whereRaw('LOWER(code) = ?', [mb_strtolower($raw)])
+                    ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($raw)]);
+            })
+            ->first();
+
+        return $found?->code;
+    }
+
     public static function assertActiveCode(string $code): void
     {
         $exists = self::query()->where('code', $code)->where('is_active', true)->exists();

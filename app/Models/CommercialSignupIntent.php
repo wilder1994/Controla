@@ -8,6 +8,7 @@ use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\PartyType;
 use App\Enums\SignupIntentStatus;
+use App\Enums\SupervisionPackageSku;
 use Illuminate\Database\Eloquent\Model;
 
 class CommercialSignupIntent extends Model
@@ -16,6 +17,7 @@ class CommercialSignupIntent extends Model
         'token',
         'status',
         'package_sku',
+        'supervision_package_sku',
         'billing_cycle',
         'amount',
         'currency',
@@ -49,6 +51,7 @@ class CommercialSignupIntent extends Model
         return [
             'status' => SignupIntentStatus::class,
             'package_sku' => CompanyPackageSku::class,
+            'supervision_package_sku' => SupervisionPackageSku::class,
             'billing_cycle' => BillingCycle::class,
             'party_type' => PartyType::class,
             'latitude' => 'decimal:7',
@@ -81,6 +84,9 @@ class CommercialSignupIntent extends Model
 
     public function packageLabel(): string
     {
-        return $this->package_sku?->label() ?? '';
+        $access = $this->package_sku?->label() ?? '';
+        $pro = $this->supervision_package_sku?->label();
+
+        return $pro ? $access.' + '.$pro : $access;
     }
 }

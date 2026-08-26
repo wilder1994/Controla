@@ -11,7 +11,9 @@ use App\Enums\CompanyPackageSku;
 use App\Enums\PackageModality;
 use App\Enums\PartyType;
 use App\Enums\SubscriptionStatus;
+use App\Enums\SupervisionPackageSku;
 use App\Support\Tenancy\CompanyPackage;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -37,14 +39,20 @@ class SecurityCompany extends Model
         'package_size',
         'package_modality',
         'package_sku',
+        'supervision_package_sku',
         'package_price_monthly',
         'max_clients',
+        'max_supervision_clients',
+        'supervision_package_size',
         'billing_cycle',
         'billing_day',
         'unit_price_snapshot',
+        'supervision_unit_price_snapshot',
         'volume_discount_pct',
         'annual_discount_pct',
         'package_price_annual',
+        'supervision_package_price_monthly',
+        'supervision_package_price_annual',
         'package_starts_at',
         'package_ends_at',
         'grace_ends_at',
@@ -72,14 +80,20 @@ class SecurityCompany extends Model
             'package_modality' => PackageModality::class,
             'party_type' => PartyType::class,
             'package_sku' => CompanyPackageSku::class,
+            'supervision_package_sku' => SupervisionPackageSku::class,
             'package_price_monthly' => 'decimal:2',
             'max_clients' => 'integer',
+            'max_supervision_clients' => 'integer',
+            'supervision_package_size' => 'integer',
             'billing_cycle' => BillingCycle::class,
             'billing_day' => 'integer',
             'unit_price_snapshot' => 'decimal:2',
+            'supervision_unit_price_snapshot' => 'decimal:2',
             'volume_discount_pct' => 'decimal:4',
             'annual_discount_pct' => 'decimal:4',
             'package_price_annual' => 'decimal:2',
+            'supervision_package_price_monthly' => 'decimal:2',
+            'supervision_package_price_annual' => 'decimal:2',
             'package_starts_at' => 'datetime',
             'package_ends_at' => 'datetime',
             'grace_ends_at' => 'datetime',
@@ -94,9 +108,9 @@ class SecurityCompany extends Model
         ];
     }
 
-    public function isUpToDate(?\Carbon\CarbonImmutable $now = null): bool
+    public function isUpToDate(?CarbonImmutable $now = null): bool
     {
-        $now ??= \Carbon\CarbonImmutable::now();
+        $now ??= CarbonImmutable::now();
 
         if ($this->package_ends_at === null) {
             return false;
@@ -111,13 +125,13 @@ class SecurityCompany extends Model
     }
 
     /** Cancelación programada y el periodo aún no vence: se puede deshacer sin pago. */
-    public function canUndoCancellation(?\Carbon\CarbonImmutable $now = null): bool
+    public function canUndoCancellation(?CarbonImmutable $now = null): bool
     {
         return $this->hasPendingCancellation() && $this->isUpToDate($now);
     }
 
     /** Tras cancelar (o con flags de baja) y periodo vencido: reactivar exige pago. */
-    public function needsPaidReactivation(?\Carbon\CarbonImmutable $now = null): bool
+    public function needsPaidReactivation(?CarbonImmutable $now = null): bool
     {
         return $this->hasPendingCancellation() && ! $this->isUpToDate($now);
     }
@@ -135,6 +149,16 @@ class SecurityCompany extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function jobTitles(): HasMany
+    {
+        return $this->hasMany(CompanyJobTitle::class);
+    }
+
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class);
     }
 
     public function subscriptionAcceptances(): HasMany
@@ -193,23 +217,55 @@ class SecurityCompany extends Model
     {
         $max = (int) ($this->max_clients ?: 0);
 
-        return max(0, $max - $this->operationalClientsCount());
+        return max(0, $max - $this->accessSeatsCount());
+    }
+
+    public function supervisionSeatsRemaining(): int
+    {
+        $max = (int) ($this->max_supervision_clients ?: 0);
+
+        return max(0, $max - $this->supervisionSeatsCount());
     }
 
     public function operationalClientsCount(): int
     {
+        return $this->accessSeatsCount();
+    }
+
+    public function accessSeatsCount(?int $exceptClientId = null): int
+    {
         return $this->clients()
             ->where('lifecycle', ClientLifecycle::Active)
+            ->where('has_access', true)
+            ->when($exceptClientId !== null, fn ($q) => $q->whereKeyNot($exceptClientId))
             ->count();
+    }
+
+    public function supervisionSeatsCount(?int $exceptClientId = null): int
+    {
+        return $this->clients()
+            ->where('lifecycle', ClientLifecycle::Active)
+            ->where('has_supervision', true)
+            ->when($exceptClientId !== null, fn ($q) => $q->whereKeyNot($exceptClientId))
+            ->count();
+    }
+
+    public function hasSupervisionPackage(): bool
+    {
+        return (int) ($this->max_supervision_clients ?: 0) > 0;
     }
 
     public function contractedAmount(): float
     {
-        if ($this->billing_cycle === BillingCycle::Annual) {
-            return (float) ($this->package_price_annual ?? 0);
-        }
+        $access = $this->billing_cycle === BillingCycle::Annual
+            ? (float) ($this->package_price_annual ?? 0)
+            : (float) ($this->package_price_monthly ?? 0);
 
-        return (float) ($this->package_price_monthly ?? 0);
+        $pro = $this->billing_cycle === BillingCycle::Annual
+            ? (float) ($this->supervision_package_price_annual ?? 0)
+            : (float) ($this->supervision_package_price_monthly ?? 0);
+
+        return $access + $pro;
     }
 
     public function billingPeriodLabel(): string

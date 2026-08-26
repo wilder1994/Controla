@@ -1,8 +1,22 @@
 <?php
 
+use App\Http\Middleware\DisableTenantScoping;
+use App\Http\Middleware\EnsureClientAdmin;
+use App\Http\Middleware\EnsureCompanyUser;
+use App\Http\Middleware\EnsureOpenShift;
+use App\Http\Middleware\EnsurePasswordIsChanged;
+use App\Http\Middleware\EnsurePlatformAdmin;
+use App\Http\Middleware\EnsureSupervisionUnlocked;
+use App\Http\Middleware\EnsureSupervisorProApi;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\InitializeAccessTenancy;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,21 +27,22 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
-            'password.changed' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
-            'tenancy.access' => \App\Http\Middleware\InitializeAccessTenancy::class,
-            'tenant.unscoped' => \App\Http\Middleware\DisableTenantScoping::class,
-            'company' => \App\Http\Middleware\EnsureCompanyUser::class,
-            'client.admin' => \App\Http\Middleware\EnsureClientAdmin::class,
-            'platform.admin' => \App\Http\Middleware\EnsurePlatformAdmin::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'supervision.unlocked' => \App\Http\Middleware\EnsureSupervisionUnlocked::class,
-            'shift.open' => \App\Http\Middleware\EnsureOpenShift::class,
+            'active' => EnsureUserIsActive::class,
+            'password.changed' => EnsurePasswordIsChanged::class,
+            'tenancy.access' => InitializeAccessTenancy::class,
+            'tenant.unscoped' => DisableTenantScoping::class,
+            'company' => EnsureCompanyUser::class,
+            'client.admin' => EnsureClientAdmin::class,
+            'platform.admin' => EnsurePlatformAdmin::class,
+            'permission' => PermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'supervision.unlocked' => EnsureSupervisionUnlocked::class,
+            'shift.open' => EnsureOpenShift::class,
+            'supervisor.pro' => EnsureSupervisorProApi::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Sesión expirada. Recarga la página e intenta de nuevo.'], 419);
             }

@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Public;
 
 use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
-use App\Enums\PackageModality;
 use App\Enums\SignupIntentStatus;
+use App\Enums\SupervisionPackageSku;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\StoreSignupDataRequest;
 use App\Http\Requests\Public\StoreSignupLegalRequest;
@@ -33,6 +33,7 @@ final class SignupController extends Controller
     {
         $sku = CompanyPackageSku::tryFrom((string) $request->query('sku'));
         $cycle = BillingCycle::tryFrom((string) $request->query('cycle', 'monthly')) ?? BillingCycle::Monthly;
+        $sup = SupervisionPackageSku::tryFrom((string) $request->query('sup', ''));
 
         if ($sku === null) {
             return redirect()
@@ -40,7 +41,7 @@ final class SignupController extends Controller
                 ->with('warning', 'Selecciona un plan para continuar.');
         }
 
-        $intent = $this->startSignupIntentService->execute($sku, $cycle);
+        $intent = $this->startSignupIntentService->execute($sku, $cycle, $sup);
 
         return redirect()->route('signup.data', $intent);
     }

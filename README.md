@@ -33,8 +33,9 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
+| **Empleados** | Maestro + Excel (Formato / Carga masiva con preview). Sidebar propio; Ajustes = cargos/tipos | ✅ Implementada |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
+Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Pro**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
 
 ---
 
@@ -43,7 +44,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
 | **Plataforma** | `/admin` | `super-admin` | Dashboard, precios, empresas, documentos, **Ajustes** (tipos de estructura + tipos de documento) |
-| **Empresa** | `/company` | `company-admin` | Licencia, cupo, cartera; alta comercial de cliente + tipo de estructura; operar portería/censo con retorno |
+| **Empresa** | `/company` | `company-admin` | Command Center (**Mi empresa**), cartera, **Empleados**, **Mis datos**, **Ajustes** (cargos/tipos), usuarios, billing |
 | **Cliente** | `/client` | `client-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones |
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **puntos de acceso** (puertas/porterías, nombre libre) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
@@ -255,7 +256,7 @@ Documentación: [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md)
 | Panel | Rutas clave |
 |-------|-------------|
 | Plataforma | `/admin/users`, `/admin/companies/{id}/profile` |
-| Empresa | `/company/users`, `/company/settings` |
+| Empresa | `/company/users`, `/company/settings` (Mis datos), `/company/employees` |
 | Conjunto | `/client/users` (portal web; APP en `/client/app-users`) |
 
 Tras desplegar permisos nuevos: `php artisan db:seed --class=RoleAndPermissionSeeder`
@@ -291,13 +292,14 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 
 ### Paquetes comerciales (empresa)
 
-La empresa contrata un **cupo de conjuntos** (1 / 5 / 10 / 50 / 100) × **modalidad** (sin hardware / con hardware) × **ciclo** (mensual / anual).
+La empresa contrata **Accesos** (cupo de sitios a operar portería × modalidad × ciclo) y, aparte, **Supervisión Pro** (cupo de sitios GPS). Las fichas de cliente son ilimitadas; el cupo aplica al marcar líneas. Detalle: [`docs/PAQUETES-ACCESOS-Y-SUPERVISION.md`](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md).
 
 | Concepto | Regla |
 |----------|--------|
-| Precios base | Solo el **súper admin** define 2 unitarios (manual y hardware) en `/admin/pricing` |
+| Precios base | Súper admin define 3 unitarios (manual, hardware, Pro) en `/admin/pricing` |
 | Matriz | Se calcula sola: descuento por volumen + descuento anual (~17%) |
-| Cupo | Máximo de conjuntos (`clients`) que puede crear la empresa |
+| Cupo Accesos | `has_access` en clientes activos (`max_clients`) |
+| Cupo Pro | `has_supervision` (`max_supervision_clients`); 0 hasta asignar |
 | Portafolio del conjunto | **Ilimitado** (unidades, personas, mascotas, vehículos) |
 | Snapshot | Al asignar paquete se congelan precio, descuentos y vigencia en la empresa |
 
@@ -384,25 +386,33 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos).
+
 | Ruta | Función |
 |------|---------|
-| `GET /company/dashboard` | **Command Center** (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
+| `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de conjuntos (acción única: **Ver**) |
-| `GET /company/clients/{id}` | **Expediente del conjunto**: KPIs, charts, Operar portería / Operar cliente / Editar |
-| `POST /company/clients/{id}/activate` | Operar portería: tenant + `CompanyOperateContext` → `/access` |
-| `POST /company/clients/{id}/operate-client` | Operar cliente: tenant + contexto → `/client` |
-| `POST /company/operate/exit` | Salir de operación → expediente del conjunto (banner ámbar) |
-| `GET /company/porteria` | Atajo: redirige a cartera o al expediente del único conjunto operable |
-| `POST /company/clients` | Alta de cliente (bloqueada si cupo lleno) |
-| `GET /company/billing` | **Facturación** unificada: membresía + historial + pago **solo online** |
+| `GET /company/clients/{id}` | Ficha: tabs Cliente / Accesos / Supervisión |
+| `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas) |
+| `GET /company/clients/template` | Formato Excel de clientes |
+| `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
+| `GET /company/supervision` | Mapa GPS en vivo + historial de rutas Pro |
+| `GET /company/billing` | **Facturación** unificada: membresía Accesos + Pro, historial, pago online |
+| `POST /company/billing/supervision` | Contratar / cambiar Supervisión Pro (self-serve) |
 | `POST /company/billing/checkout` | Checkout online (intent renew/anticipate/reactivate) |
 | `POST /company/billing/membership/cancel` | Cancelar membresía (acceso hasta corte) |
 | `POST /company/billing/membership/undo-cancel` | Deshacer cancelación sin pago |
 | `POST /company/billing/package/schedule` | Programar cambio de plan (cobra online, aplica al corte) |
 | `GET /company/users` | Usuarios de la empresa y conjuntos asignados |
 | `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped |
-| `GET /company/settings` | Perfil legal y ubicación de la empresa |
+| `GET /company/settings` | **Mis datos**: perfil legal y ubicación (sin pestañas) |
 | `PUT /company/settings` | Guardar perfil empresa |
+| `GET /company/employees` | **Empleados**: maestro, Formato Excel, carga masiva (preview → aceptar) |
+| `GET /company/employees/template` | Descarga plantilla (hojas Empleados + Instrucciones) |
+| `GET /company/job-titles` | **Ajustes → Cargos**: catálogo por empresa |
+| `GET /company/collaborator-types` | **Ajustes → Tipos**: catálogo por empresa |
+
+Detalle empleados: [`docs/EMPLEADOS-Y-CARGOS.md`](docs/EMPLEADOS-Y-CARGOS.md).
 
 `/company/clients/select` redirige a `/company/porteria` (vista eliminada).
 
@@ -509,7 +519,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 | Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
 | Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` · expediente conjunto: `BuildClientExpedienteService` |
 | Contexto | `CompanyLayoutComposer` → `companyContext` + `supportMode`; `OperateReturnLayoutComposer` → banner en access/client |
-| Vistas | `company/dashboard`, `company/clients/*`, `company/billing`, `company/users/*`, `company/settings` |
+| Vistas | `company/dashboard` (Mi empresa), `company/clients/*`, `company/billing`, `company/users/*`, `company/settings` (Mis datos), `company/employees/*`, `company/job-titles`, `company/collaborator-types` |
 
 Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `platform` (violet en `/admin`). Tamaños: `sm`, `md`.
 

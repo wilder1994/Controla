@@ -28,6 +28,7 @@ class User extends Authenticatable
         'must_change_password',
         'area_key',
         'security_company_id',
+        'employee_id',
         'primary_client_id',
         'supervisor_code',
     ];
@@ -52,6 +53,11 @@ class User extends Authenticatable
     public function securityCompany(): BelongsTo
     {
         return $this->belongsTo(SecurityCompany::class);
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
     }
 
     public function primaryClient(): BelongsTo

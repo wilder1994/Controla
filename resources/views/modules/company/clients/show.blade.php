@@ -1,13 +1,83 @@
 <x-company-layout :title="$client->name">
     @include('modules.company.clients.partials.nav-slots', [
         'client' => $client,
-        'clientNavActive' => 'resumen',
+        'clientNavActive' => 'cliente',
+        'vista' => $vista ?? 'cliente',
         'canOperate' => $canOperate,
         'canOperateClientPanel' => $canOperateClientPanel,
         'canUpdate' => $canUpdate,
         'companyContext' => $companyContext ?? ['is_quota_full' => true],
     ])
 
+    @if (($vista ?? 'cliente') === 'cliente')
+        <div class="max-w-3xl space-y-4">
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
+                <h3 class="text-sm font-semibold text-white">Ficha comercial</h3>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div>
+                        <dt class="text-xs text-slate-500">Nombre comercial</dt>
+                        <dd class="text-white font-medium">{{ $client->name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-slate-500">Razón social</dt>
+                        <dd class="text-slate-200">{{ $client->legal_name ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-slate-500">Documento</dt>
+                        <dd class="text-slate-200">{{ $client->document_type }} {{ $client->tax_id }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-slate-500">Contacto</dt>
+                        <dd class="text-slate-200">{{ $client->email ?: '—' }} · {{ $client->phone ?: '—' }}</dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-xs text-slate-500">Dirección</dt>
+                        <dd class="text-slate-200">{{ $client->address ?: '—' }}{{ $client->city ? ' · '.$client->city : '' }}</dd>
+                    </div>
+                </dl>
+            </section>
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-2">
+                <h3 class="text-sm font-semibold text-white">Líneas de servicio</h3>
+                <p class="text-sm text-slate-400">
+                    @if ($client->has_access)
+                        Accesos activo (portería y censo).
+                    @else
+                        Sin Accesos: no se opera portería.
+                    @endif
+                    @if ($client->has_supervision)
+                        Supervisión Pro activa: la revista se firma en la app y llena la minuta del puesto.
+                    @else
+                        Sin Supervisión Pro.
+                    @endif
+                </p>
+                @if ($client->isCatalogOnly())
+                    <p class="text-xs text-slate-500">Esta ficha no consume cupo. Activa Accesos o Pro en Editar cuando tengas asientos.</p>
+                @endif
+            </section>
+        </div>
+    @elseif (($vista ?? '') === 'supervision')
+        <div class="max-w-3xl space-y-4">
+            <section class="rounded-lg border border-amber-800/40 bg-amber-950/10 p-4">
+                <h3 class="text-sm font-semibold text-white">Supervisión Pro</h3>
+                <p class="mt-1 text-sm text-slate-400">
+                    La revista de este sitio se hace en la app Pro. No se vuelve a firmar en portería: Pro llena la misma minuta.
+                </p>
+            </section>
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4">
+                <h3 class="text-sm font-semibold text-white">Revistas recientes</h3>
+                <ul class="mt-3 space-y-2">
+                    @forelse ($proReviews as $review)
+                        <li class="rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm">
+                            <p class="text-slate-200">{{ $review->shift?->user?->name ?? 'Supervisor' }}</p>
+                            <p class="text-xs text-slate-500">{{ $review->recorded_at?->format('d/m/Y H:i') }} · {{ $review->notes ?: 'Sin notas' }}</p>
+                        </li>
+                    @empty
+                        <li class="text-sm text-slate-500">Aún no hay revistas Pro en este sitio.</li>
+                    @endforelse
+                </ul>
+            </section>
+        </div>
+    @elseif (($vista ?? '') === 'accesos' && $expediente)
     <div class="space-y-4">
         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
@@ -208,13 +278,18 @@
             </div>
         </section>
     </div>
+    @endif
 
     @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
         <script>
             (function () {
-                const chart = @json($expediente['chart']);
-                const presence = @json($expediente['presence_chart']);
+                const expediente = @json($expediente);
+                if (! expediente) {
+                    return;
+                }
+                const chart = expediente.chart;
+                const presence = expediente.presence_chart;
                 const defaults = {
                     responsive: true,
                     maintainAspectRatio: false,

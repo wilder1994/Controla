@@ -18,9 +18,11 @@ final class ClientRepository
         int $perPage = 15,
         ?string $search = null,
         ?string $status = null,
+        bool $accessOnly = true,
     ): LengthAwarePaginator {
         $query = Client::query()
             ->whereIn('id', $user->assignedClientIds())
+            ->when($accessOnly, fn ($q) => $q->where('has_access', true))
             ->with(['securityCompany'])
             ->withCount('assignments');
 
@@ -52,9 +54,11 @@ final class ClientRepository
         int $perPage = 15,
         ?string $search = null,
         ?string $status = null,
+        bool $accessOnly = false,
     ): LengthAwarePaginator {
         $query = Client::query()
             ->where('security_company_id', $companyId)
+            ->when($accessOnly, fn ($q) => $q->where('has_access', true))
             ->with(['securityCompany'])
             ->withCount('assignments');
 
@@ -145,7 +149,10 @@ final class ClientRepository
         $archived = (clone $base)->where('lifecycle', ClientLifecycle::ArchivedCompany)->count();
         $released = (clone $base)->where('lifecycle', ClientLifecycle::Released)->count();
         $maxClients = (int) ($company->max_clients ?: 0);
-        $usageRatio = $maxClients > 0 ? round(($total / $maxClients) * 100, 1) : 0.0;
+        $maxSupervision = (int) ($company->max_supervision_clients ?: 0);
+        $accessUsed = $company->accessSeatsCount();
+        $supervisionUsed = $company->supervisionSeatsCount();
+        $usageRatio = $maxClients > 0 ? round(($accessUsed / $maxClients) * 100, 1) : 0.0;
         $features = $company->package_modality?->features() ?? [];
         $featureLabels = $company->package_modality?->featureLabels() ?? [];
         $contractedAmount = $company->contractedAmount();
@@ -164,7 +171,13 @@ final class ClientRepository
             'archived' => $archived,
             'released' => $released,
             'max_clients' => $maxClients,
+            'access_used' => $accessUsed,
             'clients_remaining' => $company->clientsRemaining(),
+            'max_supervision_clients' => $maxSupervision,
+            'supervision_used' => $supervisionUsed,
+            'supervision_remaining' => $company->supervisionSeatsRemaining(),
+            'supervision_package_sku' => $company->supervision_package_sku?->value,
+            'supervision_package_label' => $company->supervision_package_sku?->label(),
             'usage_ratio' => $usageRatio,
             'package_sku' => $company->package_sku?->value,
             'package_label' => $company->packageLabel(),
@@ -187,7 +200,8 @@ final class ClientRepository
             'days_until_renewal' => $daysUntilRenewal,
             'is_renewal_soon' => $daysUntilRenewal !== null && $daysUntilRenewal >= 0 && $daysUntilRenewal <= 30,
             'is_expired' => $daysUntilRenewal !== null && $daysUntilRenewal < 0,
-            'is_quota_full' => $maxClients > 0 && $total >= $maxClients,
+            'is_quota_full' => $maxClients > 0 && $accessUsed >= $maxClients,
+            'is_supervision_quota_full' => $maxSupervision > 0 && $supervisionUsed >= $maxSupervision,
             'is_hardware' => ($company->package_modality?->value ?? 'manual') === 'hardware',
         ];
     }

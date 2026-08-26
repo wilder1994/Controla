@@ -6,6 +6,7 @@
     @include('modules.company.clients.partials.nav-slots', [
         'client' => $client,
         'clientNavActive' => 'editar',
+        'vista' => 'cliente',
         'canOperate' => $canOperate,
         'canOperateClientPanel' => $canOperateClientPanel,
         'canUpdate' => $canUpdate,
@@ -16,6 +17,12 @@
         <form method="POST" action="{{ route('company.clients.update', $client) }}" class="space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             @csrf
             @method('PUT')
+
+            @include('modules.company.clients.partials.service-lines', [
+                'metrics' => $metrics,
+                'accessDefault' => $client->has_access,
+                'proDefault' => $client->has_supervision,
+            ])
 
             <div>
                 <x-ui.label for="party_type">Tipo de cliente</x-ui.label>

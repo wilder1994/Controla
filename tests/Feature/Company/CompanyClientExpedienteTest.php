@@ -38,7 +38,8 @@ final class CompanyClientExpedienteTest extends TestCase
         $response = $this->actingAs($user)->get(route('company.clients.show', $client));
 
         $response->assertOk();
-        $response->assertSee('Resumen');
+        $response->assertSee('Accesos');
+        $response->assertSee('Cliente');
         $response->assertSee('Operar portería');
         $response->assertSee('Operar cliente');
         $response->assertSee('Editar');

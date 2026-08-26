@@ -54,4 +54,26 @@ final class CompanyBillingTest extends TestCase
         $company->refresh();
         $this->assertFalse($company->hasPendingCancellation());
     }
+
+    public function test_company_can_assign_supervision_pro_from_billing(): void
+    {
+        $this->seedWithPilot();
+
+        $companyUser = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $this->actingAs($companyUser)
+            ->get(route('company.billing.index'))
+            ->assertOk()
+            ->assertSee('Supervisión Pro');
+
+        $this->actingAs($companyUser)
+            ->post(route('company.billing.supervision.update'), [
+                'supervision_package_sku' => 'sup_5',
+            ])
+            ->assertRedirect(route('company.billing.index'));
+
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
+        $this->assertSame('sup_5', $company->supervision_package_sku?->value);
+        $this->assertSame(5, (int) $company->max_supervision_clients);
+    }
 }

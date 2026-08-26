@@ -22,6 +22,52 @@ final class PriceCalculator
             ? (float) $settings->unit_price_hardware
             : (float) $settings->unit_price_manual;
 
+        return $this->quoteFromUnit($unitPrice, $size, $cycle, $modality, $settings);
+    }
+
+    public function quoteSupervision(
+        int $size,
+        BillingCycle $cycle,
+        ?PricingSettings $settings = null,
+    ): PriceQuote {
+        $settings ??= PricingSettings::current();
+
+        return $this->quoteFromUnit(
+            (float) $settings->unit_price_supervision,
+            $size,
+            $cycle,
+            PackageModality::Manual,
+            $settings,
+        );
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function matrixSupervision(BillingCycle $cycle, ?PricingSettings $settings = null): array
+    {
+        $settings ??= PricingSettings::current();
+        $sizes = config('tenancy.package_sizes', [1, 5, 10, 50, 100]);
+        $rows = [];
+
+        foreach ($sizes as $size) {
+            $size = (int) $size;
+            $quote = $this->quoteSupervision($size, $cycle, $settings);
+            $rows[] = [
+                'size' => $size,
+                'volume_discount_pct' => $quote->volumeDiscountPct,
+                'quote' => $quote->toArray(),
+            ];
+        }
+
+        return $rows;
+    }
+
+    private function quoteFromUnit(
+        float $unitPrice,
+        int $size,
+        BillingCycle $cycle,
+        PackageModality $modality,
+        PricingSettings $settings,
+    ): PriceQuote {
         $volumeDiscount = $this->volumeDiscountFor($size);
         $annualDiscount = (float) config('tenancy.pricing.annual_discount', 0.17);
 

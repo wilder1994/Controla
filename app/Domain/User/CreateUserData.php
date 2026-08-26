@@ -17,5 +17,6 @@ final readonly class CreateUserData
         public bool $isActive = true,
         public ?string $jobTitle = null,
         public ?string $avatarPath = null,
+        public ?int $employeeId = null,
     ) {}
 }

@@ -53,12 +53,25 @@
                             <x-ui.field-error :messages="$errors->get('unit_price_hardware')" />
                         </div>
 
+                        <div>
+                            <x-ui.label for="unit_price_supervision">Unitario · Supervisión Pro</x-ui.label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                                <x-ui.input accent="platform" type="number" step="1000" min="0" name="unit_price_supervision" id="unit_price_supervision"
+                                       :value="old('unit_price_supervision', (int) $settings->unit_price_supervision)"
+                                       class="pl-7" />
+                            </div>
+                            <p class="mt-1 text-xs text-slate-600">COP por sitio / mes · sin hardware</p>
+                            <x-ui.field-error :messages="$errors->get('unit_price_supervision')" />
+                        </div>
+
                         <x-ui.button type="submit" variant="platform" size="md" class="w-full">Guardar y recalcular matriz</x-ui.button>
                     </form>
                 @else
                     <div class="mt-4 space-y-2 text-sm">
                         <p class="text-slate-400">Manual: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_manual) }}</span></p>
                         <p class="text-slate-400">Hardware: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_hardware) }}</span></p>
+                        <p class="text-slate-400">Supervisión Pro: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_supervision) }}</span></p>
                     </div>
                 @endcan
 
@@ -132,5 +145,44 @@
                 </div>
             </section>
         </div>
+
+        <section class="rounded-lg border border-slate-800 bg-slate-900/80 flex flex-col min-h-0">
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+                <div>
+                    <h3 class="text-sm font-semibold text-white">Supervisión Pro · {{ $cycle->label() }}</h3>
+                    <p class="text-xs text-slate-600">Misma matriz de volumen. Empresa con Accesos: Pro = 0 hasta asignar sitios.</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-950/60 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-4 py-2 text-left font-medium">Sitios</th>
+                            <th class="px-4 py-2 text-left font-medium">Desc. vol.</th>
+                            <th class="px-4 py-2 text-right font-medium">Paquete</th>
+                            <th class="px-4 py-2 text-right font-medium">$/sitio eff.</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        @foreach ($supervisionMatrix as $row)
+                            @php
+                                $cell = $cycle->value === 'annual' ? 'price_annual' : 'price_monthly';
+                                $period = $cycle->value === 'annual' ? '/año' : '/mes';
+                            @endphp
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="px-4 py-2.5 font-medium text-slate-200">{{ $row['size'] }}</td>
+                                <td class="px-4 py-2.5 text-slate-400">−{{ number_format($row['volume_discount_pct'] * 100, 0) }}%</td>
+                                <td class="px-4 py-2.5 text-right font-medium text-amber-200 tabular-nums">
+                                    {{ $fmt((float) $row['quote'][$cell]) }}{{ $period }}
+                                </td>
+                                <td class="px-4 py-2.5 text-right text-slate-500 tabular-nums">
+                                    {{ $fmt((float) $row['quote']['effective_unit_monthly']) }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </x-admin-layout>

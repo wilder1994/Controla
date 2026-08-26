@@ -188,6 +188,24 @@
                 </div>
 
                 @can('platform.companies.manage')
+                    <form method="POST" action="{{ route('admin.companies.supervision-package.update', $company) }}" class="rounded-lg border border-amber-800/40 bg-amber-950/10 p-4 space-y-3">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <p class="text-xs text-slate-500">Supervisión Pro (sitios GPS)</p>
+                            <p class="mt-1 text-sm font-medium text-white">{{ $company->supervision_package_sku?->label() ?? 'Sin Pro · 0 hasta asignar' }}</p>
+                        </div>
+                        <select name="supervision_package_sku" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            <option value="">Sin Supervisión Pro</option>
+                            @foreach (\App\Enums\SupervisionPackageSku::options() as $value => $label)
+                                <option value="{{ $value }}" @selected(old('supervision_package_sku', $company->supervision_package_sku?->value) === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <x-ui.button type="submit" variant="secondary" size="sm">Asignar Pro</x-ui.button>
+                    </form>
+                @endcan
+
+                @can('platform.companies.manage')
                     <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800">
                         <x-ui.button type="button" variant="secondary" size="md" @click="payOpen = true">
                             Pagar factura

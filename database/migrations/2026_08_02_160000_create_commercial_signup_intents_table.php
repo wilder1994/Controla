@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('token')->unique();
             $table->string('status', 30)->default('draft');
             $table->string('package_sku', 40);
+            $table->string('supervision_package_sku', 40)->nullable();
             $table->string('billing_cycle', 20);
             $table->decimal('amount', 12, 2);
             $table->string('currency', 3)->default('COP');

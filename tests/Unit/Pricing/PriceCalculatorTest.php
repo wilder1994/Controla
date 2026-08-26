@@ -32,4 +32,20 @@ final class PriceCalculatorTest extends TestCase
         $this->assertGreaterThan(0, $annual->annualSavings);
         $this->assertEqualsWithDelta($monthly->priceMonthly * 12 * 0.83, $annual->priceAnnual, 1.0);
     }
+
+    public function test_supervision_matrix_uses_same_volume_discounts(): void
+    {
+        PricingSettings::query()->create([
+            'unit_price_manual' => 100_000,
+            'unit_price_hardware' => 200_000,
+            'unit_price_supervision' => 50_000,
+            'currency' => 'COP',
+        ]);
+
+        $calculator = app(PriceCalculator::class);
+        $quote = $calculator->quoteSupervision(10, BillingCycle::Monthly);
+
+        $this->assertSame(0.15, $quote->volumeDiscountPct);
+        $this->assertEquals(425_000.0, $quote->priceMonthly);
+    }
 }

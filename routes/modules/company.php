@@ -5,9 +5,13 @@ declare(strict_types=1);
 use App\Http\Controllers\Company\BillingCheckoutController;
 use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\Company\ClientController;
+use App\Http\Controllers\Company\CollaboratorTypeController;
 use App\Http\Controllers\Company\DashboardController;
+use App\Http\Controllers\Company\EmployeeController;
+use App\Http\Controllers\Company\JobTitleController;
 use App\Http\Controllers\Company\PorteriaController;
 use App\Http\Controllers\Company\SettingsController;
+use App\Http\Controllers\Company\SupervisionMapController;
 use App\Http\Controllers\Company\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,12 +43,49 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             ->middleware('permission:company.dashboard')
             ->name('billing.package.schedule');
 
+        Route::post('/billing/supervision', [BillingController::class, 'updateSupervisionPackage'])
+            ->middleware('permission:company.dashboard')
+            ->name('billing.supervision.update');
+
         Route::get('/settings', [SettingsController::class, 'edit'])
             ->middleware('permission:company.settings.manage')
             ->name('settings.edit');
         Route::put('/settings', [SettingsController::class, 'update'])
             ->middleware('permission:company.settings.manage')
             ->name('settings.update');
+
+        Route::middleware('permission:company.settings.manage')->group(function () {
+            Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
+            Route::get('/employees/template', [EmployeeController::class, 'downloadTemplate'])->name('employees.template');
+            Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+            Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+            Route::post('/employees/import/preview', [EmployeeController::class, 'storeImportPreview'])->name('employees.import.preview.store');
+            Route::get('/employees/import/preview', [EmployeeController::class, 'showImportPreview'])->name('employees.import.preview');
+            Route::post('/employees/import/commit', [EmployeeController::class, 'commitImport'])->name('employees.import.commit');
+            Route::post('/employees/import/cancel', [EmployeeController::class, 'cancelImport'])->name('employees.import.cancel');
+            Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
+            Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+            Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
+            Route::post('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
+            Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
+            Route::post('/employees/{employee}/access', [EmployeeController::class, 'grantAccess'])
+                ->middleware('permission:company.users.assign')
+                ->name('employees.access');
+
+            Route::get('/job-titles', [JobTitleController::class, 'index'])->name('job-titles.index');
+            Route::post('/job-titles', [JobTitleController::class, 'store'])->name('job-titles.store');
+            Route::put('/job-titles/{jobTitle}', [JobTitleController::class, 'update'])->name('job-titles.update');
+            Route::delete('/job-titles/{jobTitle}', [JobTitleController::class, 'destroy'])->name('job-titles.destroy');
+
+            Route::get('/collaborator-types', [CollaboratorTypeController::class, 'index'])->name('collaborator-types.index');
+            Route::post('/collaborator-types', [CollaboratorTypeController::class, 'store'])->name('collaborator-types.store');
+            Route::put('/collaborator-types/{collaboratorType}', [CollaboratorTypeController::class, 'update'])->name('collaborator-types.update');
+            Route::delete('/collaborator-types/{collaboratorType}', [CollaboratorTypeController::class, 'destroy'])->name('collaborator-types.destroy');
+        });
+
+        Route::get('/supervision', [SupervisionMapController::class, 'index'])
+            ->middleware('permission:company.supervision.view')
+            ->name('supervision.index');
 
         Route::get('/users', [UserController::class, 'index'])
             ->middleware('permission:company.users.assign')
@@ -76,6 +117,22 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
 
         Route::post('/operate/exit', [ClientController::class, 'exitOperate'])
             ->name('operate.exit');
+
+        Route::get('/clients/template', [ClientController::class, 'downloadTemplate'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.template');
+        Route::post('/clients/import/preview', [ClientController::class, 'storeImportPreview'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.import.preview.store');
+        Route::get('/clients/import/preview', [ClientController::class, 'showImportPreview'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.import.preview');
+        Route::post('/clients/import/commit', [ClientController::class, 'commitImport'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.import.commit');
+        Route::post('/clients/import/cancel', [ClientController::class, 'cancelImport'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.import.cancel');
 
         Route::resource('clients', ClientController::class);
     });

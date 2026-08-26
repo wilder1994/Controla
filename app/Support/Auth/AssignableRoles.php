@@ -32,6 +32,17 @@ final class AssignableRoles
         ];
     }
 
+    /** Acceso desde ficha de empleado (no incluye admin de conjunto). */
+    /** @return list<string> */
+    public static function forEmployeeAccess(): array
+    {
+        return [
+            'company-admin',
+            'supervisor',
+            'guardia',
+        ];
+    }
+
     /** @return list<string> */
     public static function forClient(): array
     {

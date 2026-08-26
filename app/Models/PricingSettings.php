@@ -12,6 +12,7 @@ class PricingSettings extends Model
     protected $fillable = [
         'unit_price_manual',
         'unit_price_hardware',
+        'unit_price_supervision',
         'currency',
         'updated_by',
     ];
@@ -21,6 +22,7 @@ class PricingSettings extends Model
         return [
             'unit_price_manual' => 'decimal:2',
             'unit_price_hardware' => 'decimal:2',
+            'unit_price_supervision' => 'decimal:2',
             'updated_by' => 'integer',
         ];
     }
@@ -41,6 +43,7 @@ class PricingSettings extends Model
         return self::query()->create([
             'unit_price_manual' => (float) config('tenancy.pricing.default_unit_manual', 80_000),
             'unit_price_hardware' => (float) config('tenancy.pricing.default_unit_hardware', 150_000),
+            'unit_price_supervision' => (float) config('tenancy.pricing.default_unit_supervision', 0),
             'currency' => (string) config('tenancy.pricing.currency', 'COP'),
         ]);
     }

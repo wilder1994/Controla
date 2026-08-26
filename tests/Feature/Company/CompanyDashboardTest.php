@@ -22,13 +22,14 @@ final class CompanyDashboardTest extends TestCase
         $response = $this->actingAs($admin)->get(route('company.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Resumen empresa');
+        $response->assertSee('Mi empresa');
         $response->assertSee('Mapa de conjuntos');
         $response->assertSee('Cartera de clientes');
         $response->assertSee('Plan activo');
         $response->assertSee('Activos');
         $response->assertSee('Archivados');
-        $response->assertSee('Disponibles');
+        $response->assertSee('Disponibles Accesos');
+        $response->assertSee('Disponibles Pro');
         $response->assertSee('Resumen de alertas y registros (hoy)');
         $response->assertSee('Novedades');
         $response->assertSee('Correspondencia');

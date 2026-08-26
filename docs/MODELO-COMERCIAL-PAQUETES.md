@@ -12,6 +12,8 @@ Documentación de la implementación de pricing B2B para empresas de seguridad (
 
 El modelo **reemplaza** el pricing estilo Axesa por unidades (`plan_tier` / `max_structures` en `clients`). Esas columnas siguen en BD por compatibilidad pero **no limitan** el censo.
 
+**Actualización ago 2026:** el cupo de Accesos ya no bloquea el alta de fichas. Ver [`PAQUETES-ACCESOS-Y-SUPERVISION.md`](PAQUETES-ACCESOS-Y-SUPERVISION.md).
+
 ---
 
 ## Variables comerciales

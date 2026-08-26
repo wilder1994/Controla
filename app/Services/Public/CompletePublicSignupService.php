@@ -17,8 +17,8 @@ use App\Models\SubscriptionAcceptance;
 use App\Models\User;
 use App\Services\Platform\IssueDemoInvoiceService;
 use App\Services\Platform\RecordLifecycleEvidenceService;
-use App\Services\Platform\RegisterCommercialPaymentService;
 use App\Services\Tenant\AssignCompanyPackageService;
+use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -27,6 +27,7 @@ final class CompletePublicSignupService
 {
     public function __construct(
         private readonly AssignCompanyPackageService $assignPackageService,
+        private readonly AssignCompanySupervisionPackageService $assignSupervisionPackageService,
         private readonly RecordLifecycleEvidenceService $evidenceService,
         private readonly IssueDemoInvoiceService $issueDemoInvoiceService,
     ) {}
@@ -69,6 +70,10 @@ final class CompletePublicSignupService
                 $intent->billing_cycle,
                 $now,
             );
+
+            if ($intent->supervision_package_sku !== null) {
+                $this->assignSupervisionPackageService->execute($company, $intent->supervision_package_sku);
+            }
 
             $user = User::query()->create([
                 'name' => $intent->admin_name ?? $intent->legal_name,
