@@ -2,11 +2,11 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de conjuntos.
 
-**Última actualización:** 25 agosto 2026
+**Última actualización:** 26 agosto 2026
 
-La **ficha de empleado** (maestro, Excel) vive en el sidebar **Empleados**. Cargos y tipos: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md). Este documento cubre **usuarios** (`users`): login y roles.
+La **ficha de empleado** (maestro, Excel) vive en el sidebar **Empleados**. Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
-Sidebar empresa: **Mi empresa** (dashboard) · **Empleados** · **Mis datos** (este perfil) · **Ajustes** (cargos/tipos).
+Sidebar empresa: **Mi empresa** (dashboard) · **Empleados** · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional).
 
 ---
 
@@ -17,7 +17,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 | Nombre de producto | Rol Spatie (`users`) | Pertenece a | Resumen |
 |--------------------|----------------------|-------------|---------|
 | **Vigilante** | `guardia` | Empresa | Opera un **puesto/cliente** a la vez. Login usuario+contraseña = control de quién está de turno. |
-| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre puestos. Firma revista en puesto (código 6 dígitos) si el sitio solo tiene Accesos. Con Supervisión Pro en ese sitio, firma en la app Pro (llena la misma minuta). Login API: `/api/supervision/login`. |
+| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre puestos. Firma revista en puesto (código 6 dígitos) si el sitio solo tiene Accesos. Con Supervisión en ese sitio, firma en la app de campo (llena la misma minuta). Login API: `/api/supervision/login`. |
 | **Administrador conjunto** | `client-admin` | Cliente (conjunto) | Administra el conjunto. **No** es supervisor ni vigilante. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
@@ -49,8 +49,9 @@ Slug técnico: `guardia`. Label UI: **Vigilante**.
 1. Pertenece a la **empresa** (`security_company_id`). **No** requiere asignación fija a un conjunto.
 2. Al crear el usuario se genera un **`supervisor_code`**: numérico, **6 dígitos**, **permanente** hasta regeneración deliberada.
 3. El código es único **por empresa**.
-4. **Revista:** si el sitio solo tiene Accesos, firma en la sesión del vigilante (código). Si el sitio tiene Pro, la revista se hace en la app; no se vuelve a firmar en puesto.
-5. No confundir con admin del conjunto ni con el vigilante de turno.
+4. **Revista:** si el sitio solo tiene Accesos, firma en la sesión del vigilante (código). Si el sitio tiene Supervisión, la revista se hace en la app de campo; no se vuelve a firmar en puesto.
+5. Con Supervisión: rito de turno (catálogo de turno/zona, EPP, flota, fotos) y 8 módulos. Ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+6. No confundir con admin del conjunto ni con el vigilante de turno.
 
 Slug técnico: `supervisor`. Label UI: **Supervisor de vigilancia**.
 
@@ -199,6 +200,7 @@ Vistas compartidas: `modules/shared/managed-user-form.blade.php`, `modules/share
 
 - Firma de **revista / minuta** por código en `/access` (tipo Revista + código de catálogo o `users.supervisor_code`).
 - Turno abierto del vigilante: `guard_shifts` + `TurnoService` (`/access/turnos`).
+- Turno del **supervisor** (Supervisión): `supervisor_shifts` + PWA. Distinto del turno de portería.
 
 ---
 

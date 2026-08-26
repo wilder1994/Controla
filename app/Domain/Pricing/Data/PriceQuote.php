@@ -25,6 +25,25 @@ final readonly class PriceQuote
         public string $currency,
     ) {}
 
+    public function multipliedBy(float $factor): self
+    {
+        return new self(
+            modality: $this->modality,
+            size: $this->size,
+            cycle: $this->cycle,
+            unitPrice: round($this->unitPrice * $factor, 2),
+            volumeDiscountPct: $this->volumeDiscountPct,
+            annualDiscountPct: $this->annualDiscountPct,
+            priceMonthly: round($this->priceMonthly * $factor, 2),
+            priceAnnual: round($this->priceAnnual * $factor, 2),
+            effectiveUnitMonthly: round($this->effectiveUnitMonthly * $factor, 2),
+            listMonthlyWithoutVolume: round($this->listMonthlyWithoutVolume * $factor, 2),
+            annualIfPaidMonthly: round($this->annualIfPaidMonthly * $factor, 2),
+            annualSavings: round($this->annualSavings * $factor, 2),
+            currency: $this->currency,
+        );
+    }
+
     public function amountDue(): float
     {
         return $this->cycle === BillingCycle::Annual

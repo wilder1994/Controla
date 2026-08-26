@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Client;
 
 use App\Enums\VisitorCategory;
-use App\Models\VisitorPreAuthorization;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

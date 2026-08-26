@@ -30,5 +30,24 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Supervisión');
         $response->assertSee('En vivo');
         $response->assertSee('Historial / replay');
+        $response->assertSee('Resumen');
+        $response->assertSee('Descargar PPTX');
+        $response->assertSee('Ocho módulos');
+    }
+
+    public function test_company_admin_can_download_supervision_pptx(): void
+    {
+        $this->seedWithPilot();
+
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('company.supervision.report'));
+
+        $response->assertOk();
+        $response->assertHeader('content-disposition');
+        $this->assertStringContainsString(
+            'Informe_Supervision_',
+            (string) $response->headers->get('content-disposition'),
+        );
     }
 }

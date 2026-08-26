@@ -52,6 +52,7 @@ final class DashboardController extends Controller
             ->map(function ($log) {
                 $log->person_name = $log->visitor?->full_name ?? $log->resident?->full_name ?? '-';
                 $log->person_doc = $log->visitor?->document_number ?? $log->resident?->document_number ?? '-';
+
                 return $log;
             });
 

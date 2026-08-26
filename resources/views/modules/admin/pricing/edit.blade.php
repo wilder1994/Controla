@@ -18,8 +18,8 @@
         </x-ui.button>
     </x-slot:actions>
 
-    <div class="flex flex-col flex-1 min-h-0 gap-4">
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 flex-1 min-h-0">
+    <div class="space-y-4">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
             <section class="xl:col-span-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col">
                 <h3 class="text-sm font-semibold text-white">Precios base</h3>
                 <p class="text-xs text-slate-500 mt-0.5">Única entrada manual del súper admin.</p>
@@ -54,7 +54,7 @@
                         </div>
 
                         <div>
-                            <x-ui.label for="unit_price_supervision">Unitario · Supervisión Pro</x-ui.label>
+                            <x-ui.label for="unit_price_supervision">Unitario · Supervisión</x-ui.label>
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
                                 <x-ui.input accent="platform" type="number" step="1000" min="0" name="unit_price_supervision" id="unit_price_supervision"
@@ -71,18 +71,18 @@
                     <div class="mt-4 space-y-2 text-sm">
                         <p class="text-slate-400">Manual: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_manual) }}</span></p>
                         <p class="text-slate-400">Hardware: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_hardware) }}</span></p>
-                        <p class="text-slate-400">Supervisión Pro: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_supervision) }}</span></p>
+                        <p class="text-slate-400">Supervisión: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_supervision) }}</span></p>
                     </div>
                 @endcan
 
                 <div class="mt-4 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-500 space-y-1">
-                    <p>Volumen: 1 (0%) · 5 (10%) · 10 (15%) · 50 (25%) · 100 (30%)</p>
+                    <p>Volumen: 1 (0%) · 5 (10%) · 10 (15%) · 50 (25%) · 100 (30%) · 500 (50%)</p>
                     <p>Anual: −{{ number_format($annualDiscount * 100, 0) }}% sobre 12 meses del paquete</p>
                     <p>Moneda: {{ $settings->currency }}</p>
                 </div>
             </section>
 
-            <section class="xl:col-span-8 rounded-lg border border-slate-800 bg-slate-900/80 flex flex-col min-h-0">
+            <section class="xl:col-span-8 rounded-lg border border-slate-800 bg-slate-900/80 flex flex-col">
                 <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
                     <div>
                         <h3 class="text-sm font-semibold text-white">Matriz calculada · {{ $cycle->label() }}</h3>
@@ -95,7 +95,7 @@
                     @endif
                 </div>
 
-                <div class="flex-1 overflow-y-auto">
+                <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-950/60 text-xs uppercase tracking-wide text-slate-500 sticky top-0">
                             <tr>
@@ -103,6 +103,7 @@
                                 <th class="px-4 py-2 text-left font-medium">Desc. vol.</th>
                                 <th class="px-4 py-2 text-right font-medium">Sin hardware</th>
                                 <th class="px-4 py-2 text-right font-medium">Con hardware</th>
+                                <th class="px-4 py-2 text-right font-medium">Oferta Supervisión</th>
                                 <th class="px-4 py-2 text-right font-medium">$/cliente eff.</th>
                             </tr>
                         </thead>
@@ -134,6 +135,14 @@
                                             <p class="text-xs text-slate-600 tabular-nums">Lista {{ $fmt((float) $row['hardware']['list_monthly_without_volume']) }}</p>
                                         @endif
                                     </td>
+                                    <td class="px-4 py-2.5 text-right text-amber-200">
+                                        @if (! empty($row['supervision_offer']))
+                                            <p class="font-medium tabular-nums">{{ $fmt((float) $row['supervision_offer'][$cell]) }}{{ $period }}</p>
+                                            <p class="text-xs text-slate-500">{{ $row['supervision_offer_label'] }}</p>
+                                        @else
+                                            <p class="text-slate-600">—</p>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-2.5 text-right text-slate-500 tabular-nums">
                                         <p>{{ $fmt((float) $row['manual']['effective_unit_monthly']) }}</p>
                                         <p class="text-violet-400/80">{{ $fmt((float) $row['hardware']['effective_unit_monthly']) }}</p>
@@ -146,11 +155,11 @@
             </section>
         </div>
 
-        <section class="rounded-lg border border-slate-800 bg-slate-900/80 flex flex-col min-h-0">
+        <section class="rounded-lg border border-slate-800 bg-slate-900/80">
             <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
                 <div>
-                    <h3 class="text-sm font-semibold text-white">Supervisión Pro · {{ $cycle->label() }}</h3>
-                    <p class="text-xs text-slate-600">Misma matriz de volumen. Empresa con Accesos: Pro = 0 hasta asignar sitios.</p>
+                    <h3 class="text-sm font-semibold text-white">Supervisión · {{ $cycle->label() }}</h3>
+                    <p class="text-xs text-slate-600">Catálogo 1–100; ilimitada = 2× el pack de 100. Accesos 50+ ofrece ilimitada con el % del paquete Accesos.</p>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -170,7 +179,7 @@
                                 $period = $cycle->value === 'annual' ? '/año' : '/mes';
                             @endphp
                             <tr class="hover:bg-slate-800/30">
-                                <td class="px-4 py-2.5 font-medium text-slate-200">{{ $row['size'] }}</td>
+                                <td class="px-4 py-2.5 font-medium text-slate-200">{{ $row['label'] ?? $row['size'] }}</td>
                                 <td class="px-4 py-2.5 text-slate-400">−{{ number_format($row['volume_discount_pct'] * 100, 0) }}%</td>
                                 <td class="px-4 py-2.5 text-right font-medium text-amber-200 tabular-nums">
                                     {{ $fmt((float) $row['quote'][$cell]) }}{{ $period }}

@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
+use App\Models\Location;
 use App\Models\PreAuthorization;
 use App\Models\Visitor;
-use App\Models\Location;
 use App\Services\Access\AuditLogger;
 use App\Services\Access\BlocklistGuard;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class PreAuthorizationController extends Controller
     public function create()
     {
         $locations = Location::where('is_active', true)->get();
+
         return view('modules.access.pre_authorizations.create', compact('locations'));
     }
 
@@ -56,7 +58,7 @@ class PreAuthorizationController extends Controller
         $validated['status'] = 'pending';
         $validated['qr_code'] = Str::random(40);
         $validated['entries_per_day'] = $validated['entries_per_day'] ?? 1;
-        $validated['expires_at'] = ($validated['valid_until'] ?? $validated['scheduled_date']) . ' 23:59:59';
+        $validated['expires_at'] = ($validated['valid_until'] ?? $validated['scheduled_date']).' 23:59:59';
 
         $preAuthorization = PreAuthorization::create($validated);
 
@@ -75,12 +77,14 @@ class PreAuthorizationController extends Controller
     public function show(PreAuthorization $preAuthorization)
     {
         $preAuthorization->load(['visitor', 'host', 'location']);
+
         return view('modules.access.pre_authorizations.show', compact('preAuthorization'));
     }
 
     public function destroy(PreAuthorization $preAuthorization)
     {
         $preAuthorization->update(['status' => 'cancelled']);
+
         return redirect()->route('access.pre_authorizations.index')
             ->with('success', 'Pre-autorización cancelada.');
     }

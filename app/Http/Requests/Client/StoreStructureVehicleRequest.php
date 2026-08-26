@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Client;
 
-use App\Models\Vehicle;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

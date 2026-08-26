@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Public;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\SignupIntentStatus;
@@ -12,6 +13,7 @@ use App\Models\CommercialSignupIntent;
 use App\Services\Pricing\PriceCalculator;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class StartSignupIntentService
 {
@@ -23,13 +25,23 @@ final class StartSignupIntentService
         CompanyPackageSku $sku,
         BillingCycle $cycle,
         ?SupervisionPackageSku $supervisionSku = null,
+        ?AccessSeatSplit $seats = null,
     ): CommercialSignupIntent {
-        $quote = $this->priceCalculator->quote($sku->modality(), $sku->size(), $cycle);
+        $seats ??= AccessSeatSplit::fromSku($sku);
+        if ($seats->size() !== $sku->size()) {
+            throw new InvalidArgumentException('La mezcla de asientos no coincide con el cupo.');
+        }
+
+        if ($supervisionSku !== null && $seats->size() < 5) {
+            throw new InvalidArgumentException('El paquete de 1 cliente no incluye Supervisión.');
+        }
+
+        $quote = $this->priceCalculator->quoteAccess($seats, $cycle);
         $amount = $cycle === BillingCycle::Annual ? $quote->priceAnnual : $quote->priceMonthly;
 
         if ($supervisionSku !== null) {
-            $pro = $this->priceCalculator->quoteSupervision($supervisionSku->size(), $cycle);
-            $amount += $cycle === BillingCycle::Annual ? $pro->priceAnnual : $pro->priceMonthly;
+            $sup = $this->priceCalculator->quoteSupervisionForAccess($supervisionSku, $seats->size(), $cycle);
+            $amount += $cycle === BillingCycle::Annual ? $sup->priceAnnual : $sup->priceMonthly;
         }
 
         $now = CarbonImmutable::now();
@@ -37,7 +49,9 @@ final class StartSignupIntentService
         return CommercialSignupIntent::query()->create([
             'token' => (string) Str::uuid(),
             'status' => SignupIntentStatus::Draft,
-            'package_sku' => $sku,
+            'package_sku' => $seats->sku(),
+            'package_manual_seats' => $seats->manual,
+            'package_hardware_seats' => $seats->hardware,
             'supervision_package_sku' => $supervisionSku,
             'billing_cycle' => $cycle,
             'amount' => $amount,

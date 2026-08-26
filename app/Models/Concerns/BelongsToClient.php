@@ -15,7 +15,7 @@ trait BelongsToClient
 {
     public static function bootBelongsToClient(): void
     {
-        static::addGlobalScope(new ClientScope());
+        static::addGlobalScope(new ClientScope);
 
         static::creating(function (Model $model): void {
             if ($model->getAttribute('client_id') !== null) {

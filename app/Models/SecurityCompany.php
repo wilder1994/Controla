@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\ArchiveReason;
 use App\Enums\BillingCycle;
 use App\Enums\ClientLifecycle;
@@ -37,9 +38,12 @@ class SecurityCompany extends Model
         'logo_path',
         'is_active',
         'package_size',
+        'package_manual_seats',
+        'package_hardware_seats',
         'package_modality',
         'package_sku',
         'supervision_package_sku',
+        'supervision_unlimited',
         'package_price_monthly',
         'max_clients',
         'max_supervision_clients',
@@ -65,6 +69,9 @@ class SecurityCompany extends Model
         'cancelled_at',
         'cancellation_reason',
         'scheduled_package_sku',
+        'scheduled_manual_seats',
+        'scheduled_hardware_seats',
+        'scheduled_supervision_package_sku',
         'scheduled_billing_cycle',
         'scheduled_change_at',
         'scheduled_change_payment_id',
@@ -77,10 +84,13 @@ class SecurityCompany extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'package_size' => 'integer',
+            'package_manual_seats' => 'integer',
+            'package_hardware_seats' => 'integer',
             'package_modality' => PackageModality::class,
             'party_type' => PartyType::class,
             'package_sku' => CompanyPackageSku::class,
             'supervision_package_sku' => SupervisionPackageSku::class,
+            'supervision_unlimited' => 'boolean',
             'package_price_monthly' => 'decimal:2',
             'max_clients' => 'integer',
             'max_supervision_clients' => 'integer',
@@ -138,7 +148,49 @@ class SecurityCompany extends Model
 
     public function hasScheduledPackageChange(): bool
     {
-        return $this->scheduled_package_sku !== null && $this->scheduled_billing_cycle !== null;
+        return $this->scheduled_change_at !== null
+            && ($this->scheduled_package_sku !== null || $this->scheduled_supervision_package_sku !== null);
+    }
+
+    public function accessSeats(): AccessSeatSplit
+    {
+        $sku = $this->package_sku ?? CompanyPackageSku::Pack10Manual;
+
+        return new AccessSeatSplit(
+            (int) ($this->package_manual_seats ?? $sku->size()),
+            (int) ($this->package_hardware_seats ?? 0),
+        );
+    }
+
+    public function packageLabel(): string
+    {
+        try {
+            return $this->accessSeats()->label();
+        } catch (\InvalidArgumentException) {
+            $sku = CompanyPackage::skuOf($this);
+
+            return $sku?->label() ?? 'Sin paquete asignado';
+        }
+    }
+
+    public function sameAccessAs(AccessSeatSplit $seats, BillingCycle $cycle): bool
+    {
+        return $this->package_sku === $seats->sku()
+            && $this->billing_cycle === $cycle
+            && (int) $this->package_manual_seats === $seats->manual
+            && (int) $this->package_hardware_seats === $seats->hardware;
+    }
+
+    public function hasUnlimitedSupervision(): bool
+    {
+        return (bool) $this->supervision_unlimited
+            || $this->supervision_package_sku === SupervisionPackageSku::Unlimited;
+    }
+
+    public function hasSupervisionPackage(): bool
+    {
+        return $this->supervision_package_sku !== null
+            || $this->hasUnlimitedSupervision();
     }
 
     public function clients(): HasMany
@@ -201,13 +253,6 @@ class SecurityCompany extends Model
         return $this->clients()->where('is_active', true);
     }
 
-    public function packageLabel(): string
-    {
-        $sku = CompanyPackage::skuOf($this);
-
-        return $sku?->label() ?? 'Sin paquete asignado';
-    }
-
     public function allowsFeature(string $feature): bool
     {
         return CompanyPackage::allows($this, $feature);
@@ -222,6 +267,14 @@ class SecurityCompany extends Model
 
     public function supervisionSeatsRemaining(): int
     {
+        if (! $this->hasSupervisionPackage()) {
+            return 0;
+        }
+
+        if ($this->hasUnlimitedSupervision()) {
+            return 1_000_000;
+        }
+
         $max = (int) ($this->max_supervision_clients ?: 0);
 
         return max(0, $max - $this->supervisionSeatsCount());
@@ -250,22 +303,17 @@ class SecurityCompany extends Model
             ->count();
     }
 
-    public function hasSupervisionPackage(): bool
-    {
-        return (int) ($this->max_supervision_clients ?: 0) > 0;
-    }
-
     public function contractedAmount(): float
     {
         $access = $this->billing_cycle === BillingCycle::Annual
             ? (float) ($this->package_price_annual ?? 0)
             : (float) ($this->package_price_monthly ?? 0);
 
-        $pro = $this->billing_cycle === BillingCycle::Annual
+        $supervision = $this->billing_cycle === BillingCycle::Annual
             ? (float) ($this->supervision_package_price_annual ?? 0)
             : (float) ($this->supervision_package_price_monthly ?? 0);
 
-        return $access + $pro;
+        return $access + $supervision;
     }
 
     public function billingPeriodLabel(): string

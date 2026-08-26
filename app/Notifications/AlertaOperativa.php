@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
@@ -14,8 +15,7 @@ class AlertaOperativa extends Notification implements ShouldQueue
         public readonly string $message,
         public readonly string $level = 'alerta',
         public readonly ?string $url = null,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

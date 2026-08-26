@@ -33,9 +33,10 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
-| **Empleados** | Maestro + Excel (Formato / Carga masiva con preview). Sidebar propio; Ajustes = cargos/tipos | ✅ Implementada |
+| **Empleados** | Maestro + Excel (Formato / Carga masiva con preview). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
+| **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos empresa). Fuente de verdad: Controla | ✅ Implementada |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Pro**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
+Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
 
 ---
 
@@ -44,11 +45,12 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
 | **Plataforma** | `/admin` | `super-admin` | Dashboard, precios, empresas, documentos, **Ajustes** (tipos de estructura + tipos de documento) |
-| **Empresa** | `/company` | `company-admin` | Command Center (**Mi empresa**), cartera, **Empleados**, **Mis datos**, **Ajustes** (cargos/tipos), usuarios, billing |
+| **Empresa** | `/company` | `company-admin` | Command Center (**Mi empresa**), cartera, **Empleados**, **Mis datos**, **Ajustes** (cargos/tipos + zonas/turnos/preoperacional), usuarios, billing, Supervisión |
 | **Cliente** | `/client` | `client-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones |
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **puntos de acceso** (puertas/porterías, nombre libre) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
-| **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia |
+| **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; API en Controla (`http://controla.test/api`) |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -292,14 +294,15 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 
 ### Paquetes comerciales (empresa)
 
-La empresa contrata **Accesos** (cupo de sitios a operar portería × modalidad × ciclo) y, aparte, **Supervisión Pro** (cupo de sitios GPS). Las fichas de cliente son ilimitadas; el cupo aplica al marcar líneas. Detalle: [`docs/PAQUETES-ACCESOS-Y-SUPERVISION.md`](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md).
+La empresa contrata **Accesos** (cupo de sitios a operar portería × modalidad o mixto × ciclo) y, aparte, **Supervisión** (cupo GPS, o ilimitada). Las fichas de cliente son ilimitadas; el cupo aplica al marcar líneas. Detalle: [`docs/PAQUETES-ACCESOS-Y-SUPERVISION.md`](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md).
 
 | Concepto | Regla |
 |----------|--------|
-| Precios base | Súper admin define 3 unitarios (manual, hardware, Pro) en `/admin/pricing` |
-| Matriz | Se calcula sola: descuento por volumen + descuento anual (~17%) |
+| Precios base | Súper admin define 3 unitarios (manual, hardware, Supervisión) en `/admin/pricing` |
+| Matriz | Se calcula sola: descuento por volumen (hasta 500 / 50 %) + descuento anual (~17 %) |
+| Mixto | Desde 5 clientes: asientos sin hardware + con hardware = cupo |
 | Cupo Accesos | `has_access` en clientes activos (`max_clients`) |
-| Cupo Pro | `has_supervision` (`max_supervision_clients`); 0 hasta asignar |
+| Cupo Supervisión | `has_supervision` (`max_supervision_clients`); ilimitada = `supervision_unlimited` |
 | Portafolio del conjunto | **Ilimitado** (unidades, personas, mascotas, vehículos) |
 | Snapshot | Al asignar paquete se congelan precio, descuentos y vigencia en la empresa |
 
@@ -386,7 +389,7 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
-Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos).
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional).
 
 | Ruta | Función |
 |------|---------|
@@ -396,9 +399,10 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Empleados**
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
-| `GET /company/supervision` | Mapa GPS en vivo + historial de rutas Pro |
-| `GET /company/billing` | **Facturación** unificada: membresía Accesos + Pro, historial, pago online |
-| `POST /company/billing/supervision` | Contratar / cambiar Supervisión Pro (self-serve) |
+| `GET /company/supervision` | Mapa GPS en vivo, historial y **resumen** de Supervisión de campo |
+| `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX |
+| `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
+| `POST /company/billing/supervision` | Contratar / cambiar Supervisión (self-serve, aplica al corte) |
 | `POST /company/billing/checkout` | Checkout online (intent renew/anticipate/reactivate) |
 | `POST /company/billing/membership/cancel` | Cancelar membresía (acceso hasta corte) |
 | `POST /company/billing/membership/undo-cancel` | Deshacer cancelación sin pago |
@@ -411,8 +415,11 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Empleados**
 | `GET /company/employees/template` | Descarga plantilla (hojas Empleados + Instrucciones) |
 | `GET /company/job-titles` | **Ajustes → Cargos**: catálogo por empresa |
 | `GET /company/collaborator-types` | **Ajustes → Tipos**: catálogo por empresa |
+| `GET /company/supervision-zones` | **Ajustes → Zonas**: rutas de Supervisión (no Accesos) |
+| `GET /company/supervision-shifts` | **Ajustes → Turnos**: plantillas nombre + horario |
+| `GET /company/supervision-preop` | **Ajustes → Preoperacional**: EPP y vehículo |
 
-Detalle empleados: [`docs/EMPLEADOS-Y-CARGOS.md`](docs/EMPLEADOS-Y-CARGOS.md).
+Detalle empleados: [`docs/EMPLEADOS-Y-CARGOS.md`](docs/EMPLEADOS-Y-CARGOS.md). Supervisión de campo: [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md).
 
 `/company/clients/select` redirige a `/company/porteria` (vista eliminada).
 
@@ -741,6 +748,13 @@ API autenticada con tokens Laravel Sanctum para consumo desde app móvil futura.
 | `/api/correspondence` | GET | Lista de correspondencia del usuario |
 | `/api/correspondence/{id}` | GET | Detalle de correspondencia |
 | `/api/visitors/search` | GET | Buscar visitantes por nombre/documento |
+| `/api/supervision/login` | POST | Login supervisor (paquete Supervisión) |
+| `/api/supervision/intake` | GET | Catálogos de turno, zona, EPP, flota |
+| `/api/supervision/shifts/*` | GET/POST | Abrir, ping GPS, cerrar turno (multipart fotos) |
+| `/api/supervision/catalog` | GET | Contrato de 8 módulos de campo |
+| `/api/supervision/reviews` | POST | Revista (minuta de puesto si hay Accesos) |
+| `/api/supervision/logs` | POST | Inventario, documentos, carpetas, armas, etc. |
+| `/api/supervision/recommendations` | GET/PATCH | Hallazgos con ciclo de vida |
 
 ```
 app/

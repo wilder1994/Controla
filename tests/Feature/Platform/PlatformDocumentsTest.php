@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Platform;
 
+use App\Models\LegalCorpusVersion;
 use App\Models\SecurityCompany;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -116,7 +117,7 @@ final class PlatformDocumentsTest extends TestCase
         $frozenContent = collect($acceptance->corpus_snapshot)->firstWhere('type', 'terms')['content'] ?? null;
         $this->assertNotEmpty($frozenContent);
 
-        $terms = \App\Models\LegalCorpusVersion::query()
+        $terms = LegalCorpusVersion::query()
             ->where('type', 'terms')
             ->whereNull('package_sku')
             ->whereNull('superseded_at')

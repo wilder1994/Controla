@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Platform;
 
 use App\Domain\Geo\GeoAddressData;
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\BillingCycle;
 use App\Enums\ClientLifecycle;
+use App\Enums\CompanyPackageSku;
 use App\Enums\ManualPaymentIntent;
 use App\Enums\PaymentStatus;
 use App\Enums\PlatformDocumentType;
@@ -95,12 +97,10 @@ final class CompanyController extends Controller
         $packageOptions = CompanyPackageSku::options();
         $cycleOptions = BillingCycle::options();
 
-        $previewSku = CompanyPackageSku::tryFrom((string) $request->old('package_sku', $company->package_sku?->value ?? 'pack_10_manual'))
-            ?? CompanyPackageSku::Pack10Manual;
         $previewCycle = BillingCycle::tryFrom((string) $request->old('billing_cycle', $company->billing_cycle?->value ?? 'monthly'))
             ?? BillingCycle::Monthly;
-        $quote = $this->priceCalculator->quote($previewSku->modality(), $previewSku->size(), $previewCycle);
-        $quoteAnnual = $this->priceCalculator->quote($previewSku->modality(), $previewSku->size(), BillingCycle::Annual);
+        $quote = $this->priceCalculator->quoteAccess($company->accessSeats(), $previewCycle);
+        $quoteAnnual = $this->priceCalculator->quoteAccess($company->accessSeats(), BillingCycle::Annual);
 
         $clients = $company->clients()
             ->orderBy('name')
@@ -312,6 +312,11 @@ final class CompanyController extends Controller
                 BillingCycle::from($request->validated('billing_cycle')),
                 $request->validated('reference'),
                 $request->file('proof'),
+                AccessSeatSplit::resolve(
+                    CompanyPackageSku::from($request->validated('package_sku')),
+                    isset($request->validated()['manual_seats']) ? (int) $request->validated('manual_seats') : null,
+                    isset($request->validated()['hardware_seats']) ? (int) $request->validated('hardware_seats') : null,
+                ),
             );
         } catch (\InvalidArgumentException $e) {
             return redirect()
@@ -329,11 +334,16 @@ final class CompanyController extends Controller
     {
         $sku = CompanyPackageSku::from($request->validated('package_sku'));
         $cycle = BillingCycle::from($request->validated('billing_cycle'));
-        $this->assignCompanyPackageService->execute($company, $sku, $cycle);
+        $seats = AccessSeatSplit::resolve(
+            $sku,
+            isset($request->validated()['manual_seats']) ? (int) $request->validated('manual_seats') : null,
+            isset($request->validated()['hardware_seats']) ? (int) $request->validated('hardware_seats') : null,
+        );
+        $this->assignCompanyPackageService->execute($company, $sku, $cycle, null, $seats);
 
         return redirect()
             ->route('admin.companies.show', $company)
-            ->with('success', "Paquete actualizado a «{$sku->label()}» ({$cycle->label()}).");
+            ->with('success', "Paquete actualizado a «{$seats->label()}» ({$cycle->label()}).");
     }
 
     public function updateSupervisionPackage(
@@ -344,11 +354,11 @@ final class CompanyController extends Controller
         $sku = $skuValue ? SupervisionPackageSku::from($skuValue) : null;
         $this->assignCompanySupervisionPackageService->execute($company, $sku);
 
-        $label = $sku?->label() ?? 'sin Supervisión Pro';
+        $label = $sku?->label() ?? 'sin Supervisión';
 
         return redirect()
             ->route('admin.companies.show', $company)
-            ->with('success', "Paquete Pro actualizado: {$label}.");
+            ->with('success', "Paquete de Supervisión actualizado: {$label}.");
     }
 
     public function editProfile(SecurityCompany $company): View

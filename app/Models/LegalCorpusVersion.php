@@ -87,6 +87,7 @@ class LegalCorpusVersion extends Model
 
     /**
      * @deprecated Prefer currentForPackage / currentGlobals
+     *
      * @return Collection<int, LegalCorpusVersion>
      */
     public static function currentForAllTypes(): Collection

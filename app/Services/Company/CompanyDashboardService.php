@@ -17,6 +17,7 @@ final class CompanyDashboardService
         private readonly ClientRepository $clientRepository,
         private readonly CompanyDashboardAnalytics $analytics,
         private readonly PriceCalculator $priceCalculator,
+        private readonly BuildFieldSupervisionStripService $fieldSupervisionStrip,
     ) {}
 
     /** @return array<string, mixed> */
@@ -56,6 +57,7 @@ final class CompanyDashboardService
             'ops' => $ops,
             'upgradeQuotes' => $upgradeQuotes,
             'annualForCurrent' => $annualForCurrent,
+            'fieldSupervision' => $this->fieldSupervisionStrip->forToday($company),
         ];
     }
 }

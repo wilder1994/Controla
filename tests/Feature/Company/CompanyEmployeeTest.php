@@ -52,6 +52,9 @@ final class CompanyEmployeeTest extends TestCase
             ->assertSee('Ajustes')
             ->assertSee('Cargos')
             ->assertSee('Tipos')
+            ->assertSee('Zonas')
+            ->assertSee('Turnos')
+            ->assertSee('Preoperacional')
             ->assertSee('admin-header-tab');
     }
 

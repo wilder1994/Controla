@@ -149,7 +149,9 @@ final class ClientRepository
         $archived = (clone $base)->where('lifecycle', ClientLifecycle::ArchivedCompany)->count();
         $released = (clone $base)->where('lifecycle', ClientLifecycle::Released)->count();
         $maxClients = (int) ($company->max_clients ?: 0);
-        $maxSupervision = (int) ($company->max_supervision_clients ?: 0);
+        $maxSupervision = $company->hasUnlimitedSupervision()
+            ? null
+            : (int) ($company->max_supervision_clients ?: 0);
         $accessUsed = $company->accessSeatsCount();
         $supervisionUsed = $company->supervisionSeatsCount();
         $usageRatio = $maxClients > 0 ? round(($accessUsed / $maxClients) * 100, 1) : 0.0;
@@ -176,6 +178,10 @@ final class ClientRepository
             'max_supervision_clients' => $maxSupervision,
             'supervision_used' => $supervisionUsed,
             'supervision_remaining' => $company->supervisionSeatsRemaining(),
+            'supervision_remaining_label' => $company->hasUnlimitedSupervision()
+                ? 'Ilimitada'
+                : (string) $company->supervisionSeatsRemaining(),
+            'supervision_unlimited' => $company->hasUnlimitedSupervision(),
             'supervision_package_sku' => $company->supervision_package_sku?->value,
             'supervision_package_label' => $company->supervision_package_sku?->label(),
             'usage_ratio' => $usageRatio,
@@ -201,8 +207,11 @@ final class ClientRepository
             'is_renewal_soon' => $daysUntilRenewal !== null && $daysUntilRenewal >= 0 && $daysUntilRenewal <= 30,
             'is_expired' => $daysUntilRenewal !== null && $daysUntilRenewal < 0,
             'is_quota_full' => $maxClients > 0 && $accessUsed >= $maxClients,
-            'is_supervision_quota_full' => $maxSupervision > 0 && $supervisionUsed >= $maxSupervision,
-            'is_hardware' => ($company->package_modality?->value ?? 'manual') === 'hardware',
+            'is_supervision_quota_full' => ! $company->hasUnlimitedSupervision()
+                && $maxSupervision !== null
+                && $maxSupervision > 0
+                && $supervisionUsed >= $maxSupervision,
+            'is_hardware' => (int) ($company->package_hardware_seats ?? 0) > 0,
         ];
     }
 }

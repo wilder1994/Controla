@@ -22,6 +22,8 @@ final class UpdateCompanyPackageRequest extends FormRequest
         return [
             'package_sku' => ['required', Rule::enum(CompanyPackageSku::class)],
             'billing_cycle' => ['required', Rule::enum(BillingCycle::class)],
+            'manual_seats' => ['nullable', 'integer', 'min:0'],
+            'hardware_seats' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

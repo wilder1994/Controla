@@ -10,6 +10,7 @@ use App\Models\PreAuthorization;
 use App\Models\Visitor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 final class PreAuthorizationController extends Controller
@@ -61,7 +62,7 @@ final class PreAuthorizationController extends Controller
             'scheduled_date' => $validated['scheduled_date'],
             'scheduled_time' => $validated['scheduled_time'],
             'status' => 'pending',
-            'qr_code' => \Illuminate\Support\Str::random(32),
+            'qr_code' => Str::random(32),
             'notes' => $validated['notes'],
         ]);
 

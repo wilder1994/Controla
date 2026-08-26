@@ -21,7 +21,7 @@
         <span class="text-indigo-300 font-medium pl-3">Accesos</span>
     @endif
     @if ($client->has_supervision)
-        <span class="text-amber-300 font-medium pl-3">Pro</span>
+        <span class="text-amber-300 font-medium pl-3">Supervisión</span>
     @endif
     @if ($client->isCatalogOnly())
         <span class="text-slate-500 font-medium pl-3">Solo ficha</span>

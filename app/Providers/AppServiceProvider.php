@@ -8,6 +8,9 @@ use App\Models\CompanyJobTitle;
 use App\Models\Employee;
 use App\Models\Resident;
 use App\Models\SecurityCompany;
+use App\Models\SupervisorChecklistItem;
+use App\Models\SupervisorShiftTemplate;
+use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Visitor;
@@ -15,6 +18,7 @@ use App\Policies\CompanyCollaboratorTypePolicy;
 use App\Policies\CompanyJobTitlePolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\SecurityCompanyPolicy;
+use App\Policies\SupervisorCompanyCatalogPolicy;
 use App\Policies\UserPolicy;
 use App\Support\Tenancy\TenantContext;
 use App\View\Composers\CompanyLayoutComposer;
@@ -44,6 +48,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(CompanyJobTitle::class, CompanyJobTitlePolicy::class);
         Gate::policy(CompanyCollaboratorType::class, CompanyCollaboratorTypePolicy::class);
+        Gate::policy(SupervisorZone::class, SupervisorCompanyCatalogPolicy::class);
+        Gate::policy(SupervisorShiftTemplate::class, SupervisorCompanyCatalogPolicy::class);
+        Gate::policy(SupervisorChecklistItem::class, SupervisorCompanyCatalogPolicy::class);
 
         Gate::before(function (User $user, string $ability): ?bool {
             if ($user->hasRole('super-admin')) {

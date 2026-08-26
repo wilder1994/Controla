@@ -9,7 +9,6 @@ use App\Models\Client;
 use App\Models\Location;
 use App\Models\SecurityCompany;
 use App\Services\Platform\ProcessDataRetentionPurgeService;
-use App\Services\Platform\PurgeClientTenantDataService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

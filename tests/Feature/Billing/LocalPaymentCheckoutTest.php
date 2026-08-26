@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Billing;
 
 use App\Models\CommercialPayment;
+use App\Models\PlatformDocument;
 use App\Models\SecurityCompany;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -92,7 +93,7 @@ final class LocalPaymentCheckoutTest extends TestCase
         $this->assertSame('failed', $payment->status->value);
 
         $this->assertFalse(
-            \App\Models\PlatformDocument::query()
+            PlatformDocument::query()
                 ->where('security_company_id', $company->id)
                 ->where('type', 'invoice')
                 ->exists()

@@ -8,18 +8,27 @@ enum PackageModality: string
 {
     case Manual = 'manual';
     case Hardware = 'hardware';
+    case Mixed = 'mixed';
 
     public function label(): string
     {
         return match ($this) {
             self::Manual => 'Sin hardware',
             self::Hardware => 'Con hardware',
+            self::Mixed => 'Mixto',
         };
     }
 
     /** @return list<string> */
     public function features(): array
     {
+        if ($this === self::Mixed) {
+            return array_values(array_unique(array_merge(
+                config('tenancy.features.manual', []),
+                config('tenancy.features.hardware', []),
+            )));
+        }
+
         return config('tenancy.features.'.$this->value, []);
     }
 

@@ -12,6 +12,9 @@ use App\Http\Controllers\Company\JobTitleController;
 use App\Http\Controllers\Company\PorteriaController;
 use App\Http\Controllers\Company\SettingsController;
 use App\Http\Controllers\Company\SupervisionMapController;
+use App\Http\Controllers\Company\SupervisorChecklistItemController;
+use App\Http\Controllers\Company\SupervisorShiftTemplateController;
+use App\Http\Controllers\Company\SupervisorZoneController;
 use App\Http\Controllers\Company\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -81,11 +84,29 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::post('/collaborator-types', [CollaboratorTypeController::class, 'store'])->name('collaborator-types.store');
             Route::put('/collaborator-types/{collaboratorType}', [CollaboratorTypeController::class, 'update'])->name('collaborator-types.update');
             Route::delete('/collaborator-types/{collaboratorType}', [CollaboratorTypeController::class, 'destroy'])->name('collaborator-types.destroy');
+
+            Route::get('/supervision-zones', [SupervisorZoneController::class, 'index'])->name('supervision-zones.index');
+            Route::post('/supervision-zones', [SupervisorZoneController::class, 'store'])->name('supervision-zones.store');
+            Route::put('/supervision-zones/{zone}', [SupervisorZoneController::class, 'update'])->name('supervision-zones.update');
+            Route::delete('/supervision-zones/{zone}', [SupervisorZoneController::class, 'destroy'])->name('supervision-zones.destroy');
+
+            Route::get('/supervision-shifts', [SupervisorShiftTemplateController::class, 'index'])->name('supervision-shifts.index');
+            Route::post('/supervision-shifts', [SupervisorShiftTemplateController::class, 'store'])->name('supervision-shifts.store');
+            Route::put('/supervision-shifts/{template}', [SupervisorShiftTemplateController::class, 'update'])->name('supervision-shifts.update');
+            Route::delete('/supervision-shifts/{template}', [SupervisorShiftTemplateController::class, 'destroy'])->name('supervision-shifts.destroy');
+
+            Route::get('/supervision-preop', [SupervisorChecklistItemController::class, 'index'])->name('supervision-preop.index');
+            Route::post('/supervision-preop', [SupervisorChecklistItemController::class, 'store'])->name('supervision-preop.store');
+            Route::put('/supervision-preop/{item}', [SupervisorChecklistItemController::class, 'update'])->name('supervision-preop.update');
+            Route::delete('/supervision-preop/{item}', [SupervisorChecklistItemController::class, 'destroy'])->name('supervision-preop.destroy');
         });
 
         Route::get('/supervision', [SupervisionMapController::class, 'index'])
             ->middleware('permission:company.supervision.view')
             ->name('supervision.index');
+        Route::get('/supervision/informe.pptx', [SupervisionMapController::class, 'report'])
+            ->middleware('permission:company.supervision.view')
+            ->name('supervision.report');
 
         Route::get('/users', [UserController::class, 'index'])
             ->middleware('permission:company.users.assign')

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
@@ -11,12 +12,14 @@ class BuildingController extends Controller
     public function index()
     {
         $buildings = Building::with('location', 'housingUnits')->latest()->paginate(15);
+
         return view('modules.access.buildings.index', compact('buildings'));
     }
 
     public function create()
     {
         $locations = Location::where('is_active', true)->get();
+
         return view('modules.access.buildings.create', compact('locations'));
     }
 
@@ -41,13 +44,14 @@ class BuildingController extends Controller
     public function edit(Building $building)
     {
         $locations = Location::where('is_active', true)->get();
+
         return view('modules.access.buildings.edit', compact('building', 'locations'));
     }
 
     public function update(Request $request, Building $building)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:buildings,code,' . $building->id,
+            'code' => 'required|string|max:20|unique:buildings,code,'.$building->id,
             'name' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
             'type' => 'required|in:torre,bloque,casa_independiente',
@@ -65,6 +69,7 @@ class BuildingController extends Controller
     public function destroy(Building $building)
     {
         $building->delete();
+
         return redirect()->route('access.buildings.index')
             ->with('success', 'Torre/Bloque eliminado.');
     }

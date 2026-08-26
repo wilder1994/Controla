@@ -1,11 +1,14 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
+use App\Exports\AccessLogsExport;
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
-use App\Models\Visitor;
+use App\Models\Client;
 use App\Models\Location;
-use App\Exports\AccessLogsExport;
+use App\Models\Visitor;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -61,7 +64,7 @@ class ReportController extends Controller
             ->orderByDesc('total')
             ->take(5)
             ->get();
-        $locLabels = $topLocations->map(fn($l) => $l->location?->name ?? '?')->toArray();
+        $locLabels = $topLocations->map(fn ($l) => $l->location?->name ?? '?')->toArray();
         $locData = $topLocations->pluck('total')->toArray();
 
         // Chart data: access type distribution
@@ -114,9 +117,9 @@ class ReportController extends Controller
         $active = $logs->where('status', 'active')->count();
 
         $client = null;
-        $clientId = app(\App\Support\Tenancy\TenantContext::class)->clientId();
+        $clientId = app(TenantContext::class)->clientId();
         if ($clientId !== null) {
-            $client = \App\Models\Client::query()->withoutGlobalScopes()->find($clientId);
+            $client = Client::query()->withoutGlobalScopes()->find($clientId);
         }
 
         return view('modules.access.reports.printable', compact('logs', 'total', 'completed', 'active', 'client'));

@@ -109,4 +109,9 @@ class Client extends Model
     {
         return $this->hasMany(SupervisorShiftReview::class);
     }
+
+    public function supervisorFieldLogs(): HasMany
+    {
+        return $this->hasMany(SupervisorFieldLog::class);
+    }
 }

@@ -29,7 +29,7 @@ final class UpdatePlatformPricingRequest extends FormRequest
         return [
             'unit_price_manual.min' => 'El precio unitario manual debe ser al menos $1.000.',
             'unit_price_hardware.min' => 'El precio unitario con hardware debe ser al menos $1.000.',
-            'unit_price_supervision.min' => 'El unitario de Supervisión Pro no puede ser negativo.',
+            'unit_price_supervision.min' => 'El unitario de Supervisión no puede ser negativo.',
         ];
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
@@ -9,9 +10,7 @@ use Illuminate\Http\Request;
 
 class TurnoController extends Controller
 {
-    public function __construct(private readonly TurnoService $turnoService)
-    {
-    }
+    public function __construct(private readonly TurnoService $turnoService) {}
 
     public function index()
     {

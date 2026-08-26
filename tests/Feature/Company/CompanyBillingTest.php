@@ -8,7 +8,9 @@ use App\Enums\SupervisionPackageSku;
 use App\Models\CommercialPayment;
 use App\Models\SecurityCompany;
 use App\Models\User;
+use App\Services\Platform\ScheduleCompanyPackageChangeService;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -58,7 +60,7 @@ final class CompanyBillingTest extends TestCase
         $this->assertFalse($company->hasPendingCancellation());
     }
 
-    public function test_company_can_checkout_supervision_pro_from_billing(): void
+    public function test_company_can_checkout_supervision_from_billing(): void
     {
         $this->seedWithPilot();
 
@@ -69,7 +71,7 @@ final class CompanyBillingTest extends TestCase
         $this->actingAs($companyUser)
             ->get(route('company.billing.index'))
             ->assertOk()
-            ->assertSee('Supervisión Pro');
+            ->assertSee('Supervisión');
 
         $this->actingAs($admin)->post(
             route('admin.documents.expedientes.acceptance', $company),
@@ -98,11 +100,19 @@ final class CompanyBillingTest extends TestCase
             ->assertRedirect(route('company.billing.index'));
 
         $company->refresh();
+        $this->assertNull($company->supervision_package_sku);
+        $this->assertSame('sup_5', $company->scheduled_supervision_package_sku);
+
+        Carbon::setTestNow($company->scheduled_change_at);
+        app(ScheduleCompanyPackageChangeService::class)->applyDueChanges();
+        Carbon::setTestNow();
+
+        $company->refresh();
         $this->assertSame('sup_5', $company->supervision_package_sku?->value);
         $this->assertSame(5, (int) $company->max_supervision_clients);
     }
 
-    public function test_company_can_remove_supervision_pro_without_checkout(): void
+    public function test_company_schedules_supervision_removal_at_period_end(): void
     {
         $this->seedWithPilot();
 
@@ -117,7 +127,8 @@ final class CompanyBillingTest extends TestCase
             ])
             ->assertRedirect(route('company.billing.index'));
 
-        $this->assertNull($company->fresh()->supervision_package_sku);
-        $this->assertSame(0, (int) $company->fresh()->max_supervision_clients);
+        $company->refresh();
+        $this->assertSame(SupervisionPackageSku::Sit1, $company->supervision_package_sku);
+        $this->assertSame('none', $company->scheduled_supervision_package_sku);
     }
 }

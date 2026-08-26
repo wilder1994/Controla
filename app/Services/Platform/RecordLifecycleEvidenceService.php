@@ -7,7 +7,6 @@ namespace App\Services\Platform;
 use App\Enums\EvidenceEventType;
 use App\Models\LifecycleEvidenceEvent;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Str;
 
 final class RecordLifecycleEvidenceService
 {

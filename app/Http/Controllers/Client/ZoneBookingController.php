@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
@@ -8,14 +9,11 @@ use App\Models\Resident;
 use App\Services\Access\AuditLogger;
 use App\Services\Access\ZoneBookingService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ZoneBookingController extends Controller
 {
-    public function __construct(private readonly ZoneBookingService $service)
-    {
-    }
+    public function __construct(private readonly ZoneBookingService $service) {}
 
     public function index(): View
     {

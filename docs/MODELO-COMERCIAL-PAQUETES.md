@@ -29,6 +29,7 @@ Cantidad máxima de conjuntos (`clients`) que la empresa puede registrar:
 | 10 | 15% |
 | 50 | 25% |
 | 100 | 30% |
+| 500 | 50% |
 
 Definido en `config/tenancy.php` → `pricing.volume_discounts`.
 
@@ -38,6 +39,7 @@ Definido en `config/tenancy.php` → `pricing.volume_discounts`.
 |-------|----------|-------------------------|
 | `manual` | Sin hardware | Censo, portería manual, portal residente web |
 | `hardware` | Con hardware | Lo anterior + lectores, LPR, RFID, facial, app↔dispositivos |
+| `mixed` | Mixto (desde 5) | Asientos combinados; hardware en los asientos con HW |
 
 Features en `config/tenancy.php` → `features`. Helper: `App\Support\Tenancy\CompanyPackage::allows()`.
 

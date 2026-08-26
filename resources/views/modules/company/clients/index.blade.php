@@ -60,7 +60,7 @@
                 <p class="text-xs text-slate-500 sm:ml-auto sm:text-right whitespace-nowrap">
                     {{ $clients->total() }} {{ $clients->total() === 1 ? 'conjunto' : 'conjuntos' }}
                     · Accesos {{ $metrics['clients_remaining'] }}/{{ $metrics['max_clients'] }}
-                    · Pro {{ $metrics['supervision_remaining'] ?? 0 }}/{{ $metrics['max_supervision_clients'] ?? 0 }}
+                    · Supervisión {{ ($metrics['supervision_unlimited'] ?? false) ? 'Ilimitada' : (($metrics['supervision_remaining'] ?? 0).'/'.($metrics['max_supervision_clients'] ?? 0)) }}
                 </p>
             @else
                 <p class="text-xs text-slate-500 sm:ml-auto sm:text-right whitespace-nowrap">
@@ -126,7 +126,7 @@
                                                 <span class="inline-flex rounded-full bg-indigo-900/40 px-2 py-0.5 text-[10px] text-indigo-300">Accesos</span>
                                             @endif
                                             @if ($client->has_supervision)
-                                                <span class="inline-flex rounded-full bg-amber-900/30 px-2 py-0.5 text-[10px] text-amber-300">Pro</span>
+                                                <span class="inline-flex rounded-full bg-amber-900/30 px-2 py-0.5 text-[10px] text-amber-300">Supervisión</span>
                                             @endif
                                             @if ($client->isCatalogOnly())
                                                 <span class="inline-flex rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-500">Ficha</span>

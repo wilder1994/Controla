@@ -60,7 +60,7 @@ final class RegisterCommercialPaymentService
 
         if ($intent === ManualPaymentIntent::SupervisionChange && ! $company->isUpToDate()) {
             throw new \InvalidArgumentException(
-                'Sin periodo Accesos vigente no se puede contratar Supervisión Pro.'
+                'Sin periodo Accesos vigente no se puede contratar Supervisión.'
             );
         }
 
@@ -136,7 +136,7 @@ final class RegisterCommercialPaymentService
 
         if ($intent === ManualPaymentIntent::SupervisionChange && ! $company->isUpToDate()) {
             throw new \InvalidArgumentException(
-                'Sin periodo Accesos vigente no se puede contratar Supervisión Pro.'
+                'Sin periodo Accesos vigente no se puede contratar Supervisión.'
             );
         }
 

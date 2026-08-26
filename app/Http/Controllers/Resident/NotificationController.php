@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Resident;
 
 use App\Http\Controllers\Controller;

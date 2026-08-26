@@ -45,22 +45,22 @@
                         Sin Accesos: no se opera portería.
                     @endif
                     @if ($client->has_supervision)
-                        Supervisión Pro activa: la revista se firma en la app y llena la minuta del puesto.
+                        Supervisión activa: la revista se firma en la app y llena la minuta del puesto.
                     @else
-                        Sin Supervisión Pro.
+                        Sin Supervisión.
                     @endif
                 </p>
                 @if ($client->isCatalogOnly())
-                    <p class="text-xs text-slate-500">Esta ficha no consume cupo. Activa Accesos o Pro en Editar cuando tengas asientos.</p>
+                    <p class="text-xs text-slate-500">Esta ficha no consume cupo. Activa Accesos o Supervisión en Editar cuando tengas asientos.</p>
                 @endif
             </section>
         </div>
     @elseif (($vista ?? '') === 'supervision')
         <div class="max-w-3xl space-y-4">
             <section class="rounded-lg border border-amber-800/40 bg-amber-950/10 p-4">
-                <h3 class="text-sm font-semibold text-white">Supervisión Pro</h3>
+                <h3 class="text-sm font-semibold text-white">Supervisión</h3>
                 <p class="mt-1 text-sm text-slate-400">
-                    La revista de este sitio se hace en la app Pro. No se vuelve a firmar en portería: Pro llena la misma minuta.
+                    La revista de este sitio se hace en la app de Supervisión. No se vuelve a firmar en portería: Supervisión llena la misma minuta.
                 </p>
             </section>
             <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4">
@@ -72,7 +72,7 @@
                             <p class="text-xs text-slate-500">{{ $review->recorded_at?->format('d/m/Y H:i') }} · {{ $review->notes ?: 'Sin notas' }}</p>
                         </li>
                     @empty
-                        <li class="text-sm text-slate-500">Aún no hay revistas Pro en este sitio.</li>
+                        <li class="text-sm text-slate-500">Aún no hay revistas de Supervisión en este sitio.</li>
                     @endforelse
                 </ul>
             </section>

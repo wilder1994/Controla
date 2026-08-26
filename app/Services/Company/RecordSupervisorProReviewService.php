@@ -34,7 +34,7 @@ final class RecordSupervisorProReviewService
 
         if (! $client->has_supervision) {
             throw ValidationException::withMessages([
-                'client_id' => 'Este sitio no tiene Supervisión Pro asignada.',
+                'client_id' => 'Este sitio no tiene Supervisión asignada.',
             ]);
         }
 

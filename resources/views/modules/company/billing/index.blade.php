@@ -32,9 +32,19 @@
 
         @if ($company->hasScheduledPackageChange())
             <div class="rounded-lg border border-indigo-800/50 bg-indigo-950/30 px-4 py-3 text-sm text-indigo-100">
-                Cambio de plan programado a
-                <strong>{{ $scheduledSkuLabel }}</strong>
-                ({{ $company->scheduled_billing_cycle }})
+                Cambio programado
+                @if ($company->scheduled_package_sku)
+                    · Accesos <strong>{{ $scheduledSkuLabel }}</strong>
+                    ({{ $company->scheduled_billing_cycle }})
+                @endif
+                @if ($company->scheduled_supervision_package_sku)
+                    · Supervisión
+                    <strong>
+                        {{ $company->scheduled_supervision_package_sku === 'none'
+                            ? 'sin Supervisión'
+                            : (\App\Enums\SupervisionPackageSku::tryFrom($company->scheduled_supervision_package_sku)?->label() ?? $company->scheduled_supervision_package_sku) }}
+                    </strong>
+                @endif
                 @if ($company->scheduled_change_at)
                     · aplica el {{ $company->scheduled_change_at->format('d/m/Y') }}
                 @endif
@@ -47,11 +57,11 @@
                     <p class="text-xs text-slate-500 uppercase tracking-wide">Membresía</p>
                     <h2 class="text-base font-semibold text-white mt-0.5">{{ $company->displayName() }}</h2>
                     <p class="text-xs text-slate-500 mt-1">
-                        {{ $company->package_sku?->label() ?? 'Sin paquete' }}
+                        {{ $company->packageLabel() }}
                         @if ($company->supervision_package_sku)
                             · {{ $company->supervision_package_sku->label() }}
                         @else
-                            · Sin Supervisión Pro
+                            · Sin Supervisión
                         @endif
                         · {{ $company->billing_cycle?->label() ?? '—' }}
                         · {{ $statusLabel }}
@@ -93,16 +103,16 @@
                 @csrf
                 <div class="flex flex-col sm:flex-row sm:items-end gap-3">
                     <div class="flex-1">
-                        <x-ui.label for="supervision_package_sku">Supervisión Pro</x-ui.label>
+                        <x-ui.label for="supervision_package_sku">Supervisión</x-ui.label>
                         <select id="supervision_package_sku" name="supervision_package_sku" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
-                            <option value="">Sin Supervisión Pro</option>
+                            <option value="">Sin Supervisión</option>
                             @foreach ($supervisionOptions as $value => $label)
                                 <option value="{{ $value }}" @selected(old('supervision_package_sku', $company->supervision_package_sku?->value) === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <p class="mt-1 text-xs text-slate-500">Alta o cambio de cupo abre checkout. Quitar Pro aplica al instante. Independiente del cupo Accesos.</p>
+                        <p class="mt-1 text-xs text-slate-500">Se programa al corte. El paquete de 1 Accesos no admite Supervisión. Quitar no cobra.</p>
                     </div>
-                    <x-ui.button type="submit" variant="secondary" size="sm">Pagar / quitar Pro</x-ui.button>
+                    <x-ui.button type="submit" variant="secondary" size="sm">Programar Supervisión</x-ui.button>
                 </div>
             </form>
 
@@ -381,7 +391,7 @@
                         @csrf
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <x-ui.label for="schedule_sku">Nuevo paquete</x-ui.label>
+                                <x-ui.label for="schedule_sku">Nuevo paquete Accesos</x-ui.label>
                                 <select id="schedule_sku" name="package_sku" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                                     @foreach ($packageOptions as $value => $label)
                                         <option value="{{ $value }}" @selected(old('package_sku') === $value)>{{ $label }}</option>
@@ -398,7 +408,16 @@
                                 </select>
                                 <x-ui.field-error name="billing_cycle" />
                             </div>
+                            <div>
+                                <x-ui.label for="schedule_manual">Asientos sin hardware</x-ui.label>
+                                <input type="number" min="0" name="manual_seats" id="schedule_manual" value="{{ old('manual_seats', $company->package_manual_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            </div>
+                            <div>
+                                <x-ui.label for="schedule_hardware">Asientos con hardware</x-ui.label>
+                                <input type="number" min="0" name="hardware_seats" id="schedule_hardware" value="{{ old('hardware_seats', $company->package_hardware_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            </div>
                         </div>
+                        <p class="text-xs text-slate-500">La suma de asientos debe igualar el cupo. Desde 5 puedes mezclar.</p>
                         <div class="flex justify-end gap-2">
                             <x-ui.button type="button" variant="secondary" size="sm" @click="changeOpen = false">Volver</x-ui.button>
                             <x-ui.button type="submit" variant="primary" size="sm">Pagar online y programar</x-ui.button>

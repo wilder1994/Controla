@@ -1,6 +1,6 @@
 # Empleados, cargos y tipos (empresa)
 
-**Última actualización:** 25 agosto 2026
+**Última actualización:** 26 agosto 2026
 
 Maestro de colaboradores de la empresa de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
 
@@ -10,7 +10,7 @@ Fuente de columnas: `Maestro Colaboradores WM.xlsx` (1 hoja `WM`, A–Z).
 
 ## Dónde vive
 
-Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos**.
+Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos** | **Zonas** | **Turnos** | **Preoperacional**. Las tres últimas son de Supervisión de campo (ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md)).
 
 | Pieza | Dónde |
 |-------|--------|
@@ -19,6 +19,7 @@ Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos*
 | Listado / alta / ficha | Sidebar **Empleados** (`/company/employees`) |
 | Cargos | Ajustes → `/company/job-titles` |
 | Tipos de colaborador | Ajustes → `/company/collaborator-types` |
+| Zonas / turnos / preoperacional (Supervisión) | Ajustes → `/company/supervision-zones`, `…-shifts`, `…-preop` |
 | Formato Excel | `GET /company/employees/template` |
 | Carga masiva | modal en el listado → preview → aceptar |
 

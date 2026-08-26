@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
-use App\Models\Resident;
-use App\Models\HousingUnit;
 use App\Models\Building;
+use App\Models\HousingUnit;
+use App\Models\Resident;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ class ResidentController extends Controller
     public function index()
     {
         $residents = Resident::with('housingUnits.building')->latest()->paginate(15);
+
         return view('modules.access.residents.index', compact('residents'));
     }
 
@@ -21,12 +23,13 @@ class ResidentController extends Controller
     {
         $buildings = Building::where('is_active', true)->get();
         $housingUnits = HousingUnit::where('is_active', true)->with('building')->get();
-        $housingUnitsData = $housingUnits->map(fn($u) => [
+        $housingUnitsData = $housingUnits->map(fn ($u) => [
             'id' => $u->id,
             'unit_number' => $u->unit_number,
             'building_name' => $u->building->name ?? '',
             'type' => $u->type,
         ])->values();
+
         return view('modules.access.residents.create', compact('buildings', 'housingUnits', 'housingUnitsData'));
     }
 
@@ -72,6 +75,7 @@ class ResidentController extends Controller
         $resident->load(['housingUnits.building', 'vehicles', 'accessLogs' => function ($q) {
             $q->latest()->take(20);
         }]);
+
         return view('modules.access.residents.show', compact('resident'));
     }
 
@@ -79,16 +83,17 @@ class ResidentController extends Controller
     {
         $buildings = Building::where('is_active', true)->get();
         $housingUnits = HousingUnit::where('is_active', true)->with('building')->get();
-        $housingUnitsData = $housingUnits->map(fn($u) => [
+        $housingUnitsData = $housingUnits->map(fn ($u) => [
             'id' => $u->id,
             'unit_number' => $u->unit_number,
             'building_name' => $u->building->name ?? '',
             'type' => $u->type,
         ])->values();
         $resident->load('housingUnits');
-        $residentUnitIds = $resident->housingUnits->pluck('id')->map(fn($id) => (string) $id)->values();
+        $residentUnitIds = $resident->housingUnits->pluck('id')->map(fn ($id) => (string) $id)->values();
         $primaryUnit = $resident->housingUnits->where('pivot.is_primary', true)->first();
         $primaryUnitId = $primaryUnit ? (string) $primaryUnit->id : '';
+
         return view('modules.access.residents.edit', compact('resident', 'buildings', 'housingUnits', 'housingUnitsData', 'residentUnitIds', 'primaryUnitId'));
     }
 
@@ -96,7 +101,7 @@ class ResidentController extends Controller
     {
         $validated = $request->validate([
             'document_type' => 'required|string|max:20',
-            'document_number' => 'required|string|max:50|unique:residents,document_number,' . $resident->id,
+            'document_number' => 'required|string|max:50|unique:residents,document_number,'.$resident->id,
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'birth_date' => 'nullable|date',
@@ -132,6 +137,7 @@ class ResidentController extends Controller
     public function destroy(Resident $resident)
     {
         $resident->delete();
+
         return redirect()->route('access.residents.index')
             ->with('success', 'Residente eliminado.');
     }
@@ -142,9 +148,9 @@ class ResidentController extends Controller
         $residents = Resident::with('housingUnits.building')
             ->where(function ($q) use ($query) {
                 $q->where('document_number', 'like', "%{$query}%")
-                  ->orWhere('first_name', 'like', "%{$query}%")
-                  ->orWhere('last_name', 'like', "%{$query}%")
-                  ->orWhere(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', "%{$query}%");
+                    ->orWhere('first_name', 'like', "%{$query}%")
+                    ->orWhere('last_name', 'like', "%{$query}%")
+                    ->orWhere(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', "%{$query}%");
             })
             ->where('is_active', true)
             ->take(10)
@@ -159,9 +165,9 @@ class ResidentController extends Controller
         $units = HousingUnit::with('building')
             ->where(function ($q) use ($query) {
                 $q->where('unit_number', 'like', "%{$query}%")
-                  ->orWhereHas('building', function ($b) use ($query) {
-                      $b->where('name', 'like', "%{$query}%");
-                  });
+                    ->orWhereHas('building', function ($b) use ($query) {
+                        $b->where('name', 'like', "%{$query}%");
+                    });
             })
             ->where('is_active', true)
             ->take(10)
@@ -200,6 +206,7 @@ class ResidentController extends Controller
             return back()->with('error', 'El vehículo no pertenece a este residente.');
         }
         $vehicle->update(['resident_id' => null]);
+
         return back()->with('success', 'Vehículo desasignado del residente.');
     }
 }

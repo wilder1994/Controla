@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Enums\BillingCycle;
 use App\Enums\ClientPlanTier;
 use App\Enums\CompanyPackageSku;
+use App\Enums\SupervisionPackageSku;
 use App\Models\AccessLog;
 use App\Models\Building;
 use App\Models\Client;
@@ -21,7 +22,9 @@ use App\Models\SecurityCompany;
 use App\Models\StructureType;
 use App\Models\Vehicle;
 use App\Models\Visitor;
+use App\Services\Company\SeedSupervisorIntakeDefaultsService;
 use App\Services\Tenant\AssignCompanyPackageService;
+use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -48,12 +51,19 @@ final class TenantSeeder extends Seeder
             BillingCycle::Monthly,
         );
 
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $company,
+            SupervisionPackageSku::Sit10,
+        );
+
         $company->update([
             'party_type' => 'legal_entity',
             'address' => 'Av. 6N # 28-90, Cali',
             'latitude' => 3.4516,
             'longitude' => -76.5320,
         ]);
+
+        app(SeedSupervisorIntakeDefaultsService::class)->execute((int) $company->id);
 
         $palmas = Client::query()->updateOrCreate(
             ['security_company_id' => $company->id, 'slug' => 'palmas-del-ingenio'],
@@ -76,6 +86,7 @@ final class TenantSeeder extends Seeder
                 'access_url' => 'https://controla.test',
                 'is_active' => true,
                 'has_access' => true,
+                'has_supervision' => true,
                 'service_started_at' => now()->subMonths(6)->toDateString(),
             ]
         );

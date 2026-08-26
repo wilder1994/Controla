@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Enums\BillingCycle;
-use App\Enums\CompanyPackageSku;
 use App\Enums\PackageModality;
 use App\Http\Controllers\Controller;
 use App\Models\PricingSettings;
@@ -32,8 +31,6 @@ final class PlansController extends Controller
         $annualDiscount = (float) config('tenancy.pricing.annual_discount', 0.17);
 
         $minMonthly = $this->priceCalculator->quote(PackageModality::Manual, 1, BillingCycle::Monthly, $settings);
-        $comboSku = CompanyPackageSku::tryFrom((string) $request->query('sku'))
-            ?? CompanyPackageSku::fromParts(1, $modality);
 
         return view('modules.public.plans.index', compact(
             'settings',
@@ -43,7 +40,6 @@ final class PlansController extends Controller
             'modality',
             'annualDiscount',
             'minMonthly',
-            'comboSku',
         ));
     }
 }

@@ -6,8 +6,9 @@ namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
 use App\Models\CommercialPayment;
-use App\Support\Billing\CommercialPaymentAuthorization;
+use App\Models\User;
 use App\Services\Platform\RegisterCommercialPaymentService;
+use App\Support\Billing\CommercialPaymentAuthorization;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -67,7 +68,7 @@ final class CheckoutController extends Controller
             ->with('warning', 'Pago rechazado en el simulador local.');
     }
 
-    private function redirectAfterCheckout(CommercialPayment $payment, ?\App\Models\User $user): RedirectResponse
+    private function redirectAfterCheckout(CommercialPayment $payment, ?User $user): RedirectResponse
     {
         if ($user?->can('platform.documents.manage')) {
             return redirect()->route('admin.documents.expedientes.show', $payment->security_company_id);

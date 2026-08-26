@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services\Access;
 
 use App\Models\Location;
@@ -27,6 +28,7 @@ class GeoService
 
         if ($lat === null || $lng === null) {
             $errors[] = 'La ubicación GPS es obligatoria.';
+
             return $errors;
         }
 

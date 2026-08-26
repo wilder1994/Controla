@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
+use App\Models\Resident;
+use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Visitor;
-use App\Models\Resident;
 use Illuminate\Http\Request;
 
 class VehicleController extends Controller
@@ -12,14 +14,16 @@ class VehicleController extends Controller
     public function index()
     {
         $vehicles = Vehicle::with(['visitor', 'owner', 'resident'])->latest()->paginate(15);
+
         return view('modules.access.vehicles.index', compact('vehicles'));
     }
 
     public function create()
     {
         $visitors = Visitor::all();
-        $users = \App\Models\User::all();
+        $users = User::all();
         $residents = Resident::where('is_active', true)->get();
+
         return view('modules.access.vehicles.create', compact('visitors', 'users', 'residents'));
     }
 
@@ -45,8 +49,9 @@ class VehicleController extends Controller
     public function edit(Vehicle $vehicle)
     {
         $visitors = Visitor::all();
-        $users = \App\Models\User::all();
+        $users = User::all();
         $residents = Resident::where('is_active', true)->get();
+
         return view('modules.access.vehicles.edit', compact('vehicle', 'visitors', 'users', 'residents'));
     }
 
@@ -56,7 +61,7 @@ class VehicleController extends Controller
             'visitor_id' => 'nullable|exists:visitors,id',
             'user_id' => 'nullable|exists:users,id',
             'resident_id' => 'nullable|exists:residents,id',
-            'plate' => 'required|string|max:20|unique:vehicles,plate,' . $vehicle->id,
+            'plate' => 'required|string|max:20|unique:vehicles,plate,'.$vehicle->id,
             'brand' => 'nullable|string|max:50',
             'model' => 'nullable|string|max:50',
             'color' => 'nullable|string|max:30',
@@ -72,6 +77,7 @@ class VehicleController extends Controller
     public function destroy(Vehicle $vehicle)
     {
         $vehicle->delete();
+
         return redirect()->route('access.vehicles.index')
             ->with('success', 'Vehículo eliminado exitosamente.');
     }

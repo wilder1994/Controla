@@ -1,9 +1,9 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
-use App\Services\Access\AuditLogger;
 use Illuminate\Http\Request;
 
 class AuditController extends Controller

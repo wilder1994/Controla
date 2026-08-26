@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToClient;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class HousingUnit extends Model
 {
@@ -43,6 +44,7 @@ class HousingUnit extends Model
     {
         $building = $this->building;
         $bName = $building ? $building->name : '?';
+
         return "{$bName} - {$this->unit_number}";
     }
 }

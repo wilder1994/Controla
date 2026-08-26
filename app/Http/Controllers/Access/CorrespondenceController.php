@@ -1,13 +1,14 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\Correspondence;
-use App\Models\User;
-use App\Models\Location;
-use App\Models\Visitor;
-use App\Models\Resident;
 use App\Models\HousingUnit;
+use App\Models\Location;
+use App\Models\Resident;
+use App\Models\User;
+use App\Models\Visitor;
 use App\Notifications\CorrespondenciaRecibida;
 use App\Services\Access\AuditLogger;
 use Illuminate\Http\Request;
@@ -30,6 +31,7 @@ class CorrespondenceController extends Controller
         $visitors = Visitor::all();
         $residents = Resident::where('is_active', true)->with('housingUnits.building')->get();
         $housingUnits = HousingUnit::where('is_active', true)->with('building')->get();
+
         return view('modules.access.correspondence.create', compact('hosts', 'locations', 'visitors', 'residents', 'housingUnits'));
     }
 
@@ -73,12 +75,14 @@ class CorrespondenceController extends Controller
     public function show(Correspondence $correspondence)
     {
         $correspondence->load(['host', 'location', 'receiver', 'deliverer', 'visitor', 'housingUnit.building', 'resident']);
+
         return view('modules.access.correspondence.show', compact('correspondence'));
     }
 
     public function destroy(Correspondence $correspondence)
     {
         $correspondence->delete();
+
         return redirect()->route('access.correspondence.index')
             ->with('success', 'Correspondencia eliminada.');
     }

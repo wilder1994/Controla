@@ -22,7 +22,7 @@ final class ClientImportTemplateInstructionsSheet implements FromArray, ShouldAu
         return [
             ['Instrucciones — carga de clientes Controla'],
             [''],
-            ['Usa la hoja Clientes. Esta hoja no se importa. La ficha no consume cupo; Accesos y Pro sí.'],
+            ['Usa la hoja Clientes. Esta hoja no se importa. La ficha no consume cupo; Accesos y Supervisión sí.'],
             ['Rojo = obligatorio. Gris = opcional.'],
             [''],
             ['Columna', 'Regla'],
@@ -34,7 +34,7 @@ final class ClientImportTemplateInstructionsSheet implements FromArray, ShouldAu
             ['Email', 'Obligatorio.'],
             ['Representante / Email representante', 'Obligatorios si es persona jurídica.'],
             ['Tipo de estructura', 'Debe existir en el catálogo (código o nombre, ej. ph / Propiedad horizontal). No se crea desde el Excel.'],
-            ['Accesos / Supervisión Pro', 'SI o NO. Vacío = NO. Si no hay cupo, esa fila queda en error.'],
+            ['Accesos / Supervisión', 'SI o NO. Vacío = NO. Si no hay cupo, esa fila queda en error.'],
             [''],
             ['Cómo cargar'],
             ['1. Llena la hoja Clientes (o pega la tabla en Carga masiva).'],

@@ -1,14 +1,16 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
-use App\Models\Visitor;
-use App\Models\Resident;
-use App\Models\Vehicle;
-use App\Models\Location;
+use App\Models\Building;
 use App\Models\HousingUnit;
+use App\Models\Location;
+use App\Models\Resident;
 use App\Models\User;
+use App\Models\Vehicle;
+use App\Models\Visitor;
 use App\Services\Access\AuditLogger;
 use App\Services\Access\BlocklistGuard;
 use Illuminate\Http\Request;
@@ -24,6 +26,7 @@ class AccessLogController extends Controller
             ->map(function ($log) {
                 $log->hours_inside = $log->entry_time->diffInHours(now());
                 $log->alert_long_stay = $log->hours_inside >= config('access.alerts.long_stay_hours');
+
                 return $log;
             });
 
@@ -39,8 +42,9 @@ class AccessLogController extends Controller
     {
         $locations = Location::where('is_active', true)->get();
         $hosts = User::role('anfitrion')->get();
-        $buildings = \App\Models\Building::where('is_active', true)->get();
+        $buildings = Building::where('is_active', true)->get();
         $housingUnits = HousingUnit::where('is_active', true)->with('building')->get();
+
         return view('modules.access.logs.entry', compact('locations', 'hosts', 'buildings', 'housingUnits'));
     }
 

@@ -11,7 +11,6 @@ use App\Models\PlatformDocument;
 use App\Models\SecurityCompany;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 
 final class IssueDemoInvoiceService
 {

@@ -19,7 +19,7 @@ enum ManualPaymentIntent: string
             self::Anticipate => 'Anticipar próximo periodo',
             self::Reactivate => 'Reactivar membresía',
             self::PlanChange => 'Cambio de plan (diferido)',
-            self::SupervisionChange => 'Supervisión Pro',
+            self::SupervisionChange => 'Supervisión',
         };
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Platform;
 
 use App\Enums\ClientLifecycle;
+use App\Enums\EvidenceEventType;
 use App\Models\Client;
 use Carbon\CarbonImmutable;
 
@@ -25,7 +26,7 @@ final class ReleaseClientService
         ]);
 
         $this->evidenceService->record(
-            \App\Enums\EvidenceEventType::ClientReleased,
+            EvidenceEventType::ClientReleased,
             'Acta de retiro de conjunto',
             [
                 'client_id' => $client->id,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Company;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\ManualPaymentIntent;
@@ -68,9 +69,9 @@ final class BillingController extends Controller
         $pendingPayment = $payments
             ->first(fn (CommercialPayment $p) => $p->status === PaymentStatus::Pending && $p->gateway_driver === 'local');
 
-        $sku = $company->package_sku ?? CompanyPackageSku::Pack10Manual;
-        $quote = $this->priceCalculator->quote($sku->modality(), $sku->size(), BillingCycle::Monthly);
-        $quoteAnnual = $this->priceCalculator->quote($sku->modality(), $sku->size(), BillingCycle::Annual);
+        $seats = $company->accessSeats();
+        $quote = $this->priceCalculator->quoteAccess($seats, BillingCycle::Monthly);
+        $quoteAnnual = $this->priceCalculator->quoteAccess($seats, BillingCycle::Annual);
 
         $isUpToDate = $company->isUpToDate();
         $defaultCheckoutIntent = match (true) {
@@ -94,7 +95,7 @@ final class BillingController extends Controller
             'quote' => $quote,
             'quoteAnnual' => $quoteAnnual,
             'packageOptions' => CompanyPackageSku::options(),
-            'supervisionOptions' => SupervisionPackageSku::options(),
+            'supervisionOptions' => SupervisionPackageSku::selectableOptions((int) ($company->package_size ?: 0)),
             'cycleOptions' => BillingCycle::options(),
             'defaultCheckoutIntent' => $defaultCheckoutIntent,
             'gatewayDriver' => config('billing.gateway.driver'),
@@ -153,11 +154,25 @@ final class BillingController extends Controller
         $company = $this->resolveCompany($request);
 
         try {
+            $sku = CompanyPackageSku::from($request->validated('package_sku'));
+            $cycle = BillingCycle::from($request->validated('billing_cycle'));
+            $seats = AccessSeatSplit::resolve(
+                $sku,
+                isset($request->validated()['manual_seats']) ? (int) $request->validated('manual_seats') : null,
+                isset($request->validated()['hardware_seats']) ? (int) $request->validated('hardware_seats') : null,
+            );
+            $supValue = $request->validated('supervision_package_sku') ?? null;
+            $includeSup = $request->has('supervision_package_sku');
+            $sup = ($includeSup && $supValue) ? SupervisionPackageSku::from($supValue) : null;
+
             $payment = $this->scheduleCompanyPackageChangeService->scheduleWithLocalCheckout(
                 $company,
                 $request->user(),
-                CompanyPackageSku::from($request->validated('package_sku')),
-                BillingCycle::from($request->validated('billing_cycle')),
+                $sku,
+                $cycle,
+                $seats,
+                $includeSup,
+                $sup,
             );
         } catch (\InvalidArgumentException|\RuntimeException $e) {
             return redirect()
@@ -192,11 +207,11 @@ final class BillingController extends Controller
             return redirect()->route('billing.checkout.show', $result);
         }
 
-        $label = $sku?->label() ?? 'sin Supervisión Pro';
+        $label = $sku?->label() ?? 'sin Supervisión';
 
         return redirect()
             ->route('company.billing.index')
-            ->with('success', "Supervisión Pro actualizada: {$label}.");
+            ->with('success', "Supervisión programada al corte: {$label}.");
     }
 
     private function resolveCompany(Request $request): SecurityCompany

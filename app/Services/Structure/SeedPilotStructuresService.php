@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Structure;
 
+use App\Enums\AuthorizationStatus;
+use App\Enums\MemberType;
+use App\Enums\PetSpecies;
+use App\Enums\VisitorCategory;
 use App\Models\Client;
 use App\Models\Structure;
 use App\Models\StructureAppUser;
@@ -12,10 +16,6 @@ use App\Models\StructurePet;
 use App\Models\StructureType;
 use App\Models\Vehicle;
 use App\Models\VisitorPreAuthorization;
-use App\Enums\AuthorizationStatus;
-use App\Enums\MemberType;
-use App\Enums\PetSpecies;
-use App\Enums\VisitorCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Client;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -48,7 +49,7 @@ final class LoginCsrfTest extends TestCase
         $this->seedWithPilot();
 
         $user = User::query()->where('email', 'admin@control-acceso.test')->first();
-        $client = \App\Models\Client::query()->where('slug', 'palmas-del-ingenio')->first();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
 
         $response = $this->actingAs($user)->get(route('company.porteria.enter'));
         $response->assertRedirect(route('company.clients.index'));

@@ -1,9 +1,9 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\Visitor;
-use App\Models\Vehicle;
 use App\Services\Access\BlocklistGuard;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,6 +13,7 @@ class VisitorController extends Controller
     public function index()
     {
         $visitors = Visitor::latest()->paginate(15);
+
         return view('modules.access.visitors.index', compact('visitors'));
     }
 
@@ -50,6 +51,7 @@ class VisitorController extends Controller
         if ($existing) {
             $existing->restore();
             $existing->update($validated);
+
             return redirect()->route('access.visitors.index')
                 ->with('success', 'Visitante restaurado exitosamente.');
         }
@@ -62,7 +64,8 @@ class VisitorController extends Controller
 
     public function show(Visitor $visitor)
     {
-        $visitor->load(['vehicles', 'accessLogs' => fn($q) => $q->latest()->take(20), 'documents']);
+        $visitor->load(['vehicles', 'accessLogs' => fn ($q) => $q->latest()->take(20), 'documents']);
+
         return view('modules.access.visitors.show', compact('visitor'));
     }
 
@@ -102,6 +105,7 @@ class VisitorController extends Controller
     public function destroy(Visitor $visitor)
     {
         $visitor->delete();
+
         return redirect()->route('access.visitors.index')
             ->with('success', 'Visitante eliminado exitosamente.');
     }
@@ -127,7 +131,7 @@ class VisitorController extends Controller
             'birth_date' => 'nullable|date',
         ]);
 
-        $blocked = function (Visitor $visitor) use ($validated): ?array {
+        $blocked = function (Visitor $visitor): ?array {
             $entry = app(BlocklistGuard::class)->checkPerson($visitor);
 
             if ($entry === null) {

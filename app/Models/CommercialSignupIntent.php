@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\PartyType;
@@ -17,6 +18,8 @@ class CommercialSignupIntent extends Model
         'token',
         'status',
         'package_sku',
+        'package_manual_seats',
+        'package_hardware_seats',
         'supervision_package_sku',
         'billing_cycle',
         'amount',
@@ -51,6 +54,8 @@ class CommercialSignupIntent extends Model
         return [
             'status' => SignupIntentStatus::class,
             'package_sku' => CompanyPackageSku::class,
+            'package_manual_seats' => 'integer',
+            'package_hardware_seats' => 'integer',
             'supervision_package_sku' => SupervisionPackageSku::class,
             'billing_cycle' => BillingCycle::class,
             'party_type' => PartyType::class,
@@ -84,9 +89,13 @@ class CommercialSignupIntent extends Model
 
     public function packageLabel(): string
     {
-        $access = $this->package_sku?->label() ?? '';
-        $pro = $this->supervision_package_sku?->label();
+        $manual = (int) ($this->package_manual_seats ?? 0);
+        $hardware = (int) ($this->package_hardware_seats ?? 0);
+        $access = ($manual + $hardware) > 0
+            ? (new AccessSeatSplit($manual, $hardware))->label()
+            : ($this->package_sku?->label() ?? '');
+        $sup = $this->supervision_package_sku?->label();
 
-        return $pro ? $access.' + '.$pro : $access;
+        return $sup ? $access.' + '.$sup : $access;
     }
 }

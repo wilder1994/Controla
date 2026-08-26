@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Public;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\EvidenceEventType;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\PlatformDocumentType;
 use App\Enums\SignupIntentStatus;
+use App\Enums\SupervisionPackageSku;
 use App\Models\CommercialPayment;
 use App\Models\CommercialSignupIntent;
 use App\Models\PlatformDocument;
@@ -17,6 +19,7 @@ use App\Models\SubscriptionAcceptance;
 use App\Models\User;
 use App\Services\Platform\IssueDemoInvoiceService;
 use App\Services\Platform\RecordLifecycleEvidenceService;
+use App\Services\Pricing\PriceCalculator;
 use App\Services\Tenant\AssignCompanyPackageService;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Carbon\CarbonImmutable;
@@ -30,6 +33,7 @@ final class CompletePublicSignupService
         private readonly AssignCompanySupervisionPackageService $assignSupervisionPackageService,
         private readonly RecordLifecycleEvidenceService $evidenceService,
         private readonly IssueDemoInvoiceService $issueDemoInvoiceService,
+        private readonly PriceCalculator $priceCalculator,
     ) {}
 
     public function execute(CommercialSignupIntent $intent): User
@@ -69,10 +73,22 @@ final class CompletePublicSignupService
                 $intent->package_sku,
                 $intent->billing_cycle,
                 $now,
+                new AccessSeatSplit(
+                    (int) ($intent->package_manual_seats ?? $intent->package_sku->size()),
+                    (int) ($intent->package_hardware_seats ?? 0),
+                ),
             );
 
             if ($intent->supervision_package_sku !== null) {
-                $this->assignSupervisionPackageService->execute($company, $intent->supervision_package_sku);
+                $offer = SupervisionPackageSku::offerForAccessSize($intent->package_sku->size());
+                $discount = $intent->supervision_package_sku === $offer
+                    ? $this->priceCalculator->volumeDiscountFor($intent->package_sku->size())
+                    : null;
+                $this->assignSupervisionPackageService->execute(
+                    $company->fresh(),
+                    $intent->supervision_package_sku,
+                    $discount,
+                );
             }
 
             $user = User::query()->create([

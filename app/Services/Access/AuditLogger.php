@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services\Access;
 
 use App\Models\AuditLog;

@@ -26,13 +26,16 @@ return new class extends Migration
             $table->string('logo_path')->nullable();
             $table->boolean('is_active')->default(true);
             $table->unsignedSmallInteger('package_size')->default(10);
+            $table->unsignedSmallInteger('package_manual_seats')->default(10);
+            $table->unsignedSmallInteger('package_hardware_seats')->default(0);
             $table->unsignedSmallInteger('supervision_package_size')->default(0);
             $table->string('package_modality', 20)->default('manual');
             $table->string('package_sku', 40)->nullable();
             $table->string('supervision_package_sku', 40)->nullable();
+            $table->boolean('supervision_unlimited')->default(false);
             $table->decimal('package_price_monthly', 12, 2)->nullable();
             $table->unsignedSmallInteger('max_clients')->default(10);
-            $table->unsignedSmallInteger('max_supervision_clients')->default(0);
+            $table->unsignedInteger('max_supervision_clients')->nullable();
             $table->string('billing_cycle', 20)->default('monthly');
             $table->unsignedTinyInteger('billing_day')->nullable();
             $table->decimal('unit_price_snapshot', 12, 2)->nullable();
@@ -54,6 +57,9 @@ return new class extends Migration
             $table->timestamp('cancelled_at')->nullable();
             $table->string('cancellation_reason', 500)->nullable();
             $table->string('scheduled_package_sku', 40)->nullable();
+            $table->unsignedSmallInteger('scheduled_manual_seats')->nullable();
+            $table->unsignedSmallInteger('scheduled_hardware_seats')->nullable();
+            $table->string('scheduled_supervision_package_sku', 40)->nullable();
             $table->string('scheduled_billing_cycle', 20)->nullable();
             $table->timestamp('scheduled_change_at')->nullable();
             $table->unsignedBigInteger('scheduled_change_payment_id')->nullable();

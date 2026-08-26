@@ -22,7 +22,9 @@ return [
     | Commercial package sizes (client seats). Unit prices live in pricing_settings (DB);
     | volume/annual discounts below drive the auto-calculated price matrix.
     */
-    'package_sizes' => [1, 5, 10, 50, 100],
+    'package_sizes' => [1, 5, 10, 50, 100, 500],
+
+    'supervision_sizes' => [1, 5, 10, 50, 100],
 
     'pricing' => [
         'currency' => 'COP',
@@ -35,6 +37,7 @@ return [
             10 => 0.15,
             50 => 0.25,
             100 => 0.30,
+            500 => 0.50,
         ],
         'annual_discount' => 0.17,
     ],

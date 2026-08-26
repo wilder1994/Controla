@@ -92,7 +92,10 @@
                 @can('company.settings.manage')
                 @php
                     $onAjustes = request()->routeIs('company.job-titles.*')
-                        || request()->routeIs('company.collaborator-types.*');
+                        || request()->routeIs('company.collaborator-types.*')
+                        || request()->routeIs('company.supervision-zones.*')
+                        || request()->routeIs('company.supervision-shifts.*')
+                        || request()->routeIs('company.supervision-preop.*');
                 @endphp
                 <a href="{{ route('company.settings.edit') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.settings.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">

@@ -29,7 +29,7 @@ final class CompanyDashboardTest extends TestCase
         $response->assertSee('Activos');
         $response->assertSee('Archivados');
         $response->assertSee('Disponibles Accesos');
-        $response->assertSee('Disponibles Pro');
+        $response->assertSee('Disponibles Supervisión');
         $response->assertSee('Resumen de alertas y registros (hoy)');
         $response->assertSee('Novedades');
         $response->assertSee('Correspondencia');
@@ -40,6 +40,7 @@ final class CompanyDashboardTest extends TestCase
         $response->assertSee('Turnos abiertos');
         $response->assertSee('Revistas mensuales');
         $response->assertSee('Revistas de supervisión (7 días)');
+        $response->assertSee('Supervisión de campo (hoy)');
         $response->assertDontSee('Cumplimiento por conjunto');
         $response->assertDontSee('Próximamente');
     }

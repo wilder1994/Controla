@@ -1,9 +1,9 @@
 <?php
+
 namespace App\Services\Access;
 
 use App\Models\CommonZone;
 use App\Models\CommonZoneBooking;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ZoneBookingService

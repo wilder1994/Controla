@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Platform;
 
+use App\Enums\EvidenceEventType;
 use App\Models\Client;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -44,7 +45,7 @@ final class PurgeClientTenantDataService
             ]);
 
             $this->evidenceService->record(
-                \App\Enums\EvidenceEventType::TenantPurged,
+                EvidenceEventType::TenantPurged,
                 'Acta de purga operativa (censo tenant)',
                 [
                     'client_id' => $clientId,

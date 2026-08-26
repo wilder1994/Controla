@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Middleware;
 
 use App\Services\Access\TurnoService;
@@ -8,9 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureOpenShift
 {
-    public function __construct(private readonly TurnoService $turnoService)
-    {
-    }
+    public function __construct(private readonly TurnoService $turnoService) {}
 
     public function handle(Request $request, Closure $next): Response
     {

@@ -28,11 +28,15 @@ final class AssertClientServiceSeats
         }
 
         if ($hasSupervision) {
+            if ($company->hasUnlimitedSupervision()) {
+                return;
+            }
+
             $max = (int) ($company->max_supervision_clients ?: 0);
             $used = $company->supervisionSeatsCount($exceptClientId);
             if ($max < 1 || $used >= $max) {
                 throw ValidationException::withMessages([
-                    'has_supervision' => 'Cupo de Supervisión Pro lleno ('.$used.'/'.$max.'). Contrata Pro o deja la ficha sin esa línea.',
+                    'has_supervision' => 'Cupo de Supervisión lleno ('.$used.'/'.$max.'). Contrata Supervisión o deja la ficha sin esa línea.',
                 ]);
             }
         }

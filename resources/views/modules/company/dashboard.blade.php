@@ -18,6 +18,7 @@
     $revistaMonthlyJson = json_encode($revistaMonthly, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $revistaWeekJson = json_encode($revistaWeek, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $accessChartJson = json_encode($accessByClient, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    $fieldSupervision = $fieldSupervision ?? null;
 
     $panicOpen = (int) ($k['panics_open'] ?? 0);
     $novedades = (int) ($k['novedades_today'] ?? 0);
@@ -461,8 +462,8 @@
                                 <span class="font-semibold text-indigo-300 tabular-nums">{{ $metrics['clients_remaining'] ?? $portfolio['available'] ?? 0 }}</span>
                             </div>
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-slate-500">Disponibles Pro</span>
-                                <span class="font-semibold text-amber-300 tabular-nums">{{ $metrics['supervision_remaining'] ?? 0 }}</span>
+                                <span class="text-slate-500">Disponibles Supervisión</span>
+                                <span class="font-semibold text-amber-300 tabular-nums">{{ $metrics['supervision_remaining_label'] ?? $metrics['supervision_remaining'] ?? 0 }}</span>
                             </div>
                             @if ($endsAt)
                                 <p class="text-xs text-slate-600 pt-1 border-t border-slate-800">
@@ -507,6 +508,49 @@
                 </div>
             </div>
         </div>
+
+        @if ($fieldSupervision)
+        <div class="company-cc-card" style="height: auto;">
+            <div class="company-cc-card-head">
+                <h3 class="text-sm font-semibold text-white">Supervisión de campo (hoy)</h3>
+                @can('company.supervision.view')
+                    <a href="{{ route('company.supervision.index', ['tab' => 'summary']) }}" class="text-xs text-amber-300 hover:text-amber-200">Resumen e informe</a>
+                @endcan
+            </div>
+            <div class="company-cc-card-body">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-sm">
+                    <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
+                        <p class="text-[10px] text-slate-500 uppercase">En ruta</p>
+                        <p class="text-lg font-semibold text-white tabular-nums">{{ $fieldSupervision['open_shifts'] }}</p>
+                    </div>
+                    <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
+                        <p class="text-[10px] text-slate-500 uppercase">Revistas app</p>
+                        <p class="text-lg font-semibold text-amber-300 tabular-nums">{{ $fieldSupervision['reviews_today'] }}</p>
+                    </div>
+                    <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
+                        <p class="text-[10px] text-slate-500 uppercase">Cobertura</p>
+                        <p class="text-lg font-semibold text-white tabular-nums">
+                            {{ $fieldSupervision['coverage_pct'] !== null ? $fieldSupervision['coverage_pct'].'%' : '—' }}
+                        </p>
+                        <p class="text-[10px] text-slate-600">{{ $fieldSupervision['sites_visited'] }}/{{ $fieldSupervision['sites_contracted'] }}</p>
+                    </div>
+                    <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
+                        <p class="text-[10px] text-slate-500 uppercase">Recs. abiertas</p>
+                        <p class="text-lg font-semibold tabular-nums {{ $fieldSupervision['open_recommendations'] > 0 ? 'text-amber-300' : 'text-white' }}">{{ $fieldSupervision['open_recommendations'] }}</p>
+                    </div>
+                    <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
+                        <p class="text-[10px] text-slate-500 uppercase">Atenciones</p>
+                        <p class="text-lg font-semibold tabular-nums {{ $fieldSupervision['attention_today'] > 0 ? 'text-red-300' : 'text-white' }}">{{ $fieldSupervision['attention_today'] }}</p>
+                    </div>
+                    <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
+                        <p class="text-[10px] text-slate-500 uppercase">Km hoy</p>
+                        <p class="text-lg font-semibold text-white tabular-nums">{{ $fieldSupervision['km_today'] }}</p>
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-2">Distinto de las revistas de portería (gráficas de abajo). Aquí solo cuenta la app de Supervisión.</p>
+            </div>
+        </div>
+        @endif
 
         {{-- Fila 2: Fuerza laboral | Accesos | Turnos --}}
         <div class="company-cc-row company-cc-row-2">

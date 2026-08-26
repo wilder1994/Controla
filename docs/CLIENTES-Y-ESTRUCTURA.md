@@ -27,7 +27,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
    - Tipos de documento de identidad → `/admin/settings/document-types`
 2. **Empresa** da de alta el cliente en `/company/clients/create` o por **Carga masiva** (`Formato` Excel → preview → aceptar):
    - Datos comerciales (`party_type`, razón social, documento, contactos, representante, ubicación, inicio de servicio)
-   - **Líneas de servicio** opcionales: Accesos / Supervisión Pro (el cupo es por línea, no por ficha)
+   - **Líneas de servicio** opcionales: Accesos / Supervisión (el cupo es por línea, no por ficha)
    - **Tipo de estructura** obligatorio (queda fijo; el Excel no crea tipos)
    - `slug` / `login_suffix` se generan en backend (no van en el formulario)
 3. **Panel cliente** (`/client/structures`): se crean **nodos** del árbol; el tipo se **hereda** del cliente (no se elige por nodo).

@@ -1,76 +1,46 @@
-# Paquetes Accesos y Supervisión Pro
+# Paquetes Accesos y Supervisión
 
-Controla vende **dos paquetes** con la misma matriz de cupo (1 · 5 · 10 · 50 · 100) y descuentos de volumen. El súper admin en `/admin/pricing` solo edita **unitarios**; la matriz se calcula.
-
-## Catálogo vs operación
-
-La empresa puede crear **todas las fichas de cliente** que necesite (razón social, documento, dirección). Eso **no consume cupo**.
-
-El cupo son **líneas de servicio** en cada ficha:
-
-| Flag | Paquete | Consume |
-|------|---------|---------|
-| `has_access` | Accesos (`max_clients`) | 1 asiento |
-| `has_supervision` | Supervisión Pro (`max_supervision_clients`) | 1 asiento |
-| Ambos | Accesos + Pro | 1 + 1 |
-| Ninguno | Solo ficha | 0 |
+Controla vende **Accesos** y **Supervisión** por separado. El súper admin en `/admin/pricing` solo edita **unitarios**; la matriz se calcula.
 
 ## Accesos
 
-- SKU `pack_{n}_{manual|hardware}`.
-- Incluye portería, censo y **supervisión básica en puesto** (código + minuta).
-- Copy comercial: *«Incluida supervisión básica en puesto»*.
+Cupos: **1 · 5 · 10 · 50 · 100 · 500**.
 
-## Supervisión Pro
+| Cupo | Mixto hardware | Supervisión |
+|------|----------------|-------------|
+| 1 | No | No se vende |
+| 5 | Sí (ej. 3 sin HW + 2 con HW) | Oferta: **10** clientes, mismo % de volumen (10 %) |
+| 10 | Sí | Oferta: **20** clientes, mismo % (15 %) |
+| 50 / 100 / 500 | Sí | Oferta: **ilimitada** (2× pack 100) con el % del paquete Accesos (25 / 30 / 50 %). En `/planes` se puede elegir **cualquier** cupo de Supervisión, no solo la oferta. |
 
-- SKU `sup_{n}`. Un unitario, sin hardware.
-- Empresa con Accesos: Pro queda en **0** hasta que plataforma o checkout asignen el SKU.
-- GPS de supervisores (~30 s), turnos, historial/replay en `/company/supervision`.
-- Revista **en la app Pro**, ligada al puesto. **No se vuelve a firmar en portería**: Pro llena la misma minuta (`guard_logs` tipo `revista` si hay punto de acceso).
+Descuentos de volumen Accesos: 1=0 % · 5=10 % · 10=15 % · 50=25 % · 100=30 % · 500=50 %.
 
-## Ficha cliente (UI)
+Precio mixto: `(manual × unitario_manual + hardware × unitario_hardware) × (1 − desc. del cupo)`.
 
-Tabs: **Cliente** siempre; **Accesos** si `has_access`; **Supervisión** si `has_supervision`.
+La ficha de cliente **no** consume cupo. El cupo son las líneas `has_access` / `has_supervision`.
 
-Aterrizaje: una línea → esa vista; ambas → Cliente; ninguna → Cliente.
+Accesos incluye **supervisión básica en puesto** (código + minuta).
 
-«Operar portería / Operar cliente» solo con Accesos.
+## Supervisión (catálogo suelto)
 
-## Checkout público
+1 · 5 · 10 · 50 · 100 e **ilimitado** (precio = **2×** el paquete de 100). Requiere Accesos de 5 o más.
 
-`/planes`: elige cupo Accesos y cupo Pro **por separado** (`sku` + `sup`). El intent suma ambos montos.
+GPS (~30 s), turnos, mapa/replay. Revista en la app; no se vuelve a firmar en portería.
 
-Empresa ya cliente: `/company/billing` → alta/cambio de Pro abre **checkout** (simulador local). Quitar Pro aplica al instante. El monto contratado = Accesos + Pro.
+## Checkout y cambios
 
-Corpus legal de Pro reutiliza el de Accesos (sin SKU jurídico nuevo).
+`/planes`: cupo Accesos, mezcla hardware (desde 5) y Supervisión (oferta del cupo o cualquier otro del catálogo).
 
-## App de campo
+Empresa ya cliente: cambios se **programan y aplican al corte** (Accesos, mixto y Supervisión). Quitar Supervisión no cobra; alta/cambio abre checkout.
 
-PWA en `field-app/` (copia local `C:\laragon\www\Controla_Supervision`). Sin BD. `localStorage.API_URL` o mismo host `/api`.
+## App de campo y catálogos
 
-Control Patrulla (`Control_Patrulla`, `Control_Patrulla_app`) está **archivado** (`ARCHIVED.md`), no fusionado ni borrado.
+Detalle: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
-## Carga masiva de clientes
+PWA en `field-app/` (copia alineada: `Controla_Supervision`). API `/api/supervision/*`. Login de supervisor no usa `structure_app_users`.
 
-La ficha no consume cupo. Columnas Accesos / Supervisión Pro (SI/NO) sí. Preview igual que empleados.
+Ajustes empresa: **Zonas / Turnos / Preoperacional** (además de Cargos y Tipos). La app solo muestra ítems activos.
 
-Detalle: [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
+Captura: tras login, rito de turno (catálogo de turno y zona, EPP/vehículo plegables, odómetro + selfie al abrir y al cerrar). Luego hub de 8 módulos (`GET /catalog`). Flota en `supervisor_fleet_vehicles`, no en `vehicles` de Accesos.
 
-La app de campo **no** tiene BD de negocio. Apunta a `https://dominio/api`.
-
-| Método | Ruta | Notas |
-|--------|------|--------|
-| POST | `/api/supervision/login` | Rol `supervisor` + empresa con Pro |
-| GET | `/api/supervision/shifts/current` | Turno abierto |
-| GET | `/api/supervision/sites` | Clientes con `has_supervision` |
-| POST | `/api/supervision/shifts/open` | `km_start` opcional |
-| POST | `/api/supervision/shifts/ping` | `latitude`, `longitude` |
-| POST | `/api/supervision/shifts/close` | `km_end` opcional |
-| POST | `/api/supervision/reviews` | `client_id`, `notes`; llena minuta si hay Accesos + location |
-
-Login de supervisor **no** usa `structure_app_users`.
-
-## Repos
-
-- **Controla** = web + BD + API (fuente de verdad).
-- App de campo = otro repo; `API_URL` → `/api`. Las carpetas `Control_Patrulla*` se archivan, no se fusionan ni se borran.
+No choca con `/access/supervision` (código en puesto), `SupervisorReview`, `PlatformDocument` ni correspondencia de Accesos.

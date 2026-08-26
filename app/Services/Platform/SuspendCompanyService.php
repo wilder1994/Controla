@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Platform;
 
+use App\Enums\EvidenceEventType;
 use App\Enums\SubscriptionStatus;
 use App\Models\SecurityCompany;
 use Carbon\CarbonImmutable;
@@ -27,7 +28,7 @@ final class SuspendCompanyService
             ]);
 
             $this->evidenceService->record(
-                \App\Enums\EvidenceEventType::CompanySuspended,
+                EvidenceEventType::CompanySuspended,
                 'Acta de suspensión por falta de pago',
                 [
                     'suspended_at' => $at->toIso8601String(),

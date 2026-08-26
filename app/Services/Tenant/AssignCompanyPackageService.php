@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\SubscriptionStatus;
@@ -22,8 +23,10 @@ final class AssignCompanyPackageService
         CompanyPackageSku $sku,
         BillingCycle $cycle = BillingCycle::Monthly,
         ?CarbonImmutable $startsAt = null,
+        ?AccessSeatSplit $seats = null,
     ): SecurityCompany {
-        $quote = $this->priceCalculator->quote($sku->modality(), $sku->size(), $cycle);
+        $seats ??= AccessSeatSplit::fromSku($sku);
+        $quote = $this->priceCalculator->quoteAccess($seats, $cycle);
         $startsAt ??= CarbonImmutable::now();
         $endsAt = $cycle === BillingCycle::Annual
             ? $startsAt->addYear()
@@ -33,10 +36,12 @@ final class AssignCompanyPackageService
         $billingDay = min($billingDayMax, max(1, (int) $startsAt->day));
 
         $company->update([
-            'package_sku' => $sku,
-            'package_size' => $sku->size(),
-            'package_modality' => $sku->modality(),
-            'max_clients' => $sku->size(),
+            'package_sku' => $seats->sku(),
+            'package_size' => $seats->size(),
+            'package_manual_seats' => $seats->manual,
+            'package_hardware_seats' => $seats->hardware,
+            'package_modality' => $seats->modality(),
+            'max_clients' => $seats->size(),
             'billing_cycle' => $cycle,
             'billing_day' => $billingDay,
             'unit_price_snapshot' => $quote->unitPrice,

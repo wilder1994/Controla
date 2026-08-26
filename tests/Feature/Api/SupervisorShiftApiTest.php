@@ -32,7 +32,7 @@ final class SupervisorShiftApiTest extends TestCase
         $login->assertOk();
         $token = $login->json('token');
 
-        $open = $this->withToken($token)->postJson('/api/supervision/shifts/open', ['km_start' => 1000]);
+        $open = $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
         $open->assertCreated();
 
         $ping = $this->withToken($token)->postJson('/api/supervision/shifts/ping', [
@@ -41,15 +41,51 @@ final class SupervisorShiftApiTest extends TestCase
         ]);
         $ping->assertOk();
 
-        $close = $this->withToken($token)->postJson('/api/supervision/shifts/close', ['km_end' => 1012]);
+        $close = $this->withToken($token)->post('/api/supervision/shifts/close', $this->supervisorShiftClosePayload());
         $close->assertOk();
         $this->assertSame('closed', $close->json('shift.status'));
         $this->assertSame(12, $close->json('shift.km_traveled'));
     }
 
+    public function test_open_shift_requires_ppe_and_photos(): void
+    {
+        $this->seedWithPilot();
+        $login = $this->postJson('/api/supervision/login', [
+            'email' => 'supervisor@sj-seguridad.test',
+            'password' => 'Super123!',
+        ]);
+        $token = $login->json('token');
+
+        $this->withToken($token)
+            ->withHeaders(['Accept' => 'application/json'])
+            ->post('/api/supervision/shifts/open', [
+                'km_start' => 100,
+            ])->assertUnprocessable();
+    }
+
+    public function test_intake_lists_checklists_and_empty_fleet(): void
+    {
+        $this->seedWithPilot();
+        $login = $this->postJson('/api/supervision/login', [
+            'email' => 'supervisor@sj-seguridad.test',
+            'password' => 'Super123!',
+        ]);
+        $token = $login->json('token');
+
+        $this->withToken($token)->getJson('/api/supervision/intake')
+            ->assertOk()
+            ->assertJsonPath('first_vehicle', true)
+            ->assertJsonPath('zones.0.name', 'Norte')
+            ->assertJsonPath('shift_templates.0.name', 'Día')
+            ->assertJsonStructure(['ppe', 'vehicle_check', 'zones', 'shift_templates', 'vehicles']);
+    }
+
     public function test_login_fails_without_pro_package(): void
     {
         $this->seedWithPilot();
+
+        $user = User::query()->where('email', 'supervisor@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute($user->securityCompany, null);
 
         $this->postJson('/api/supervision/login', [
             'email' => 'supervisor@sj-seguridad.test',
@@ -76,7 +112,7 @@ final class SupervisorShiftApiTest extends TestCase
         ]);
         $token = $login->json('token');
 
-        $this->withToken($token)->postJson('/api/supervision/shifts/open');
+        $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
         $this->withToken($token)->postJson('/api/supervision/reviews', [
             'client_id' => $client->id,

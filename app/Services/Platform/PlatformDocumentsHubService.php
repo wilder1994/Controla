@@ -43,7 +43,7 @@ final class PlatformDocumentsHubService
             ->get();
     }
 
-  /** @return array{timeline: Collection, documents: Collection, acceptance: ?SubscriptionAcceptance, payments: Collection} */
+    /** @return array{timeline: Collection, documents: Collection, acceptance: ?SubscriptionAcceptance, payments: Collection} */
     public function expedienteDetail(SecurityCompany $company): array
     {
         $company->load([

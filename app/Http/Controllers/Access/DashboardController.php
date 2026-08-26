@@ -1,15 +1,15 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
-use App\Models\Visitor;
-use App\Models\Resident;
-use App\Models\PreAuthorization;
-use App\Models\Correspondence;
 use App\Models\Building;
+use App\Models\Correspondence;
 use App\Models\HousingUnit;
-use Illuminate\Http\Request;
+use App\Models\PreAuthorization;
+use App\Models\Resident;
+use App\Models\Visitor;
 
 class DashboardController extends Controller
 {
@@ -52,10 +52,10 @@ class DashboardController extends Controller
         $hourlyLabels = [];
         $hourlyData = [];
         for ($h = 0; $h < 24; $h++) {
-            $hourlyLabels[] = str_pad($h, 2, '0', STR_PAD_LEFT) . ':00';
+            $hourlyLabels[] = str_pad($h, 2, '0', STR_PAD_LEFT).':00';
             $hourlyData[] = AccessLog::whereDate('entry_time', today())
-                ->whereTime('entry_time', '>=', str_pad($h, 2, '0') . ':00:00')
-                ->whereTime('entry_time', '<', str_pad(($h + 1) % 24, 2, '0') . ':00:00')
+                ->whereTime('entry_time', '>=', str_pad($h, 2, '0').':00:00')
+                ->whereTime('entry_time', '<', str_pad(($h + 1) % 24, 2, '0').':00:00')
                 ->count();
         }
 

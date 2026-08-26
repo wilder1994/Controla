@@ -1,6 +1,6 @@
 {
   "name": "Controla Supervisión",
-  "short_name": "Controla Pro",
+  "short_name": "Supervisión",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#020617",

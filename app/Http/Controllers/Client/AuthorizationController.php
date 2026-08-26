@@ -10,7 +10,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreAuthorizationRequest;
 use App\Models\Structure;
 use App\Models\StructureMember;
-use App\Models\VisitorPreAuthorization;
 use App\Repositories\VisitorPreAuthorizationRepository;
 use App\Services\Structure\CreateAuthorizationService;
 use App\Services\Structure\ImportAuthorizationsService;

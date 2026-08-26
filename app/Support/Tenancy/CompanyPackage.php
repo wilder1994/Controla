@@ -25,6 +25,11 @@ final class CompanyPackage
 
     public static function allows(SecurityCompany $company, string $feature): bool
     {
+        if ((int) ($company->package_hardware_seats ?? 0) > 0) {
+            return PackageModality::Hardware->allows($feature)
+                || PackageModality::Manual->allows($feature);
+        }
+
         return self::modalityOf($company)->allows($feature);
     }
 

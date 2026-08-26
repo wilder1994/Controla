@@ -6,9 +6,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PreAuthorization;
-use App\Models\Visitor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 final class PreAuthorizationController extends Controller
 {
@@ -34,7 +34,7 @@ final class PreAuthorizationController extends Controller
 
         $validated['host_id'] = $request->user()->id;
         $validated['status'] = 'pending';
-        $validated['qr_code'] = \Illuminate\Support\Str::random(32);
+        $validated['qr_code'] = Str::random(32);
 
         $preAuth = PreAuthorization::create($validated);
 

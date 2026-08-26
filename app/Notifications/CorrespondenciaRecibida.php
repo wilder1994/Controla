@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Notifications;
 
 use App\Models\Correspondence;
@@ -11,9 +12,7 @@ class CorrespondenciaRecibida extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public readonly Correspondence $correspondence)
-    {
-    }
+    public function __construct(public readonly Correspondence $correspondence) {}
 
     public function via(object $notifiable): array
     {

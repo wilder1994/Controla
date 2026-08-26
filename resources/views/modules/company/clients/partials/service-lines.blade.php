@@ -5,11 +5,14 @@
     $proRemaining = (int) ($metrics['supervision_remaining'] ?? 0);
     $accessMax = (int) ($metrics['max_clients'] ?? 0);
     $proMax = (int) ($metrics['max_supervision_clients'] ?? 0);
+    $unlimited = (bool) ($metrics['supervision_unlimited'] ?? false);
+    $supervisionCap = $unlimited ? 'Ilimitada' : $proRemaining.'/'.$proMax;
+    $supervisionDisabled = (! $unlimited && ($proMax < 1 || ($proRemaining < 1 && ! $proOn)));
 @endphp
 
 <div>
     <p class="text-sm font-medium text-white">Líneas de servicio</p>
-    <p class="text-xs text-slate-500 mt-0.5">La ficha no consume cupo. El cupo se usa al marcar Accesos o Supervisión Pro.</p>
+    <p class="text-xs text-slate-500 mt-0.5">La ficha no consume cupo. El cupo se usa al marcar Accesos o Supervisión.</p>
     <x-ui.field-error :messages="$errors->get('has_access')" />
     <x-ui.field-error :messages="$errors->get('has_supervision')" />
 
@@ -22,9 +25,9 @@
         </label>
         <label class="rounded-xl border px-4 py-3 cursor-pointer {{ $proOn ? 'border-amber-500 bg-amber-950/20' : 'border-slate-800 bg-slate-950/40' }}">
             <input type="hidden" name="has_supervision" value="0">
-            <input type="checkbox" name="has_supervision" value="1" class="rounded border-slate-600 text-amber-500" @checked($proOn) @disabled(($proMax < 1 || ($proRemaining < 1 && ! $proOn)))>
-            <span class="ml-2 text-sm font-semibold text-white">Supervisión Pro</span>
-            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">App, GPS y revista en campo (llena el puesto). Cupo {{ $proRemaining }}/{{ $proMax }}.</p>
+            <input type="checkbox" name="has_supervision" value="1" class="rounded border-slate-600 text-amber-500" @checked($proOn) @disabled($supervisionDisabled)>
+            <span class="ml-2 text-sm font-semibold text-white">Supervisión</span>
+            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">App, GPS y revista en campo (llena el puesto). Cupo {{ $supervisionCap }}.</p>
         </label>
     </div>
 </div>

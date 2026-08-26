@@ -6,6 +6,7 @@ namespace App\Http\Requests\Concerns;
 
 use App\Support\Auth\AssignableRoles;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 trait ValidatesManagedUser
 {
@@ -18,8 +19,8 @@ trait ValidatesManagedUser
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'email' => ['required', 'email', 'max:255'],
             'password' => $passwordRequired
-                ? ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()]
-                : ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+                ? ['required', 'confirmed', Password::defaults()]
+                : ['nullable', 'confirmed', Password::defaults()],
             'is_active' => ['sometimes', 'boolean'],
             'regenerate_supervisor_code' => ['sometimes', 'boolean'],
         ];

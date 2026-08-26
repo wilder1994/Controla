@@ -6,6 +6,7 @@ namespace App\Services\Platform;
 
 use App\Enums\ArchiveReason;
 use App\Enums\ClientLifecycle;
+use App\Enums\EvidenceEventType;
 use App\Enums\SubscriptionStatus;
 use App\Models\Client;
 use App\Models\SecurityCompany;
@@ -41,7 +42,7 @@ final class ArchiveCompanyService
                 ]);
 
             $this->evidenceService->record(
-                \App\Enums\EvidenceEventType::CompanyArchived,
+                EvidenceEventType::CompanyArchived,
                 'Acta de archivo comercial',
                 [
                     'archive_reason' => $reason->value,

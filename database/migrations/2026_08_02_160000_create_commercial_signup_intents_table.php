@@ -15,6 +15,8 @@ return new class extends Migration
             $table->uuid('token')->unique();
             $table->string('status', 30)->default('draft');
             $table->string('package_sku', 40);
+            $table->unsignedSmallInteger('package_manual_seats')->nullable();
+            $table->unsignedSmallInteger('package_hardware_seats')->nullable();
             $table->string('supervision_package_sku', 40)->nullable();
             $table->string('billing_cycle', 20);
             $table->decimal('amount', 12, 2);

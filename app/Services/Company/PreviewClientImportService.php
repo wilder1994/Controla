@@ -219,7 +219,7 @@ final class PreviewClientImportService
             $errors[] = 'Accesos debe ser SI o NO.';
         }
         if ($hasSupervision === null) {
-            $errors[] = 'Supervisión Pro debe ser SI o NO.';
+            $errors[] = 'Supervisión debe ser SI o NO.';
         }
 
         $status = $errors === [] ? ($warnings === [] ? 'ok' : 'warning') : 'error';
@@ -300,7 +300,7 @@ final class PreviewClientImportService
             if (! empty($payload['has_supervision'])) {
                 if ($proLeft < 1) {
                     $rows[$index]['status'] = 'error';
-                    $rows[$index]['messages'][] = 'Sin cupo de Supervisión Pro. Deja Pro en NO o contrata Pro.';
+                    $rows[$index]['messages'][] = 'Sin cupo de Supervisión. Deja Supervisión en NO o contrata el paquete.';
                     $rows[$index]['payload'] = null;
 
                     continue;

@@ -162,7 +162,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <p class="text-xs text-slate-500">Paquete (cupo × modalidad)</p>
-                        <p class="mt-1 text-sm font-medium text-white">{{ $company->package_sku?->label() ?? '—' }}</p>
+                        <p class="mt-1 text-sm font-medium text-white">{{ $company->packageLabel() }}</p>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500">Ciclo de facturación</p>
@@ -192,16 +192,16 @@
                         @csrf
                         @method('PUT')
                         <div>
-                            <p class="text-xs text-slate-500">Supervisión Pro (sitios GPS)</p>
-                            <p class="mt-1 text-sm font-medium text-white">{{ $company->supervision_package_sku?->label() ?? 'Sin Pro · 0 hasta asignar' }}</p>
+                            <p class="text-xs text-slate-500">Supervisión (sitios GPS)</p>
+                            <p class="mt-1 text-sm font-medium text-white">{{ $company->supervision_package_sku?->label() ?? 'Sin Supervisión' }}</p>
                         </div>
                         <select name="supervision_package_sku" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
-                            <option value="">Sin Supervisión Pro</option>
+                            <option value="">Sin Supervisión</option>
                             @foreach (\App\Enums\SupervisionPackageSku::options() as $value => $label)
                                 <option value="{{ $value }}" @selected(old('supervision_package_sku', $company->supervision_package_sku?->value) === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <x-ui.button type="submit" variant="secondary" size="sm">Asignar Pro</x-ui.button>
+                        <x-ui.button type="submit" variant="secondary" size="sm">Asignar Supervisión</x-ui.button>
                     </form>
                 @endcan
 

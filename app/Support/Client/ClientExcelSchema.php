@@ -34,7 +34,7 @@ final class ClientExcelSchema
             'Ciudad',
             'Departamento',
             'Accesos',
-            'Supervisión Pro',
+            'Supervisión',
         ];
     }
 

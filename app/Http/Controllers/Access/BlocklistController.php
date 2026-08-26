@@ -1,12 +1,14 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\Blocklist;
-use App\Models\Visitor;
-use App\Models\Vehicle;
 use App\Models\Resident;
+use App\Models\Vehicle;
+use App\Models\Visitor;
 use App\Services\Access\AuditLogger;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -64,7 +66,7 @@ class BlocklistController extends Controller
             ->with('success', 'Entrada agregada a la lista de bloqueo.');
     }
 
-    public function searchJson(Request $request): \Illuminate\Http\JsonResponse
+    public function searchJson(Request $request): JsonResponse
     {
         $type = $request->get('type', 'visitor');
         $query = $request->get('q');

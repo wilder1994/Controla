@@ -4,11 +4,23 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Supervision\Data\OpenSupervisorShiftInput;
+use App\Enums\SupervisorChecklistKind;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\CloseSupervisorShiftRequest;
+use App\Http\Requests\Api\OpenSupervisorShiftRequest;
 use App\Models\Client;
+use App\Models\SupervisorChecklistItem;
+use App\Models\SupervisorFleetVehicle;
+use App\Models\SupervisorShiftTemplate;
+use App\Models\SupervisorZone;
 use App\Models\User;
+use App\Services\Company\CloseSupervisorShiftService;
 use App\Services\Company\ManageSupervisorShiftService;
+use App\Services\Company\OpenSupervisorShiftService;
+use App\Services\Company\RecordSupervisorFieldLogService;
 use App\Services\Company\RecordSupervisorProReviewService;
+use App\Services\Company\SeedSupervisorIntakeDefaultsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +30,11 @@ final class SupervisorShiftController extends Controller
 {
     public function __construct(
         private readonly ManageSupervisorShiftService $shiftService,
+        private readonly OpenSupervisorShiftService $openShift,
+        private readonly CloseSupervisorShiftService $closeShift,
         private readonly RecordSupervisorProReviewService $reviewService,
+        private readonly RecordSupervisorFieldLogService $logService,
+        private readonly SeedSupervisorIntakeDefaultsService $intakeDefaults,
     ) {}
 
     public function login(Request $request): JsonResponse
@@ -43,7 +59,7 @@ final class SupervisorShiftController extends Controller
 
         $company = $user->securityCompany;
         if ($company === null || ! $company->hasSupervisionPackage()) {
-            abort(403, 'La empresa no tiene Supervisión Pro.');
+            abort(403, 'La empresa no tiene Supervisión.');
         }
 
         $token = $user->createToken($request->string('device_name')->toString() ?: 'supervision-pro')->plainTextToken;
@@ -62,8 +78,14 @@ final class SupervisorShiftController extends Controller
     public function current(Request $request): JsonResponse
     {
         $shift = $this->shiftService->currentFor($request->user());
+        if ($shift !== null) {
+            $shift->load(['fleetVehicle', 'zone', 'shiftTemplate']);
+        }
 
-        return response()->json(['shift' => $shift]);
+        return response()->json([
+            'shift' => $shift,
+            'activity' => $shift !== null ? $this->logService->activityFor($shift) : null,
+        ]);
     }
 
     public function sites(Request $request): JsonResponse
@@ -77,13 +99,79 @@ final class SupervisorShiftController extends Controller
         return response()->json(['sites' => $sites]);
     }
 
-    public function open(Request $request): JsonResponse
+    public function intake(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'km_start' => ['nullable', 'integer', 'min:0'],
-        ]);
+        $companyId = (int) $request->user()->security_company_id;
+        $this->intakeDefaults->execute($companyId);
 
-        $shift = $this->shiftService->open($request->user(), $data['km_start'] ?? null);
+        $vehicles = SupervisorFleetVehicle::query()
+            ->where('security_company_id', $companyId)
+            ->orderBy('plate')
+            ->get();
+
+        $zones = SupervisorZone::query()
+            ->where('security_company_id', $companyId)
+            ->active()
+            ->get(['id', 'name']);
+
+        $templates = SupervisorShiftTemplate::query()
+            ->where('security_company_id', $companyId)
+            ->active()
+            ->get();
+
+        return response()->json([
+            'zones' => $zones->map(fn (SupervisorZone $zone) => [
+                'id' => $zone->id,
+                'name' => $zone->name,
+            ])->values()->all(),
+            'shift_templates' => $templates->map(fn (SupervisorShiftTemplate $template) => [
+                'id' => $template->id,
+                'name' => $template->name,
+                'starts_at' => $template->starts_at,
+                'ends_at' => $template->ends_at,
+                'schedule' => $template->scheduleLabel(),
+            ])->values()->all(),
+            'ppe' => $this->checklistList($companyId, SupervisorChecklistKind::Ppe),
+            'vehicle_check' => $this->checklistList($companyId, SupervisorChecklistKind::Vehicle),
+            'vehicles' => $vehicles->map(fn (SupervisorFleetVehicle $vehicle) => [
+                'id' => $vehicle->id,
+                'plate' => $vehicle->plate,
+                'label' => $vehicle->displayName(),
+                'brand' => $vehicle->brand,
+                'line' => $vehicle->line,
+                'model' => $vehicle->model,
+                'soat_expires_at' => $vehicle->soat_expires_at?->toDateString(),
+                'technical_review_expires_at' => $vehicle->technical_review_expires_at?->toDateString(),
+                'last_km' => $vehicle->last_km,
+            ])->values()->all(),
+            'first_vehicle' => $vehicles->isEmpty(),
+        ]);
+    }
+
+    public function open(OpenSupervisorShiftRequest $request): JsonResponse
+    {
+        $vehicle = $request->input('vehicle', []);
+        $shift = $this->openShift->execute(
+            $request->user(),
+            new OpenSupervisorShiftInput(
+                shiftTemplateId: (int) $request->validated('shift_template_id'),
+                zoneId: (int) $request->validated('zone_id'),
+                kmStart: (int) $request->validated('km_start'),
+                ppeChecklist: $request->validated('ppe_checklist'),
+                vehicleChecklist: $request->validated('vehicle_checklist'),
+                odometerPhoto: $request->file('odometer_photo'),
+                selfiePhoto: $request->file('selfie_photo'),
+                vehicleId: $request->validated('vehicle_id') !== null ? (int) $request->validated('vehicle_id') : null,
+                plate: $vehicle['plate'] ?? null,
+                brand: $vehicle['brand'] ?? null,
+                line: $vehicle['line'] ?? null,
+                model: $vehicle['model'] ?? null,
+                color: $vehicle['color'] ?? null,
+                type: $vehicle['type'] ?? null,
+                soatExpiresAt: $vehicle['soat_expires_at'] ?? null,
+                technicalReviewExpiresAt: $vehicle['technical_review_expires_at'] ?? null,
+            ),
+        );
 
         return response()->json(['shift' => $shift], 201);
     }
@@ -109,16 +197,17 @@ final class SupervisorShiftController extends Controller
         return response()->json(['location' => $point]);
     }
 
-    public function close(Request $request): JsonResponse
+    public function close(CloseSupervisorShiftRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'km_end' => ['nullable', 'integer', 'min:0'],
-        ]);
-
         $shift = $this->shiftService->currentFor($request->user());
         abort_if($shift === null, 422, 'No hay turno abierto.');
 
-        $closed = $this->shiftService->close($shift, $data['km_end'] ?? null);
+        $closed = $this->closeShift->execute(
+            $shift,
+            (int) $request->validated('km_end'),
+            $request->file('odometer_photo'),
+            $request->file('selfie_photo'),
+        );
 
         return response()->json(['shift' => $closed]);
     }
@@ -145,5 +234,18 @@ final class SupervisorShiftController extends Controller
         );
 
         return response()->json(['review' => $review], 201);
+    }
+
+    /**
+     * @return list<array{key: string, label: string}>
+     */
+    private function checklistList(int $companyId, SupervisorChecklistKind $kind): array
+    {
+        $rows = [];
+        foreach (SupervisorChecklistItem::keyedLabels($companyId, $kind) as $key => $label) {
+            $rows[] = ['key' => $key, 'label' => $label];
+        }
+
+        return $rows;
     }
 }

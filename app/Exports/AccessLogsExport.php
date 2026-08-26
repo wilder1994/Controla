@@ -11,7 +11,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-final class AccessLogsExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize
+final class AccessLogsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function __construct(
         private readonly Request $request,
@@ -46,9 +46,9 @@ final class AccessLogsExport implements FromQuery, WithMapping, WithHeadings, Sh
         return [
             $row->visitor?->full_name ?? $row->resident?->full_name ?? '-',
             $row->visitor?->document_type && $row->visitor?->document_number
-                ? $row->visitor->document_type . ' ' . $row->visitor->document_number
+                ? $row->visitor->document_type.' '.$row->visitor->document_number
                 : ($row->resident?->document_type && $row->resident?->document_number
-                    ? $row->resident->document_type . ' ' . $row->resident->document_number
+                    ? $row->resident->document_type.' '.$row->resident->document_number
                     : '-'),
             $row->access_type,
             $row->host?->name ?? '-',

@@ -23,7 +23,7 @@
                     <input type="hidden" name="action_context" value="schedule" />
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <x-ui.label for="schedule_sku">Nuevo paquete</x-ui.label>
+                            <x-ui.label for="schedule_sku">Nuevo paquete Accesos</x-ui.label>
                             <select id="schedule_sku" name="package_sku" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                                 @foreach ($packageOptions as $value => $label)
                                     <option value="{{ $value }}" @selected(old('package_sku') === $value)>{{ $label }}</option>
@@ -40,7 +40,16 @@
                             </select>
                             <x-ui.field-error name="billing_cycle" />
                         </div>
+                        <div>
+                            <x-ui.label for="schedule_manual">Asientos sin hardware</x-ui.label>
+                            <input type="number" min="0" name="manual_seats" id="schedule_manual" value="{{ old('manual_seats', $company->package_manual_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                        </div>
+                        <div>
+                            <x-ui.label for="schedule_hardware">Asientos con hardware</x-ui.label>
+                            <input type="number" min="0" name="hardware_seats" id="schedule_hardware" value="{{ old('hardware_seats', $company->package_hardware_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                        </div>
                     </div>
+                    <p class="text-xs text-slate-500">La suma de asientos debe igualar el cupo. Desde 5 puedes mezclar.</p>
                     <div>
                         <x-ui.label for="schedule_reference">Referencia de consignación</x-ui.label>
                         <x-ui.input id="schedule_reference" name="reference" accent="platform" value="{{ old('reference') }}" required />

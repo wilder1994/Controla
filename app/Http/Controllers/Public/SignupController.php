@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\SignupIntentStatus;
@@ -41,7 +42,18 @@ final class SignupController extends Controller
                 ->with('warning', 'Selecciona un plan para continuar.');
         }
 
-        $intent = $this->startSignupIntentService->execute($sku, $cycle, $sup);
+        try {
+            $manual = $request->query('manual');
+            $hardware = $request->query('hardware');
+            $seats = AccessSeatSplit::resolve(
+                $sku,
+                $manual !== null ? (int) $manual : null,
+                $hardware !== null ? (int) $hardware : null,
+            );
+            $intent = $this->startSignupIntentService->execute($sku, $cycle, $sup, $seats);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->route('planes.index')->with('warning', $e->getMessage());
+        }
 
         return redirect()->route('signup.data', $intent);
     }

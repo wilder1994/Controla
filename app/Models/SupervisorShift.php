@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SupervisorShiftSlot;
 use App\Enums\SupervisorShiftStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,16 @@ final class SupervisorShift extends Model
         'started_at',
         'ended_at',
         'notes',
+        'supervisor_fleet_vehicle_id',
+        'supervisor_zone_id',
+        'supervisor_shift_template_id',
+        'shift_slot',
+        'schedule_label',
+        'route_zone',
+        'km_start_selfie_path',
+        'km_end_selfie_path',
+        'ppe_checklist',
+        'vehicle_checklist',
     ];
 
     protected function casts(): array
@@ -34,6 +45,9 @@ final class SupervisorShift extends Model
             'km_traveled' => 'integer',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
+            'shift_slot' => SupervisorShiftSlot::class,
+            'ppe_checklist' => 'array',
+            'vehicle_checklist' => 'array',
         ];
     }
 
@@ -55,6 +69,26 @@ final class SupervisorShift extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(SupervisorShiftReview::class);
+    }
+
+    public function fieldLogs(): HasMany
+    {
+        return $this->hasMany(SupervisorFieldLog::class);
+    }
+
+    public function fleetVehicle(): BelongsTo
+    {
+        return $this->belongsTo(SupervisorFleetVehicle::class, 'supervisor_fleet_vehicle_id');
+    }
+
+    public function zone(): BelongsTo
+    {
+        return $this->belongsTo(SupervisorZone::class, 'supervisor_zone_id');
+    }
+
+    public function shiftTemplate(): BelongsTo
+    {
+        return $this->belongsTo(SupervisorShiftTemplate::class, 'supervisor_shift_template_id');
     }
 
     public function isOpen(): bool

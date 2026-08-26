@@ -20,7 +20,7 @@ final class EnsureSupervisorProApi
 
         $company = $user->securityCompany;
         if ($company === null || ! $company->hasSupervisionPackage()) {
-            abort(403, 'La empresa no tiene Supervisión Pro contratada.');
+            abort(403, 'La empresa no tiene Supervisión contratada.');
         }
 
         return $next($request);

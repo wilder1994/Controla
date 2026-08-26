@@ -13,9 +13,25 @@ use Illuminate\Validation\ValidationException;
 
 final class ManageSupervisorShiftService
 {
+    public function assertCanOperate(User $user): void
+    {
+        if (! $user->hasRole('supervisor') || $user->security_company_id === null) {
+            throw ValidationException::withMessages([
+                'shift' => 'Solo un supervisor de la empresa puede abrir turno de Supervisión.',
+            ]);
+        }
+
+        $company = $user->securityCompany;
+        if ($company === null || ! $company->hasSupervisionPackage()) {
+            throw ValidationException::withMessages([
+                'shift' => 'La empresa no tiene Supervisión contratada.',
+            ]);
+        }
+    }
+
     public function open(User $user, ?int $kmStart = null, ?string $photoPath = null): SupervisorShift
     {
-        $this->assertSupervisor($user);
+        $this->assertCanOperate($user);
 
         $open = SupervisorShift::query()
             ->where('user_id', $user->id)
@@ -85,21 +101,5 @@ final class ManageSupervisorShiftService
             ->where('user_id', $user->id)
             ->where('status', SupervisorShiftStatus::Open)
             ->first();
-    }
-
-    private function assertSupervisor(User $user): void
-    {
-        if (! $user->hasRole('supervisor') || $user->security_company_id === null) {
-            throw ValidationException::withMessages([
-                'shift' => 'Solo un supervisor de la empresa puede abrir turno Pro.',
-            ]);
-        }
-
-        $company = $user->securityCompany;
-        if ($company === null || ! $company->hasSupervisionPackage()) {
-            throw ValidationException::withMessages([
-                'shift' => 'La empresa no tiene Supervisión Pro contratada.',
-            ]);
-        }
     }
 }

@@ -1,11 +1,12 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
-use App\Models\Vehicle;
 use App\Models\Location;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Services\Access\BlocklistGuard;
 use Illuminate\Http\Request;
 
@@ -32,6 +33,7 @@ class VehicleAccessController extends Controller
     {
         $locations = Location::where('is_active', true)->get();
         $owners = User::all();
+
         return view('modules.access.vehicle_access.entry', compact('locations', 'owners'));
     }
 
@@ -71,6 +73,7 @@ class VehicleAccessController extends Controller
             return back()->with('error', 'Este registro ya tiene salida.');
         }
         $accessLog->update(['exit_time' => now(), 'status' => 'completed']);
+
         return redirect()->route('access.vehicle_access.index')
             ->with('success', 'Salida vehicular registrada.');
     }

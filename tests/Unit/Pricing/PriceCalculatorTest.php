@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Pricing;
 
+use App\Domain\Pricing\Data\AccessSeatSplit;
 use App\Enums\BillingCycle;
 use App\Enums\PackageModality;
+use App\Enums\SupervisionPackageSku;
 use App\Models\PricingSettings;
 use App\Services\Pricing\PriceCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,5 +49,39 @@ final class PriceCalculatorTest extends TestCase
 
         $this->assertSame(0.15, $quote->volumeDiscountPct);
         $this->assertEquals(425_000.0, $quote->priceMonthly);
+    }
+
+    public function test_mixed_access_and_five_hundred_discount(): void
+    {
+        PricingSettings::query()->create([
+            'unit_price_manual' => 100_000,
+            'unit_price_hardware' => 200_000,
+            'unit_price_supervision' => 50_000,
+            'currency' => 'COP',
+        ]);
+
+        $calculator = app(PriceCalculator::class);
+        $mix = $calculator->quoteAccess(new AccessSeatSplit(3, 2), BillingCycle::Monthly);
+        $this->assertSame(0.10, $mix->volumeDiscountPct);
+        $this->assertEquals(630_000.0, $mix->priceMonthly);
+
+        $pack500 = $calculator->quote(PackageModality::Manual, 500, BillingCycle::Monthly);
+        $this->assertSame(0.50, $pack500->volumeDiscountPct);
+
+        $offer5 = $calculator->quoteSupervisionOffer(5, BillingCycle::Monthly);
+        $this->assertNotNull($offer5);
+        $this->assertSame(0.10, $offer5->volumeDiscountPct);
+        $this->assertEquals(450_000.0, $offer5->priceMonthly);
+
+        $this->assertNull($calculator->quoteSupervisionOffer(1, BillingCycle::Monthly));
+
+        $sit100 = $calculator->quoteSupervisionSku(SupervisionPackageSku::Sit100, BillingCycle::Monthly);
+        $unlimited = $calculator->quoteSupervisionSku(SupervisionPackageSku::Unlimited, BillingCycle::Monthly);
+        $this->assertEquals($sit100->priceMonthly * 2, $unlimited->priceMonthly);
+
+        $offer50 = $calculator->quoteSupervisionOffer(50, BillingCycle::Monthly);
+        $this->assertNotNull($offer50);
+        $this->assertSame(0.25, $offer50->volumeDiscountPct);
+        $this->assertEquals(7_500_000.0, $offer50->priceMonthly);
     }
 }
