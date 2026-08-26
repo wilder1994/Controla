@@ -8,7 +8,7 @@
                 <p class="text-3xl font-bold text-white mt-1">{{ $units }}</p>
             </div>
             <a href="{{ route('client.structures.index') }}" class="rounded-xl border border-teal-800/50 bg-teal-950/30 p-5 hover:bg-teal-900/30">
-                <p class="text-sm font-medium text-teal-200">Ir a Residencial →</p>
+                <p class="text-sm font-medium text-teal-200">Ir a Estructura →</p>
             </a>
             <a href="{{ route('client.members.index') }}" class="rounded-xl border border-indigo-800/50 bg-indigo-950/30 p-5 hover:bg-indigo-900/30">
                 <p class="text-sm font-medium text-indigo-200">Ir a Personas →</p>

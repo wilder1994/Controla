@@ -563,7 +563,7 @@ Tablas relacionadas:
 | Ruta | Módulo |
 |------|--------|
 | `/client/dashboard` | Resumen |
-| `/client/structures` | Árbol de nodos (copy UI «Residencial» pendiente de renombrar) |
+| `/client/structures` | Árbol de nodos (**Estructura**) |
 | `/client/members` | Directorio personas + QR + **Exportar listado asamblea** |
 | `/client/pets` | Directorio de mascotas por unidad |
 | `/client/vehicles` | Directorio vehicular |

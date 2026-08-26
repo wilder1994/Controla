@@ -195,10 +195,10 @@ Vistas compartidas: `modules/shared/managed-user-form.blade.php`, `modules/share
 
 ---
 
-## Pendiente (acordado, aún no implementado en portería)
+## Portería (minuta y turno)
 
-- UI de **firma de minuta / revista** por código en sesión del vigilante (`/access`).
-- Entidad formal de **turno abierto** (inicio/cierre) ligada al login del vigilante — el login ya existe; falta modelar turno explícito si se endurece la regla “sin turno no opera”.
+- Firma de **revista / minuta** por código en `/access` (tipo Revista + código de catálogo o `users.supervisor_code`).
+- Turno abierto del vigilante: `guard_shifts` + `TurnoService` (`/access/turnos`).
 
 ---
 

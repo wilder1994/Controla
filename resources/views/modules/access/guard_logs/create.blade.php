@@ -15,7 +15,7 @@
                 <h3 class="text-lg font-semibold text-white">Registrar Novedad</h3>
                 <p class="text-sm text-slate-500 mt-0.5">Complete los campos para registrar una nueva minuta de vigilancia</p>
             </div>
-            <div class="px-6 py-5" x-data="geoCapture()">
+            <div class="px-6 py-5" x-data="geoCapture({{ in_array(old('type', 'general'), ['incidente', 'novedad', 'revista'], true) ? 'true' : 'false' }})">
                 <form method="POST" action="{{ route('access.guard_logs.store') }}">
                     @csrf
 
@@ -42,11 +42,12 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Tipo</label>
-                            <select name="type" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="general">📋 General</option>
-                                <option value="novedad">🔶 Novedad</option>
-                                <option value="turno">🔄 Cambio de Turno</option>
-                                <option value="incidente">🚨 Incidente</option>
+                            <select name="type" x-on:change="requiresSupervisor = ['incidente','novedad','revista'].includes($event.target.value)" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="general" @selected(old('type') === 'general')>📋 General</option>
+                                <option value="novedad" @selected(old('type') === 'novedad')>🔶 Novedad</option>
+                                <option value="revista" @selected(old('type') === 'revista')>✅ Revista de puesto</option>
+                                <option value="turno" @selected(old('type') === 'turno')>🔄 Cambio de Turno</option>
+                                <option value="incidente" @selected(old('type') === 'incidente')>🚨 Incidente</option>
                             </select>
                         </div>
                         <div>
@@ -84,12 +85,12 @@
                         <textarea name="description" rows="4" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="Describa la novedad, incidente o novedad ocurrida durante el turno..." required>{{ old('description') }}</textarea>
                     </div>
 
-                    <div class="mt-5" x-data="{ requiresSupervisor: {{ in_array(old('type', 'general'), ['incidente', 'novedad'], true) ? 'true' : 'false' }} }">
+                    <div class="mt-5">
                         <label class="flex items-start gap-3 cursor-pointer">
                             <input type="checkbox" x-model="requiresSupervisor" name="requires_supervisor" value="1" class="mt-0.5 rounded bg-slate-950 border-indigo-600 text-indigo-500 focus:ring-indigo-500">
                             <div>
                                 <p class="text-sm font-medium text-indigo-200">Requiere firma de supervisor</p>
-                                <p class="text-xs text-slate-400">Para novedades e incidentes el supervisor debe validar con su código único.</p>
+                                <p class="text-xs text-slate-400">Para revistas, novedades e incidentes el supervisor valida con su código (catálogo o código de 6 dígitos del usuario supervisor).</p>
                             </div>
                         </label>
 
@@ -122,8 +123,10 @@
 
 @push('scripts')
 <script>
-    function geoCapture() {
+    function geoCapture(requiresSupervisor = false) {
         return {
+            requiresSupervisor,
+            supervisorCode: '{{ old('supervision_code') }}',
             lat: '{{ old('latitude') }}',
             lng: '{{ old('longitude') }}',
             captured: !!'{{ old('latitude') }}',

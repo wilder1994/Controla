@@ -277,7 +277,7 @@ return [
             'permission' => 'client.structures.manage',
             'items' => [
                 ['label' => 'Resumen', 'route' => 'client.dashboard', 'permission' => 'client.structures.manage'],
-                ['label' => 'Residencial', 'route' => 'client.structures.index', 'permission' => 'client.structures.manage'],
+                ['label' => 'Estructura', 'route' => 'client.structures.index', 'permission' => 'client.structures.manage'],
                 ['label' => 'Personas', 'route' => 'client.members.index', 'permission' => 'client.members.manage'],
                 ['label' => 'Vehículos', 'route' => 'client.vehicles.index', 'permission' => 'client.vehicles.manage'],
                 ['label' => 'Mascotas', 'route' => 'client.pets.index', 'permission' => 'client.pets.manage'],

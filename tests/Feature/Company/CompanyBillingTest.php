@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Company;
 
+use App\Enums\SupervisionPackageSku;
+use App\Models\CommercialPayment;
 use App\Models\SecurityCompany;
 use App\Models\User;
+use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -55,25 +58,66 @@ final class CompanyBillingTest extends TestCase
         $this->assertFalse($company->hasPendingCancellation());
     }
 
-    public function test_company_can_assign_supervision_pro_from_billing(): void
+    public function test_company_can_checkout_supervision_pro_from_billing(): void
     {
         $this->seedWithPilot();
 
+        $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
         $companyUser = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
 
         $this->actingAs($companyUser)
             ->get(route('company.billing.index'))
             ->assertOk()
             ->assertSee('Supervisión Pro');
 
+        $this->actingAs($admin)->post(
+            route('admin.documents.expedientes.acceptance', $company),
+            [
+                'representative_name' => 'Rep Legal',
+                'representative_role' => 'Gerente',
+                'representative_document_type' => 'CC',
+                'representative_document_number' => '1098765432',
+                ...$this->acceptAllCorpusDocs($company->package_sku),
+            ],
+        )->assertRedirect();
+
+        $checkout = $this->actingAs($companyUser)->post(route('company.billing.supervision.update'), [
+            'supervision_package_sku' => 'sup_5',
+        ]);
+        $checkout->assertRedirect();
+        $this->assertNull($company->fresh()->supervision_package_sku);
+
+        $payment = CommercialPayment::query()
+            ->where('security_company_id', $company->id)
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        $this->actingAs($companyUser)
+            ->post(route('billing.checkout.approve', $payment))
+            ->assertRedirect(route('company.billing.index'));
+
+        $company->refresh();
+        $this->assertSame('sup_5', $company->supervision_package_sku?->value);
+        $this->assertSame(5, (int) $company->max_supervision_clients);
+    }
+
+    public function test_company_can_remove_supervision_pro_without_checkout(): void
+    {
+        $this->seedWithPilot();
+
+        $companyUser = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)
+            ->execute($company, SupervisionPackageSku::Sit1);
+
         $this->actingAs($companyUser)
             ->post(route('company.billing.supervision.update'), [
-                'supervision_package_sku' => 'sup_5',
+                'supervision_package_sku' => '',
             ])
             ->assertRedirect(route('company.billing.index'));
 
-        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
-        $this->assertSame('sup_5', $company->supervision_package_sku?->value);
-        $this->assertSame(5, (int) $company->max_supervision_clients);
+        $this->assertNull($company->fresh()->supervision_package_sku);
+        $this->assertSame(0, (int) $company->fresh()->max_supervision_clients);
     }
 }

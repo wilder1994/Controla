@@ -43,7 +43,7 @@ class PricingSettings extends Model
         return self::query()->create([
             'unit_price_manual' => (float) config('tenancy.pricing.default_unit_manual', 80_000),
             'unit_price_hardware' => (float) config('tenancy.pricing.default_unit_hardware', 150_000),
-            'unit_price_supervision' => (float) config('tenancy.pricing.default_unit_supervision', 0),
+            'unit_price_supervision' => (float) config('tenancy.pricing.default_unit_supervision', 80_000),
             'currency' => (string) config('tenancy.pricing.currency', 'COP'),
         ]);
     }

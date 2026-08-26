@@ -11,10 +11,12 @@ use App\Enums\ManualPaymentIntent;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionStatus;
+use App\Enums\SupervisionPackageSku;
 use App\Models\Client;
 use App\Models\CommercialPayment;
 use App\Models\SecurityCompany;
 use App\Models\User;
+use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +55,12 @@ final class RegisterCommercialPaymentService
         if ($intent === ManualPaymentIntent::PlanChange && ! $company->isUpToDate()) {
             throw new \InvalidArgumentException(
                 'Sin periodo vigente no se puede programar un cambio de plan diferido.'
+            );
+        }
+
+        if ($intent === ManualPaymentIntent::SupervisionChange && ! $company->isUpToDate()) {
+            throw new \InvalidArgumentException(
+                'Sin periodo Accesos vigente no se puede contratar Supervisión Pro.'
             );
         }
 
@@ -126,6 +134,12 @@ final class RegisterCommercialPaymentService
             );
         }
 
+        if ($intent === ManualPaymentIntent::SupervisionChange && ! $company->isUpToDate()) {
+            throw new \InvalidArgumentException(
+                'Sin periodo Accesos vigente no se puede contratar Supervisión Pro.'
+            );
+        }
+
         $cycle = $cycleOverride ?? $company->billing_cycle;
         $amount = $amountOverride ?? $company->contractedAmount();
 
@@ -173,6 +187,10 @@ final class RegisterCommercialPaymentService
 
             if ($intent === ManualPaymentIntent::PlanChange) {
                 app(ScheduleCompanyPackageChangeService::class)->attachFromCompletedPayment($fresh);
+            }
+
+            if ($intent === ManualPaymentIntent::SupervisionChange) {
+                $this->applySupervisionPackageFromPayment($fresh);
             }
 
             return $payment->fresh();
@@ -228,6 +246,13 @@ final class RegisterCommercialPaymentService
             return ['start' => $start, 'end' => $end];
         }
 
+        if ($intent === ManualPaymentIntent::SupervisionChange) {
+            $start = $now;
+            $end = $currentEnd ?? ($cycle === BillingCycle::Annual ? $start->addYear() : $start->addMonth());
+
+            return ['start' => $start, 'end' => $end];
+        }
+
         $start = $now;
         $end = $cycle === BillingCycle::Annual ? $start->addYear() : $start->addMonth();
 
@@ -247,8 +272,8 @@ final class RegisterCommercialPaymentService
             ? CarbonImmutable::parse($payment->covers_period_start)
             : CarbonImmutable::now();
 
-        // Plan change diferido: no mueve package_ends_at del plan actual.
-        if ($intent !== ManualPaymentIntent::PlanChange) {
+        // Plan change diferido y alta Pro: no mueve package_ends_at de Accesos.
+        if (! in_array($intent, [ManualPaymentIntent::PlanChange, ManualPaymentIntent::SupervisionChange], true)) {
             $company->update([
                 'package_starts_at' => $company->package_starts_at ?? $periodStart,
                 'package_ends_at' => $periodEnd ?? $company->package_ends_at,
@@ -330,5 +355,18 @@ final class RegisterCommercialPaymentService
         if ($payment->status !== PaymentStatus::Pending) {
             throw new \InvalidArgumentException('El pago ya no está pendiente de confirmación.');
         }
+    }
+
+    private function applySupervisionPackageFromPayment(CommercialPayment $payment): void
+    {
+        $meta = $payment->metadata ?? [];
+        if (($meta['kind'] ?? null) !== 'supervision_package_change') {
+            return;
+        }
+
+        $sku = SupervisionPackageSku::from((string) $meta['to_sku']);
+        $company = $payment->company ?? SecurityCompany::query()->findOrFail($payment->security_company_id);
+
+        app(AssignCompanySupervisionPackageService::class)->execute($company, $sku);
     }
 }

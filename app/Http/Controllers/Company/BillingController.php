@@ -21,7 +21,7 @@ use App\Services\Platform\CancelCompanyMembershipService;
 use App\Services\Platform\ScheduleCompanyPackageChangeService;
 use App\Services\Platform\UndoCompanyMembershipCancellationService;
 use App\Services\Pricing\PriceCalculator;
-use App\Services\Tenant\AssignCompanySupervisionPackageService;
+use App\Services\Tenant\PurchaseCompanySupervisionPackageService;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,7 +33,7 @@ final class BillingController extends Controller
         private readonly CancelCompanyMembershipService $cancelCompanyMembershipService,
         private readonly UndoCompanyMembershipCancellationService $undoCompanyMembershipCancellationService,
         private readonly ScheduleCompanyPackageChangeService $scheduleCompanyPackageChangeService,
-        private readonly AssignCompanySupervisionPackageService $assignCompanySupervisionPackageService,
+        private readonly PurchaseCompanySupervisionPackageService $purchaseCompanySupervisionPackageService,
         private readonly PriceCalculator $priceCalculator,
     ) {}
 
@@ -174,13 +174,29 @@ final class BillingController extends Controller
         $company = $this->resolveCompany($request);
         $skuValue = $request->validated('supervision_package_sku');
         $sku = $skuValue ? SupervisionPackageSku::from($skuValue) : null;
-        $this->assignCompanySupervisionPackageService->execute($company, $sku);
+
+        try {
+            $result = $this->purchaseCompanySupervisionPackageService->execute(
+                $company,
+                $request->user(),
+                $sku,
+            );
+        } catch (\InvalidArgumentException|\RuntimeException $e) {
+            return redirect()
+                ->route('company.billing.index')
+                ->withInput()
+                ->with('warning', $e->getMessage());
+        }
+
+        if ($result instanceof CommercialPayment) {
+            return redirect()->route('billing.checkout.show', $result);
+        }
 
         $label = $sku?->label() ?? 'sin Supervisión Pro';
 
         return redirect()
             ->route('company.billing.index')
-            ->with('success', "Supervisión Pro actualizada: {$label}. El monto contratado ya incluye Pro.");
+            ->with('success', "Supervisión Pro actualizada: {$label}.");
     }
 
     private function resolveCompany(Request $request): SecurityCompany

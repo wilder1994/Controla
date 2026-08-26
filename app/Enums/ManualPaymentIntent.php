@@ -10,6 +10,7 @@ enum ManualPaymentIntent: string
     case Anticipate = 'anticipate';
     case Reactivate = 'reactivate';
     case PlanChange = 'plan_change';
+    case SupervisionChange = 'supervision_change';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum ManualPaymentIntent: string
             self::Anticipate => 'Anticipar próximo periodo',
             self::Reactivate => 'Reactivar membresía',
             self::PlanChange => 'Cambio de plan (diferido)',
+            self::SupervisionChange => 'Supervisión Pro',
         };
     }
 }

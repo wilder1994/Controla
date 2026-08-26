@@ -40,7 +40,7 @@ Aterrizaje: una línea → esa vista; ambas → Cliente; ninguna → Cliente.
 
 `/planes`: elige cupo Accesos y cupo Pro **por separado** (`sku` + `sup`). El intent suma ambos montos.
 
-Empresa ya cliente: `/company/billing` → **Guardar Pro** (self-serve). El monto contratado = Accesos + Pro.
+Empresa ya cliente: `/company/billing` → alta/cambio de Pro abre **checkout** (simulador local). Quitar Pro aplica al instante. El monto contratado = Accesos + Pro.
 
 Corpus legal de Pro reutiliza el de Accesos (sin SKU jurídico nuevo).
 

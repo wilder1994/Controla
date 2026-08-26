@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
@@ -25,6 +26,7 @@ class GuardLogController extends Controller
     public function create()
     {
         $locations = Location::where('is_active', true)->get();
+
         return view('modules.access.guard_logs.create', compact('locations'));
     }
 
@@ -35,14 +37,14 @@ class GuardLogController extends Controller
         $rules = [
             'location_id' => 'required|exists:locations,id',
             'log_time' => 'required|date',
-            'type' => 'required|in:novedad,turno,incidente,general',
+            'type' => 'required|in:novedad,turno,incidente,general,revista',
             'shift_type' => 'required|in:diurno,nocturno',
             'description' => 'required|string',
             'latitude' => [$geoRequired ? 'required' : 'nullable', 'numeric', 'between:-90,90'],
             'longitude' => [$geoRequired ? 'required' : 'nullable', 'numeric', 'between:-180,180'],
             'signed' => 'accepted',
             'supervision_code' => [
-                $request->input('requires_supervisor') || in_array($request->input('type'), ['incidente', 'novedad'], true) ? 'required' : 'nullable',
+                $request->input('requires_supervisor') || in_array($request->input('type'), ['incidente', 'novedad', 'revista'], true) ? 'required' : 'nullable',
                 'string',
                 'max:50',
             ],
@@ -68,19 +70,21 @@ class GuardLogController extends Controller
         $validated['signed_at'] = $request->boolean('signed') ? now() : null;
 
         $code = null;
+        $supervisorName = null;
         if (! empty($validated['supervision_code'])) {
-            $code = SupervisionCode::where('code', $validated['supervision_code'])
-                ->where('is_active', true)
-                ->first();
+            $resolved = $this->resolveSupervisorSignature((string) $validated['supervision_code']);
 
-            if ($code === null) {
+            if ($resolved === null) {
                 return back()->withErrors(['supervision_code' => 'El código de supervisor no es válido o está inactivo.'])->withInput();
             }
+
+            $code = $resolved['code'];
+            $supervisorName = $resolved['name'];
         }
 
         $log = GuardLog::create(array_merge($validated, [
             'supervision_code_id' => $code?->id,
-            'supervisor_name' => $code?->name,
+            'supervisor_name' => $supervisorName,
         ]));
 
         app(AuditLogger::class)->record($log, 'guard_log.create', null, [
@@ -110,7 +114,7 @@ class GuardLogController extends Controller
             'log_time' => now(),
             'type' => 'incidente',
             'shift_type' => now()->hour >= 6 && now()->hour < 18 ? 'diurno' : 'nocturno',
-            'description' => '🚨 PANIC: ' . $request->description,
+            'description' => '🚨 PANIC: '.$request->description,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'is_panic' => true,
@@ -143,13 +147,40 @@ class GuardLogController extends Controller
     public function show(GuardLog $guardLog)
     {
         $guardLog->load(['user', 'location']);
+
         return view('modules.access.guard_logs.show', compact('guardLog'));
     }
 
     public function destroy(GuardLog $guardLog)
     {
         $guardLog->delete();
+
         return redirect()->route('access.guard_logs.index')
             ->with('success', 'Minuta eliminada.');
+    }
+
+    /** @return array{code: ?SupervisionCode, name: string}|null */
+    private function resolveSupervisorSignature(string $raw): ?array
+    {
+        $code = SupervisionCode::query()
+            ->where('code', $raw)
+            ->where('is_active', true)
+            ->first();
+
+        if ($code !== null) {
+            return ['code' => $code, 'name' => $code->name];
+        }
+
+        $supervisor = User::query()
+            ->where('supervisor_code', $raw)
+            ->where('is_active', true)
+            ->role('supervisor')
+            ->first();
+
+        if ($supervisor === null) {
+            return null;
+        }
+
+        return ['code' => null, 'name' => $supervisor->name];
     }
 }

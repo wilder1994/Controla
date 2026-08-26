@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Structure;
 
+use App\Enums\MemberType;
 use App\Models\Client;
 use App\Models\Structure;
 use App\Models\StructureMember;
 use App\Models\StructureType;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
-use App\Enums\MemberType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -95,7 +95,7 @@ final class StructureModuleTest extends TestCase
             ->get(route('client.structures.index'));
 
         $response->assertOk();
-        $response->assertSee('Estructura residencial');
+        $response->assertSee('Estructura');
     }
 
     public function test_pilot_seed_creates_tower_and_members(): void

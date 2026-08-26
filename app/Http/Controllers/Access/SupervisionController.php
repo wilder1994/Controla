@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\Location;
 use App\Models\Supervision;
 use App\Models\SupervisionCode;
+use App\Models\User;
 use App\Services\Access\AuditLogger;
 use App\Services\Access\GeoService;
 use Illuminate\Http\Request;
@@ -37,7 +39,24 @@ class SupervisionController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if ($code === null) {
+        if ($code !== null) {
+            session([
+                'supervision.authorized' => true,
+                'supervision.supervisor_code_id' => $code->id,
+                'supervision.supervisor_name' => $code->name,
+            ]);
+
+            return redirect()->route('access.supervision.index')
+                ->with('success', 'Código de supervisión verificado. Bienvenido, '.$code->name.'.');
+        }
+
+        $supervisor = User::query()
+            ->where('supervisor_code', $request->code)
+            ->where('is_active', true)
+            ->role('supervisor')
+            ->first();
+
+        if ($supervisor === null) {
             return back()
                 ->withErrors(['code' => 'El código ingresado no es válido o está desactivado.'])
                 ->withInput();
@@ -45,12 +64,12 @@ class SupervisionController extends Controller
 
         session([
             'supervision.authorized' => true,
-            'supervision.supervisor_code_id' => $code->id,
-            'supervision.supervisor_name' => $code->name,
+            'supervision.supervisor_code_id' => null,
+            'supervision.supervisor_name' => $supervisor->name,
         ]);
 
         return redirect()->route('access.supervision.index')
-            ->with('success', 'Código de supervisión verificado. Bienvenido, '.$code->name.'.');
+            ->with('success', 'Código de revista verificado. Bienvenido, '.$supervisor->name.'.');
     }
 
     public function exit()

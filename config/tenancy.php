@@ -28,7 +28,7 @@ return [
         'currency' => 'COP',
         'default_unit_manual' => 80_000,
         'default_unit_hardware' => 150_000,
-        'default_unit_supervision' => 0,
+        'default_unit_supervision' => 80_000,
         'volume_discounts' => [
             1 => 0.0,
             5 => 0.10,

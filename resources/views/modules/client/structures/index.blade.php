@@ -1,8 +1,18 @@
-<x-client-layout title="Residencial">
+<x-client-layout title="Estructura">
     <div class="space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <h2 class="text-2xl font-bold text-white">Estructura residencial</h2>
+                <h2 class="text-2xl font-bold text-white">Estructura</h2>
+                <p class="text-sm text-slate-400 mt-1">
+                    Árbol de nodos del cliente.
+                    @if ($client->structureType)
+                        Tipo fijo: <span class="text-teal-300">{{ $client->structureType->name }}</span>.
+                    @else
+                        <span class="text-amber-300">Sin tipo de estructura asignado en la ficha del cliente.</span>
+                    @endif
+                </p>
+            </div>
+        </div>
                 <p class="text-sm text-slate-400 mt-1">
                     Árbol de nodos del cliente.
                     @if ($client->structureType)

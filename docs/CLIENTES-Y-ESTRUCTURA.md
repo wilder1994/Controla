@@ -66,15 +66,9 @@ Migraciones relevantes:
 
 ---
 
-## UI pendiente (no implementado aún)
+## Copy de UI
 
-El panel `/client/structures` aún usa copy legacy (**Residencial** / “estructura”). Objetivo de producto:
-
-- Renombrar módulo a **Estructura** / **Nodos**
-- Separar UX **crear nodo** vs **crear subnodo** (“Pertenece a…”)
-- Pestañas tipo Resumen / Árbol / Nodos (opcional)
-
-Hasta entonces el modelo de datos ya es el descrito arriba; el copy se alineará en un siguiente paso.
+El panel `/client/structures` se llama **Estructura** (nodos). Crear subnodo vs nodo raíz y pestañas extra quedan para un siguiente paso.
 
 ---
 

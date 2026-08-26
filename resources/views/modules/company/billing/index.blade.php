@@ -100,9 +100,9 @@
                                 <option value="{{ $value }}" @selected(old('supervision_package_sku', $company->supervision_package_sku?->value) === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <p class="mt-1 text-xs text-slate-500">Independiente del cupo Accesos. El cobro siguiente usa Accesos + Pro.</p>
+                        <p class="mt-1 text-xs text-slate-500">Alta o cambio de cupo abre checkout. Quitar Pro aplica al instante. Independiente del cupo Accesos.</p>
                     </div>
-                    <x-ui.button type="submit" variant="secondary" size="sm">Guardar Pro</x-ui.button>
+                    <x-ui.button type="submit" variant="secondary" size="sm">Pagar / quitar Pro</x-ui.button>
                 </div>
             </form>
 
