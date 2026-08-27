@@ -1,6 +1,6 @@
 # App de campo (PWA)
 
-Copia servible de `C:\laragon\www\Controla_Supervision`. Sin BD. `API_URL` → `/api` de Controla.
+Copia servible de `C:\laragon\www\Controla_Supervision`. Sin BD. Login: correo + contraseña; la API se infiere (`controla_supervision` → `controla` + `/api`).
 
 Revista: cliente con Supervisión → **puesto** (`supervisor_posts`, no puertas de Accesos) → vigilante → foto → GPS. Los módulos del puesto (inventario, libros, carpetas, armamento, recomendaciones) van en borrador hasta **Guardar revista**.
 
@@ -10,6 +10,8 @@ Armamento: novedad Con/Sin, aseo Sí/No (foto de aseo solo si sí) y 5 fotos de 
 
 Alarmas: tipo (Ajustes → Alarmas), prueba o atención, resultado. Apoyos: tipo (Ajustes → Apoyos) + motivo.
 
-Caché SW: `controla-sup-v16`. Hard-refresh tras cambios.
+Caché SW: `controla-sup-v17`. Hard-refresh tras cambios.
+
+Instalación: paneles **Descargas** (`/company/descargas`, `/admin/descargas`). Es PWA (añadir a inicio), no APK ni tiendas. Una URL para todas las empresas. En este corte: HTTP + `.test` + sin iconos 192/512; HTTPS e iconos van en producción.
 
 Ver [`docs/SUPERVISION-CAMPO.md`](../docs/SUPERVISION-CAMPO.md) · [`docs/CLIENTES-Y-ESTRUCTURA.md`](../docs/CLIENTES-Y-ESTRUCTURA.md).

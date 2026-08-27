@@ -37,9 +37,9 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v16`.
+PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v17`.
 
-API **siempre** Controla: si el host es `controla_supervision.test` → `http://controla.test/api`. Hard-refresh tras cambios de PWA.
+Login: solo correo y contraseña. API **siempre** Controla (si el host es `controla_supervision.test` → `http://controla.test/api`). No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
 1. Login (`POST /api/supervision/login`) → rito de **apertura**: turno y zona del catálogo, EPP/vehículo plegables, km + foto odómetro + selfie (cámara, no galería).
 2. Hub: ficha de perfil + **Cerrar**. Cuatro entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**. Ping GPS cada 30 s, silencioso.
@@ -99,6 +99,19 @@ Panel: KPIs de **volumen y nivel**, no de tickets abiertos. Tira de hoy: recomen
 ## Panel empresa — operación
 
 `/company/supervision`: En vivo / Historial / **Resumen**. Header: filtros (año, mes, rango o un día, zona, supervisor) y **Descargar PPTX**. Sin conteo de en vivo/turnos/revistas en el header. El PPTX usa el mismo filtro (`GET /company/supervision/informe.pptx`). Resumen: KPI (cobertura de sitios, revistas, km, recs por nivel) y gráficos por módulo; sin texto explicativo del periodo (el recorte lo marcan los filtros). Año (>45 días) agrupa por mes; si no, por día.
+
+`/company/descargas` y `/admin/descargas`: tarjeta **App de Supervisión** (QR, abrir, copiar, pasos Android/iPhone). Una sola PWA para todas las empresas; el login identifica la empresa. No es la app de residentes de Accesos.
+
+### Distribución (alcance actual)
+
+**PWA, no APK.** No hay Capacitor, Play Store ni App Store. No se genera un binario por empresa.
+
+El supervisor abre el enlace (`SUPERVISION_PWA_URL`, por defecto `http://controla_supervision.test`) e instala desde el navegador:
+
+- Android: Chrome → menú → **Instalar aplicación** o **Añadir a pantalla de inicio**.
+- iPhone: Safari → compartir → **Añadir a pantalla de inicio** (no hay “Instalar” tipo Android).
+
+Limitaciones de este corte (Laragon / piloto): HTTP y host `.test` (el teléfono no resuelve Laragon); el manifest no trae iconos 192/512, así que Chrome puede no ofrecer “Instalar”. En producción hará falta HTTPS, URL pública y esos iconos. APK/tiendas queda para un corte posterior.
 
 Mi empresa muestra la tira **Supervisión de campo (hoy)** aparte de las revistas de portería (incluye recomendaciones del día).
 

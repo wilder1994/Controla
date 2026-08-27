@@ -45,13 +45,13 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
-| **Plataforma** | `/admin` | `super-admin` | Dashboard, precios, empresas, documentos, **Ajustes** (tipos de estructura + tipos de documento) |
-| **Empresa** | `/company` | `company-admin` | Command Center (**Mi empresa**), cartera, **Empleados**, **Mis datos**, **Ajustes** (cargos/tipos + zonas/turnos/preoperacional), usuarios, billing, Supervisión |
+| **Plataforma** | `/admin` | `super-admin` | Dashboard, **Descargas**, precios, empresas, documentos, **Ajustes** (tipos de estructura + tipos de documento) |
+| **Empresa** | `/company` | `company-admin` | Command Center (**Mi empresa**), cartera, **Empleados**, **Mis datos**, **Ajustes** (cargos/tipos + zonas/turnos/preoperacional), usuarios, billing, Supervisión, **Descargas** |
 | **Cliente** | `/client` | `client-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones |
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; API en Controla (`http://controla.test/api`). Caché SW `controla-sup-v16` |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login correo+clave; API inferida. Instalar desde Descargas (PWA, no APK). Caché SW `controla-sup-v17` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -340,6 +340,7 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | Ruta | Función |
 |------|---------|
 | `GET /admin/dashboard` | Dashboard analítico: mapa, KPIs, cartera, paquetes, TOP facturación, tendencia MRR |
+| `GET /admin/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; no APK) |
 | `GET /admin/companies` | Listado empresas + KPIs (riesgo, totales empresas/conjuntos) |
 | `GET/POST /admin/companies/create` | Alta empresa (datos fiscales, paquete, ubicación geo) |
 | `POST /admin/companies/{id}/archive` | Archivar empresa (cascada a clientes) |
@@ -392,7 +393,7 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
-Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
 
 | Ruta | Función |
 |------|---------|
@@ -407,6 +408,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
 | `GET /company/supervision` | Mapa GPS: filtros año/mes/rango/día, zona y supervisor + PPTX; pestañas **En vivo** \| **Historial / replay** \| **Resumen** (KPI y gráficos; el header no muestra conteos) |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro que el resumen) |
+| `GET /company/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; `SUPERVISION_PWA_URL`; no APK ni tiendas) |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
 | `POST /company/billing/supervision` | Contratar / cambiar Supervisión (self-serve, aplica al corte) |
 | `POST /company/billing/checkout` | Checkout online (intent renew/anticipate/reactivate) |
@@ -545,7 +547,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 | Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
 | Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` · expediente conjunto: `BuildClientExpedienteService` |
 | Contexto | `CompanyLayoutComposer` → `companyContext` + `supportMode`; `OperateReturnLayoutComposer` → banner en access/client |
-| Vistas | `company/dashboard` (Mi empresa), `company/clients/*`, `company/billing`, `company/users/*`, `company/settings` (Mis datos), `company/employees/*`, `company/job-titles`, `company/collaborator-types` |
+| Vistas | `company/dashboard` (Mi empresa), `company/clients/*`, `company/billing`, `company/downloads`, `company/users/*`, `company/settings` (Mis datos), `company/employees/*`, `company/job-titles`, `company/collaborator-types` |
 
 Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `platform` (violet en `/admin`). Tamaños: `sm`, `md`.
 

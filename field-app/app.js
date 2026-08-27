@@ -27,8 +27,7 @@ function inferApi() {
 }
 
 function apiBase() {
-    const stored = localStorage.getItem('API_URL');
-    return (stored || inferApi()).replace(/\/$/, '');
+    return inferApi().replace(/\/$/, '');
 }
 
 function token() {
@@ -1001,7 +1000,6 @@ async function afterLogin(name) {
     startCam('cam-self', 'user');
 }
 
-document.getElementById('api').value = localStorage.getItem('API_URL') || inferApi();
 bindCameras();
 bindReviewUi();
 document.querySelectorAll('[data-collapse]').forEach((btn) => {
@@ -1016,8 +1014,7 @@ document.querySelectorAll('[data-collapse]').forEach((btn) => {
 
 document.getElementById('btn-login').onclick = async () => {
     try {
-        const custom = document.getElementById('api').value.trim().replace(/\/$/, '');
-        if (custom) localStorage.setItem('API_URL', custom);
+        localStorage.removeItem('API_URL');
         const data = await api('/supervision/login', {
             method: 'POST',
             body: JSON.stringify({

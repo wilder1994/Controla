@@ -77,6 +77,12 @@
                     <span>Supervisión</span>
                 </a>
                 @endcan
+                @can('company.dashboard')
+                <a href="{{ route('company.downloads.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.downloads.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Descargas</span>
+                </a>
+                @endcan
                 @can('company.settings.manage')
                 <a href="{{ route('company.employees.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.employees.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">

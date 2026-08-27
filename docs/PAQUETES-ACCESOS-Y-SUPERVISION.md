@@ -39,7 +39,7 @@ Empresa ya cliente: cambios se **programan y aplican al corte** (Accesos, mixto 
 
 Detalle: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
-PWA en `field-app/` (copia alineada: `Controla_Supervision`). API `/api/supervision/*`. Login de supervisor no usa `structure_app_users`.
+PWA en `field-app/` (copia alineada: `Controla_Supervision`). API `/api/supervision/*`. Login de supervisor no usa `structure_app_users`. Distribución: **Descargas** (QR); PWA “añadir a inicio”, no APK/Play Store.
 
 Ajustes empresa: **Zonas / Turnos / Preoperacional / Documentos / Libros / Tipos de arma / Marcas / Riesgos / Alarmas / Apoyos** (además de Cargos y Tipos). La app solo muestra ítems activos. Recomendaciones: registro de riesgo por puesto (hasta 3), no ticket.
 

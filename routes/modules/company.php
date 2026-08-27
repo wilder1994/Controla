@@ -10,6 +10,7 @@ use App\Http\Controllers\Company\ClientInstallationController;
 use App\Http\Controllers\Company\ClientSupervisorPostController;
 use App\Http\Controllers\Company\CollaboratorTypeController;
 use App\Http\Controllers\Company\DashboardController;
+use App\Http\Controllers\Company\DownloadsController;
 use App\Http\Controllers\Company\EmployeeController;
 use App\Http\Controllers\Company\JobTitleController;
 use App\Http\Controllers\Company\PorteriaController;
@@ -152,6 +153,10 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/supervision/informe.pptx', [SupervisionMapController::class, 'report'])
             ->middleware('permission:company.supervision.view')
             ->name('supervision.report');
+
+        Route::get('/descargas', [DownloadsController::class, 'index'])
+            ->middleware('permission:company.dashboard')
+            ->name('downloads.index');
 
         Route::get('/users', [UserController::class, 'index'])
             ->middleware('permission:company.users.assign')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\DocumentController;
+use App\Http\Controllers\Platform\DownloadsController;
 use App\Http\Controllers\Platform\IdentityDocumentTypeController;
 use App\Http\Controllers\Platform\PricingController;
 use App\Http\Controllers\Platform\StructureTypeController;
@@ -18,6 +19,10 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->middleware('permission:platform.dashboard')
             ->name('dashboard');
+
+        Route::get('/descargas', [DownloadsController::class, 'index'])
+            ->middleware('permission:platform.dashboard')
+            ->name('downloads.index');
 
         Route::post('/companies/{company}/archive', [DashboardController::class, 'archiveCompany'])
             ->middleware('permission:platform.companies.manage')

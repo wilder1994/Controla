@@ -227,6 +227,7 @@ return [
             'permission' => 'platform.dashboard',
             'items' => [
                 ['label' => 'Resumen', 'route' => 'admin.dashboard', 'permission' => 'platform.dashboard'],
+                ['label' => 'Descargas', 'route' => 'admin.downloads.index', 'permission' => 'platform.dashboard'],
                 ['label' => 'Tabla de precios', 'route' => 'admin.pricing.edit', 'permission' => 'platform.companies.view'],
                 ['label' => 'Empresas', 'route' => 'admin.companies.index', 'permission' => 'platform.companies.view'],
                 ['label' => 'Usuarios', 'route' => 'admin.users.index', 'permission' => 'platform.users.view'],
@@ -242,6 +243,7 @@ return [
                 ['label' => 'Facturación', 'route' => 'company.billing.index', 'permission' => 'company.dashboard'],
                 ['label' => 'Clientes', 'route' => 'company.clients.index', 'permission' => 'company.clients.view'],
                 ['label' => 'Supervisión', 'route' => 'company.supervision.index', 'permission' => 'company.supervision.view'],
+                ['label' => 'Descargas', 'route' => 'company.downloads.index', 'permission' => 'company.dashboard'],
                 ['label' => 'Empleados', 'route' => 'company.employees.index', 'permission' => 'company.settings.manage'],
                 ['label' => 'Usuarios', 'route' => 'company.users.index', 'permission' => 'company.users.assign'],
                 ['label' => 'Mis datos', 'route' => 'company.settings.edit', 'permission' => 'company.settings.manage'],

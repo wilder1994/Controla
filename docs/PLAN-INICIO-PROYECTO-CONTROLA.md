@@ -493,7 +493,7 @@ flowchart LR
 | Scope tenant omitido en query | Alta | Crítico | Global scope en Repository + test de aislamiento en CI |
 | Scope creep PH contable | Media | Medio | Fase 5 explícitamente opcional; rechazar en v1 |
 | Paridad visual Axesa consume tiempo | Alta | Medio | Checklist visual por submódulo, no pixel-perfect |
-| App móvil nativa pedida antes de API | Media | Alto | Fase 4 API-first; PWA como puente |
+| App móvil nativa pedida antes de API | Media | Alto | API-first; PWA (Descargas) como puente. APK/tiendas fuera de este corte |
 
 ---
 
