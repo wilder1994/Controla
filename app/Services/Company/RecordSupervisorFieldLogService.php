@@ -7,6 +7,9 @@ namespace App\Services\Company;
 use App\Enums\SupervisorFieldModule;
 use App\Enums\SupervisorRecommendationPriority;
 use App\Enums\SupervisorRecommendationStatus;
+use App\Enums\SupervisorRiskImpact;
+use App\Enums\SupervisorRiskLevel;
+use App\Enums\SupervisorRiskLikelihood;
 use App\Models\Client;
 use App\Models\SupervisorFieldLog;
 use App\Models\SupervisorRecommendation;
@@ -41,11 +44,14 @@ final class RecordSupervisorFieldLogService
         }
 
         $review = $this->resolveReview($shift, $module, $reviewId);
-        $client = $review?->client ?? $this->resolveClient($shift, $module, $clientId);
-        $validated = $this->assertPayload->execute($module, $payload);
+        $client = $module === SupervisorFieldModule::Documents
+            ? null
+            : ($review?->client ?? $this->resolveClient($shift, $module, $clientId));
+        $validated = $this->assertPayload->execute($module, $payload, (int) $shift->security_company_id);
 
         return DB::transaction(function () use ($shift, $module, $validated, $client, $review, $notes, $lat, $lng) {
             $recommendationId = null;
+            $payload = $validated->payload;
 
             if ($module === SupervisorFieldModule::Recommendations) {
                 if ($client === null) {
@@ -53,18 +59,31 @@ final class RecordSupervisorFieldLogService
                         'client_id' => 'La recomendación requiere un cliente.',
                     ]);
                 }
-                $recommendation = SupervisorRecommendation::query()->create([
-                    'security_company_id' => $shift->security_company_id,
-                    'client_id' => $client->id,
-                    'opened_by_user_id' => $shift->user_id,
-                    'opened_shift_id' => $shift->id,
-                    'status' => SupervisorRecommendationStatus::Open,
-                    'priority' => SupervisorRecommendationPriority::from((string) $validated->payload['priority']),
-                    'due_date' => $validated->payload['due_date'] ?? null,
-                    'title' => $validated->payload['title'],
-                    'body' => $validated->payload['body'],
-                ]);
-                $recommendationId = $recommendation->id;
+
+                foreach ($payload['items'] as $index => $item) {
+                    $level = SupervisorRiskLevel::from((string) $item['risk_level']);
+                    $recommendation = SupervisorRecommendation::query()->create([
+                        'security_company_id' => $shift->security_company_id,
+                        'client_id' => $client->id,
+                        'opened_by_user_id' => $shift->user_id,
+                        'opened_shift_id' => $shift->id,
+                        'status' => SupervisorRecommendationStatus::Recorded,
+                        'priority' => SupervisorRecommendationPriority::from((string) $item['priority']),
+                        'due_date' => null,
+                        'supervisor_risk_type_id' => (int) $item['risk_type_id'],
+                        'risk_type' => $item['risk_type'] ?? null,
+                        'body' => $item['treatment'],
+                        'risk' => $item['risk'],
+                        'likelihood' => SupervisorRiskLikelihood::from((string) $item['likelihood']),
+                        'impact' => SupervisorRiskImpact::from((string) $item['impact']),
+                        'consequence' => $item['consequence'],
+                        'treatment' => $item['treatment'],
+                        'risk_level' => $level,
+                        'photos' => is_array($item['photos'] ?? null) ? $item['photos'] : null,
+                    ]);
+                    $payload['items'][$index]['recommendation_id'] = $recommendation->id;
+                    $recommendationId ??= $recommendation->id;
+                }
             }
 
             return SupervisorFieldLog::query()->create([
@@ -76,7 +95,7 @@ final class RecordSupervisorFieldLogService
                 'supervisor_recommendation_id' => $recommendationId,
                 'module' => $module,
                 'outcome' => $validated->outcome,
-                'payload' => $validated->payload,
+                'payload' => $payload,
                 'notes' => $notes !== null && $notes !== '' ? $notes : null,
                 'latitude' => $lat,
                 'longitude' => $lng,
@@ -149,16 +168,14 @@ final class RecordSupervisorFieldLogService
         SupervisorFieldModule $module,
         ?int $reviewId,
     ): ?SupervisorShiftReview {
-        if ($module->hangsOffReview()) {
-            if ($reviewId === null) {
-                throw ValidationException::withMessages([
-                    'supervisor_shift_review_id' => 'Guarde la revista de este puesto antes de registrar el módulo.',
-                ]);
-            }
+        if (! $module->hangsOffReview()) {
+            return null;
         }
 
         if ($reviewId === null) {
-            return null;
+            throw ValidationException::withMessages([
+                'supervisor_shift_review_id' => 'Guarde la revista de este puesto antes de registrar el módulo.',
+            ]);
         }
 
         $review = SupervisorShiftReview::query()

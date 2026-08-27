@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Company;
 
 use App\Enums\SupervisionPackageSku;
+use App\Enums\SupervisorShiftStatus;
+use App\Models\SupervisorShift;
+use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,7 +35,75 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Historial / replay');
         $response->assertSee('Resumen');
         $response->assertSee('Descargar PPTX');
-        $response->assertSee('Ocho módulos');
+        $response->assertSee('Filtrar');
+        $response->assertSee('Zona');
+        $response->assertSee('Supervisor');
+        $response->assertSee('Norte');
+        $response->assertSee('Supervisor Zona Demo');
+        $response->assertSee('revistas de campo');
+        $response->assertSee('Supervisores en turno');
+        $response->assertDontSee('Nueve módulos');
+
+        $summary = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'summary']));
+        $summary->assertOk();
+        $summary->assertSee('Nueve módulos');
+        $summary->assertSee('Cobertura');
+    }
+
+    public function test_supervision_map_filters_by_zone_and_supervisor(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+
+        $supervisor = User::query()->where('email', 'supervisor@sj-seguridad.test')->firstOrFail();
+        $other = User::factory()->create([
+            'name' => 'Otro Supervisor Filtro',
+            'security_company_id' => $supervisor->security_company_id,
+            'is_active' => true,
+        ]);
+        $other->syncRoles(['supervisor']);
+
+        $norte = SupervisorZone::query()
+            ->where('security_company_id', $supervisor->security_company_id)
+            ->where('name', 'Norte')
+            ->firstOrFail();
+        $sur = SupervisorZone::query()
+            ->where('security_company_id', $supervisor->security_company_id)
+            ->where('name', 'Sur')
+            ->firstOrFail();
+
+        SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'supervisor_zone_id' => $norte->id,
+            'started_at' => now(),
+        ]);
+        SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $other->id,
+            'status' => SupervisorShiftStatus::Open,
+            'supervisor_zone_id' => $sur->id,
+            'started_at' => now(),
+        ]);
+
+        $all = $this->actingAs($admin)->get(route('company.supervision.index'));
+        $all->assertOk();
+        $all->assertSee('"user":"Supervisor Zona Demo"', false);
+        $all->assertSee('"user":"Otro Supervisor Filtro"', false);
+
+        $filtered = $this->actingAs($admin)->get(route('company.supervision.index', [
+            'zone_id' => $norte->id,
+            'supervisor_id' => $supervisor->id,
+        ]));
+        $filtered->assertOk();
+        $filtered->assertSee('"user":"Supervisor Zona Demo"', false);
+        $filtered->assertDontSee('"user":"Otro Supervisor Filtro"', false);
     }
 
     public function test_company_admin_can_download_supervision_pptx(): void

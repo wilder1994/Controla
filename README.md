@@ -34,7 +34,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
 | **Empleados** | Maestro + Excel (Formato / Carga masiva con preview). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
-| **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos empresa). Fuente de verdad: Controla | ✅ Implementada |
+| **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos empresa). Recomendación = registro de riesgo, no ticket. Fuente de verdad: Controla | ✅ Implementada |
 | **Árbol del cliente** | Instalaciones compartidas; Accesos = puertas (`locations`); Supervisión = puestos (`supervisor_posts`). Excel solo ficha | ✅ Implementada |
 
 Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
@@ -51,7 +51,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; API en Controla (`http://controla.test/api`) |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; API en Controla (`http://controla.test/api`). Caché SW `controla-sup-v15` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -392,20 +392,20 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
-Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional).
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos).
 
 | Ruta | Función |
 |------|---------|
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de conjuntos (acción única: **Ver**) |
-| `GET /company/clients/{id}` | Ficha: **Cliente** \| **Accesos** (instalaciones + puertas) \| **Supervisión** (mismas instalaciones + puestos) |
+| `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas). **No** crea instalaciones, accesos ni puestos |
 | `POST/PUT/DELETE /company/clients/{id}/installations` | CRUD instalaciones (catálogo compartido) |
-| `POST/PUT/DELETE /company/clients/{id}/locations` | CRUD accesos de una instalación (pestaña Accesos) |
-| `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos de Supervisión (pestaña Supervisión) |
+| `POST/PUT/DELETE /company/clients/{id}/locations` | CRUD accesos de una instalación (tarjeta Instalaciones y accesos) |
+| `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos de Supervisión (tarjeta Supervisión) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
-| `GET /company/supervision` | Mapa GPS en vivo, historial y **resumen** de Supervisión de campo |
+| `GET /company/supervision` | Mapa GPS: header con rango, zona, supervisor y PPTX; pestañas **En vivo** \| **Historial / replay** \| **Resumen** |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
 | `POST /company/billing/supervision` | Contratar / cambiar Supervisión (self-serve, aplica al corte) |
@@ -424,6 +424,11 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `GET /company/supervision-zones` | **Ajustes → Zonas**: rutas de Supervisión (no Accesos) |
 | `GET /company/supervision-shifts` | **Ajustes → Turnos**: plantillas nombre + horario |
 | `GET /company/supervision-preop` | **Ajustes → Preoperacional**: EPP y vehículo |
+| `GET /company/supervision-document-types` | **Ajustes → Documentos**: tipos que el supervisor recoge o entrega en el turno |
+| `GET /company/supervision-control-book-types` | **Ajustes → Libros**: tipos de libro de control del puesto |
+| `GET /company/supervision-weapon-types` | **Ajustes → Tipos de arma**: pistola, escopeta, revólver, etc. |
+| `GET /company/supervision-weapon-brands` | **Ajustes → Marcas**: marcas del arma en revista |
+| `GET /company/supervision-risk-types` | **Ajustes → Riesgos**: tipos de la recomendación (físico, químico, eléctrico, etc.) |
 
 Detalle empleados: [`docs/EMPLEADOS-Y-CARGOS.md`](docs/EMPLEADOS-Y-CARGOS.md). Supervisión de campo: [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md).
 
@@ -437,7 +442,7 @@ Acciones: anticipar/renovar/reactivar online · cancelar · deshacer cancelació
 
 #### Expediente de conjunto (`/company/clients/{id}`)
 
-Pestañas: **Cliente** (ficha) · **Accesos** (si `has_access`: árbol instalación → acceso + KPIs/charts de portería) · **Supervisión** (si `has_supervision`: mismas instalaciones → puestos + revistas de campo) · Editar · Operar portería / Operar cliente.
+Pestañas: **Cliente** (ficha + tarjetas Operar portería / Operar cliente / Editar + **Instalaciones y accesos** / **Supervisión**) · **Resumen** (si `has_access`: KPIs/charts de portería). Los árboles se abren desde las tarjetas (`?vista=accesos` y `?vista=supervision`), no como pestañas del header.
 
 El Excel de clientes **solo** carga la ficha. Instalaciones, accesos y puestos se crean a mano aquí. Detalle: [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
 
@@ -770,8 +775,8 @@ API autenticada con tokens Laravel Sanctum para consumo desde app móvil futura.
 | `/api/supervision/catalog` | GET | Contrato de 8 módulos de campo |
 | `/api/supervision/posts` | GET | Puestos `supervisor_posts` del cliente (no `locations`) |
 | `/api/supervision/reviews` | POST | Revista en puesto de Supervisión (no llena minuta Accesos) |
-| `/api/supervision/logs` | POST | Inventario, documentos, carpetas, armas, etc. |
-| `/api/supervision/recommendations` | GET/PATCH | Hallazgos con ciclo de vida |
+| `/api/supervision/logs` | POST | Inventario, libros, carpetas, armamento, recomendaciones, etc. |
+| `/api/supervision/recommendations` | GET | Recomendaciones de riesgo (registro inmutable; sin ciclo ni PATCH) |
 
 ```
 app/

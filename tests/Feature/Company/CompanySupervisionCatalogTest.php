@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Company;
 
 use App\Models\SupervisorChecklistItem;
+use App\Models\SupervisorControlBookType;
+use App\Models\SupervisorDocumentType;
 use App\Models\SupervisorShiftTemplate;
+use App\Models\SupervisorWeaponBrand;
+use App\Models\SupervisorWeaponType;
+use App\Models\SupervisorRiskType;
 use App\Models\SupervisorZone;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,6 +75,84 @@ final class CompanySupervisionCatalogTest extends TestCase
             'name' => 'Gafas de seguridad',
             'kind' => 'ppe',
         ]);
+
+        $this->actingAs($admin)
+            ->get(route('company.supervision-document-types.index'))
+            ->assertOk()
+            ->assertSee('Tipos de documento')
+            ->assertSee('Documentos');
+
+        $this->actingAs($admin)->post(route('company.supervision-document-types.store'), [
+            'name' => 'Carta de notificación',
+            'is_active' => '1',
+        ])->assertRedirect(route('company.supervision-document-types.index'));
+
+        $this->assertDatabaseHas('supervisor_document_types', [
+            'name' => 'Carta de notificación',
+            'security_company_id' => $admin->security_company_id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('company.supervision-control-book-types.index'))
+            ->assertOk()
+            ->assertSee('Tipos de libro de control')
+            ->assertSee('Libros');
+
+        $this->actingAs($admin)->post(route('company.supervision-control-book-types.store'), [
+            'name' => 'Minuta',
+            'is_active' => '1',
+        ])->assertRedirect(route('company.supervision-control-book-types.index'));
+
+        $this->assertDatabaseHas('supervisor_control_book_types', [
+            'name' => 'Minuta',
+            'security_company_id' => $admin->security_company_id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('company.supervision-weapon-types.index'))
+            ->assertOk()
+            ->assertSee('Tipos de arma');
+
+        $this->actingAs($admin)->post(route('company.supervision-weapon-types.store'), [
+            'name' => 'Pistola',
+            'is_active' => '1',
+        ])->assertRedirect(route('company.supervision-weapon-types.index'));
+
+        $this->assertDatabaseHas('supervisor_weapon_types', [
+            'name' => 'Pistola',
+            'security_company_id' => $admin->security_company_id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('company.supervision-weapon-brands.index'))
+            ->assertOk()
+            ->assertSee('Marcas de arma');
+
+        $this->actingAs($admin)->post(route('company.supervision-weapon-brands.store'), [
+            'name' => 'Glock',
+            'is_active' => '1',
+        ])->assertRedirect(route('company.supervision-weapon-brands.index'));
+
+        $this->assertDatabaseHas('supervisor_weapon_brands', [
+            'name' => 'Glock',
+            'security_company_id' => $admin->security_company_id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('company.supervision-risk-types.index'))
+            ->assertOk()
+            ->assertSee('Tipos de riesgo')
+            ->assertSee('Riesgos');
+
+        $this->actingAs($admin)->post(route('company.supervision-risk-types.store'), [
+            'name' => 'Riesgo físico',
+            'is_active' => '1',
+        ])->assertRedirect(route('company.supervision-risk-types.index'));
+
+        $this->assertDatabaseHas('supervisor_risk_types', [
+            'name' => 'Riesgo físico',
+            'security_company_id' => $admin->security_company_id,
+        ]);
     }
 
     public function test_guard_cannot_access_supervision_catalogs(): void
@@ -80,6 +163,11 @@ final class CompanySupervisionCatalogTest extends TestCase
         $this->actingAs($guard)->get(route('company.supervision-zones.index'))->assertForbidden();
         $this->actingAs($guard)->get(route('company.supervision-shifts.index'))->assertForbidden();
         $this->actingAs($guard)->get(route('company.supervision-preop.index'))->assertForbidden();
+        $this->actingAs($guard)->get(route('company.supervision-document-types.index'))->assertForbidden();
+        $this->actingAs($guard)->get(route('company.supervision-control-book-types.index'))->assertForbidden();
+        $this->actingAs($guard)->get(route('company.supervision-weapon-types.index'))->assertForbidden();
+        $this->actingAs($guard)->get(route('company.supervision-weapon-brands.index'))->assertForbidden();
+        $this->actingAs($guard)->get(route('company.supervision-risk-types.index'))->assertForbidden();
     }
 
     public function test_company_admin_can_deactivate_zone_and_template(): void
@@ -98,6 +186,36 @@ final class CompanySupervisionCatalogTest extends TestCase
             ->where('security_company_id', $admin->security_company_id)
             ->where('name', 'Casco')
             ->firstOrFail();
+        $docType = SupervisorDocumentType::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'name' => 'Oficio',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+        $bookType = SupervisorControlBookType::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'name' => 'Novedades',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+        $weaponType = SupervisorWeaponType::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'name' => 'Escopeta',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+        $weaponBrand = SupervisorWeaponBrand::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'name' => 'Remington',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+        $riskType = SupervisorRiskType::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'name' => 'Riesgo eléctrico',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
 
         $this->actingAs($admin)->put(route('company.supervision-zones.update', $zone), [
             'name' => 'Norte',
@@ -116,8 +234,38 @@ final class CompanySupervisionCatalogTest extends TestCase
             'is_active' => '0',
         ])->assertRedirect(route('company.supervision-preop.index'));
 
+        $this->actingAs($admin)->put(route('company.supervision-document-types.update', $docType), [
+            'name' => 'Oficio',
+            'is_active' => '0',
+        ])->assertRedirect(route('company.supervision-document-types.index'));
+
+        $this->actingAs($admin)->put(route('company.supervision-control-book-types.update', $bookType), [
+            'name' => 'Novedades',
+            'is_active' => '0',
+        ])->assertRedirect(route('company.supervision-control-book-types.index'));
+
+        $this->actingAs($admin)->put(route('company.supervision-weapon-types.update', $weaponType), [
+            'name' => 'Escopeta',
+            'is_active' => '0',
+        ])->assertRedirect(route('company.supervision-weapon-types.index'));
+
+        $this->actingAs($admin)->put(route('company.supervision-weapon-brands.update', $weaponBrand), [
+            'name' => 'Remington',
+            'is_active' => '0',
+        ])->assertRedirect(route('company.supervision-weapon-brands.index'));
+
+        $this->actingAs($admin)->put(route('company.supervision-risk-types.update', $riskType), [
+            'name' => 'Riesgo eléctrico',
+            'is_active' => '0',
+        ])->assertRedirect(route('company.supervision-risk-types.index'));
+
         $this->assertFalse($zone->fresh()->is_active);
         $this->assertFalse($template->fresh()->is_active);
         $this->assertFalse($item->fresh()->is_active);
+        $this->assertFalse($docType->fresh()->is_active);
+        $this->assertFalse($bookType->fresh()->is_active);
+        $this->assertFalse($weaponType->fresh()->is_active);
+        $this->assertFalse($weaponBrand->fresh()->is_active);
+        $this->assertFalse($riskType->fresh()->is_active);
     }
 }

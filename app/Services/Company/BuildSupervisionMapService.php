@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Company;
 
+use App\Domain\Supervision\Data\SupervisionQueryFilter;
 use App\Enums\SupervisorShiftStatus;
 use App\Models\SecurityCompany;
 use App\Models\SupervisorShift;
@@ -13,18 +14,19 @@ use Carbon\CarbonImmutable;
 final class BuildSupervisionMapService
 {
     /** @return array<string, mixed> */
-    public function execute(SecurityCompany $company, ?string $from = null, ?string $to = null): array
+    public function execute(SecurityCompany $company, SupervisionQueryFilter $filter): array
     {
-        $fromAt = $from !== null && $from !== ''
-            ? CarbonImmutable::parse($from)->startOfDay()
+        $fromAt = $filter->from !== null && $filter->from !== ''
+            ? CarbonImmutable::parse($filter->from)->startOfDay()
             : CarbonImmutable::now()->subDay()->startOfDay();
-        $toAt = $to !== null && $to !== ''
-            ? CarbonImmutable::parse($to)->endOfDay()
+        $toAt = $filter->to !== null && $filter->to !== ''
+            ? CarbonImmutable::parse($filter->to)->endOfDay()
             : CarbonImmutable::now()->endOfDay();
 
         $live = SupervisorShift::query()
             ->where('security_company_id', $company->id)
             ->where('status', SupervisorShiftStatus::Open)
+            ->matchingFilter($filter)
             ->with([
                 'user',
                 'locations' => fn ($q) => $q->orderByDesc('recorded_at')->limit(1),
@@ -49,6 +51,7 @@ final class BuildSupervisionMapService
         $history = SupervisorShift::query()
             ->where('security_company_id', $company->id)
             ->whereBetween('started_at', [$fromAt, $toAt])
+            ->matchingFilter($filter)
             ->with([
                 'user',
                 'locations' => fn ($q) => $q->orderBy('recorded_at'),
@@ -83,9 +86,10 @@ final class BuildSupervisionMapService
         $reviews = SupervisorShiftReview::query()
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->whereHas('shift', function ($q) use ($company, $fromAt, $toAt): void {
+            ->whereHas('shift', function ($q) use ($company, $fromAt, $toAt, $filter): void {
                 $q->where('security_company_id', $company->id)
-                    ->whereBetween('started_at', [$fromAt, $toAt]);
+                    ->whereBetween('started_at', [$fromAt, $toAt])
+                    ->matchingFilter($filter);
             })
             ->with(['shift.user', 'client:id,name', 'supervisorPost:id,name,installation_id'])
             ->orderByDesc('recorded_at')

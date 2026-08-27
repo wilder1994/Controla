@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Company;
 
+use App\Domain\Supervision\Data\SupervisionQueryFilter;
 use App\Http\Controllers\Controller;
 use App\Models\SecurityCompany;
+use App\Models\SupervisorZone;
+use App\Models\User;
 use App\Services\Company\BuildSupervisionMapService;
 use App\Services\Company\BuildSupervisionSummaryService;
 use App\Services\Company\ExportSupervisionExecutiveReportService;
@@ -28,25 +31,38 @@ final class SupervisionMapController extends Controller
 
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $company = SecurityCompany::query()->findOrFail($companyId);
+        $filter = $this->queryFilter($request, $company);
 
-        $from = $request->string('from')->toString();
-        $to = $request->string('to')->toString();
-        $map = $this->buildSupervisionMapService->execute(
-            $company,
-            $from !== '' ? $from : null,
-            $to !== '' ? $to : null,
-        );
+        $map = $this->buildSupervisionMapService->execute($company, $filter);
         $summary = $this->buildSupervisionSummaryService->execute(
             $company,
-            $from !== '' ? $from : ($map['from'] ?? null),
-            $to !== '' ? $to : ($map['to'] ?? null),
+            $filter->withDates(
+                $filter->from ?? ($map['from'] ?? null),
+                $filter->to ?? ($map['to'] ?? null),
+            ),
         );
+
+        $tab = $request->string('tab')->toString();
+        if (! in_array($tab, ['live', 'history', 'summary'], true)) {
+            $tab = 'live';
+        }
 
         return view('modules.company.supervision.index', [
             'company' => $company,
             'map' => $map,
             'summary' => $summary,
-            'tab' => $request->string('tab')->toString() ?: 'live',
+            'tab' => $tab,
+            'filter' => $filter,
+            'zones' => SupervisorZone::query()
+                ->where('security_company_id', $companyId)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'is_active']),
+            'supervisors' => User::query()
+                ->where('security_company_id', $companyId)
+                ->role('supervisor')
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -56,18 +72,45 @@ final class SupervisionMapController extends Controller
 
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $company = SecurityCompany::query()->findOrFail($companyId);
+        $filter = $this->queryFilter($request, $company);
 
-        $from = $request->string('from')->toString();
-        $to = $request->string('to')->toString();
-        $snapshot = $this->buildSupervisionSummaryService->execute(
-            $company,
-            $from !== '' ? $from : null,
-            $to !== '' ? $to : null,
-        );
+        $snapshot = $this->buildSupervisionSummaryService->execute($company, $filter);
         $file = $this->exportReport->execute($snapshot);
 
         return response()
             ->download($file['path'], $file['filename'])
             ->deleteFileAfterSend();
+    }
+
+    private function queryFilter(Request $request, SecurityCompany $company): SupervisionQueryFilter
+    {
+        $from = $request->string('from')->toString();
+        $to = $request->string('to')->toString();
+        $zoneId = $request->integer('zone_id');
+        $supervisorId = $request->integer('supervisor_id');
+
+        if ($zoneId > 0) {
+            $owned = SupervisorZone::query()
+                ->where('security_company_id', $company->id)
+                ->whereKey($zoneId)
+                ->exists();
+            $zoneId = $owned ? $zoneId : 0;
+        }
+
+        if ($supervisorId > 0) {
+            $owned = User::query()
+                ->where('security_company_id', $company->id)
+                ->role('supervisor')
+                ->whereKey($supervisorId)
+                ->exists();
+            $supervisorId = $owned ? $supervisorId : 0;
+        }
+
+        return new SupervisionQueryFilter(
+            from: $from !== '' ? $from : null,
+            to: $to !== '' ? $to : null,
+            zoneId: $zoneId > 0 ? $zoneId : null,
+            supervisorId: $supervisorId > 0 ? $supervisorId : null,
+        );
     }
 }

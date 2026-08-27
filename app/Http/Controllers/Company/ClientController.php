@@ -266,7 +266,7 @@ final class ClientController extends Controller
 
         $client->load(['securityCompany']);
         $vista = $this->resolveClientVista($request, $client);
-        $expediente = $vista === 'accesos'
+        $expediente = $vista === 'resumen'
             ? $this->buildClientExpedienteService->execute($client)
             : null;
 
@@ -294,6 +294,7 @@ final class ClientController extends Controller
             'vista' => $vista,
             'expediente' => $expediente,
             'installations' => $installations,
+            'installationsCount' => $vista === 'resumen' ? $client->installations()->count() : $installations->count(),
             'proReviews' => $proReviews,
             'canManageTree' => $request->user()->can('update', $client),
             'canOperate' => $client->has_access && $request->user()->can('operate', $client),
@@ -383,6 +384,7 @@ final class ClientController extends Controller
         $allowed = ['cliente'];
         if ($client->has_access) {
             $allowed[] = 'accesos';
+            $allowed[] = 'resumen';
         }
         if ($client->has_supervision) {
             $allowed[] = 'supervision';
@@ -393,12 +395,7 @@ final class ClientController extends Controller
             return $vista;
         }
 
-        return match (true) {
-            $client->has_access && $client->has_supervision => 'cliente',
-            (bool) $client->has_access => 'accesos',
-            (bool) $client->has_supervision => 'supervision',
-            default => 'cliente',
-        };
+        return 'cliente';
     }
 
     private function companyId(Request $request): int

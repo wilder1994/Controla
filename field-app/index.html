@@ -59,6 +59,24 @@
         .combo-list { position: absolute; z-index: 30; left: 0; right: 0; max-height: 10rem; overflow: auto; background: var(--navy); border: 1px solid var(--line); border-radius: .5rem; margin-top: .15rem; }
         .combo-list button { width: 100%; height: auto; margin: 0; border-radius: 0; background: transparent; text-align: left; font-weight: 500; font-size: .8rem; padding: .4rem .65rem; }
         .thumb { width: 4.4rem; height: 4.4rem; border-radius: .5rem; object-fit: cover; border: 1px solid var(--line); background: #000; }
+        .item-card { border: 1px solid var(--line); border-radius: .7rem; padding: .7rem; margin-top: .55rem; background: var(--navy); }
+        .item-card:first-child { margin-top: 0; }
+        .item-card .head-row { margin-bottom: 0; }
+        button[data-rep-add] { margin-top: .55rem; }
+        .photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .45rem; margin-top: .45rem; }
+        .photo-slot { margin: 0; padding: 0; height: auto; aspect-ratio: 1; border-radius: .7rem; border: 1px dashed var(--line); background: var(--navy); display: flex; align-items: flex-end; justify-content: center; overflow: hidden; position: relative; }
+        .photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .photo-slot span { position: relative; z-index: 1; font-size: .6rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); text-align: center; padding: .35rem; line-height: 1.2; }
+        .photo-slot.has-photo span { width: 100%; background: linear-gradient(transparent, rgba(0,0,0,.78)); color: #fff; padding: .45rem .3rem .4rem; }
+        .risk-level { margin: .2rem 0 .65rem; padding: .45rem .65rem; border-radius: .6rem; background: var(--navy); border: 1px solid var(--line); font-weight: 700; font-size: .85rem; }
+        .risk-level[data-level="low"] { color: #86efac; }
+        .risk-level[data-level="medium"] { color: #fbbf24; }
+        .risk-level[data-level="high"] { color: #fb923c; }
+        .risk-level[data-level="extreme"] { color: #f87171; }
+        .photo-editor { position: fixed; inset: 0; z-index: 80; background: rgba(7,16,28,.92); display: flex; align-items: flex-end; padding: 1rem; }
+        .photo-editor-inner { width: 100%; max-width: 28rem; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .85rem; }
+        .crop-stage { width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: .7rem; background: #000; touch-action: none; }
+        #crop-canvas { width: 100%; height: 100%; display: block; }
     </style>
 </head>
 <body>
@@ -155,6 +173,7 @@
             <button type="button" class="entry gold" id="btn-open-review">Revista<span>Cliente, puesto y vigilante</span></button>
             <button type="button" class="entry" id="btn-open-alarms">Alarmas<span>Prueba en sitio</span></button>
             <button type="button" class="entry" id="btn-open-supports">Apoyos<span>Operativo · sitio opcional</span></button>
+            <button type="button" class="entry" id="btn-open-documents">Documentos<span>Entregados y pendientes del turno</span></button>
         </div>
 
         <div class="card hidden" id="review-card">
@@ -189,10 +208,10 @@
             <label for="rev-notes">Observaciones</label>
             <textarea id="rev-notes"></textarea>
             <label class="check"><input type="checkbox" id="rev-novelty"><span>Con novedad</span></label>
-            <button type="button" class="gold" id="btn-save-review">Guardar revista</button>
             <p class="sec-title" style="margin-top:1rem;">En este puesto</p>
+            <p class="hint">Registre los módulos que necesite. Nada se envía hasta Guardar revista.</p>
             <div class="grid" id="hub-grid"></div>
-            <div id="recs"></div>
+            <button type="button" class="gold" id="btn-save-review">Guardar revista</button>
         </div>
 
         <div class="card hidden" id="module-card">
@@ -227,6 +246,20 @@
             </div>
             <button type="button" class="gold" id="btn-close">Confirmar cierre</button>
             <button type="button" class="ghost" id="btn-close-back">Volver</button>
+        </div>
+    </div>
+
+    <input id="photo-file" class="hidden" type="file" accept="image/*" capture="environment">
+    <div id="photo-editor" class="photo-editor hidden">
+        <div class="photo-editor-inner">
+            <p class="sec-title" id="crop-title">Encuadrar foto</p>
+            <p class="hint">Arrastre para recortar. Rote si hace falta y confirme.</p>
+            <div class="crop-stage"><canvas id="crop-canvas"></canvas></div>
+            <div class="row">
+                <button type="button" class="secondary" id="btn-crop-rot">Rotar</button>
+                <button type="button" class="gold" id="btn-crop-ok">Usar foto</button>
+            </div>
+            <button type="button" class="ghost" id="btn-crop-cancel">Cancelar</button>
         </div>
     </div>
 

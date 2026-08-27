@@ -17,5 +17,9 @@ final readonly class RecordSupervisorShiftReviewInput
         public UploadedFile $guardPhoto,
         public float $latitude,
         public float $longitude,
+        /** @var list<array{module: string, payload: array<string, mixed>}> */
+        public array $logs = [],
+        /** @var array<int, array<string, UploadedFile>> */
+        public array $logPhotos = [],
     ) {}
 }

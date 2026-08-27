@@ -273,6 +273,8 @@ final class SupervisorShiftController extends Controller
                 guardPhoto: $request->file('guard_photo'),
                 latitude: (float) $request->validated('latitude'),
                 longitude: (float) $request->validated('longitude'),
+                logs: $request->validated('logs') ?? [],
+                logPhotos: is_array($request->file('log_photos')) ? $request->file('log_photos') : [],
             ),
         );
 

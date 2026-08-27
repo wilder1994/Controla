@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api;
 
+use App\Enums\SupervisorFieldModule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class StoreSupervisorShiftReviewRequest extends FormRequest
 {
@@ -20,6 +22,12 @@ final class StoreSupervisorShiftReviewRequest extends FormRequest
                 'has_novelty' => filter_var($this->input('has_novelty'), FILTER_VALIDATE_BOOLEAN),
             ]);
         }
+
+        $logs = $this->input('logs');
+        if (is_string($logs)) {
+            $decoded = json_decode($logs, true);
+            $this->merge(['logs' => is_array($decoded) ? $decoded : []]);
+        }
     }
 
     /** @return array<string, mixed> */
@@ -34,6 +42,11 @@ final class StoreSupervisorShiftReviewRequest extends FormRequest
             'guard_photo' => ['required', 'image', 'max:5120'],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'logs' => ['nullable', 'array'],
+            'logs.*.module' => ['required', Rule::enum(SupervisorFieldModule::class)],
+            'logs.*.payload' => ['required', 'array'],
+            'log_photos' => ['nullable', 'array'],
+            'log_photos.*.*' => ['image', 'max:5120'],
         ];
     }
 

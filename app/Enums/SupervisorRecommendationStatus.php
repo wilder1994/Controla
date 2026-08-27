@@ -6,6 +6,7 @@ namespace App\Enums;
 
 enum SupervisorRecommendationStatus: string
 {
+    case Recorded = 'recorded';
     case Open = 'open';
     case Progress = 'progress';
     case Closed = 'closed';
@@ -13,6 +14,7 @@ enum SupervisorRecommendationStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::Recorded => 'Registrada',
             self::Open => 'Abierta',
             self::Progress => 'En proceso',
             self::Closed => 'Cerrada',
@@ -24,7 +26,7 @@ enum SupervisorRecommendationStatus: string
         return match ($this) {
             self::Open => $next === self::Progress || $next === self::Closed,
             self::Progress => $next === self::Closed,
-            self::Closed => false,
+            self::Recorded, self::Closed => false,
         };
     }
 }

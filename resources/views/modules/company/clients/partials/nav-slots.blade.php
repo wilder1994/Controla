@@ -38,49 +38,17 @@
 <x-slot:headerTabs>
     <a
         href="{{ route('company.clients.show', [$client, 'vista' => 'cliente']) }}"
-        @class(['admin-header-tab', 'is-active' => $vista === 'cliente' && $activeTab !== 'editar'])
+        @class(['admin-header-tab', 'is-active' => in_array($vista, ['cliente', 'accesos', 'supervision'], true)])
     >
         Cliente
     </a>
 
     @if ($client->has_access)
         <a
-            href="{{ route('company.clients.show', [$client, 'vista' => 'accesos']) }}"
-            @class(['admin-header-tab', 'is-active' => $vista === 'accesos' && $activeTab !== 'editar'])
+            href="{{ route('company.clients.show', [$client, 'vista' => 'resumen']) }}"
+            @class(['admin-header-tab', 'is-active' => $vista === 'resumen'])
         >
-            Accesos
-        </a>
-    @endif
-
-    @if ($client->has_supervision)
-        <a
-            href="{{ route('company.clients.show', [$client, 'vista' => 'supervision']) }}"
-            @class(['admin-header-tab', 'is-active' => $vista === 'supervision' && $activeTab !== 'editar'])
-        >
-            Supervisión
-        </a>
-    @endif
-
-    @if ($canOperate ?? false)
-        <form method="POST" action="{{ route('company.clients.activate', $client) }}" class="inline-flex">
-            @csrf
-            <button type="submit" class="admin-header-tab">Operar portería</button>
-        </form>
-    @endif
-
-    @if ($canOperateClientPanel ?? false)
-        <form method="POST" action="{{ route('company.clients.operate-client', $client) }}" class="inline-flex">
-            @csrf
-            <button type="submit" class="admin-header-tab">Operar cliente</button>
-        </form>
-    @endif
-
-    @if ($canUpdate ?? false)
-        <a
-            href="{{ route('company.clients.edit', $client) }}"
-            @class(['admin-header-tab', 'is-active' => $activeTab === 'editar'])
-        >
-            Editar
+            Resumen
         </a>
     @endif
 </x-slot:headerTabs>

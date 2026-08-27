@@ -47,7 +47,8 @@ final class AdvanceSupervisorRecommendationService
                 'action' => 'status_change',
                 'from' => $from->value,
                 'to' => $next->value,
-                'title' => $recommendation->title,
+                'risk' => $recommendation->risk,
+                'risk_type' => $recommendation->risk_type,
             ];
 
             $recommendation->status = $next;

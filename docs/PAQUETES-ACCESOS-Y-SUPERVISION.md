@@ -19,7 +19,7 @@ Precio mixto: `(manual × unitario_manual + hardware × unitario_hardware) × (1
 
 La ficha de cliente **no** consume cupo. El cupo son las líneas `has_access` / `has_supervision`.
 
-El Excel de clientes **solo** da de alta la ficha. Instalaciones, accesos y puestos se crean a mano en las pestañas Accesos / Supervisión. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+El Excel de clientes **solo** da de alta la ficha. Instalaciones, accesos y puestos se crean a mano en las tarjetas de la ficha. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 Accesos incluye **supervisión básica en puesto** (código + minuta de portería). Eso no convierte un acceso en puesto de la app de campo.
 
@@ -41,8 +41,8 @@ Detalle: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
 PWA en `field-app/` (copia alineada: `Controla_Supervision`). API `/api/supervision/*`. Login de supervisor no usa `structure_app_users`.
 
-Ajustes empresa: **Zonas / Turnos / Preoperacional** (además de Cargos y Tipos). La app solo muestra ítems activos.
+Ajustes empresa: **Zonas / Turnos / Preoperacional / Documentos / Libros / Tipos de arma / Marcas / Riesgos** (además de Cargos y Tipos). La app solo muestra ítems activos. Recomendaciones: registro de riesgo por puesto (hasta 3), no ticket.
 
-Captura: tras login, rito de turno (catálogo de turno y zona, EPP/vehículo plegables, odómetro + selfie al abrir y al cerrar). Hub: perfil + revista (cliente, puesto, vigilante, foto, GPS al guardar) + módulos colgados + alarmas/apoyos. Flota en `supervisor_fleet_vehicles`, no en `vehicles` de Accesos.
+Captura: tras login, rito de turno (catálogo de turno y zona, EPP/vehículo plegables, odómetro + selfie al abrir y al cerrar). Hub: perfil + revista (cliente, puesto, vigilante, foto, GPS al guardar) + módulos colgados + alarmas/apoyos/documentos. Flota en `supervisor_fleet_vehicles`, no en `vehicles` de Accesos.
 
 No choca con `/access/supervision` (código en puesto), `SupervisorReview`, `PlatformDocument` ni correspondencia de Accesos.

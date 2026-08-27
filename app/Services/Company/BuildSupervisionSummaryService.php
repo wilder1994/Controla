@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Domain\Supervision\Data\SupervisionPeriodSnapshot;
+use App\Domain\Supervision\Data\SupervisionQueryFilter;
 use App\Enums\SupervisorFieldModule;
 use App\Enums\SupervisorFieldOutcome;
-use App\Enums\SupervisorRecommendationStatus;
+use App\Enums\SupervisorRiskLevel;
 use App\Enums\SupervisorShiftStatus;
 use App\Models\Client;
 use App\Models\SecurityCompany;
@@ -15,18 +16,20 @@ use App\Models\SupervisorFieldLog;
 use App\Models\SupervisorRecommendation;
 use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
+use App\Models\SupervisorZone;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 final class BuildSupervisionSummaryService
 {
-    public function execute(SecurityCompany $company, ?string $from = null, ?string $to = null): SupervisionPeriodSnapshot
+    public function execute(SecurityCompany $company, SupervisionQueryFilter $filter): SupervisionPeriodSnapshot
     {
-        $fromAt = $from !== null && $from !== ''
-            ? CarbonImmutable::parse($from)->startOfDay()
+        $fromAt = $filter->from !== null && $filter->from !== ''
+            ? CarbonImmutable::parse($filter->from)->startOfDay()
             : CarbonImmutable::now()->startOfMonth();
-        $toAt = $to !== null && $to !== ''
-            ? CarbonImmutable::parse($to)->endOfDay()
+        $toAt = $filter->to !== null && $filter->to !== ''
+            ? CarbonImmutable::parse($filter->to)->endOfDay()
             : CarbonImmutable::now()->endOfDay();
 
         $companyId = (int) $company->id;
@@ -38,7 +41,7 @@ final class BuildSupervisionSummaryService
             ->get(['id', 'name']);
 
         $reviews = SupervisorShiftReview::query()
-            ->whereHas('shift', fn ($q) => $q->where('security_company_id', $companyId))
+            ->whereHas('shift', fn ($q) => $q->where('security_company_id', $companyId)->matchingFilter($filter))
             ->whereBetween('recorded_at', [$fromAt, $toAt])
             ->with(['client:id,name', 'shift.user:id,name'])
             ->get();
@@ -46,12 +49,15 @@ final class BuildSupervisionSummaryService
         $logs = SupervisorFieldLog::query()
             ->where('security_company_id', $companyId)
             ->whereBetween('recorded_at', [$fromAt, $toAt])
+            ->when($filter->supervisorId !== null, fn ($q) => $q->where('user_id', $filter->supervisorId))
+            ->when($filter->zoneId !== null, fn ($q) => $q->whereHas('shift', fn ($s) => $s->where('supervisor_zone_id', $filter->zoneId)))
             ->with(['client:id,name', 'user:id,name'])
             ->get();
 
         $shifts = SupervisorShift::query()
             ->where('security_company_id', $companyId)
             ->whereBetween('started_at', [$fromAt, $toAt])
+            ->matchingFilter($filter)
             ->with('user:id,name')
             ->get();
 
@@ -70,11 +76,23 @@ final class BuildSupervisionSummaryService
 
         $semaphore = $this->semaphore($coverage, $sitesContracted);
 
-        $recommendations = $this->recommendationCounts($companyId, $fromAt, $toAt);
+        $recommendations = $this->recommendationCounts($companyId, $fromAt, $toAt, $filter);
         $modules = $this->moduleRows($reviews->count(), $logs);
         $alerts = $this->alerts($unvisited, $logs, $recommendations, $shifts);
 
         $caption = 'Del '.$fromAt->format('d/m/Y').' al '.$toAt->format('d/m/Y');
+        if ($filter->zoneId !== null) {
+            $zoneName = SupervisorZone::query()->whereKey($filter->zoneId)->value('name');
+            if (is_string($zoneName) && $zoneName !== '') {
+                $caption .= ' · '.$zoneName;
+            }
+        }
+        if ($filter->supervisorId !== null) {
+            $supervisorName = User::query()->whereKey($filter->supervisorId)->value('name');
+            if (is_string($supervisorName) && $supervisorName !== '') {
+                $caption .= ' · '.$supervisorName;
+            }
+        }
 
         return new SupervisionPeriodSnapshot(
             companyName: $company->displayName(),
@@ -142,26 +160,23 @@ final class BuildSupervisionSummaryService
     }
 
     /**
-     * @return array{open: int, progress: int, closed: int, overdue: int}
+     * @return array{total: int, low: int, medium: int, high: int, extreme: int}
      */
-    private function recommendationCounts(int $companyId, CarbonImmutable $fromAt, CarbonImmutable $toAt): array
+    private function recommendationCounts(int $companyId, CarbonImmutable $fromAt, CarbonImmutable $toAt, SupervisionQueryFilter $filter): array
     {
         $recs = SupervisorRecommendation::query()
             ->where('security_company_id', $companyId)
-            ->where(function ($q) use ($fromAt, $toAt) {
-                $q->whereBetween('created_at', [$fromAt, $toAt])
-                    ->orWhere(function ($open) use ($toAt) {
-                        $open->where('status', '!=', SupervisorRecommendationStatus::Closed)
-                            ->where('created_at', '<=', $toAt);
-                    });
-            })
+            ->when($filter->supervisorId !== null, fn ($q) => $q->where('opened_by_user_id', $filter->supervisorId))
+            ->when($filter->zoneId !== null, fn ($q) => $q->whereHas('openedShift', fn ($s) => $s->where('supervisor_zone_id', $filter->zoneId)))
+            ->whereBetween('created_at', [$fromAt, $toAt])
             ->get();
 
         return [
-            'open' => $recs->where('status', SupervisorRecommendationStatus::Open)->count(),
-            'progress' => $recs->where('status', SupervisorRecommendationStatus::Progress)->count(),
-            'closed' => $recs->where('status', SupervisorRecommendationStatus::Closed)->count(),
-            'overdue' => $recs->filter(fn (SupervisorRecommendation $rec) => $rec->isOverdue())->count(),
+            'total' => $recs->count(),
+            'low' => $recs->where('risk_level', SupervisorRiskLevel::Low)->count(),
+            'medium' => $recs->where('risk_level', SupervisorRiskLevel::Medium)->count(),
+            'high' => $recs->where('risk_level', SupervisorRiskLevel::High)->count(),
+            'extreme' => $recs->where('risk_level', SupervisorRiskLevel::Extreme)->count(),
         ];
     }
 
@@ -241,7 +256,7 @@ final class BuildSupervisionSummaryService
     /**
      * @param  list<string>  $unvisited
      * @param  Collection<int, SupervisorFieldLog>  $logs
-     * @param  array{open: int, progress: int, closed: int, overdue: int}  $recommendations
+     * @param  array{total: int, low: int, medium: int, high: int, extreme: int}  $recommendations
      * @param  Collection<int, SupervisorShift>  $shifts
      * @return list<string>
      */
@@ -263,18 +278,20 @@ final class BuildSupervisionSummaryService
 
         $pendingDocs = $logs
             ->filter(fn (SupervisorFieldLog $log) => $log->module === SupervisorFieldModule::Documents
-                && ($log->payload['status'] ?? null) === 'pending')
+                && collect($log->payload['items'] ?? [])->contains(
+                    fn (mixed $item) => is_array($item) && (int) ($item['pending'] ?? 0) > 0,
+                ))
             ->count();
         if ($pendingDocs > 0) {
-            $alerts[] = $pendingDocs.' documento(s) de puesto pendientes.';
+            $alerts[] = $pendingDocs.' registro(s) de documentos del turno con cantidades pendientes.';
         }
 
-        if ($recommendations['overdue'] > 0) {
-            $alerts[] = $recommendations['overdue'].' recomendación(es) vencida(s).';
+        if ($recommendations['extreme'] > 0) {
+            $alerts[] = $recommendations['extreme'].' recomendación(es) de riesgo extremo.';
         }
 
-        if ($recommendations['open'] + $recommendations['progress'] > 0) {
-            $alerts[] = ($recommendations['open'] + $recommendations['progress']).' recomendación(es) aún abiertas o en proceso.';
+        if ($recommendations['high'] > 0) {
+            $alerts[] = $recommendations['high'].' recomendación(es) de riesgo alto.';
         }
 
         $longOpen = $shifts

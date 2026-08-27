@@ -6,6 +6,9 @@ namespace App\Models;
 
 use App\Enums\SupervisorRecommendationPriority;
 use App\Enums\SupervisorRecommendationStatus;
+use App\Enums\SupervisorRiskImpact;
+use App\Enums\SupervisorRiskLevel;
+use App\Enums\SupervisorRiskLikelihood;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,8 +25,16 @@ final class SupervisorRecommendation extends Model
         'status',
         'priority',
         'due_date',
-        'title',
+        'supervisor_risk_type_id',
+        'risk_type',
         'body',
+        'risk',
+        'likelihood',
+        'impact',
+        'consequence',
+        'treatment',
+        'risk_level',
+        'photos',
         'closed_at',
     ];
 
@@ -32,7 +43,11 @@ final class SupervisorRecommendation extends Model
         return [
             'status' => SupervisorRecommendationStatus::class,
             'priority' => SupervisorRecommendationPriority::class,
+            'likelihood' => SupervisorRiskLikelihood::class,
+            'impact' => SupervisorRiskImpact::class,
+            'risk_level' => SupervisorRiskLevel::class,
             'due_date' => 'date',
+            'photos' => 'array',
             'closed_at' => 'datetime',
         ];
     }
@@ -60,6 +75,11 @@ final class SupervisorRecommendation extends Model
     public function openedShift(): BelongsTo
     {
         return $this->belongsTo(SupervisorShift::class, 'opened_shift_id');
+    }
+
+    public function riskType(): BelongsTo
+    {
+        return $this->belongsTo(SupervisorRiskType::class, 'supervisor_risk_type_id');
     }
 
     public function fieldLogs(): HasMany

@@ -37,6 +37,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/catalog', [SupervisorFieldLogController::class, 'catalog']);
         Route::post('/logs', [SupervisorFieldLogController::class, 'store']);
         Route::get('/recommendations', [SupervisorFieldLogController::class, 'recommendations']);
-        Route::patch('/recommendations/{recommendation}', [SupervisorFieldLogController::class, 'updateRecommendation']);
     });
 });

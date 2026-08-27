@@ -1,9 +1,9 @@
 self.addEventListener('install', (event) => {
-    event.waitUntil(caches.open('controla-sup-v8').then((cache) => cache.addAll(['./', './index.html', './app.js', './manifest.json'])));
+    event.waitUntil(caches.open('controla-sup-v15').then((cache) => cache.addAll(['./', './index.html', './app.js', './manifest.json'])));
 });
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== 'controla-sup-v8').map((k) => caches.delete(k)))),
+        caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== 'controla-sup-v15').map((k) => caches.delete(k)))),
     );
 });
 self.addEventListener('fetch', (event) => {

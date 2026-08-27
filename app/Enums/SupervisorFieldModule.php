@@ -7,36 +7,39 @@ namespace App\Enums;
 enum SupervisorFieldModule: string
 {
     case Inventory = 'inventory';
-    case Documents = 'documents';
+    case ControlBooks = 'control_books';
     case Folders = 'folders';
     case Weapons = 'weapons';
     case Recommendations = 'recommendations';
     case Alarms = 'alarms';
     case Supports = 'supports';
+    case Documents = 'documents';
 
     public function label(): string
     {
         return match ($this) {
             self::Inventory => 'Inventario',
-            self::Documents => 'Documentos de puesto',
+            self::ControlBooks => 'Libros de control',
             self::Folders => 'Carpetas',
             self::Weapons => 'Armamento',
             self::Recommendations => 'Recomendaciones',
             self::Alarms => 'Alarmas',
             self::Supports => 'Apoyos',
+            self::Documents => 'Documentos',
         };
     }
 
     public function hint(): string
     {
         return match ($this) {
-            self::Inventory => 'Estado operativo del puesto: buen estado, novedad o ya gestionado.',
-            self::Documents => 'Control de minuta, novedades u otros documentos del puesto. No es el módulo comercial ni la correspondencia de Accesos.',
+            self::Inventory => 'Pase revista a cada elemento del puesto: tipo, estado y observación.',
+            self::ControlBooks => 'Libros del puesto: tipo, novedad y observación.',
             self::Folders => 'Carpeta del puesto: completa o con faltantes.',
-            self::Weapons => 'Inspección del arma en el puesto (serial observado, no un catálogo de armas).',
-            self::Recommendations => 'Hallazgo que vive entre turnos hasta cerrarse. No se pierde al cerrar el turno.',
+            self::Weapons => 'Revista y aseo del arma en el puesto: tipo, marca, permiso y evidencia fotográfica.',
+            self::Recommendations => 'Hasta tres riesgos del puesto: probabilidad, impacto, consecuencia y evidencia.',
             self::Alarms => 'Prueba de alarma en el sitio.',
             self::Supports => 'Apoyo operativo. El sitio es opcional (puede ser en vía).',
+            self::Documents => 'Papeles que recogen o entregan en el turno. Sin cliente ni puesto.',
         };
     }
 
@@ -48,7 +51,7 @@ enum SupervisorFieldModule: string
     public function hangsOffReview(): bool
     {
         return match ($this) {
-            self::Inventory, self::Documents, self::Folders, self::Weapons, self::Recommendations => true,
+            self::Inventory, self::ControlBooks, self::Folders, self::Weapons, self::Recommendations => true,
             default => false,
         };
     }

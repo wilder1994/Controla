@@ -6,7 +6,7 @@ Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalizac
 
 La **ficha de empleado** (maestro, Excel) vive en el sidebar **Empleados**. Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
-Sidebar empresa: **Mi empresa** (dashboard) · **Empleados** · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional).
+Sidebar empresa: **Mi empresa** (dashboard) · **Empleados** · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos).
 
 ---
 
@@ -28,7 +28,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 
 Controla **no** factura ni muestra deuda del conjunto hacia la empresa de seguridad. Ese cobro es externo (contrato de vigilancia).
 
-En el cliente se registran datos comerciales (`party_type`, documento, contactos, representante, ciudad) y **`service_started_at`**. El **tipo de estructura** se fija en el alta. Instalaciones, accesos y puestos **no** van en el Excel; se crean en las pestañas Accesos / Supervisión. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+En el cliente se registran datos comerciales (`party_type`, documento, contactos, representante, ciudad) y **`service_started_at`**. El **tipo de estructura** se fija en el alta. Instalaciones, accesos y puestos **no** van en el Excel; se crean en las tarjetas de la ficha. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 ---
 
@@ -50,7 +50,7 @@ Slug técnico: `guardia`. Label UI: **Vigilante**.
 2. Al crear el usuario se genera un **`supervisor_code`**: numérico, **6 dígitos**, **permanente** hasta regeneración deliberada.
 3. El código es único **por empresa**.
 4. **Revista:** si el sitio solo tiene Accesos, firma en la sesión del vigilante (código). Si el sitio tiene Supervisión, la revista se hace en la app de campo; no se vuelve a firmar en puesto.
-5. Con Supervisión: rito de turno (catálogo de turno/zona, EPP, flota, fotos) y 8 módulos. Ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+5. Con Supervisión: rito de turno (catálogo de turno/zona, EPP, flota, fotos) y 8 módulos. Recomendaciones = registro de riesgo (tipo de catálogo, P×I, fotos), no ticket. Ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 6. No confundir con admin del conjunto ni con el vigilante de turno.
 
 Slug técnico: `supervisor`. Label UI: **Supervisor de vigilancia**.

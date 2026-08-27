@@ -14,6 +14,9 @@ let streams = {};
 let blobs = { odo: null, self: null, odoEnd: null, selfEnd: null, guard: null };
 let searchTimers = {};
 let moduleReturn = 'home';
+let reviewDraftLogs = [];
+let modulePhotos = {};
+let cropSession = null;
 
 function inferApi() {
     const host = location.hostname;
@@ -271,20 +274,21 @@ function renderIntake() {
 }
 
 function renderHub() {
-    const logs = activity?.logs || {};
     const hubMods = catalog.filter((mod) => mod.hangs_off_review);
     document.getElementById('hub-grid').innerHTML = hubMods.map((mod) => `
         <button type="button" class="mod" data-key="${mod.key}">
             <b>${mod.label}</b>
-            <span class="n">${logs[mod.key] || 0} en este turno</span>
+            <span class="n">${draftCount(mod.key)} en esta revista</span>
         </button>`).join('');
     document.querySelectorAll('#hub-grid .mod').forEach((btn) => {
         btn.onclick = () => openModule(btn.dataset.key, 'review');
     });
     const ctx = document.getElementById('review-context');
-    ctx.textContent = currentReview
-        ? `${currentReview.client_name} · ${currentReview.post_name || currentReview.location_name || ''} · ${currentReview.employee_name}`
-        : '';
+    ctx.textContent = [reviewClient?.name, reviewPost?.name, reviewGuard?.name].filter(Boolean).join(' · ');
+}
+
+function draftCount(moduleKey) {
+    return reviewDraftLogs.filter((row) => row.module === moduleKey).length;
 }
 
 function showOpsHome() {
@@ -298,7 +302,6 @@ function showReview() {
     document.getElementById('module-card').classList.add('hidden');
     document.getElementById('review-card').classList.remove('hidden');
     startCam('cam-guard', 'user');
-    loadRecs().catch((e) => setStatus(e.message, false));
 }
 
 function openModule(key, from = 'home') {
@@ -312,18 +315,298 @@ function openModule(key, from = 'home') {
     document.getElementById('module-card').classList.remove('hidden');
     document.getElementById('module-title').textContent = currentModule.label;
     document.getElementById('module-hint').textContent = currentModule.hint;
-    document.getElementById('module-form').innerHTML = (currentModule.fields || []).map((field) => (
-        field.type === 'checkbox' ? fieldControl(field) : `<label>${field.label}</label>${fieldControl(field)}`
-    )).join('');
+    document.getElementById('module-form').innerHTML = (currentModule.fields || []).map((field) => renderField(field)).join('');
+    modulePhotos = {};
+    (currentModule.fields || []).filter((field) => field.type === 'repeatable').forEach(bindRepeatable);
+    bindAllPhotoGrids();
     document.getElementById('module-card').scrollIntoView({ behavior: 'smooth' });
 }
+
+function renderField(field) {
+    if (field.type === 'repeatable') {
+        return `<div id="rep-${field.name}" data-name="${field.name}">
+            <div class="rep-list"></div>
+            <button type="button" class="ghost" data-rep-add="${field.name}">${field.add_label || 'Agregar'}</button>
+        </div>`;
+    }
+    if (field.type === 'photo_grid') {
+        return `<label>${field.label}</label>
+            <div class="photo-grid" id="photos-${field.name}">
+                ${(field.slots || []).map((slot) => `<button type="button" class="photo-slot" data-photo-slot="${slot.key}"><span>${slot.label}</span></button>`).join('')}
+            </div>`;
+    }
+    if (field.type === 'row') {
+        return `<div class="row">${(field.fields || []).map((sub) => `<div><label>${sub.label}</label>${fieldControl(sub)}</div>`).join('')}</div>`;
+    }
+    return field.type === 'checkbox' ? fieldControl(field) : `<label>${field.label}</label>${fieldControl(field)}`;
+}
+
+function bindRepeatable(field) {
+    const root = document.getElementById(`rep-${field.name}`);
+    if (!root) return;
+    const list = root.querySelector('.rep-list');
+    const add = () => {
+        const cards = list.querySelectorAll('.item-card');
+        if (field.max && cards.length >= field.max) return;
+        const index = Date.now() + Math.floor(Math.random() * 1000);
+        list.insertAdjacentHTML('beforeend', repeatableItemHtml(field, index));
+        const card = list.querySelector(`.item-card[data-index="${index}"]`);
+        bindAllPhotoGrids(card);
+        bindComputedRisk(card, field, index);
+        syncRepeatable(root, field);
+    };
+    root.querySelector('[data-rep-add]').onclick = (ev) => {
+        ev.preventDefault();
+        add();
+    };
+    list.onclick = (ev) => {
+        const btn = ev.target.closest('[data-rep-remove]');
+        if (!btn) return;
+        ev.preventDefault();
+        btn.closest('.item-card')?.remove();
+        syncRepeatable(root, field);
+    };
+    add();
+}
+
+function repeatableItemHtml(field, index) {
+    const inner = (field.item_fields || []).map((item) => {
+        if (item.type === 'photo_grid') {
+            return `<label>${item.label}</label>
+                <div class="photo-grid" data-photo-grid="${field.name}-${index}-${item.name}">
+                    ${(item.slots || []).map((slot) => `<button type="button" class="photo-slot" data-photo-slot="${index}_${slot.key}"><span>${slot.label}</span></button>`).join('')}
+                </div>`;
+        }
+        if (item.type === 'computed') {
+            return `<label>${item.label}</label><p class="risk-level" id="f-${field.name}-${index}-${item.name}">—</p>`;
+        }
+        const named = { ...item, name: `${field.name}-${index}-${item.name}` };
+        if (item.type === 'qty_pair') return fieldControl(named);
+        return item.type === 'checkbox' ? fieldControl(named) : `<label>${item.label}</label>${fieldControl(named)}`;
+    }).join('');
+    return `<div class="item-card" data-index="${index}">
+        <div class="head-row">
+            <p class="hint" style="margin:0;">${field.item_label || 'Elemento'}</p>
+            <button type="button" class="ghost btn-sm" data-rep-remove>Quitar</button>
+        </div>
+        ${inner}
+    </div>`;
+}
+
+function syncRepeatable(root, field) {
+    const cards = root.querySelectorAll('.item-card');
+    const max = field.max || 99;
+    const min = field.min || 1;
+    const addBtn = root.querySelector('[data-rep-add]');
+    if (addBtn) addBtn.classList.toggle('hidden', cards.length >= max);
+    cards.forEach((card) => {
+        const btn = card.querySelector('[data-rep-remove]');
+        if (btn) btn.classList.toggle('hidden', cards.length <= min);
+    });
+}
+
+function bindAllPhotoGrids(scope) {
+    const root = scope || document.getElementById('module-form');
+    const input = document.getElementById('photo-file');
+    if (!root || !input) return;
+    root.querySelectorAll('.photo-grid').forEach((grid) => {
+        grid.onclick = (ev) => {
+            const btn = ev.target.closest('[data-photo-slot]');
+            if (!btn || !grid.contains(btn)) return;
+            input.dataset.slot = btn.dataset.photoSlot;
+            input.value = '';
+            input.click();
+        };
+    });
+}
+
+function riskLevelFrom(likelihood, impact) {
+    const score = likelihood * impact;
+    if (score >= 17) return { key: 'extreme', label: 'Extremo' };
+    if (score >= 10) return { key: 'high', label: 'Alto' };
+    if (score >= 5) return { key: 'medium', label: 'Medio' };
+    return { key: 'low', label: 'Bajo' };
+}
+
+function bindComputedRisk(card, field, index) {
+    if (!card) return;
+    const out = document.getElementById(`f-${field.name}-${index}-risk_level`);
+    const likelihood = document.getElementById(`f-${field.name}-${index}-likelihood`);
+    const impact = document.getElementById(`f-${field.name}-${index}-impact`);
+    if (!out || !likelihood || !impact) return;
+    const paint = () => {
+        const level = riskLevelFrom(Number(likelihood.value), Number(impact.value));
+        out.textContent = level.label;
+        out.dataset.level = level.key;
+    };
+    likelihood.addEventListener('change', paint);
+    impact.addEventListener('change', paint);
+    paint();
+}
+
+function collectRepeatablePhotos(field) {
+    const photoField = (field?.item_fields || []).find((item) => item.type === 'photo_grid');
+    const slots = photoField?.slots || [];
+    const photos = {};
+    [...document.querySelectorAll(`#rep-${field.name} .item-card`)].forEach((card, i) => {
+        slots.forEach((slot) => {
+            const key = `${card.dataset.index}_${slot.key}`;
+            if (modulePhotos[key]) photos[`${i}_${slot.key}`] = modulePhotos[key];
+        });
+    });
+    return photos;
+}
+
+function drawCropPreview() {
+    if (!cropSession) return;
+    const canvas = document.getElementById('crop-canvas');
+    const stage = canvas.parentElement;
+    const css = stage.clientWidth || 280;
+    const size = Math.round(css * 2);
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const { img, angle, panX, panY } = cropSession;
+    const rotated = angle % 180 === 0;
+    const bw = rotated ? img.width : img.height;
+    const bh = rotated ? img.height : img.width;
+    const scale = Math.max(size / bw, size / bh);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, size, size);
+    ctx.save();
+    ctx.translate(size / 2 + panX, size / 2 + panY);
+    ctx.rotate((angle * Math.PI) / 180);
+    ctx.drawImage(img, -img.width * scale / 2, -img.height * scale / 2, img.width * scale, img.height * scale);
+    ctx.restore();
+}
+
+function exportCropBlob() {
+    return new Promise((resolve) => {
+        const out = document.createElement('canvas');
+        out.width = 720;
+        out.height = 720;
+        const ctx = out.getContext('2d');
+        const { img, angle, panX, panY } = cropSession;
+        const preview = document.getElementById('crop-canvas');
+        const ratio = 720 / preview.width;
+        const rotated = angle % 180 === 0;
+        const bw = rotated ? img.width : img.height;
+        const bh = rotated ? img.height : img.width;
+        const scale = Math.max(preview.width / bw, preview.height / bh) * ratio;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 720, 720);
+        ctx.save();
+        ctx.translate(360 + panX * ratio, 360 + panY * ratio);
+        ctx.rotate((angle * Math.PI) / 180);
+        ctx.drawImage(img, -img.width * scale / 2, -img.height * scale / 2, img.width * scale, img.height * scale);
+        ctx.restore();
+        out.toBlob((blob) => resolve(blob), 'image/jpeg', 0.86);
+    });
+}
+
+function closePhotoEditor() {
+    document.getElementById('photo-editor').classList.add('hidden');
+    cropSession = null;
+}
+
+function openPhotoEditor(file, slot) {
+    const img = new Image();
+    img.onload = () => {
+        cropSession = { img, slot, angle: 0, panX: 0, panY: 0 };
+        document.getElementById('crop-title').textContent = 'Encuadrar foto';
+        document.getElementById('photo-editor').classList.remove('hidden');
+        drawCropPreview();
+    };
+    img.src = URL.createObjectURL(file);
+}
+
+function applySlotPhoto(slot, blob) {
+    modulePhotos[slot] = blob;
+    const btn = document.querySelector(`[data-photo-slot="${slot}"]`);
+    if (!btn) return;
+    btn.classList.add('has-photo');
+    let img = btn.querySelector('img');
+    if (!img) {
+        img = document.createElement('img');
+        img.alt = '';
+        btn.prepend(img);
+    }
+    img.src = URL.createObjectURL(blob);
+}
+
+document.getElementById('photo-file').onchange = () => {
+    const input = document.getElementById('photo-file');
+    const file = input.files?.[0];
+    const slot = input.dataset.slot;
+    if (!file || !slot) return;
+    openPhotoEditor(file, slot);
+};
+
+document.getElementById('btn-crop-rot').onclick = () => {
+    if (!cropSession) return;
+    cropSession.angle = (cropSession.angle + 90) % 360;
+    drawCropPreview();
+};
+document.getElementById('btn-crop-cancel').onclick = closePhotoEditor;
+document.getElementById('btn-crop-ok').onclick = async () => {
+    if (!cropSession) return;
+    const blob = await exportCropBlob();
+    if (blob) applySlotPhoto(cropSession.slot, blob);
+    closePhotoEditor();
+};
+
+(() => {
+    const canvas = document.getElementById('crop-canvas');
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+    const point = (ev) => {
+        const t = ev.touches ? ev.touches[0] : ev;
+        return { x: t.clientX, y: t.clientY };
+    };
+    const start = (ev) => {
+        if (!cropSession) return;
+        dragging = true;
+        const p = point(ev);
+        lastX = p.x;
+        lastY = p.y;
+        ev.preventDefault();
+    };
+    const move = (ev) => {
+        if (!dragging || !cropSession) return;
+        const p = point(ev);
+        cropSession.panX += (p.x - lastX) * 2;
+        cropSession.panY += (p.y - lastY) * 2;
+        lastX = p.x;
+        lastY = p.y;
+        drawCropPreview();
+        ev.preventDefault();
+    };
+    const end = () => { dragging = false; };
+    canvas.addEventListener('pointerdown', start);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('touchend', end);
+})();
 
 function fieldControl(field) {
     const req = field.required ? 'required' : '';
     if (field.type === 'textarea') return `<textarea id="f-${field.name}" ${req}></textarea>`;
     if (field.type === 'select') {
-        const opts = (field.options || []).map((o) => `<option value="${o.value}">${o.label}</option>`).join('');
+        const options = field.options || [];
+        const opts = options.length
+            ? options.map((o) => `<option value="${o.value}">${o.label}</option>`).join('')
+            : `<option value="">${field.empty_label || 'Sin tipos. Agréguelos en Ajustes'}</option>`;
         return `<select id="f-${field.name}" ${req}>${opts}</select>`;
+    }
+    if (field.type === 'qty_pair') {
+        return `<div class="row">${(field.fields || []).map((sub) => `
+            <div>
+                <label>${sub.label}</label>
+                <input id="f-${field.name}-${sub.name}" type="number" min="0" value="0">
+            </div>`).join('')}</div>`;
     }
     if (field.type === 'radio') {
         return `<div class="opts">${(field.options || []).map((o, i) => `
@@ -338,18 +621,59 @@ function fieldControl(field) {
 function readPayload() {
     const payload = {};
     (currentModule?.fields || []).forEach((field) => {
+        if (field.type === 'repeatable') {
+            payload[field.name] = readRepeatable(field);
+            return;
+        }
+        if (field.type === 'photo_grid') return;
+        if (field.type === 'row') {
+            (field.fields || []).forEach((sub) => assignFieldValue(payload, sub));
+            return;
+        }
         if (field.type === 'radio') {
             const picked = document.querySelector(`input[name="f-${field.name}"]:checked`);
             payload[field.name] = picked ? picked.value : null;
             return;
         }
-        const el = document.getElementById(`f-${field.name}`);
-        if (!el) return;
-        if (field.type === 'checkbox') payload[field.name] = el.checked;
-        else if (field.type === 'number') payload[field.name] = el.value === '' ? null : Number(el.value);
-        else payload[field.name] = el.value === '' ? null : el.value;
+        assignFieldValue(payload, field);
     });
     return payload;
+}
+
+function assignFieldValue(payload, field) {
+    const el = document.getElementById(`f-${field.name}`);
+    if (!el) return;
+    if (field.type === 'checkbox') payload[field.name] = el.checked;
+    else if (field.type === 'number') payload[field.name] = el.value === '' ? null : Number(el.value);
+    else payload[field.name] = el.value === '' ? null : el.value;
+}
+
+function readRepeatable(field) {
+    return [...document.querySelectorAll(`#rep-${field.name} .item-card`)].map((card) => {
+        const row = {};
+        (field.item_fields || []).forEach((item) => {
+            if (item.type === 'photo_grid' || item.type === 'computed') return;
+            const key = `${field.name}-${card.dataset.index}-${item.name}`;
+            if (item.type === 'qty_pair') {
+                (item.fields || []).forEach((sub) => {
+                    const el = document.getElementById(`f-${key}-${sub.name}`);
+                    row[sub.name] = el?.value === '' ? 0 : Number(el.value);
+                });
+                return;
+            }
+            if (item.type === 'radio') {
+                const picked = document.querySelector(`input[name="f-${key}"]:checked`);
+                row[item.name] = picked ? picked.value : null;
+                return;
+            }
+            const el = document.getElementById(`f-${key}`);
+            if (!el) return;
+            if (item.type === 'checkbox') row[item.name] = el.checked;
+            else if (item.type === 'number') row[item.name] = el.value === '' ? null : Number(el.value);
+            else row[item.name] = el.value === '' ? null : el.value;
+        });
+        return row;
+    });
 }
 
 async function loadSites() {
@@ -475,31 +799,67 @@ async function searchGuards(document) {
     }
 }
 
+async function persistReview() {
+    if (!reviewClient) throw new Error('Seleccione el cliente.');
+    if (!reviewPost) throw new Error('Seleccione el puesto.');
+    if (!reviewGuard) throw new Error('Seleccione el vigilante por cédula.');
+    if (!blobs.guard) throw new Error('Tome la foto del vigilante.');
+    const pos = await geoRequired();
+    const fd = new FormData();
+    fd.append('client_id', String(reviewClient.id));
+    fd.append('supervisor_post_id', String(reviewPost.id));
+    fd.append('employee_id', String(reviewGuard.id));
+    fd.append('notes', document.getElementById('rev-notes').value || '');
+    fd.append('has_novelty', document.getElementById('rev-novelty').checked ? '1' : '0');
+    fd.append('latitude', String(pos.latitude));
+    fd.append('longitude', String(pos.longitude));
+    fd.append('guard_photo', blobs.guard, 'guard.jpg');
+    const outgoing = reviewDraftLogs.map((row) => ({ module: row.module, payload: row.payload }));
+    fd.append('logs', JSON.stringify(outgoing));
+    reviewDraftLogs.forEach((row, index) => {
+        Object.entries(row.photos || {}).forEach(([slot, blob]) => {
+            fd.append(`log_photos[${index}][${slot}]`, blob, `${slot}.jpg`);
+        });
+    });
+    const data = await api('/supervision/reviews', { method: 'POST', body: fd });
+    currentReview = data.review;
+    activity = data.activity || activity;
+    blobs.guard = null;
+    document.getElementById('snap-guard').classList.add('hidden');
+    reviewDraftLogs = [];
+    resetReviewForm();
+    renderHub();
+    return currentReview;
+}
+
+function resetReviewForm() {
+    reviewClient = null;
+    reviewPost = null;
+    reviewGuard = null;
+    document.getElementById('rev-client-q').value = '';
+    document.getElementById('rev-post-q').value = '';
+    document.getElementById('rev-post-q').disabled = true;
+    document.getElementById('rev-post-q').placeholder = 'Primero el cliente';
+    document.getElementById('rev-guard-doc').value = '';
+    document.getElementById('rev-guard-name').value = '';
+    document.getElementById('rev-notes').value = '';
+    document.getElementById('rev-novelty').checked = false;
+}
+
+function discardReviewSession() {
+    reviewDraftLogs = [];
+    currentReview = null;
+    blobs.guard = null;
+    document.getElementById('snap-guard').classList.add('hidden');
+    resetReviewForm();
+    renderHub();
+}
+
 async function saveReview() {
     try {
-        if (!reviewClient) throw new Error('Seleccione el cliente.');
-        if (!reviewPost) throw new Error('Seleccione el puesto.');
-        if (!reviewGuard) throw new Error('Seleccione el vigilante por cédula.');
-        if (!blobs.guard) throw new Error('Tome la foto del vigilante.');
-        const pos = await geoRequired();
-        const fd = new FormData();
-        fd.append('client_id', String(reviewClient.id));
-        fd.append('supervisor_post_id', String(reviewPost.id));
-        fd.append('employee_id', String(reviewGuard.id));
-        fd.append('notes', document.getElementById('rev-notes').value || '');
-        fd.append('has_novelty', document.getElementById('rev-novelty').checked ? '1' : '0');
-        fd.append('latitude', String(pos.latitude));
-        fd.append('longitude', String(pos.longitude));
-        fd.append('guard_photo', blobs.guard, 'guard.jpg');
-        const data = await api('/supervision/reviews', { method: 'POST', body: fd });
-        currentReview = data.review;
-        activity = data.activity || activity;
-        blobs.guard = null;
-        document.getElementById('snap-guard').classList.add('hidden');
-        renderHub();
-        await loadRecs();
-        startCam('cam-guard', 'user');
+        await persistReview();
         setStatus('Revista guardada.');
+        showOpsHome();
     } catch (e) {
         setStatus(e.message, false);
     }
@@ -524,7 +884,6 @@ async function loadIntake() {
 async function loadCurrent() {
     const data = await api('/supervision/shifts/current');
     activity = data.activity;
-    currentReview = data.current_review || null;
     const shift = data.shift;
     const nameEl = document.getElementById('sup-name');
     if (nameEl) nameEl.textContent = data.supervisor?.name || '';
@@ -557,48 +916,6 @@ async function loadSupervisorSelfie() {
         document.getElementById('sup-avatar').src = URL.createObjectURL(blob);
     } catch (e) {
         // sin foto de perfil
-    }
-}
-
-async function loadRecs() {
-    const root = document.getElementById('recs');
-    const id = currentReview?.client_id;
-    if (!id) {
-        root.innerHTML = '';
-        return;
-    }
-    const data = await api(`/supervision/recommendations?client_id=${id}`);
-    const rows = data.recommendations || [];
-    if (!rows.length) {
-        root.innerHTML = '';
-        return;
-    }
-    root.innerHTML = rows.map((rec) => `
-        <div class="rec" data-id="${rec.id}">
-            <strong>${rec.title}</strong>
-            <div class="meta">${rec.priority} · ${rec.status}${rec.due_date ? ` · ${rec.due_date}` : ''}</div>
-            <p class="hint">${rec.body || ''}</p>
-            <div class="row">
-                ${rec.status === 'open' ? '<button type="button" class="secondary" data-next="progress">En proceso</button>' : ''}
-                ${rec.status !== 'closed' ? '<button type="button" data-next="closed">Cerrar</button>' : ''}
-            </div>
-        </div>`).join('');
-    root.querySelectorAll('button[data-next]').forEach((btn) => {
-        btn.onclick = () => advanceRec(Number(btn.closest('.rec').dataset.id), btn.dataset.next);
-    });
-}
-
-async function advanceRec(id, status) {
-    try {
-        const pos = await geo();
-        await api(`/supervision/recommendations/${id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status, latitude: pos?.latitude, longitude: pos?.longitude }),
-        });
-        setStatus(status === 'closed' ? 'Recomendación cerrada.' : 'En proceso.');
-        await Promise.all([loadRecs(), loadCurrent()]);
-    } catch (e) {
-        setStatus(e.message, false);
     }
 }
 
@@ -732,6 +1049,7 @@ document.getElementById('btn-close').onclick = async () => {
         stopAllCams();
         activity = null;
         currentReview = null;
+        reviewDraftLogs = [];
         setStatus('Turno cerrado.');
         logout();
     } catch (e) {
@@ -742,42 +1060,128 @@ document.getElementById('btn-close').onclick = async () => {
 document.getElementById('btn-submit').onclick = async () => {
     if (!currentModule) return;
     try {
+        const payload = readPayload();
+        assertDraftPayload(currentModule, payload);
+        if (currentModule.hangs_off_review) {
+            if (currentModule.key === 'recommendations'
+                && reviewDraftLogs.some((row) => row.module === 'recommendations')) {
+                throw new Error('Ya hay recomendaciones en este puesto (hasta 3 en un registro).');
+            }
+            const draft = { module: currentModule.key, payload };
+            if (currentModule.key === 'weapons') {
+                draft.photos = { ...modulePhotos };
+            }
+            if (currentModule.key === 'recommendations') {
+                const field = (currentModule.fields || []).find((item) => item.type === 'repeatable');
+                draft.photos = collectRepeatablePhotos(field);
+            }
+            modulePhotos = {};
+            reviewDraftLogs.push(draft);
+            renderHub();
+            setStatus(`${currentModule.label} registrado.`);
+            showReview();
+            return;
+        }
         const pos = await geo();
         const body = {
             module: currentModule.key,
-            payload: readPayload(),
+            payload,
             latitude: pos?.latitude,
             longitude: pos?.longitude,
         };
-        if (currentModule.hangs_off_review) {
-            if (!currentReview?.id) throw new Error('Guarde la revista de este puesto primero.');
-            body.supervisor_shift_review_id = currentReview.id;
-        } else if (currentModule.requires_client) {
+        if (currentModule.requires_client) {
             const clientId = siteId();
             if (!clientId) throw new Error('Seleccione el cliente.');
             body.client_id = clientId;
-        } else {
-            const clientId = siteId();
-            if (clientId) body.client_id = clientId;
+        } else if (currentModule.key === 'supports') {
+            const value = document.getElementById('mod-client')?.value;
+            if (value) body.client_id = Number(value);
         }
         await api('/supervision/logs', { method: 'POST', body: JSON.stringify(body) });
         setStatus(`${currentModule.label} registrado.`);
-        await Promise.all([loadCurrent(), loadRecs()]);
-        if (moduleReturn === 'review') showReview();
-        else showOpsHome();
+        await loadCurrent();
+        showOpsHome();
     } catch (e) {
         setStatus(e.message, false);
     }
 };
+
+function assertDraftPayload(mod, payload) {
+    if (mod.key === 'inventory') {
+        const items = payload.items || [];
+        if (!items.length) throw new Error('Agregue al menos un elemento.');
+        if (items.some((item) => !item.type)) throw new Error('Indique el tipo de cada elemento.');
+        if (items.some((item) => !item.status)) throw new Error('Indique el estado de cada elemento.');
+    }
+    if (mod.key === 'documents') {
+        const items = payload.items || [];
+        if (!items.length) throw new Error('Agregue al menos un documento.');
+        if (items.some((item) => !item.document_type_id)) throw new Error('Indique el tipo de cada documento.');
+        if (items.some((item) => (Number(item.delivered) || 0) + (Number(item.pending) || 0) < 1)) {
+            throw new Error('Indique al menos una cantidad entregada o pendiente.');
+        }
+    }
+    if (mod.key === 'weapons') {
+        if (!payload.weapon_type_id) throw new Error('Seleccione el tipo de arma.');
+        if (!payload.weapon_brand_id) throw new Error('Seleccione la marca.');
+        if (!payload.serial) throw new Error('Indique el serial observado.');
+        if (!payload.caliber) throw new Error('Indique el calibre.');
+        if (!payload.permit_kind) throw new Error('Seleccione el tipo de permiso.');
+        if (!payload.permit_number) throw new Error('Indique el número de permiso.');
+        if (!payload.permit_expires_at) throw new Error('Indique el vencimiento del permiso.');
+        if (payload.ammo_quantity == null) throw new Error('Indique la cantidad de munición.');
+        if (!payload.ammo_caliber) throw new Error('Indique el calibre de munición.');
+        const slots = (mod.fields || []).find((field) => field.type === 'photo_grid')?.slots || [];
+        if (slots.some((slot) => !modulePhotos[slot.key])) throw new Error('Tome las seis fotos del arma.');
+    }
+    if (mod.key === 'control_books') {
+        const items = payload.items || [];
+        if (!items.length) throw new Error('Agregue al menos un libro.');
+        if (items.some((item) => !item.control_book_type_id)) throw new Error('Indique el tipo de cada libro.');
+        if (items.some((item) => item.novelty !== 'yes' && item.novelty !== 'no')) {
+            throw new Error('Indique si cada libro tiene novedad.');
+        }
+    }
+    if (mod.key === 'recommendations') {
+        const items = payload.items || [];
+        if (!items.length) throw new Error('Agregue al menos una recomendación.');
+        if (items.length > 3) throw new Error('Máximo tres recomendaciones por puesto.');
+        items.forEach((item, i) => {
+            const n = i + 1;
+            if (!item.risk_type_id) throw new Error(`Indique el tipo de riesgo de la recomendación ${n}.`);
+            if (!item.risk) throw new Error(`Describa el riesgo de la recomendación ${n}.`);
+            if (!item.likelihood) throw new Error(`Indique la probabilidad de la recomendación ${n}.`);
+            if (!item.impact) throw new Error(`Indique el impacto de la recomendación ${n}.`);
+            if (!item.consequence) throw new Error(`Indique la consecuencia de la recomendación ${n}.`);
+            if (!item.treatment) throw new Error(`Indique la recomendación ${n}.`);
+        });
+        const field = (mod.fields || []).find((item) => item.type === 'repeatable');
+        const photoField = (field?.item_fields || []).find((item) => item.type === 'photo_grid');
+        const slots = photoField?.slots || [];
+        [...document.querySelectorAll(`#rep-${field.name} .item-card`)].forEach((card, i) => {
+            if (slots.some((slot) => !modulePhotos[`${card.dataset.index}_${slot.key}`])) {
+                throw new Error(`Tome las tres fotos del riesgo en la recomendación ${i + 1}.`);
+            }
+        });
+    }
+}
 
 document.getElementById('btn-mod-back').onclick = () => {
     if (moduleReturn === 'review') showReview();
     else showOpsHome();
 };
 document.getElementById('btn-open-review').onclick = showReview;
-document.getElementById('btn-review-back').onclick = showOpsHome;
+document.getElementById('btn-review-back').onclick = () => {
+    const hadDrafts = reviewDraftLogs.length > 0;
+    discardReviewSession();
+    showOpsHome();
+    if (hadDrafts) {
+        setStatus('Revista cancelada. No se guardó nada de los módulos.');
+    }
+};
 document.getElementById('btn-open-alarms').onclick = () => openModule('alarms', 'home');
 document.getElementById('btn-open-supports').onclick = () => openModule('supports', 'home');
+document.getElementById('btn-open-documents').onclick = () => openModule('documents', 'home');
 document.getElementById('btn-logout-open').onclick = logout;
 
 if (token()) {

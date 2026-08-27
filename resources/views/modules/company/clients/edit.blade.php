@@ -5,7 +5,7 @@
 <x-company-layout :title="$client->name">
     @include('modules.company.clients.partials.nav-slots', [
         'client' => $client,
-        'clientNavActive' => 'editar',
+        'clientNavActive' => 'cliente',
         'vista' => 'cliente',
         'canOperate' => $canOperate,
         'canOperateClientPanel' => $canOperateClientPanel,
@@ -13,7 +13,8 @@
         'companyContext' => $companyContext ?? ['is_quota_full' => true],
     ])
 
-    <div class="max-w-2xl">
+    <div class="max-w-2xl space-y-4">
+        <x-ui.button variant="secondary" :href="route('company.clients.show', [$client, 'vista' => 'cliente'])" size="sm">← Ficha</x-ui.button>
         <form method="POST" action="{{ route('company.clients.update', $client) }}" class="space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             @csrf
             @method('PUT')

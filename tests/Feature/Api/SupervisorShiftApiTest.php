@@ -7,7 +7,15 @@ namespace Tests\Feature\Api;
 use App\Enums\SupervisionPackageSku;
 use App\Models\Client;
 use App\Models\GuardLog;
+use App\Models\SupervisorFieldLog;
+use App\Models\SupervisorRecommendation;
+use App\Models\SupervisorRiskType;
+use App\Models\SupervisorWeaponBrand;
+use App\Models\SupervisorWeaponType;
 use App\Models\User;
+use App\Support\Supervision\RecommendationEvidencePhotos;
+use App\Support\Supervision\WeaponInspectionPhotos;
+use Illuminate\Http\UploadedFile;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -160,6 +168,174 @@ final class SupervisorShiftApiTest extends TestCase
 
         $current = $this->withToken($token)->getJson('/api/supervision/shifts/current');
         $current->assertOk()->assertJsonPath('current_review.id', $saved->json('review.id'));
+    }
+
+    public function test_review_commits_inventory_logs_in_same_request(): void
+    {
+        $this->seedWithPilot();
+        $login = $this->postJson('/api/supervision/login', [
+            'email' => 'supervisor@sj-seguridad.test',
+            'password' => 'Super123!',
+        ]);
+        $token = $login->json('token');
+        $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $saved = $this->withToken($token)->post('/api/supervision/reviews', $this->supervisorReviewPayload($client, [
+            'logs' => json_encode([
+                [
+                    'module' => 'inventory',
+                    'payload' => [
+                        'items' => [
+                            ['type' => 'Celular', 'status' => 'good', 'notes' => 'Sin novedad'],
+                        ],
+                    ],
+                ],
+            ]),
+        ]));
+        $saved->assertCreated();
+
+        $this->assertTrue(
+            SupervisorFieldLog::query()
+                ->where('supervisor_shift_review_id', $saved->json('review.id'))
+                ->where('module', 'inventory')
+                ->exists()
+        );
+    }
+
+    public function test_review_commits_weapons_with_photos(): void
+    {
+        $this->seedWithPilot();
+        $login = $this->postJson('/api/supervision/login', [
+            'email' => 'supervisor@sj-seguridad.test',
+            'password' => 'Super123!',
+        ]);
+        $token = $login->json('token');
+        $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
+
+        $companyId = (int) User::query()->where('email', 'supervisor@sj-seguridad.test')->value('security_company_id');
+        $type = SupervisorWeaponType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => 'Pistola',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+        $brand = SupervisorWeaponBrand::query()->create([
+            'security_company_id' => $companyId,
+            'name' => 'Glock',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+
+        $photos = [];
+        foreach (WeaponInspectionPhotos::SLOTS as $slot) {
+            $photos[$slot] = UploadedFile::fake()->image($slot.'.jpg');
+        }
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $saved = $this->withToken($token)->post('/api/supervision/reviews', $this->supervisorReviewPayload($client, [
+            'logs' => json_encode([
+                [
+                    'module' => 'weapons',
+                    'payload' => [
+                        'weapon_type_id' => $type->id,
+                        'weapon_brand_id' => $brand->id,
+                        'serial' => 'AR-9981',
+                        'caliber' => '9 mm',
+                        'permit_kind' => 'tenencia',
+                        'permit_number' => 'PT-123',
+                        'permit_expires_at' => now()->addYear()->toDateString(),
+                        'ammo_quantity' => 12,
+                        'ammo_caliber' => '9 mm',
+                    ],
+                ],
+            ]),
+            'log_photos' => [0 => $photos],
+        ]));
+        $saved->assertCreated();
+
+        $log = SupervisorFieldLog::query()
+            ->where('supervisor_shift_review_id', $saved->json('review.id'))
+            ->where('module', 'weapons')
+            ->first();
+        $this->assertNotNull($log);
+        $this->assertSame('AR-9981', $log->payload['serial'] ?? null);
+        $this->assertNotEmpty($log->payload['photos']['right'] ?? null);
+        $this->assertNotEmpty($log->payload['photos']['cleaning'] ?? null);
+    }
+
+    public function test_review_commits_recommendations_with_photos(): void
+    {
+        $this->seedWithPilot();
+        $login = $this->postJson('/api/supervision/login', [
+            'email' => 'supervisor@sj-seguridad.test',
+            'password' => 'Super123!',
+        ]);
+        $token = $login->json('token');
+        $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
+
+        $companyId = (int) User::query()->where('email', 'supervisor@sj-seguridad.test')->value('security_company_id');
+        $physical = SupervisorRiskType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => 'Riesgo físico',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+        $public = SupervisorRiskType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => 'Riesgo público',
+            'is_active' => true,
+            'sort_order' => 20,
+        ]);
+
+        $photos = [];
+        foreach (RecommendationEvidencePhotos::SLOTS as $slot) {
+            $photos['0_'.$slot] = UploadedFile::fake()->image($slot.'.jpg');
+            $photos['1_'.$slot] = UploadedFile::fake()->image($slot.'-b.jpg');
+        }
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $saved = $this->withToken($token)->post('/api/supervision/reviews', $this->supervisorReviewPayload($client, [
+            'logs' => json_encode([
+                [
+                    'module' => 'recommendations',
+                    'payload' => [
+                        'items' => [
+                            [
+                                'risk_type_id' => $physical->id,
+                                'risk' => 'Tramos oscuros en el costado norte.',
+                                'likelihood' => '5',
+                                'impact' => '4',
+                                'consequence' => 'Facilita un ingreso no autorizado.',
+                                'treatment' => 'Instalar luminarias LED.',
+                            ],
+                            [
+                                'risk_type_id' => $public->id,
+                                'risk' => 'La chapa queda suelta.',
+                                'likelihood' => '2',
+                                'impact' => '2',
+                                'consequence' => 'La puerta no asegura el acceso.',
+                                'treatment' => 'Cambiar chapa.',
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+            'log_photos' => [0 => $photos],
+        ]));
+        $saved->assertCreated();
+
+        $log = SupervisorFieldLog::query()
+            ->where('supervisor_shift_review_id', $saved->json('review.id'))
+            ->where('module', 'recommendations')
+            ->first();
+        $this->assertNotNull($log);
+        $this->assertCount(2, $log->payload['items'] ?? []);
+        $this->assertNotEmpty($log->payload['items'][0]['photos']['evidence_1'] ?? null);
+        $this->assertSame(2, SupervisorRecommendation::query()->where('client_id', $client->id)->count());
+        $this->assertSame('recorded', SupervisorRecommendation::query()->where('client_id', $client->id)->first()?->status->value);
+        $this->assertSame('extreme', SupervisorRecommendation::query()->where('risk', 'Tramos oscuros en el costado norte.')->first()?->risk_level->value);
+        $this->assertSame('Riesgo físico', SupervisorRecommendation::query()->where('risk', 'Tramos oscuros en el costado norte.')->first()?->risk_type);
     }
 
     public function test_review_requires_photo_and_gps(): void

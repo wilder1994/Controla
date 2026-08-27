@@ -16,7 +16,7 @@
                                 @forelse ($installations as $installation)
                                     <option value="{{ $installation->id }}" @selected(old('installation_id') == $installation->id)>{{ $installation->name }}</option>
                                 @empty
-                                    <option value="" disabled>Cree una instalación en la ficha del cliente (pestaña Accesos)</option>
+                                    <option value="" disabled>Cree una instalación en la ficha del cliente (Instalaciones y accesos)</option>
                                 @endforelse
                             </select>
                             @error('installation_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror

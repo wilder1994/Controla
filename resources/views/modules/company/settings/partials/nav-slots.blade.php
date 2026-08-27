@@ -8,4 +8,9 @@
     <a href="{{ route('company.supervision-zones.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'zonas'])>Zonas</a>
     <a href="{{ route('company.supervision-shifts.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'turnos'])>Turnos</a>
     <a href="{{ route('company.supervision-preop.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'preop'])>Preoperacional</a>
+    <a href="{{ route('company.supervision-document-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'documentos'])>Documentos</a>
+    <a href="{{ route('company.supervision-control-book-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'libros'])>Libros</a>
+    <a href="{{ route('company.supervision-weapon-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'armas'])>Tipos de arma</a>
+    <a href="{{ route('company.supervision-weapon-brands.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'marcas'])>Marcas</a>
+    <a href="{{ route('company.supervision-risk-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'riesgos'])>Riesgos</a>
 </x-slot:headerTabs>

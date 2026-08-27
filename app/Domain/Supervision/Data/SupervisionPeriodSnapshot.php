@@ -10,7 +10,7 @@ final readonly class SupervisionPeriodSnapshot
      * @param  list<array{name: string, reviews: int, km: int, logs: int}>  $bySupervisor
      * @param  list<array{name: string, reviews: int, attention: int}>  $byClient
      * @param  array<string, array{label: string, total: int, ok: int, attention: int, critical: int}>  $modules
-     * @param  array{open: int, progress: int, closed: int, overdue: int}  $recommendations
+     * @param  array{total: int, low: int, medium: int, high: int, extreme: int}  $recommendations
      * @param  list<string>  $unvisitedSites
      * @param  list<string>  $alerts
      */

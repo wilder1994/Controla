@@ -38,28 +38,41 @@ final class CompanyClientExpedienteTest extends TestCase
         $response = $this->actingAs($user)->get(route('company.clients.show', $client));
 
         $response->assertOk();
-        $response->assertSee('Accesos');
         $response->assertSee('Cliente');
+        $response->assertSee('Resumen');
+        $response->assertSee('Accesos');
         $response->assertSee('Supervisión');
         $response->assertSee('Operar portería');
         $response->assertSee('Operar cliente');
         $response->assertSee('Editar');
+        $response->assertSee('Instalaciones y accesos');
         $response->assertSee('Ficha comercial');
         $response->assertSee('← Cartera');
+
+        $resumen = $this->actingAs($user)->get(route('company.clients.show', [$client, 'vista' => 'resumen']));
+        $resumen->assertOk();
+        $resumen->assertSee('Personas (censo)');
+        $resumen->assertSee('Usuarios app');
+        $resumen->assertSee('Parque vehicular');
+        $resumen->assertSee('Guardas asignados');
+        $resumen->assertDontSee('Crear instalación');
+        $resumen->assertDontSee('Operar portería');
+        $resumen->assertDontSee('Operar cliente');
 
         $accesos = $this->actingAs($user)->get(route('company.clients.show', [$client, 'vista' => 'accesos']));
         $accesos->assertOk();
         $accesos->assertSee('Instalaciones y accesos');
-        $accesos->assertSee('Personas (censo)');
-        $accesos->assertSee('Usuarios app');
-        $accesos->assertSee('Parque vehicular');
-        $accesos->assertSee('Guardas asignados');
         $accesos->assertSee('Puerta principal');
+        $accesos->assertSee('← Cliente');
+        $accesos->assertDontSee('Personas (censo)');
+        $accesos->assertDontSee('Operar portería');
+        $accesos->assertDontSee('Operar cliente');
 
         $supervision = $this->actingAs($user)->get(route('company.clients.show', [$client, 'vista' => 'supervision']));
         $supervision->assertOk();
         $supervision->assertSee('Instalaciones y puestos');
         $supervision->assertSee('Portería principal');
+        $supervision->assertSee('← Cliente');
         $supervision->assertDontSee('Personas (censo)');
     }
 

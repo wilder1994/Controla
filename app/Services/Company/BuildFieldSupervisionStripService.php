@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Enums\SupervisorFieldOutcome;
-use App\Enums\SupervisorRecommendationStatus;
 use App\Enums\SupervisorShiftStatus;
 use App\Models\Client;
 use App\Models\SecurityCompany;
@@ -54,12 +53,9 @@ final class BuildFieldSupervisionStripService
             ->whereBetween('started_at', [$from, $to])
             ->sum('km_traveled');
 
-        $openRecs = SupervisorRecommendation::query()
+        $recsToday = SupervisorRecommendation::query()
             ->where('security_company_id', $companyId)
-            ->whereIn('status', [
-                SupervisorRecommendationStatus::Open,
-                SupervisorRecommendationStatus::Progress,
-            ])
+            ->whereBetween('created_at', [$from, $to])
             ->count();
 
         $attention = SupervisorFieldLog::query()
@@ -76,7 +72,7 @@ final class BuildFieldSupervisionStripService
             'sites_contracted' => $contracted,
             'sites_visited' => $visited,
             'coverage_pct' => $coverage,
-            'open_recommendations' => $openRecs,
+            'recommendations_today' => $recsToday,
             'attention_today' => $attention,
             'km_today' => $km,
             'posts_count' => SupervisorPost::query()

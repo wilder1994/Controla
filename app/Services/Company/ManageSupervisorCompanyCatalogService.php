@@ -6,7 +6,12 @@ namespace App\Services\Company;
 
 use App\Enums\SupervisorChecklistKind;
 use App\Models\SupervisorChecklistItem;
+use App\Models\SupervisorControlBookType;
+use App\Models\SupervisorDocumentType;
 use App\Models\SupervisorShiftTemplate;
+use App\Models\SupervisorWeaponBrand;
+use App\Models\SupervisorWeaponType;
+use App\Models\SupervisorRiskType;
 use App\Models\SupervisorZone;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -45,6 +50,131 @@ final class ManageSupervisorCompanyCatalogService
     public function deleteZone(SupervisorZone $zone): void
     {
         $zone->delete();
+    }
+
+    /** @param array{name: string, is_active?: bool} $data */
+    public function createDocumentType(int $companyId, array $data): SupervisorDocumentType
+    {
+        $name = trim($data['name']);
+        $this->assertUnique(SupervisorDocumentType::class, $companyId, $name);
+
+        return SupervisorDocumentType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorDocumentType::class, $companyId),
+        ]);
+    }
+
+    /** @param array{name?: string, is_active?: bool} $data */
+    public function updateDocumentType(SupervisorDocumentType $type, array $data): SupervisorDocumentType
+    {
+        return $this->updateNamed($type, $data);
+    }
+
+    public function deleteDocumentType(SupervisorDocumentType $type): void
+    {
+        $type->delete();
+    }
+
+    /** @param array{name: string, is_active?: bool} $data */
+    public function createControlBookType(int $companyId, array $data): SupervisorControlBookType
+    {
+        $name = trim($data['name']);
+        $this->assertUnique(SupervisorControlBookType::class, $companyId, $name);
+
+        return SupervisorControlBookType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorControlBookType::class, $companyId),
+        ]);
+    }
+
+    /** @param array{name?: string, is_active?: bool} $data */
+    public function updateControlBookType(SupervisorControlBookType $type, array $data): SupervisorControlBookType
+    {
+        return $this->updateNamed($type, $data);
+    }
+
+    public function deleteControlBookType(SupervisorControlBookType $type): void
+    {
+        $type->delete();
+    }
+
+    /** @param array{name: string, is_active?: bool} $data */
+    public function createWeaponType(int $companyId, array $data): SupervisorWeaponType
+    {
+        $name = trim($data['name']);
+        $this->assertUnique(SupervisorWeaponType::class, $companyId, $name);
+
+        return SupervisorWeaponType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorWeaponType::class, $companyId),
+        ]);
+    }
+
+    /** @param array{name?: string, is_active?: bool} $data */
+    public function updateWeaponType(SupervisorWeaponType $type, array $data): SupervisorWeaponType
+    {
+        return $this->updateNamed($type, $data);
+    }
+
+    public function deleteWeaponType(SupervisorWeaponType $type): void
+    {
+        $type->delete();
+    }
+
+    /** @param array{name: string, is_active?: bool} $data */
+    public function createWeaponBrand(int $companyId, array $data): SupervisorWeaponBrand
+    {
+        $name = trim($data['name']);
+        $this->assertUnique(SupervisorWeaponBrand::class, $companyId, $name);
+
+        return SupervisorWeaponBrand::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorWeaponBrand::class, $companyId),
+        ]);
+    }
+
+    /** @param array{name?: string, is_active?: bool} $data */
+    public function updateWeaponBrand(SupervisorWeaponBrand $brand, array $data): SupervisorWeaponBrand
+    {
+        return $this->updateNamed($brand, $data);
+    }
+
+    public function deleteWeaponBrand(SupervisorWeaponBrand $brand): void
+    {
+        $brand->delete();
+    }
+
+    /** @param array{name: string, is_active?: bool} $data */
+    public function createRiskType(int $companyId, array $data): SupervisorRiskType
+    {
+        $name = trim($data['name']);
+        $this->assertUnique(SupervisorRiskType::class, $companyId, $name);
+
+        return SupervisorRiskType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorRiskType::class, $companyId),
+        ]);
+    }
+
+    /** @param array{name?: string, is_active?: bool} $data */
+    public function updateRiskType(SupervisorRiskType $type, array $data): SupervisorRiskType
+    {
+        return $this->updateNamed($type, $data);
+    }
+
+    public function deleteRiskType(SupervisorRiskType $type): void
+    {
+        $type->delete();
     }
 
     /**
@@ -170,11 +300,11 @@ final class ManageSupervisorCompanyCatalogService
     }
 
     /** @param array{name?: string, is_active?: bool} $data */
-    private function updateNamed(SupervisorZone $row, array $data): SupervisorZone
+    private function updateNamed(SupervisorZone|SupervisorDocumentType|SupervisorControlBookType|SupervisorWeaponType|SupervisorWeaponBrand|SupervisorRiskType $row, array $data): SupervisorZone|SupervisorDocumentType|SupervisorControlBookType|SupervisorWeaponType|SupervisorWeaponBrand|SupervisorRiskType
     {
         if (isset($data['name'])) {
             $name = trim((string) $data['name']);
-            $this->assertUnique(SupervisorZone::class, (int) $row->security_company_id, $name, $row->id);
+            $this->assertUnique($row::class, (int) $row->security_company_id, $name, $row->id);
             $row->name = $name;
         }
         if (array_key_exists('is_active', $data)) {

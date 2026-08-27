@@ -14,14 +14,16 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 |---------|-------------|--------|
 | **Cliente** | Ficha comercial (`clients`). PH, oficinas, bodegas, etc. | Alta / Excel de **clientes** / pestaña Cliente |
 | **Ciudad** | Ubicación del cliente (`clients.city` + `department`). **No es un nodo del árbol.** Lo que en el Excel viejo de empleados decía «Sector» era ciudad. | Ficha y Excel de clientes |
-| **Instalación** | Sitio físico del cliente. Puede ser **el mismo cliente** (sede única: una instalación con el nombre del cliente). | Pestaña Accesos y/o Supervisión |
-| **Acceso** | Punto de portería (puerta, vehicular, peatonal). Tabla `locations` (`type = access_point`). **No** es un puesto de Supervisión. | Pestaña **Accesos** |
-| **Puesto** | Puesto de vigilancia de Supervisión de campo. Tabla nueva `supervisor_posts`. **Nunca** un `location`. | Pestaña **Supervisión** |
+| **Instalación** | Sitio físico del cliente. Puede ser **el mismo cliente** (sede única: una instalación con el nombre del cliente). | Tarjeta **Instalaciones y accesos** y/o **Supervisión** |
+| **Acceso** | Punto de portería (puerta, vehicular, peatonal). Tabla `locations` (`type = access_point`). **No** es un puesto de Supervisión. | Tarjeta **Instalaciones y accesos** |
+| **Puesto** | Puesto de vigilancia de Supervisión de campo. Tabla nueva `supervisor_posts`. **Nunca** un `location`. | Tarjeta **Supervisión** |
 | **Tipo de estructura** | Catálogo plataforma (`structure_types`), fijo en el alta (`clients.structure_type_id`). | Ficha cliente |
 | **Nodo / subnodo** | Censo residencial (`structures`, `parent_id`). Torre, apto, casa. Distinto de instalación/puesto/acceso. | Panel `/client/structures` |
 | **Persona (censo)** | `structure_members` en un nodo. | Panel cliente |
 
 Accesos y Supervisión son **dos mundos**. El mismo `clients` puede tener `has_access`, `has_supervision` o ambos. Conviven en la ficha; no se cruzan los hijos: un acceso no es un puesto.
+
+Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_access`) son los KPIs y gráficos de portería. Los árboles se abren desde tarjetas en Cliente: **Instalaciones y accesos** (`?vista=accesos`) y **Supervisión** (`?vista=supervision`).
 
 ---
 
@@ -42,9 +44,9 @@ Instalaciones, puestos y accesos los crea **a mano** el usuario de la empresa en
 
 ---
 
-## Árbol Accesos (pestaña Accesos)
+## Árbol Accesos (tarjeta Instalaciones y accesos)
 
-Solo si `has_access`. El usuario entra a `/company/clients/{id}?vista=accesos` y:
+Solo si `has_access`. En la pestaña **Cliente**, la tarjeta abre `/company/clients/{id}?vista=accesos` y:
 
 1. Crea **instalaciones** de ese cliente (o una sola «sede = cliente»).
 2. Crea **accesos** de cada instalación (`locations`).
@@ -61,9 +63,9 @@ El censo (torres, aptos, personas) no se define aquí; sigue en `/client/structu
 
 ---
 
-## Árbol Supervisión (pestaña Supervisión)
+## Árbol Supervisión (tarjeta Supervisión)
 
-Solo si `has_supervision`. El usuario entra a `/company/clients/{id}?vista=supervision` y:
+Solo si `has_supervision`. En la pestaña **Cliente**, la tarjeta abre `/company/clients/{id}?vista=supervision` y:
 
 1. Crea **instalaciones** de ese cliente (pueden ser las **mismas** del mundo Accesos: un solo catálogo de instalaciones por cliente).
 2. Crea **puestos** de cada instalación (`supervisor_posts`).
@@ -78,7 +80,7 @@ La app de campo (`GET /api/supervision/posts`) lista **estos puestos**, nunca `l
 
 Sin puestos de Supervisión no se guarda revista.
 
-La pestaña Supervisión es el lugar de esos ajustes (no Ajustes globales de la empresa: allá siguen zonas/turnos/preoperacional de **ruta**).
+La tarjeta Supervisión es el lugar de esos ajustes (no Ajustes globales de la empresa: allá siguen zonas/turnos/preoperacional de **ruta**).
 
 ---
 
@@ -150,11 +152,11 @@ Migraciones de ficha:
 
 ## Copy de UI
 
-Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Accesos** (si `has_access`) | **Supervisión** (si `has_supervision`) | Editar.
+Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Accesos** (si `has_access`) | **Supervisión** (si `has_supervision`).
 
+- Cliente: ficha comercial + tarjetas **Operar portería**, **Operar cliente** y **Editar** (mismos flujos de antes; Editar abre `/company/clients/{id}/edit` con ← Ficha).
 - Accesos: instalaciones + accesos de esas instalaciones.
 - Supervisión: instalaciones + puestos de esas instalaciones.
-- Editar: datos de la ficha (mismo conjunto de campos que el alta), no el árbol.
 
 El panel `/client/structures` se llama **Estructura** (censo).
 

@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace App\Support\Supervision;
 
 use App\Enums\SupervisorFieldModule;
-use App\Enums\SupervisorPostDocumentKind;
-use App\Enums\SupervisorRecommendationPriority;
+use App\Enums\SupervisorRiskImpact;
+use App\Enums\SupervisorRiskLikelihood;
+use App\Enums\SupervisorWeaponPermitKind;
+use App\Models\SupervisorControlBookType;
+use App\Models\SupervisorDocumentType;
+use App\Models\SupervisorRiskType;
+use App\Models\SupervisorWeaponBrand;
+use App\Models\SupervisorWeaponType;
+use Illuminate\Database\Eloquent\Model;
 
 final class FieldModuleCatalog
 {
@@ -15,7 +22,7 @@ final class FieldModuleCatalog
      *
      * @return list<array<string, mixed>>
      */
-    public function modules(): array
+    public function modules(?int $companyId = null): array
     {
         return [
             [
@@ -37,47 +44,77 @@ final class FieldModuleCatalog
             ],
             $this->fieldModule(SupervisorFieldModule::Inventory, [
                 [
-                    'name' => 'condition',
-                    'label' => 'Estado del puesto',
-                    'type' => 'radio',
+                    'name' => 'items',
+                    'label' => 'Elementos del puesto',
+                    'type' => 'repeatable',
                     'required' => true,
-                    'options' => [
-                        ['value' => 'good', 'label' => 'Buen estado'],
-                        ['value' => 'novelty', 'label' => 'Con novedad'],
-                        ['value' => 'managed', 'label' => 'Novedad gestionada'],
+                    'min' => 1,
+                    'add_label' => 'Agregar',
+                    'item_label' => 'Elemento',
+                    'item_fields' => [
+                        [
+                            'name' => 'type',
+                            'label' => 'Tipo de elemento',
+                            'type' => 'text',
+                            'required' => true,
+                            'max' => 120,
+                        ],
+                        [
+                            'name' => 'status',
+                            'label' => 'Estado',
+                            'type' => 'select',
+                            'required' => true,
+                            'options' => [
+                                ['value' => 'good', 'label' => 'Bueno'],
+                                ['value' => 'regular', 'label' => 'Regular'],
+                                ['value' => 'bad', 'label' => 'Malo'],
+                            ],
+                        ],
+                        [
+                            'name' => 'notes',
+                            'label' => 'Observación',
+                            'type' => 'textarea',
+                            'required' => false,
+                            'max' => 500,
+                        ],
                     ],
                 ],
             ]),
-            $this->fieldModule(SupervisorFieldModule::Documents, [
+            $this->fieldModule(SupervisorFieldModule::ControlBooks, [
                 [
-                    'name' => 'kind',
-                    'label' => 'Tipo documental del puesto',
-                    'type' => 'select',
-                    'required' => true,
-                    'options' => collect(SupervisorPostDocumentKind::cases())
-                        ->map(fn (SupervisorPostDocumentKind $kind) => [
-                            'value' => $kind->value,
-                            'label' => $kind->label(),
-                        ])
-                        ->values()
-                        ->all(),
-                ],
-                [
-                    'name' => 'status',
-                    'label' => 'Estado',
-                    'type' => 'radio',
-                    'required' => true,
-                    'options' => [
-                        ['value' => 'delivered', 'label' => 'Entregado / al día'],
-                        ['value' => 'pending', 'label' => 'Pendiente'],
-                    ],
-                ],
-                [
-                    'name' => 'quantity',
-                    'label' => 'Cantidad',
-                    'type' => 'number',
+                    'name' => 'items',
+                    'label' => 'Libros',
+                    'type' => 'repeatable',
                     'required' => true,
                     'min' => 1,
+                    'add_label' => 'Agregar',
+                    'item_label' => 'Libro',
+                    'item_fields' => [
+                        [
+                            'name' => 'control_book_type_id',
+                            'label' => 'Tipo de libro',
+                            'type' => 'select',
+                            'required' => true,
+                            'options' => $this->controlBookTypeOptions($companyId),
+                        ],
+                        [
+                            'name' => 'novelty',
+                            'label' => 'Novedad',
+                            'type' => 'radio',
+                            'required' => true,
+                            'options' => [
+                                ['value' => 'no', 'label' => 'Sin novedad'],
+                                ['value' => 'yes', 'label' => 'Con novedad'],
+                            ],
+                        ],
+                        [
+                            'name' => 'notes',
+                            'label' => 'Observación',
+                            'type' => 'textarea',
+                            'required' => false,
+                            'max' => 500,
+                        ],
+                    ],
                 ],
             ]),
             $this->fieldModule(SupervisorFieldModule::Folders, [
@@ -101,6 +138,22 @@ final class FieldModuleCatalog
             ]),
             $this->fieldModule(SupervisorFieldModule::Weapons, [
                 [
+                    'name' => 'weapon_type_id',
+                    'label' => 'Tipo de arma',
+                    'type' => 'select',
+                    'required' => true,
+                    'empty_label' => 'Sin tipos. Agréguelos en Ajustes',
+                    'options' => $this->namedCatalogOptions(SupervisorWeaponType::class, $companyId),
+                ],
+                [
+                    'name' => 'weapon_brand_id',
+                    'label' => 'Marca',
+                    'type' => 'select',
+                    'required' => true,
+                    'empty_label' => 'Sin marcas. Agréguelas en Ajustes',
+                    'options' => $this->namedCatalogOptions(SupervisorWeaponBrand::class, $companyId),
+                ],
+                [
                     'name' => 'serial',
                     'label' => 'Serial observado',
                     'type' => 'text',
@@ -108,51 +161,144 @@ final class FieldModuleCatalog
                     'max' => 80,
                 ],
                 [
-                    'name' => 'ammo_ok',
-                    'label' => 'Munición en regla',
-                    'type' => 'checkbox',
-                    'required' => false,
-                ],
-                [
-                    'name' => 'novelty',
-                    'label' => 'Novedad en el arma',
-                    'type' => 'checkbox',
-                    'required' => false,
-                ],
-            ]),
-            $this->fieldModule(SupervisorFieldModule::Recommendations, [
-                [
-                    'name' => 'title',
-                    'label' => 'Título',
+                    'name' => 'caliber',
+                    'label' => 'Calibre',
                     'type' => 'text',
                     'required' => true,
-                    'max' => 120,
+                    'max' => 40,
                 ],
                 [
-                    'name' => 'body',
-                    'label' => 'Descripción',
-                    'type' => 'textarea',
-                    'required' => true,
-                    'max' => 2000,
-                ],
-                [
-                    'name' => 'priority',
-                    'label' => 'Prioridad',
+                    'name' => 'permit_kind',
+                    'label' => 'Tipo de permiso',
                     'type' => 'select',
                     'required' => true,
-                    'options' => collect(SupervisorRecommendationPriority::cases())
-                        ->map(fn (SupervisorRecommendationPriority $priority) => [
-                            'value' => $priority->value,
-                            'label' => $priority->label(),
+                    'options' => collect(SupervisorWeaponPermitKind::cases())
+                        ->map(fn (SupervisorWeaponPermitKind $kind) => [
+                            'value' => $kind->value,
+                            'label' => $kind->label(),
                         ])
                         ->values()
                         ->all(),
                 ],
                 [
-                    'name' => 'due_date',
-                    'label' => 'Fecha límite',
+                    'name' => 'permit_number',
+                    'label' => 'Número de permiso',
+                    'type' => 'text',
+                    'required' => true,
+                    'max' => 80,
+                ],
+                [
+                    'name' => 'permit_expires_at',
+                    'label' => 'Vencimiento del permiso',
                     'type' => 'date',
-                    'required' => false,
+                    'required' => true,
+                ],
+                [
+                    'type' => 'row',
+                    'fields' => [
+                        [
+                            'name' => 'ammo_quantity',
+                            'label' => 'Cantidad de munición',
+                            'type' => 'number',
+                            'required' => true,
+                            'min' => 0,
+                        ],
+                        [
+                            'name' => 'ammo_caliber',
+                            'label' => 'Calibre de munición',
+                            'type' => 'text',
+                            'required' => true,
+                            'max' => 40,
+                        ],
+                    ],
+                ],
+                [
+                    'name' => 'photos',
+                    'label' => 'Evidencia fotográfica',
+                    'type' => 'photo_grid',
+                    'required' => true,
+                    'slots' => WeaponInspectionPhotos::slots(),
+                ],
+            ]),
+            $this->fieldModule(SupervisorFieldModule::Recommendations, [
+                [
+                    'name' => 'items',
+                    'label' => 'Recomendaciones',
+                    'type' => 'repeatable',
+                    'required' => true,
+                    'min' => 1,
+                    'max' => 3,
+                    'add_label' => 'Agregar',
+                    'item_label' => 'Recomendación',
+                    'item_fields' => [
+                        [
+                            'name' => 'risk_type_id',
+                            'label' => 'Tipo de riesgo',
+                            'type' => 'select',
+                            'required' => true,
+                            'options' => $this->riskTypeOptions($companyId),
+                        ],
+                        [
+                            'name' => 'risk',
+                            'label' => 'Riesgo',
+                            'type' => 'textarea',
+                            'required' => true,
+                            'max' => 2000,
+                        ],
+                        [
+                            'name' => 'likelihood',
+                            'label' => 'Probabilidad',
+                            'type' => 'select',
+                            'required' => true,
+                            'options' => collect(SupervisorRiskLikelihood::cases())
+                                ->map(fn (SupervisorRiskLikelihood $likelihood) => [
+                                    'value' => $likelihood->value,
+                                    'label' => $likelihood->label(),
+                                ])
+                                ->values()
+                                ->all(),
+                        ],
+                        [
+                            'name' => 'impact',
+                            'label' => 'Impacto',
+                            'type' => 'select',
+                            'required' => true,
+                            'options' => collect(SupervisorRiskImpact::cases())
+                                ->map(fn (SupervisorRiskImpact $impact) => [
+                                    'value' => $impact->value,
+                                    'label' => $impact->label(),
+                                ])
+                                ->values()
+                                ->all(),
+                        ],
+                        [
+                            'name' => 'risk_level',
+                            'label' => 'Nivel de riesgo',
+                            'type' => 'computed',
+                            'from' => ['likelihood', 'impact'],
+                        ],
+                        [
+                            'name' => 'consequence',
+                            'label' => 'Consecuencia',
+                            'type' => 'textarea',
+                            'required' => true,
+                            'max' => 2000,
+                        ],
+                        [
+                            'name' => 'treatment',
+                            'label' => 'Recomendación',
+                            'type' => 'textarea',
+                            'required' => true,
+                            'max' => 2000,
+                        ],
+                        [
+                            'name' => 'photos',
+                            'label' => 'Evidencia del riesgo',
+                            'type' => 'photo_grid',
+                            'required' => true,
+                            'slots' => RecommendationEvidencePhotos::slots(),
+                        ],
+                    ],
                 ],
             ]),
             $this->fieldModule(SupervisorFieldModule::Alarms, [
@@ -176,7 +322,88 @@ final class FieldModuleCatalog
                     'max' => 500,
                 ],
             ]),
+            $this->fieldModule(SupervisorFieldModule::Documents, [
+                [
+                    'name' => 'items',
+                    'label' => 'Documentos',
+                    'type' => 'repeatable',
+                    'required' => true,
+                    'min' => 1,
+                    'add_label' => 'Agregar',
+                    'item_label' => 'Documento',
+                    'item_fields' => [
+                        [
+                            'name' => 'document_type_id',
+                            'label' => 'Tipo de documento',
+                            'type' => 'select',
+                            'required' => true,
+                            'options' => $this->documentTypeOptions($companyId),
+                        ],
+                        [
+                            'name' => 'counts',
+                            'type' => 'qty_pair',
+                            'fields' => [
+                                ['name' => 'delivered', 'label' => 'Entregado'],
+                                ['name' => 'pending', 'label' => 'Pendiente'],
+                            ],
+                        ],
+                        [
+                            'name' => 'notes',
+                            'label' => 'Observación',
+                            'type' => 'textarea',
+                            'required' => false,
+                            'max' => 500,
+                        ],
+                    ],
+                ],
+            ]),
         ];
+    }
+
+    /**
+     * @param  class-string<Model>  $model
+     * @return list<array{value: string, label: string}>
+     */
+    private function namedCatalogOptions(string $model, ?int $companyId): array
+    {
+        if ($companyId === null || $companyId < 1) {
+            return [];
+        }
+
+        return $model::query()
+            ->where('security_company_id', $companyId)
+            ->active()
+            ->get()
+            ->map(fn (Model $row) => [
+                'value' => (string) $row->getKey(),
+                'label' => (string) $row->getAttribute('name'),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function documentTypeOptions(?int $companyId): array
+    {
+        return $this->namedCatalogOptions(SupervisorDocumentType::class, $companyId);
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function controlBookTypeOptions(?int $companyId): array
+    {
+        return $this->namedCatalogOptions(SupervisorControlBookType::class, $companyId);
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function riskTypeOptions(?int $companyId): array
+    {
+        return $this->namedCatalogOptions(SupervisorRiskType::class, $companyId);
     }
 
     /**

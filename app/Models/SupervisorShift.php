@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Supervision\Data\SupervisionQueryFilter;
 use App\Enums\SupervisorShiftSlot;
 use App\Enums\SupervisorShiftStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -89,6 +91,14 @@ final class SupervisorShift extends Model
     public function shiftTemplate(): BelongsTo
     {
         return $this->belongsTo(SupervisorShiftTemplate::class, 'supervisor_shift_template_id');
+    }
+
+    /** @param Builder<self> $query */
+    public function scopeMatchingFilter(Builder $query, SupervisionQueryFilter $filter): Builder
+    {
+        return $query
+            ->when($filter->zoneId !== null, fn (Builder $q) => $q->where('supervisor_zone_id', $filter->zoneId))
+            ->when($filter->supervisorId !== null, fn (Builder $q) => $q->where('user_id', $filter->supervisorId));
     }
 
     public function isOpen(): bool

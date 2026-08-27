@@ -16,7 +16,12 @@ use App\Http\Controllers\Company\PorteriaController;
 use App\Http\Controllers\Company\SettingsController;
 use App\Http\Controllers\Company\SupervisionMapController;
 use App\Http\Controllers\Company\SupervisorChecklistItemController;
+use App\Http\Controllers\Company\SupervisorControlBookTypeController;
+use App\Http\Controllers\Company\SupervisorDocumentTypeController;
 use App\Http\Controllers\Company\SupervisorShiftTemplateController;
+use App\Http\Controllers\Company\SupervisorWeaponBrandController;
+use App\Http\Controllers\Company\SupervisorWeaponTypeController;
+use App\Http\Controllers\Company\SupervisorRiskTypeController;
 use App\Http\Controllers\Company\SupervisorZoneController;
 use App\Http\Controllers\Company\UserController;
 use Illuminate\Support\Facades\Route;
@@ -102,6 +107,31 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::post('/supervision-preop', [SupervisorChecklistItemController::class, 'store'])->name('supervision-preop.store');
             Route::put('/supervision-preop/{item}', [SupervisorChecklistItemController::class, 'update'])->name('supervision-preop.update');
             Route::delete('/supervision-preop/{item}', [SupervisorChecklistItemController::class, 'destroy'])->name('supervision-preop.destroy');
+
+            Route::get('/supervision-document-types', [SupervisorDocumentTypeController::class, 'index'])->name('supervision-document-types.index');
+            Route::post('/supervision-document-types', [SupervisorDocumentTypeController::class, 'store'])->name('supervision-document-types.store');
+            Route::put('/supervision-document-types/{documentType}', [SupervisorDocumentTypeController::class, 'update'])->name('supervision-document-types.update');
+            Route::delete('/supervision-document-types/{documentType}', [SupervisorDocumentTypeController::class, 'destroy'])->name('supervision-document-types.destroy');
+
+            Route::get('/supervision-control-book-types', [SupervisorControlBookTypeController::class, 'index'])->name('supervision-control-book-types.index');
+            Route::post('/supervision-control-book-types', [SupervisorControlBookTypeController::class, 'store'])->name('supervision-control-book-types.store');
+            Route::put('/supervision-control-book-types/{controlBookType}', [SupervisorControlBookTypeController::class, 'update'])->name('supervision-control-book-types.update');
+            Route::delete('/supervision-control-book-types/{controlBookType}', [SupervisorControlBookTypeController::class, 'destroy'])->name('supervision-control-book-types.destroy');
+
+            Route::get('/supervision-weapon-types', [SupervisorWeaponTypeController::class, 'index'])->name('supervision-weapon-types.index');
+            Route::post('/supervision-weapon-types', [SupervisorWeaponTypeController::class, 'store'])->name('supervision-weapon-types.store');
+            Route::put('/supervision-weapon-types/{weaponType}', [SupervisorWeaponTypeController::class, 'update'])->name('supervision-weapon-types.update');
+            Route::delete('/supervision-weapon-types/{weaponType}', [SupervisorWeaponTypeController::class, 'destroy'])->name('supervision-weapon-types.destroy');
+
+            Route::get('/supervision-weapon-brands', [SupervisorWeaponBrandController::class, 'index'])->name('supervision-weapon-brands.index');
+            Route::post('/supervision-weapon-brands', [SupervisorWeaponBrandController::class, 'store'])->name('supervision-weapon-brands.store');
+            Route::put('/supervision-weapon-brands/{weaponBrand}', [SupervisorWeaponBrandController::class, 'update'])->name('supervision-weapon-brands.update');
+            Route::delete('/supervision-weapon-brands/{weaponBrand}', [SupervisorWeaponBrandController::class, 'destroy'])->name('supervision-weapon-brands.destroy');
+
+            Route::get('/supervision-risk-types', [SupervisorRiskTypeController::class, 'index'])->name('supervision-risk-types.index');
+            Route::post('/supervision-risk-types', [SupervisorRiskTypeController::class, 'store'])->name('supervision-risk-types.store');
+            Route::put('/supervision-risk-types/{riskType}', [SupervisorRiskTypeController::class, 'update'])->name('supervision-risk-types.update');
+            Route::delete('/supervision-risk-types/{riskType}', [SupervisorRiskTypeController::class, 'destroy'])->name('supervision-risk-types.destroy');
         });
 
         Route::get('/supervision', [SupervisionMapController::class, 'index'])

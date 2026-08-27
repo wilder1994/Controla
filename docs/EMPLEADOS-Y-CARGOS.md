@@ -10,7 +10,7 @@ Fuente de columnas: `Maestro Colaboradores WM.xlsx`, **sin** las cuatro de asign
 
 ## Dónde vive
 
-Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos** | **Zonas** | **Turnos** | **Preoperacional**. Las tres últimas son de Supervisión de campo (ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md)).
+Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos** | **Zonas** | **Turnos** | **Preoperacional** | **Documentos** | **Libros** | **Tipos de arma** | **Marcas** | **Riesgos**. Las de Supervisión de campo: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
 | Pieza | Dónde |
 |-------|--------|
@@ -55,7 +55,7 @@ Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 | S–U | Expedición documento | Opcional |
 | V | G.Sanguíneo | O+, O-, A+, A-, B+, B-, AB+, AB- |
 
-**No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (pestañas Accesos / Supervisión). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+**No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (tarjetas Instalaciones y accesos / Supervisión). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 No hay nombre de fantasía. No se archiva ni se crea usuario desde el Excel.
 

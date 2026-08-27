@@ -10,7 +10,7 @@ Referencia oficial del sistema visual. **Panel empresa** (`/company`, acento ind
 
 **Shell común (agosto 2026):** wrapper `h-screen flex overflow-hidden`. El `aside` ocupa la altura del viewport (`lg:h-full`), sin estirarse con el contenido. Tres zonas: marca (`shrink-0`) · nav (`flex-1`) · pie usuario (`shrink-0`, siempre visible). Scroll únicamente en la columna derecha (`min-h-0 overflow-y-auto`). En portería (`access`), el nav largo puede hacer scroll interno (`min-h-0 overflow-y-auto`) sin mover el pie.
 
-**Sidebar empresa:** Mi empresa · Facturación · Clientes · Supervisión · Empleados · Usuarios · Mis datos · Ajustes. Ajustes usa `headerTabs` Cargos | Tipos | Zonas | Turnos | Preoperacional. Empleados y Mis datos no tienen pestañas.
+**Sidebar empresa:** Mi empresa · Facturación · Clientes · Supervisión · Empleados · Usuarios · Mis datos · Ajustes. Ajustes usa `headerTabs` Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos. Supervisión usa `headerTabs` En vivo | Historial / replay | Resumen. Empleados y Mis datos no tienen pestañas.
 
 ---
 

@@ -109,7 +109,7 @@ final class ExportSupervisionExecutiveReportService
             [(string) $snapshot->reviews, 'Revistas', self::CARD, self::INK],
             [(string) $snapshot->fieldLogs, 'Registros de campo', self::CARD, self::INK],
             [(string) $snapshot->kmTraveled, 'Km recorridos', self::CARD, self::GOLD],
-            [(string) $snapshot->recommendations['open'], 'Recs. abiertas', self::CARD, self::INK],
+            [(string) $snapshot->recommendations['total'], 'Recomendaciones', self::CARD, self::INK],
         ];
 
         foreach ($boxes as $index => [$value, $label, $boxFill, $boxInk]) {
@@ -144,7 +144,7 @@ final class ExportSupervisionExecutiveReportService
 
     private function modulesSlide(Slide $slide, SupervisionPeriodSnapshot $snapshot): void
     {
-        $this->heading($slide, 'Ocho módulos de campo', 'Revista + siete registros operativos');
+        $this->heading($slide, 'Nueve módulos de campo', 'Revista + ocho registros operativos');
 
         $index = 0;
         foreach ($snapshot->modules as $row) {
@@ -179,10 +179,11 @@ final class ExportSupervisionExecutiveReportService
             : 'Sin revista: '.implode(', ', array_slice($snapshot->unvisitedSites, 0, 12));
         $this->text($slide, $unvisited, 40, 110, 880, 80, 14, self::INK);
 
-        $recs = 'Recomendaciones — abiertas '.$snapshot->recommendations['open']
-            .', en proceso '.$snapshot->recommendations['progress']
-            .', cerradas '.$snapshot->recommendations['closed']
-            .', vencidas '.$snapshot->recommendations['overdue'].'.';
+        $recs = 'Recomendaciones — '.$snapshot->recommendations['total']
+            .' (bajo '.$snapshot->recommendations['low']
+            .', medio '.$snapshot->recommendations['medium']
+            .', alto '.$snapshot->recommendations['high']
+            .', extremo '.$snapshot->recommendations['extreme'].').';
         $this->text($slide, $recs, 40, 210, 880, 60, 14, self::CYAN);
 
         $clients = [];

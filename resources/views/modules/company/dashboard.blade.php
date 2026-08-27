@@ -535,8 +535,8 @@
                         <p class="text-[10px] text-slate-600">{{ $fieldSupervision['sites_visited'] }}/{{ $fieldSupervision['sites_contracted'] }}</p>
                     </div>
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
-                        <p class="text-[10px] text-slate-500 uppercase">Recs. abiertas</p>
-                        <p class="text-lg font-semibold tabular-nums {{ $fieldSupervision['open_recommendations'] > 0 ? 'text-amber-300' : 'text-white' }}">{{ $fieldSupervision['open_recommendations'] }}</p>
+                        <p class="text-[10px] text-slate-500 uppercase">Recomendaciones</p>
+                        <p class="text-lg font-semibold tabular-nums {{ $fieldSupervision['recommendations_today'] > 0 ? 'text-amber-300' : 'text-white' }}">{{ $fieldSupervision['recommendations_today'] }}</p>
                     </div>
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                         <p class="text-[10px] text-slate-500 uppercase">Atenciones</p>
