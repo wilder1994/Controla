@@ -228,7 +228,7 @@ final class SupervisorShiftApiTest extends TestCase
         ]);
 
         $photos = [];
-        foreach (WeaponInspectionPhotos::SLOTS as $slot) {
+        foreach (WeaponInspectionPhotos::requiredKeys(false) as $slot) {
             $photos[$slot] = UploadedFile::fake()->image($slot.'.jpg');
         }
 
@@ -247,6 +247,8 @@ final class SupervisorShiftApiTest extends TestCase
                         'permit_expires_at' => now()->addYear()->toDateString(),
                         'ammo_quantity' => 12,
                         'ammo_caliber' => '9 mm',
+                        'novelty' => 'no',
+                        'cleaned' => 'no',
                     ],
                 ],
             ]),
@@ -260,8 +262,9 @@ final class SupervisorShiftApiTest extends TestCase
             ->first();
         $this->assertNotNull($log);
         $this->assertSame('AR-9981', $log->payload['serial'] ?? null);
+        $this->assertSame('no', $log->payload['cleaned'] ?? null);
         $this->assertNotEmpty($log->payload['photos']['right'] ?? null);
-        $this->assertNotEmpty($log->payload['photos']['cleaning'] ?? null);
+        $this->assertArrayNotHasKey('cleaning', $log->payload['photos'] ?? []);
     }
 
     public function test_review_commits_recommendations_with_photos(): void

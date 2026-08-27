@@ -13,4 +13,6 @@
     <a href="{{ route('company.supervision-weapon-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'armas'])>Tipos de arma</a>
     <a href="{{ route('company.supervision-weapon-brands.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'marcas'])>Marcas</a>
     <a href="{{ route('company.supervision-risk-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'riesgos'])>Riesgos</a>
+    <a href="{{ route('company.supervision-alarm-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'alarmas'])>Alarmas</a>
+    <a href="{{ route('company.supervision-support-types.index') }}" @class(['admin-header-tab', 'is-active' => $activeTab === 'apoyos'])>Apoyos</a>
 </x-slot:headerTabs>

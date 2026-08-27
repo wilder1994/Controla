@@ -35,10 +35,10 @@ enum SupervisorFieldModule: string
             self::Inventory => 'Pase revista a cada elemento del puesto: tipo, estado y observación.',
             self::ControlBooks => 'Libros del puesto: tipo, novedad y observación.',
             self::Folders => 'Carpeta del puesto: completa o con faltantes.',
-            self::Weapons => 'Revista y aseo del arma en el puesto: tipo, marca, permiso y evidencia fotográfica.',
+            self::Weapons => 'Revista del arma: identificación, novedad y aseo opcional con foto.',
             self::Recommendations => 'Hasta tres riesgos del puesto: probabilidad, impacto, consecuencia y evidencia.',
-            self::Alarms => 'Prueba de alarma en el sitio.',
-            self::Supports => 'Apoyo operativo. El sitio es opcional (puede ser en vía).',
+            self::Alarms => 'Prueba o atención de alarma en el sitio: tipo, modalidad y resultado.',
+            self::Supports => 'Apoyo operativo (tipo + motivo). El sitio es opcional (puede ser en vía).',
             self::Documents => 'Papeles que recogen o entregan en el turno. Sin cliente ni puesto.',
         };
     }

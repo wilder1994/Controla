@@ -14,7 +14,9 @@ use App\Models\SupervisorDocumentType;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorWeaponBrand;
 use App\Models\SupervisorWeaponType;
+use App\Models\SupervisorAlarmType;
 use App\Models\SupervisorRiskType;
+use App\Models\SupervisorSupportType;
 use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -61,6 +63,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SupervisorWeaponType::class, SupervisorCompanyCatalogPolicy::class);
         Gate::policy(SupervisorWeaponBrand::class, SupervisorCompanyCatalogPolicy::class);
         Gate::policy(SupervisorRiskType::class, SupervisorCompanyCatalogPolicy::class);
+        Gate::policy(SupervisorAlarmType::class, SupervisorCompanyCatalogPolicy::class);
+        Gate::policy(SupervisorSupportType::class, SupervisorCompanyCatalogPolicy::class);
 
         Gate::before(function (User $user, string $ability): ?bool {
             if ($user->hasRole('super-admin')) {

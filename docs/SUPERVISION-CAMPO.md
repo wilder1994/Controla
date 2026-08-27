@@ -4,7 +4,7 @@ Controla es la fuente de verdad. La PWA (`field-app/` y el host `controla_superv
 
 No choca con: minuta de portería (`/access/supervision`), `SupervisorReview`, `PlatformDocument`, zonas/vehículos de Accesos, `locations` (accesos) ni correspondencia.
 
-**Última actualización:** 26 agosto 2026
+**Última actualización:** 27 agosto 2026
 
 Árbol del cliente (instalación → puesto): [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md). La app **no** usa puntos de Accesos como puesto.
 
@@ -26,8 +26,10 @@ Mismo bloque que Cargos/Tipos (`company.settings.manage`):
 | **Tipos de arma** | `/company/supervision-weapon-types` | `supervisor_weapon_types` |
 | **Marcas** | `/company/supervision-weapon-brands` | `supervisor_weapon_brands` |
 | **Riesgos** | `/company/supervision-risk-types` | `supervisor_risk_types` (tipos de la recomendación; vacío hasta que la empresa los cree) |
+| **Alarmas** | `/company/supervision-alarm-types` | `supervisor_alarm_types` (pánico, incendio, etc.; vacío hasta que la empresa los cree) |
+| **Apoyos** | `/company/supervision-support-types` | `supervisor_support_types` (refuerzo, escolta, etc.; vacío hasta que la empresa los cree) |
 
-Si Zonas/Turnos/Preoperacional están vacíos, se siembran defaults (Norte/Sur/Centro; Día 06:00–18:00 y Noche 18:00–06:00; EPP y vehículo de `ShiftIntakeCatalog`). **Documentos**, **Libros**, **Tipos de arma**, **Marcas** y **Riesgos** no se siembran: la empresa define los tipos. Solo los **activos** salen en la app.
+Si Zonas/Turnos/Preoperacional están vacíos, se siembran defaults (Norte/Sur/Centro; Día 06:00–18:00 y Noche 18:00–06:00; EPP y vehículo de `ShiftIntakeCatalog`). **Documentos**, **Libros**, **Tipos de arma**, **Marcas**, **Riesgos**, **Alarmas** y **Apoyos** no se siembran: la empresa define los tipos. Solo los **activos** salen en la app.
 
 Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehicles` de Accesos.
 
@@ -35,7 +37,7 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v15`.
+PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v16`.
 
 API **siempre** Controla: si el host es `controla_supervision.test` → `http://controla.test/api`. Hard-refresh tras cambios de PWA.
 
@@ -59,10 +61,10 @@ Sin puestos de Supervisión en la ficha del cliente no se guarda revista. Los `l
 | `inventory` | `POST /logs` | Cuelga de la revista. Varios elementos (tipo, estado, observación) |
 | `control_books` | `POST /logs` | Cuelga de la revista. Tipos del catálogo empresa; con/sin novedad |
 | `folders` | `POST /logs` | Cuelga de la revista |
-| `weapons` | `POST /logs` | Cuelga de la revista. Tipo/marca de catálogo, permiso, munición y 6 fotos |
+| `weapons` | `POST /logs` | Cuelga de la revista. Tipo/marca, permiso, novedad, aseo opcional (foto de aseo solo si sí) y 5 fotos de identificación |
 | `recommendations` | `POST /logs` | Cuelga de la revista. 1 a 3 riesgos (tipo de catálogo, P×I, consecuencia, 3 fotos). Registro, no ticket |
-| `alarms` | `POST /logs` | Formulario propio. Requiere cliente |
-| `supports` | `POST /logs` | Formulario propio. Cliente opcional (puede ser en vía) |
+| `alarms` | `POST /logs` | Formulario propio. Requiere cliente. Tipo, modalidad (prueba/atención) y resultado |
+| `supports` | `POST /logs` | Formulario propio. Tipo + motivo. Cliente opcional (puede ser en vía) |
 | `documents` | `POST /logs` | Del turno. Sin cliente ni puesto. Tipos + entregado/pendiente |
 
 Contrato de campos: `GET /api/supervision/catalog` (`FieldModuleCatalog`). Logs append-only en `supervisor_field_logs` (`supervisor_shift_review_id` si cuelga de revista). Recomendaciones: `supervisor_recommendations` (registro inmutable del turno; `GET /recommendations` lista recientes).
@@ -96,7 +98,7 @@ Panel: KPIs de **volumen y nivel**, no de tickets abiertos. Tira de hoy: recomen
 
 ## Panel empresa — operación
 
-`/company/supervision`: En vivo / Historial / **Resumen**. Filtros en el header: rango, zona y supervisor. Informe PPTX: `GET /company/supervision/informe.pptx`. Resumen cuenta recomendaciones por nivel (bajo/medio/alto/extremo), no vencidas ni abiertas.
+`/company/supervision`: En vivo / Historial / **Resumen**. Header: filtros (año, mes, rango o un día, zona, supervisor) y **Descargar PPTX**. Sin conteo de en vivo/turnos/revistas en el header. El PPTX usa el mismo filtro (`GET /company/supervision/informe.pptx`). Resumen: KPI (cobertura de sitios, revistas, km, recs por nivel) y gráficos por módulo; sin texto explicativo del periodo (el recorte lo marcan los filtros). Año (>45 días) agrupa por mes; si no, por día.
 
 Mi empresa muestra la tira **Supervisión de campo (hoy)** aparte de las revistas de portería (incluye recomendaciones del día).
 
@@ -137,6 +139,7 @@ Apertura exige turno/zona **activos de esa empresa** y todos los ítems preopera
 - `2026_08_26_233000_add_risk_fields_to_supervisor_recommendations`
 - `2026_08_26_234500_create_supervisor_risk_types_table`
 - `2026_08_26_234800_replace_recommendation_title_with_risk_type`
+- `2026_08_27_140000_create_supervisor_alarm_and_support_types`
 
 ```bash
 php artisan migrate:fresh --seed

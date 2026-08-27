@@ -19,9 +19,11 @@ use App\Http\Controllers\Company\SupervisorChecklistItemController;
 use App\Http\Controllers\Company\SupervisorControlBookTypeController;
 use App\Http\Controllers\Company\SupervisorDocumentTypeController;
 use App\Http\Controllers\Company\SupervisorShiftTemplateController;
+use App\Http\Controllers\Company\SupervisorAlarmTypeController;
 use App\Http\Controllers\Company\SupervisorWeaponBrandController;
 use App\Http\Controllers\Company\SupervisorWeaponTypeController;
 use App\Http\Controllers\Company\SupervisorRiskTypeController;
+use App\Http\Controllers\Company\SupervisorSupportTypeController;
 use App\Http\Controllers\Company\SupervisorZoneController;
 use App\Http\Controllers\Company\UserController;
 use Illuminate\Support\Facades\Route;
@@ -132,6 +134,16 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::post('/supervision-risk-types', [SupervisorRiskTypeController::class, 'store'])->name('supervision-risk-types.store');
             Route::put('/supervision-risk-types/{riskType}', [SupervisorRiskTypeController::class, 'update'])->name('supervision-risk-types.update');
             Route::delete('/supervision-risk-types/{riskType}', [SupervisorRiskTypeController::class, 'destroy'])->name('supervision-risk-types.destroy');
+
+            Route::get('/supervision-alarm-types', [SupervisorAlarmTypeController::class, 'index'])->name('supervision-alarm-types.index');
+            Route::post('/supervision-alarm-types', [SupervisorAlarmTypeController::class, 'store'])->name('supervision-alarm-types.store');
+            Route::put('/supervision-alarm-types/{alarmType}', [SupervisorAlarmTypeController::class, 'update'])->name('supervision-alarm-types.update');
+            Route::delete('/supervision-alarm-types/{alarmType}', [SupervisorAlarmTypeController::class, 'destroy'])->name('supervision-alarm-types.destroy');
+
+            Route::get('/supervision-support-types', [SupervisorSupportTypeController::class, 'index'])->name('supervision-support-types.index');
+            Route::post('/supervision-support-types', [SupervisorSupportTypeController::class, 'store'])->name('supervision-support-types.store');
+            Route::put('/supervision-support-types/{supportType}', [SupervisorSupportTypeController::class, 'update'])->name('supervision-support-types.update');
+            Route::delete('/supervision-support-types/{supportType}', [SupervisorSupportTypeController::class, 'destroy'])->name('supervision-support-types.destroy');
         });
 
         Route::get('/supervision', [SupervisionMapController::class, 'index'])

@@ -111,6 +111,7 @@ final class RecordSupervisorProReviewService
                     $payload['photos'] = $this->storeWeaponPhotos(
                         is_array($input->logPhotos[$index] ?? null) ? $input->logPhotos[$index] : [],
                         $dir.'/weapons/'.$index,
+                        ($payload['cleaned'] ?? '') === 'yes',
                     );
                 }
                 if ($module === SupervisorFieldModule::Recommendations) {
@@ -152,14 +153,16 @@ final class RecordSupervisorProReviewService
      * @param  array<string, UploadedFile>  $files
      * @return array<string, string>
      */
-    private function storeWeaponPhotos(array $files, string $directory): array
+    private function storeWeaponPhotos(array $files, string $directory, bool $cleaned): array
     {
         $paths = [];
-        foreach (WeaponInspectionPhotos::SLOTS as $slot) {
+        foreach (WeaponInspectionPhotos::requiredKeys($cleaned) as $slot) {
             $file = $files[$slot] ?? null;
             if (! $file instanceof UploadedFile) {
                 throw ValidationException::withMessages([
-                    'log_photos' => 'La revista de armamento requiere las seis fotos del arma.',
+                    'log_photos' => $cleaned
+                        ? 'La revista de armamento con aseo requiere las cinco fotos de identificación y la de aseo.'
+                        : 'La revista de armamento requiere las cinco fotos de identificación del arma.',
                 ]);
             }
             $path = $file->storeAs($directory, $slot.'.jpg', 'local');

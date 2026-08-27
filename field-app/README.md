@@ -6,6 +6,10 @@ Revista: cliente con Supervisión → **puesto** (`supervisor_posts`, no puertas
 
 Recomendaciones: 1 a 3 tarjetas. Tipo de riesgo (catálogo Ajustes → Riesgos), texto del riesgo, P×I, consecuencia, tratamiento y 3 fotos. No hay título ni fecha límite ni ciclo abierto/cerrado.
 
-Caché SW: `controla-sup-v15`. Hard-refresh tras cambios.
+Armamento: novedad Con/Sin, aseo Sí/No (foto de aseo solo si sí) y 5 fotos de identificación.
+
+Alarmas: tipo (Ajustes → Alarmas), prueba o atención, resultado. Apoyos: tipo (Ajustes → Apoyos) + motivo.
+
+Caché SW: `controla-sup-v16`. Hard-refresh tras cambios.
 
 Ver [`docs/SUPERVISION-CAMPO.md`](../docs/SUPERVISION-CAMPO.md) · [`docs/CLIENTES-Y-ESTRUCTURA.md`](../docs/CLIENTES-Y-ESTRUCTURA.md).

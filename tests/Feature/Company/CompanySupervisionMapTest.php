@@ -35,19 +35,21 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Historial / replay');
         $response->assertSee('Resumen');
         $response->assertSee('Descargar PPTX');
-        $response->assertSee('Filtrar');
+        $response->assertSee('Hoy');
+        $response->assertSee('Mes');
+        $response->assertSee('Año');
         $response->assertSee('Zona');
         $response->assertSee('Supervisor');
         $response->assertSee('Norte');
         $response->assertSee('Supervisor Zona Demo');
-        $response->assertSee('revistas de campo');
         $response->assertSee('Supervisores en turno');
         $response->assertDontSee('Nueve módulos');
 
         $summary = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'summary']));
         $summary->assertOk();
-        $summary->assertSee('Nueve módulos');
-        $summary->assertSee('Cobertura');
+        $summary->assertSee('Cobertura de sitios');
+        $summary->assertSee('Revistas');
+        $summary->assertDontSee('Nueve módulos');
     }
 
     public function test_supervision_map_filters_by_zone_and_supervisor(): void
@@ -112,12 +114,19 @@ final class CompanySupervisionMapTest extends TestCase
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
 
-        $response = $this->actingAs($user)->get(route('company.supervision.report'));
+        $response = $this->actingAs($user)->get(route('company.supervision.report', [
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->toDateString(),
+        ]));
 
         $response->assertOk();
         $response->assertHeader('content-disposition');
         $this->assertStringContainsString(
             'Informe_Supervision_',
+            (string) $response->headers->get('content-disposition'),
+        );
+        $this->assertStringContainsString(
+            now()->startOfMonth()->toDateString(),
             (string) $response->headers->get('content-disposition'),
         );
     }

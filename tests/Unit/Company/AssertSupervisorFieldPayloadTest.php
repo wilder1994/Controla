@@ -42,7 +42,25 @@ final class AssertSupervisorFieldPayloadTest extends TestCase
     {
         $validated = app(AssertSupervisorFieldPayload::class)->execute(
             SupervisorFieldModule::Alarms,
-            ['result' => 'fail'],
+            [
+                'alarm_type_id' => 1,
+                'kind' => 'test',
+                'result' => 'fail',
+            ],
+        );
+
+        $this->assertSame(SupervisorFieldOutcome::Critical, $validated->outcome);
+    }
+
+    public function test_alarm_response_real_is_critical(): void
+    {
+        $validated = app(AssertSupervisorFieldPayload::class)->execute(
+            SupervisorFieldModule::Alarms,
+            [
+                'alarm_type_id' => 1,
+                'kind' => 'response',
+                'result' => 'real',
+            ],
         );
 
         $this->assertSame(SupervisorFieldOutcome::Critical, $validated->outcome);
@@ -134,6 +152,8 @@ final class AssertSupervisorFieldPayloadTest extends TestCase
                 'permit_expires_at' => now()->subDay()->toDateString(),
                 'ammo_quantity' => 12,
                 'ammo_caliber' => '9 mm',
+                'novelty' => 'no',
+                'cleaned' => 'no',
             ],
         );
 
@@ -154,10 +174,36 @@ final class AssertSupervisorFieldPayloadTest extends TestCase
                 'permit_expires_at' => now()->addYear()->toDateString(),
                 'ammo_quantity' => 6,
                 'ammo_caliber' => '9 mm',
+                'novelty' => 'no',
+                'cleaned' => 'yes',
             ],
         );
 
         $this->assertSame(SupervisorFieldOutcome::Ok, $validated->outcome);
+        $this->assertSame('yes', $validated->payload['cleaned']);
+    }
+
+    public function test_weapons_novelty_is_attention(): void
+    {
+        $validated = app(AssertSupervisorFieldPayload::class)->execute(
+            SupervisorFieldModule::Weapons,
+            [
+                'weapon_type_id' => 1,
+                'weapon_brand_id' => 1,
+                'serial' => 'AR-9981',
+                'caliber' => '9 mm',
+                'permit_kind' => 'deporte',
+                'permit_number' => 'PD-1',
+                'permit_expires_at' => now()->addYear()->toDateString(),
+                'ammo_quantity' => 6,
+                'ammo_caliber' => '9 mm',
+                'novelty' => 'yes',
+                'notes' => 'Cachas flojas',
+                'cleaned' => 'no',
+            ],
+        );
+
+        $this->assertSame(SupervisorFieldOutcome::Attention, $validated->outcome);
     }
 
     public function test_recommendations_compute_risk_level_and_outcome(): void

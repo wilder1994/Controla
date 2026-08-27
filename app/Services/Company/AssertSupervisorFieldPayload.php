@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Domain\Supervision\Data\ValidatedFieldPayload;
+use App\Enums\SupervisorAlarmKind;
+use App\Enums\SupervisorAlarmResult;
 use App\Enums\SupervisorFieldModule;
 use App\Enums\SupervisorFieldOutcome;
 use App\Enums\SupervisorRiskImpact;
@@ -12,9 +14,11 @@ use App\Enums\SupervisorRiskLikelihood;
 use App\Enums\SupervisorWeaponPermitKind;
 use App\Support\Supervision\RecommendationEvidencePhotos;
 use App\Support\Supervision\RiskMatrix;
+use App\Models\SupervisorAlarmType;
 use App\Models\SupervisorControlBookType;
 use App\Models\SupervisorDocumentType;
 use App\Models\SupervisorRiskType;
+use App\Models\SupervisorSupportType;
 use App\Models\SupervisorWeaponBrand;
 use App\Models\SupervisorWeaponType;
 use Illuminate\Support\Facades\Validator;
@@ -35,8 +39,8 @@ final class AssertSupervisorFieldPayload
             SupervisorFieldModule::Folders => $this->folders($payload),
             SupervisorFieldModule::Weapons => $this->weapons($payload, $companyId),
             SupervisorFieldModule::Recommendations => $this->recommendations($payload, $companyId),
-            SupervisorFieldModule::Alarms => $this->alarms($payload),
-            SupervisorFieldModule::Supports => $this->supports($payload),
+            SupervisorFieldModule::Alarms => $this->alarms($payload, $companyId),
+            SupervisorFieldModule::Supports => $this->supports($payload, $companyId),
         };
     }
 
@@ -203,6 +207,9 @@ final class AssertSupervisorFieldPayload
             'permit_expires_at' => ['required', 'date'],
             'ammo_quantity' => ['required', 'integer', 'min:0', 'max:9999'],
             'ammo_caliber' => ['required', 'string', 'max:40'],
+            'novelty' => ['required', 'string', Rule::in(['yes', 'no'])],
+            'notes' => ['nullable', 'string', 'max:500'],
+            'cleaned' => ['required', 'string', Rule::in(['yes', 'no'])],
             'photos' => ['nullable', 'array'],
             'photos.right' => ['nullable', 'string', 'max:255'],
             'photos.left' => ['nullable', 'string', 'max:255'],
@@ -215,6 +222,15 @@ final class AssertSupervisorFieldPayload
         $data['weapon_type_id'] = (int) $data['weapon_type_id'];
         $data['weapon_brand_id'] = (int) $data['weapon_brand_id'];
         $data['ammo_quantity'] = (int) $data['ammo_quantity'];
+        $data['novelty'] = (string) $data['novelty'];
+        $data['cleaned'] = (string) $data['cleaned'];
+        if ($data['novelty'] === 'no') {
+            $data['notes'] = null;
+        } elseif (($data['notes'] ?? null) === null || trim((string) $data['notes']) === '') {
+            throw ValidationException::withMessages([
+                'notes' => 'Describa la novedad del arma.',
+            ]);
+        }
         if ($companyId !== null && $companyId > 0) {
             $data['weapon_type'] = SupervisorWeaponType::query()
                 ->where('security_company_id', $companyId)
@@ -227,7 +243,7 @@ final class AssertSupervisorFieldPayload
         }
 
         $expired = (string) $data['permit_expires_at'] < now()->toDateString();
-        $outcome = $expired
+        $outcome = ($expired || $data['novelty'] === 'yes')
             ? SupervisorFieldOutcome::Attention
             : SupervisorFieldOutcome::Ok;
 
@@ -294,15 +310,45 @@ final class AssertSupervisorFieldPayload
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function alarms(array $payload): ValidatedFieldPayload
+    private function alarms(array $payload, ?int $companyId): ValidatedFieldPayload
     {
+        $typeRule = ['required', 'integer', 'min:1'];
+        if ($companyId !== null && $companyId > 0) {
+            $typeRule[] = Rule::exists('supervisor_alarm_types', 'id')->where(
+                fn ($query) => $query->where('security_company_id', $companyId)->where('is_active', true),
+            );
+        }
+
         $data = $this->validate($payload, [
-            'result' => ['required', 'string', Rule::in(['ok', 'fail'])],
+            'alarm_type_id' => $typeRule,
+            'kind' => ['required', Rule::enum(SupervisorAlarmKind::class)],
+            'result' => ['required', Rule::enum(SupervisorAlarmResult::class)],
         ]);
 
-        $outcome = $data['result'] === 'fail'
-            ? SupervisorFieldOutcome::Critical
-            : SupervisorFieldOutcome::Ok;
+        $kind = SupervisorAlarmKind::from((string) $data['kind']);
+        $result = SupervisorAlarmResult::from((string) $data['result']);
+        $allowed = SupervisorAlarmResult::forKind($kind);
+        if (! in_array($result, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'result' => 'El resultado no corresponde a la modalidad.',
+            ]);
+        }
+
+        $data['alarm_type_id'] = (int) $data['alarm_type_id'];
+        $data['kind'] = $kind->value;
+        $data['result'] = $result->value;
+        if ($companyId !== null && $companyId > 0) {
+            $data['alarm_type'] = SupervisorAlarmType::query()
+                ->where('security_company_id', $companyId)
+                ->whereKey($data['alarm_type_id'])
+                ->value('name');
+        }
+
+        $outcome = match ($result) {
+            SupervisorAlarmResult::Fail, SupervisorAlarmResult::Real => SupervisorFieldOutcome::Critical,
+            SupervisorAlarmResult::FalseAlarm, SupervisorAlarmResult::NotFound => SupervisorFieldOutcome::Attention,
+            SupervisorAlarmResult::Ok => SupervisorFieldOutcome::Ok,
+        };
 
         return new ValidatedFieldPayload($data, $outcome);
     }
@@ -310,11 +356,27 @@ final class AssertSupervisorFieldPayload
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function supports(array $payload): ValidatedFieldPayload
+    private function supports(array $payload, ?int $companyId): ValidatedFieldPayload
     {
+        $typeRule = ['required', 'integer', 'min:1'];
+        if ($companyId !== null && $companyId > 0) {
+            $typeRule[] = Rule::exists('supervisor_support_types', 'id')->where(
+                fn ($query) => $query->where('security_company_id', $companyId)->where('is_active', true),
+            );
+        }
+
         $data = $this->validate($payload, [
+            'support_type_id' => $typeRule,
             'reason' => ['required', 'string', 'min:3', 'max:500'],
         ]);
+
+        $data['support_type_id'] = (int) $data['support_type_id'];
+        if ($companyId !== null && $companyId > 0) {
+            $data['support_type'] = SupervisorSupportType::query()
+                ->where('security_company_id', $companyId)
+                ->whereKey($data['support_type_id'])
+                ->value('name');
+        }
 
         return new ValidatedFieldPayload($data, SupervisorFieldOutcome::Attention);
     }

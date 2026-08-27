@@ -319,26 +319,67 @@ function openModule(key, from = 'home') {
     modulePhotos = {};
     (currentModule.fields || []).filter((field) => field.type === 'repeatable').forEach(bindRepeatable);
     bindAllPhotoGrids();
+    bindConditionalFields();
     document.getElementById('module-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function fieldWrapper(field, html) {
+    const attrs = [];
+    if (field.show_when) attrs.push(`data-show-when='${JSON.stringify(field.show_when)}'`);
+    if (field.options_when) attrs.push(`data-options-when='${JSON.stringify(field.options_when)}'`);
+    if (!attrs.length) return html;
+    return `<div class="field-block" ${attrs.join(' ')}>${html}</div>`;
 }
 
 function renderField(field) {
     if (field.type === 'repeatable') {
-        return `<div id="rep-${field.name}" data-name="${field.name}">
+        return fieldWrapper(field, `<div id="rep-${field.name}" data-name="${field.name}">
             <div class="rep-list"></div>
             <button type="button" class="ghost" data-rep-add="${field.name}">${field.add_label || 'Agregar'}</button>
-        </div>`;
+        </div>`);
     }
     if (field.type === 'photo_grid') {
-        return `<label>${field.label}</label>
+        return fieldWrapper(field, `<label>${field.label}</label>
             <div class="photo-grid" id="photos-${field.name}">
                 ${(field.slots || []).map((slot) => `<button type="button" class="photo-slot" data-photo-slot="${slot.key}"><span>${slot.label}</span></button>`).join('')}
-            </div>`;
+            </div>`);
     }
     if (field.type === 'row') {
-        return `<div class="row">${(field.fields || []).map((sub) => `<div><label>${sub.label}</label>${fieldControl(sub)}</div>`).join('')}</div>`;
+        return fieldWrapper(field, `<div class="row">${(field.fields || []).map((sub) => `<div><label>${sub.label}</label>${fieldControl(sub)}</div>`).join('')}</div>`);
     }
-    return field.type === 'checkbox' ? fieldControl(field) : `<label>${field.label}</label>${fieldControl(field)}`;
+    const body = field.type === 'checkbox' ? fieldControl(field) : `<label>${field.label}</label>${fieldControl(field)}`;
+    return fieldWrapper(field, body);
+}
+
+function bindConditionalFields() {
+    const form = document.getElementById('module-form');
+    if (!form) return;
+    const apply = () => {
+        const payload = readPayload();
+        form.querySelectorAll('[data-show-when]').forEach((el) => {
+            let cond = {};
+            try { cond = JSON.parse(el.dataset.showWhen || '{}'); } catch { cond = {}; }
+            const visible = Object.entries(cond).every(([key, value]) => payload[key] === value);
+            el.classList.toggle('hidden', !visible);
+        });
+        form.querySelectorAll('[data-options-when]').forEach((el) => {
+            let spec = {};
+            try { spec = JSON.parse(el.dataset.optionsWhen || '{}'); } catch { spec = {}; }
+            const fieldName = spec.field;
+            const options = (spec.map && fieldName) ? (spec.map[payload[fieldName]] || []) : [];
+            const radios = el.querySelector('.opts');
+            if (!radios || !options.length) return;
+            const current = radios.querySelector('input[type="radio"]:checked')?.value;
+            const name = radios.querySelector('input[type="radio"]')?.name;
+            if (!name) return;
+            radios.innerHTML = options.map((option, i) => {
+                const checked = option.value === current || (current == null && i === 0) ? 'checked' : '';
+                return `<label class="opt"><input type="radio" name="${name}" value="${option.value}" ${checked}><span>${option.label}</span></label>`;
+            }).join('');
+        });
+    };
+    form.onchange = apply;
+    apply();
 }
 
 function bindRepeatable(field) {
@@ -1131,8 +1172,22 @@ function assertDraftPayload(mod, payload) {
         if (!payload.permit_expires_at) throw new Error('Indique el vencimiento del permiso.');
         if (payload.ammo_quantity == null) throw new Error('Indique la cantidad de munición.');
         if (!payload.ammo_caliber) throw new Error('Indique el calibre de munición.');
-        const slots = (mod.fields || []).find((field) => field.type === 'photo_grid')?.slots || [];
-        if (slots.some((slot) => !modulePhotos[slot.key])) throw new Error('Tome las seis fotos del arma.');
+        if (payload.novelty !== 'yes' && payload.novelty !== 'no') throw new Error('Indique si el arma tiene novedad.');
+        if (payload.novelty === 'yes' && !payload.notes) throw new Error('Describa la novedad del arma.');
+        if (payload.cleaned !== 'yes' && payload.cleaned !== 'no') throw new Error('Indique si realizó aseo del arma.');
+        const idSlots = (mod.fields || []).filter((field) => field.type === 'photo_grid' && !field.show_when)
+            .flatMap((field) => field.slots || []);
+        if (idSlots.some((slot) => !modulePhotos[slot.key])) throw new Error('Tome las cinco fotos de identificación del arma.');
+        if (payload.cleaned === 'yes' && !modulePhotos.cleaning) throw new Error('Tome la foto de aseo del arma.');
+    }
+    if (mod.key === 'alarms') {
+        if (!payload.alarm_type_id) throw new Error('Seleccione el tipo de alarma.');
+        if (!payload.kind) throw new Error('Indique si es prueba o atención.');
+        if (!payload.result) throw new Error('Indique el resultado.');
+    }
+    if (mod.key === 'supports') {
+        if (!payload.support_type_id) throw new Error('Seleccione el tipo de apoyo.');
+        if (!payload.reason) throw new Error('Indique el motivo del apoyo.');
     }
     if (mod.key === 'control_books') {
         const items = payload.items || [];

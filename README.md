@@ -51,7 +51,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; API en Controla (`http://controla.test/api`). Caché SW `controla-sup-v15` |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; API en Controla (`http://controla.test/api`). Caché SW `controla-sup-v16` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -392,7 +392,7 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
-Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos).
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
 
 | Ruta | Función |
 |------|---------|
@@ -405,8 +405,8 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos de Supervisión (tarjeta Supervisión) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
-| `GET /company/supervision` | Mapa GPS: header con rango, zona, supervisor y PPTX; pestañas **En vivo** \| **Historial / replay** \| **Resumen** |
-| `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX |
+| `GET /company/supervision` | Mapa GPS: filtros año/mes/rango/día, zona y supervisor + PPTX; pestañas **En vivo** \| **Historial / replay** \| **Resumen** (KPI y gráficos; el header no muestra conteos) |
+| `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro que el resumen) |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
 | `POST /company/billing/supervision` | Contratar / cambiar Supervisión (self-serve, aplica al corte) |
 | `POST /company/billing/checkout` | Checkout online (intent renew/anticipate/reactivate) |
@@ -429,6 +429,8 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `GET /company/supervision-weapon-types` | **Ajustes → Tipos de arma**: pistola, escopeta, revólver, etc. |
 | `GET /company/supervision-weapon-brands` | **Ajustes → Marcas**: marcas del arma en revista |
 | `GET /company/supervision-risk-types` | **Ajustes → Riesgos**: tipos de la recomendación (físico, químico, eléctrico, etc.) |
+| `GET /company/supervision-alarm-types` | **Ajustes → Alarmas**: tipos para prueba o atención (pánico, incendio, etc.) |
+| `GET /company/supervision-support-types` | **Ajustes → Apoyos**: tipos de apoyo operativo |
 
 Detalle empleados: [`docs/EMPLEADOS-Y-CARGOS.md`](docs/EMPLEADOS-Y-CARGOS.md). Supervisión de campo: [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md).
 

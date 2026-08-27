@@ -100,7 +100,9 @@
                         || request()->routeIs('company.supervision-control-book-types.*')
                         || request()->routeIs('company.supervision-weapon-types.*')
                         || request()->routeIs('company.supervision-weapon-brands.*')
-                        || request()->routeIs('company.supervision-risk-types.*');
+                        || request()->routeIs('company.supervision-risk-types.*')
+                        || request()->routeIs('company.supervision-alarm-types.*')
+                        || request()->routeIs('company.supervision-support-types.*');
                 @endphp
                 <a href="{{ route('company.settings.edit') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.settings.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">

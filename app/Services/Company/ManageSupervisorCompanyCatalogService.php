@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Enums\SupervisorChecklistKind;
+use App\Models\SupervisorAlarmType;
 use App\Models\SupervisorChecklistItem;
 use App\Models\SupervisorControlBookType;
 use App\Models\SupervisorDocumentType;
 use App\Models\SupervisorShiftTemplate;
+use App\Models\SupervisorSupportType;
 use App\Models\SupervisorWeaponBrand;
 use App\Models\SupervisorWeaponType;
 use App\Models\SupervisorRiskType;
@@ -177,6 +179,56 @@ final class ManageSupervisorCompanyCatalogService
         $type->delete();
     }
 
+    /** @param array{name: string, is_active?: bool} $data */
+    public function createAlarmType(int $companyId, array $data): SupervisorAlarmType
+    {
+        $name = trim($data['name']);
+        $this->assertUnique(SupervisorAlarmType::class, $companyId, $name);
+
+        return SupervisorAlarmType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorAlarmType::class, $companyId),
+        ]);
+    }
+
+    /** @param array{name?: string, is_active?: bool} $data */
+    public function updateAlarmType(SupervisorAlarmType $type, array $data): SupervisorAlarmType
+    {
+        return $this->updateNamed($type, $data);
+    }
+
+    public function deleteAlarmType(SupervisorAlarmType $type): void
+    {
+        $type->delete();
+    }
+
+    /** @param array{name: string, is_active?: bool} $data */
+    public function createSupportType(int $companyId, array $data): SupervisorSupportType
+    {
+        $name = trim($data['name']);
+        $this->assertUnique(SupervisorSupportType::class, $companyId, $name);
+
+        return SupervisorSupportType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorSupportType::class, $companyId),
+        ]);
+    }
+
+    /** @param array{name?: string, is_active?: bool} $data */
+    public function updateSupportType(SupervisorSupportType $type, array $data): SupervisorSupportType
+    {
+        return $this->updateNamed($type, $data);
+    }
+
+    public function deleteSupportType(SupervisorSupportType $type): void
+    {
+        $type->delete();
+    }
+
     /**
      * @param  array{name: string, starts_at: string, ends_at: string, is_active?: bool}  $data
      */
@@ -300,7 +352,7 @@ final class ManageSupervisorCompanyCatalogService
     }
 
     /** @param array{name?: string, is_active?: bool} $data */
-    private function updateNamed(SupervisorZone|SupervisorDocumentType|SupervisorControlBookType|SupervisorWeaponType|SupervisorWeaponBrand|SupervisorRiskType $row, array $data): SupervisorZone|SupervisorDocumentType|SupervisorControlBookType|SupervisorWeaponType|SupervisorWeaponBrand|SupervisorRiskType
+    private function updateNamed(SupervisorZone|SupervisorDocumentType|SupervisorControlBookType|SupervisorWeaponType|SupervisorWeaponBrand|SupervisorRiskType|SupervisorAlarmType|SupervisorSupportType $row, array $data): SupervisorZone|SupervisorDocumentType|SupervisorControlBookType|SupervisorWeaponType|SupervisorWeaponBrand|SupervisorRiskType|SupervisorAlarmType|SupervisorSupportType
     {
         if (isset($data['name'])) {
             $name = trim((string) $data['name']);

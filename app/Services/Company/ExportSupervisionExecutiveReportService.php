@@ -47,17 +47,19 @@ final class ExportSupervisionExecutiveReportService
 
         $this->coverSlide($ppt->getActiveSlide(), $snapshot);
         $this->kpiSlide($this->slide($ppt), $snapshot);
-        $this->modulesSlide($this->slide($ppt), $snapshot);
+        $this->activitySlide($this->slide($ppt), $snapshot);
+        $this->fieldSlide($this->slide($ppt), $snapshot);
         $this->chartSlide(
             $this->slide($ppt),
             'Actividad por supervisor',
             $this->groupedBar(
                 $this->namedValues($snapshot->bySupervisor, 'reviews'),
-                $this->namedValues($snapshot->bySupervisor, 'logs'),
+                $this->namedValues($snapshot->bySupervisor, 'km'),
                 'Revistas',
-                'Registros de campo',
+                'Km',
             ),
         );
+        $this->alarmsSlide($this->slide($ppt), $snapshot);
         $this->sitesSlide($this->slide($ppt), $snapshot);
         $this->alertsSlide($this->slide($ppt), $snapshot->alerts);
 
@@ -107,16 +109,15 @@ final class ExportSupervisionExecutiveReportService
         $boxes = [
             [$coverage, 'Cobertura de sitios', $fill, $ink],
             [(string) $snapshot->reviews, 'Revistas', self::CARD, self::INK],
-            [(string) $snapshot->fieldLogs, 'Registros de campo', self::CARD, self::INK],
             [(string) $snapshot->kmTraveled, 'Km recorridos', self::CARD, self::GOLD],
             [(string) $snapshot->recommendations['total'], 'Recomendaciones', self::CARD, self::INK],
         ];
 
         foreach ($boxes as $index => [$value, $label, $boxFill, $boxInk]) {
             $shape = $slide->createRichTextShape()
-                ->setOffsetX(40 + ($index * 184))
+                ->setOffsetX(40 + ($index * 230))
                 ->setOffsetY(120)
-                ->setWidth(172)
+                ->setWidth(214)
                 ->setHeight(130);
             $shape->setFill($this->solid($boxFill));
             $valueRun = $shape->createTextRun($value);
@@ -142,32 +143,110 @@ final class ExportSupervisionExecutiveReportService
         );
     }
 
-    private function modulesSlide(Slide $slide, SupervisionPeriodSnapshot $snapshot): void
+    private function activitySlide(Slide $slide, SupervisionPeriodSnapshot $snapshot): void
     {
-        $this->heading($slide, 'Nueve módulos de campo', 'Revista + ocho registros operativos');
+        $charts = $snapshot->charts;
+        $grain = ($charts['grain'] ?? 'day') === 'month' ? 'mensual' : 'diaria';
+        $this->heading($slide, 'Actividad '.$grain, $snapshot->caption);
 
-        $index = 0;
-        foreach ($snapshot->modules as $row) {
-            $col = $index % 4;
-            $rowN = intdiv($index, 4);
-            $shape = $slide->createRichTextShape()
-                ->setOffsetX(40 + ($col * 230))
-                ->setOffsetY(110 + ($rowN * 180))
-                ->setWidth(214)
-                ->setHeight(160);
-            $shape->setFill($this->solid(self::CARD));
-            $title = $shape->createTextRun($row['label']);
-            $title->getFont()->setName('Calibri')->setBold(true)->setSize(13)->setColor(new Color(self::GOLD));
-            $shape->createBreak();
-            $total = $shape->createTextRun((string) $row['total']);
-            $total->getFont()->setName('Calibri')->setBold(true)->setSize(28)->setColor(new Color(self::INK));
-            $shape->createBreak();
-            $detail = $shape->createTextRun(
-                'OK '.$row['ok'].' · Atención '.$row['attention'].' · Crítico '.$row['critical']
-            );
-            $detail->getFont()->setName('Calibri')->setSize(10)->setColor(new Color(self::MUTED));
-            $index++;
+        $reviews = array_sum($charts['reviews'] ?? []);
+        $novelty = array_sum($charts['novelty_yes'] ?? []);
+        $this->text($slide, 'Revistas '.$reviews.' · con novedad '.$novelty.' · km '.$snapshot->kmTraveled.'.', 40, 110, 880, 40, 14, self::CYAN);
+
+        $weapons = $charts['weapons'] ?? [];
+        $this->text(
+            $slide,
+            'Armamento: '.(int) ($weapons['total'] ?? 0).' inspecciones, '
+            .(int) ($weapons['cleaned'] ?? 0).' con aseo, '
+            .(int) ($weapons['inspection_only'] ?? 0).' solo revista, '
+            .(int) ($weapons['novelty'] ?? 0).' con novedad, '
+            .(int) ($weapons['expired'] ?? 0).' permiso vencido.',
+            40,
+            170,
+            880,
+            70,
+            14,
+            self::INK,
+        );
+
+        $recs = $charts['recs_by_level'] ?? [];
+        $this->text(
+            $slide,
+            'Recomendaciones '.$snapshot->recommendations['total']
+            .' — bajo '.(int) ($recs['low'] ?? 0)
+            .', medio '.(int) ($recs['medium'] ?? 0)
+            .', alto '.(int) ($recs['high'] ?? 0)
+            .', extremo '.(int) ($recs['extreme'] ?? 0).'.',
+            40,
+            260,
+            880,
+            50,
+            14,
+            self::GOLD,
+        );
+    }
+
+    private function fieldSlide(Slide $slide, SupervisionPeriodSnapshot $snapshot): void
+    {
+        $charts = $snapshot->charts;
+        $this->heading($slide, 'Puesto: inventario, libros y carpetas', $snapshot->caption);
+
+        $inv = $charts['inventory'] ?? [];
+        $books = $charts['books'] ?? [];
+        $folders = $charts['folders'] ?? [];
+        $docs = $charts['documents'] ?? [];
+
+        $this->text($slide, 'Inventario — bueno '.(int) ($inv['good'] ?? 0).', regular '.(int) ($inv['regular'] ?? 0).', malo '.(int) ($inv['bad'] ?? 0).'.', 40, 110, 880, 40, 14, self::INK);
+        $this->text($slide, 'Libros — sin novedad '.(int) ($books['no'] ?? 0).', con novedad '.(int) ($books['yes'] ?? 0).'.', 40, 160, 880, 40, 14, self::INK);
+        $this->text($slide, 'Carpetas — completas '.(int) ($folders['complete'] ?? 0).', con faltantes '.(int) ($folders['missing'] ?? 0).'.', 40, 210, 880, 40, 14, self::INK);
+        $this->text($slide, 'Documentos del turno — entregados '.(int) ($docs['delivered'] ?? 0).', pendientes '.(int) ($docs['pending'] ?? 0).'.', 40, 260, 880, 40, 14, self::CYAN);
+    }
+
+    private function alarmsSlide(Slide $slide, SupervisionPeriodSnapshot $snapshot): void
+    {
+        $charts = $snapshot->charts;
+        $kind = $charts['alarms_kind'] ?? [];
+        $result = $charts['alarms_result'] ?? [];
+        $place = $charts['supports_place'] ?? [];
+        $this->heading($slide, 'Alarmas y apoyos', $snapshot->caption);
+
+        $this->text(
+            $slide,
+            'Alarmas: '.(int) ($kind['test'] ?? 0).' pruebas y '.(int) ($kind['response'] ?? 0).' atenciones. '
+            .'OK '.(int) ($result['ok'] ?? 0)
+            .', falla '.(int) ($result['fail'] ?? 0)
+            .', real '.(int) ($result['real'] ?? 0)
+            .', falsa '.(int) ($result['false_alarm'] ?? 0)
+            .', no ubicada '.(int) ($result['not_found'] ?? 0).'.',
+            40,
+            110,
+            880,
+            80,
+            14,
+            self::INK,
+        );
+
+        $types = [];
+        foreach (array_slice($charts['alarms_by_type'] ?? [], 0, 8) as $row) {
+            $types[] = $row['name'].' (prueba '.$row['test'].', atención '.$row['response'].')';
         }
+        $this->text($slide, $types === [] ? 'Sin alarmas en el periodo.' : implode(' · ', $types), 40, 210, 880, 80, 13, self::CYAN);
+
+        $supports = [];
+        foreach (array_slice($charts['supports_by_type'] ?? [], 0, 8) as $row) {
+            $supports[] = $row['name'].' ('.$row['total'].')';
+        }
+        $this->text(
+            $slide,
+            ($supports === [] ? 'Sin apoyos.' : 'Apoyos: '.implode(', ', $supports))
+            .' · '.(int) ($place['site'] ?? 0).' en sitio, '.(int) ($place['road'] ?? 0).' en vía.',
+            40,
+            310,
+            880,
+            80,
+            13,
+            self::GOLD,
+        );
     }
 
     private function sitesSlide(Slide $slide, SupervisionPeriodSnapshot $snapshot): void
@@ -188,7 +267,7 @@ final class ExportSupervisionExecutiveReportService
 
         $clients = [];
         foreach (array_slice($snapshot->byClient, 0, 8) as $row) {
-            $clients[] = $row['name'].' ('.$row['reviews'].' revistas, '.$row['attention'].' atenciones)';
+            $clients[] = $row['name'].' ('.$row['reviews'].' revistas, '.$row['novelty'].' con novedad)';
         }
         $this->text(
             $slide,
@@ -207,7 +286,7 @@ final class ExportSupervisionExecutiveReportService
      */
     private function alertsSlide(Slide $slide, array $alerts): void
     {
-        $this->heading($slide, 'Alertas del periodo', 'Cobertura, alarmas, documentos de puesto y recomendaciones');
+        $this->heading($slide, 'Alertas del periodo', 'Cobertura, alarmas, documentos y recomendaciones');
 
         $shape = $slide->createRichTextShape()
             ->setOffsetX(40)

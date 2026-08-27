@@ -23,6 +23,10 @@ use Illuminate\Support\Collection;
 
 final class BuildSupervisionSummaryService
 {
+    public function __construct(
+        private readonly BuildSupervisionPeriodCharts $charts,
+    ) {}
+
     public function execute(SecurityCompany $company, SupervisionQueryFilter $filter): SupervisionPeriodSnapshot
     {
         $fromAt = $filter->from !== null && $filter->from !== ''
@@ -76,9 +80,17 @@ final class BuildSupervisionSummaryService
 
         $semaphore = $this->semaphore($coverage, $sitesContracted);
 
-        $recommendations = $this->recommendationCounts($companyId, $fromAt, $toAt, $filter);
+        $recRows = $this->recommendationRows($companyId, $fromAt, $toAt, $filter);
+        $recommendations = [
+            'total' => $recRows->count(),
+            'low' => $recRows->where('risk_level', SupervisorRiskLevel::Low)->count(),
+            'medium' => $recRows->where('risk_level', SupervisorRiskLevel::Medium)->count(),
+            'high' => $recRows->where('risk_level', SupervisorRiskLevel::High)->count(),
+            'extreme' => $recRows->where('risk_level', SupervisorRiskLevel::Extreme)->count(),
+        ];
         $modules = $this->moduleRows($reviews->count(), $logs);
         $alerts = $this->alerts($unvisited, $logs, $recommendations, $shifts);
+        $charts = $this->charts->execute($fromAt, $toAt, $reviews, $logs, $shifts, $recRows);
 
         $caption = 'Del '.$fromAt->format('d/m/Y').' al '.$toAt->format('d/m/Y');
         if ($filter->zoneId !== null) {
@@ -111,6 +123,7 @@ final class BuildSupervisionSummaryService
             byClient: $this->byClient($reviews, $logs),
             modules: $modules,
             recommendations: $recommendations,
+            charts: $charts,
             unvisitedSites: $unvisited,
             alerts: $alerts,
         );
@@ -160,24 +173,16 @@ final class BuildSupervisionSummaryService
     }
 
     /**
-     * @return array{total: int, low: int, medium: int, high: int, extreme: int}
+     * @return Collection<int, SupervisorRecommendation>
      */
-    private function recommendationCounts(int $companyId, CarbonImmutable $fromAt, CarbonImmutable $toAt, SupervisionQueryFilter $filter): array
+    private function recommendationRows(int $companyId, CarbonImmutable $fromAt, CarbonImmutable $toAt, SupervisionQueryFilter $filter): Collection
     {
-        $recs = SupervisorRecommendation::query()
+        return SupervisorRecommendation::query()
             ->where('security_company_id', $companyId)
             ->when($filter->supervisorId !== null, fn ($q) => $q->where('opened_by_user_id', $filter->supervisorId))
             ->when($filter->zoneId !== null, fn ($q) => $q->whereHas('openedShift', fn ($s) => $s->where('supervisor_zone_id', $filter->zoneId)))
             ->whereBetween('created_at', [$fromAt, $toAt])
             ->get();
-
-        return [
-            'total' => $recs->count(),
-            'low' => $recs->where('risk_level', SupervisorRiskLevel::Low)->count(),
-            'medium' => $recs->where('risk_level', SupervisorRiskLevel::Medium)->count(),
-            'high' => $recs->where('risk_level', SupervisorRiskLevel::High)->count(),
-            'extreme' => $recs->where('risk_level', SupervisorRiskLevel::Extreme)->count(),
-        ];
     }
 
     /**
@@ -221,7 +226,7 @@ final class BuildSupervisionSummaryService
     /**
      * @param  Collection<int, SupervisorShiftReview>  $reviews
      * @param  Collection<int, SupervisorFieldLog>  $logs
-     * @return list<array{name: string, reviews: int, attention: int}>
+     * @return list<array{name: string, reviews: int, novelty: int}>
      */
     private function byClient(Collection $reviews, Collection $logs): array
     {
@@ -238,13 +243,11 @@ final class BuildSupervisionSummaryService
 
         $rows = [];
         foreach ($names as $clientId => $name) {
+            $ofSite = $reviews->where('client_id', $clientId);
             $rows[] = [
                 'name' => $name,
-                'reviews' => $reviews->where('client_id', $clientId)->count(),
-                'attention' => $logs
-                    ->where('client_id', $clientId)
-                    ->filter(fn (SupervisorFieldLog $log) => $log->outcome !== SupervisorFieldOutcome::Ok)
-                    ->count(),
+                'reviews' => $ofSite->count(),
+                'novelty' => $ofSite->where('has_novelty', true)->count(),
             ];
         }
 
@@ -270,10 +273,10 @@ final class BuildSupervisionSummaryService
 
         $failedAlarms = $logs
             ->filter(fn (SupervisorFieldLog $log) => $log->module === SupervisorFieldModule::Alarms
-                && $log->outcome === SupervisorFieldOutcome::Critical)
+                && in_array((string) ($log->payload['result'] ?? ''), ['fail', 'real'], true))
             ->count();
         if ($failedAlarms > 0) {
-            $alerts[] = $failedAlarms.' prueba(s) de alarma en falla.';
+            $alerts[] = $failedAlarms.' alarma(s) en falla o reales.';
         }
 
         $pendingDocs = $logs

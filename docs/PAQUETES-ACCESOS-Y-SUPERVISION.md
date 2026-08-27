@@ -41,7 +41,7 @@ Detalle: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
 PWA en `field-app/` (copia alineada: `Controla_Supervision`). API `/api/supervision/*`. Login de supervisor no usa `structure_app_users`.
 
-Ajustes empresa: **Zonas / Turnos / Preoperacional / Documentos / Libros / Tipos de arma / Marcas / Riesgos** (además de Cargos y Tipos). La app solo muestra ítems activos. Recomendaciones: registro de riesgo por puesto (hasta 3), no ticket.
+Ajustes empresa: **Zonas / Turnos / Preoperacional / Documentos / Libros / Tipos de arma / Marcas / Riesgos / Alarmas / Apoyos** (además de Cargos y Tipos). La app solo muestra ítems activos. Recomendaciones: registro de riesgo por puesto (hasta 3), no ticket.
 
 Captura: tras login, rito de turno (catálogo de turno y zona, EPP/vehículo plegables, odómetro + selfie al abrir y al cerrar). Hub: perfil + revista (cliente, puesto, vigilante, foto, GPS al guardar) + módulos colgados + alarmas/apoyos/documentos. Flota en `supervisor_fleet_vehicles`, no en `vehicles` de Accesos.
 

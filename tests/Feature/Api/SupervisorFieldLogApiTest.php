@@ -6,10 +6,12 @@ namespace Tests\Feature\Api;
 
 use App\Enums\SupervisorRecommendationStatus;
 use App\Models\Client;
+use App\Models\SupervisorAlarmType;
 use App\Models\SupervisorControlBookType;
 use App\Models\SupervisorDocumentType;
 use App\Models\SupervisorRecommendation;
 use App\Models\SupervisorRiskType;
+use App\Models\SupervisorSupportType;
 use App\Models\SupervisorWeaponBrand;
 use App\Models\SupervisorWeaponType;
 use App\Models\User;
@@ -65,6 +67,14 @@ final class SupervisorFieldLogApiTest extends TestCase
             'risk_type_id',
             collect($recs['fields'][0]['item_fields'])->firstWhere('name', 'risk_type_id')['name'],
         );
+        $weapons = collect($response->json('modules'))->firstWhere('key', 'weapons');
+        $this->assertSame('novelty', collect($weapons['fields'])->firstWhere('name', 'novelty')['name']);
+        $this->assertSame('cleaned', collect($weapons['fields'])->firstWhere('name', 'cleaned')['name']);
+        $alarms = collect($response->json('modules'))->firstWhere('key', 'alarms');
+        $this->assertSame('alarm_type_id', $alarms['fields'][0]['name']);
+        $this->assertSame('kind', collect($alarms['fields'])->firstWhere('name', 'kind')['name']);
+        $supports = collect($response->json('modules'))->firstWhere('key', 'supports');
+        $this->assertSame('support_type_id', $supports['fields'][0]['name']);
     }
 
     public function test_catalog_documents_uses_company_types(): void
@@ -109,6 +119,20 @@ final class SupervisorFieldLogApiTest extends TestCase
         );
     }
 
+    public function test_catalog_alarms_and_supports_use_company_types(): void
+    {
+        $token = $this->loginSupervisor();
+        $alarm = $this->alarmTypeForPilot();
+        $support = $this->supportTypeForPilot();
+
+        $modules = collect($this->withToken($token)->getJson('/api/supervision/catalog')->json('modules'));
+        $alarmOptions = collect($modules->firstWhere('key', 'alarms')['fields'])->firstWhere('name', 'alarm_type_id')['options'];
+        $supportOptions = collect($modules->firstWhere('key', 'supports')['fields'])->firstWhere('name', 'support_type_id')['options'];
+
+        $this->assertContains(['value' => (string) $alarm->id, 'label' => 'Pánico'], $alarmOptions);
+        $this->assertContains(['value' => (string) $support->id, 'label' => 'Refuerzo de puesto'], $supportOptions);
+    }
+
     public function test_inventory_and_support_and_recommendation_record(): void
     {
         $token = $this->loginSupervisor();
@@ -133,7 +157,10 @@ final class SupervisorFieldLogApiTest extends TestCase
 
         $this->withToken($token)->postJson('/api/supervision/logs', [
             'module' => 'supports',
-            'payload' => ['reason' => 'Apoyo en vía por novedad de alarma'],
+            'payload' => [
+                'support_type_id' => $this->supportTypeForPilot()->id,
+                'reason' => 'Apoyo en vía por novedad de alarma',
+            ],
         ])->assertCreated();
 
         $opened = $this->withToken($token)->postJson('/api/supervision/logs', [
@@ -177,7 +204,11 @@ final class SupervisorFieldLogApiTest extends TestCase
         $this->withToken($token)->postJson('/api/supervision/logs', [
             'module' => 'alarms',
             'client_id' => $client->id,
-            'payload' => ['result' => 'ok'],
+            'payload' => [
+                'alarm_type_id' => 1,
+                'kind' => 'test',
+                'result' => 'ok',
+            ],
         ])->assertUnprocessable();
     }
 
@@ -196,6 +227,8 @@ final class SupervisorFieldLogApiTest extends TestCase
         $bookType = $this->controlBookTypeForPilot();
         $riskType = $this->riskTypeForPilot();
         [$weaponType, $weaponBrand] = $this->weaponCatalogForPilot();
+        $alarmType = $this->alarmTypeForPilot();
+        $supportType = $this->supportTypeForPilot();
 
         $payloads = [
             'inventory' => [
@@ -224,8 +257,8 @@ final class SupervisorFieldLogApiTest extends TestCase
             ],
             'folders' => ['status' => 'complete'],
             'weapons' => $this->weaponPayload($weaponType, $weaponBrand),
-            'alarms' => ['result' => 'ok'],
-            'supports' => ['reason' => 'Apoyo a puesto vecino por novedad'],
+            'alarms' => ['alarm_type_id' => $alarmType->id, 'kind' => 'test', 'result' => 'ok'],
+            'supports' => ['support_type_id' => $supportType->id, 'reason' => 'Apoyo a puesto vecino por novedad'],
             'recommendations' => [
                 'items' => [$this->recommendationItemPayload($riskType)],
             ],
@@ -308,6 +341,30 @@ final class SupervisorFieldLogApiTest extends TestCase
         ]);
     }
 
+    private function alarmTypeForPilot(string $name = 'Pánico'): SupervisorAlarmType
+    {
+        $companyId = (int) User::query()->where('email', 'supervisor@sj-seguridad.test')->value('security_company_id');
+
+        return SupervisorAlarmType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+    }
+
+    private function supportTypeForPilot(string $name = 'Refuerzo de puesto'): SupervisorSupportType
+    {
+        $companyId = (int) User::query()->where('email', 'supervisor@sj-seguridad.test')->value('security_company_id');
+
+        return SupervisorSupportType::query()->create([
+            'security_company_id' => $companyId,
+            'name' => $name,
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+    }
+
     /** @return array{0: SupervisorWeaponType, 1: SupervisorWeaponBrand} */
     private function weaponCatalogForPilot(): array
     {
@@ -344,6 +401,8 @@ final class SupervisorFieldLogApiTest extends TestCase
             'permit_expires_at' => now()->addYear()->toDateString(),
             'ammo_quantity' => 12,
             'ammo_caliber' => '9 mm',
+            'novelty' => 'no',
+            'cleaned' => 'no',
         ];
     }
 

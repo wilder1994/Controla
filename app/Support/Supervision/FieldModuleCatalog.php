@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Support\Supervision;
 
+use App\Enums\SupervisorAlarmKind;
+use App\Enums\SupervisorAlarmResult;
 use App\Enums\SupervisorFieldModule;
 use App\Enums\SupervisorRiskImpact;
 use App\Enums\SupervisorRiskLikelihood;
 use App\Enums\SupervisorWeaponPermitKind;
+use App\Models\SupervisorAlarmType;
 use App\Models\SupervisorControlBookType;
 use App\Models\SupervisorDocumentType;
 use App\Models\SupervisorRiskType;
+use App\Models\SupervisorSupportType;
 use App\Models\SupervisorWeaponBrand;
 use App\Models\SupervisorWeaponType;
 use Illuminate\Database\Eloquent\Model;
@@ -213,11 +217,46 @@ final class FieldModuleCatalog
                     ],
                 ],
                 [
+                    'name' => 'novelty',
+                    'label' => 'Novedad',
+                    'type' => 'radio',
+                    'required' => true,
+                    'options' => [
+                        ['value' => 'no', 'label' => 'Sin novedad'],
+                        ['value' => 'yes', 'label' => 'Con novedad'],
+                    ],
+                ],
+                [
+                    'name' => 'notes',
+                    'label' => 'Observación (si hay novedad)',
+                    'type' => 'textarea',
+                    'required' => false,
+                    'max' => 500,
+                ],
+                [
+                    'name' => 'cleaned',
+                    'label' => '¿Se realizó aseo?',
+                    'type' => 'radio',
+                    'required' => true,
+                    'options' => [
+                        ['value' => 'no', 'label' => 'Solo revista'],
+                        ['value' => 'yes', 'label' => 'Revista y aseo'],
+                    ],
+                ],
+                [
                     'name' => 'photos',
-                    'label' => 'Evidencia fotográfica',
+                    'label' => 'Fotos de identificación',
                     'type' => 'photo_grid',
                     'required' => true,
-                    'slots' => WeaponInspectionPhotos::slots(),
+                    'slots' => WeaponInspectionPhotos::identificationSlots(),
+                ],
+                [
+                    'name' => 'cleaning_photos',
+                    'label' => 'Foto de aseo',
+                    'type' => 'photo_grid',
+                    'required' => true,
+                    'slots' => WeaponInspectionPhotos::cleaningSlots(),
+                    'show_when' => ['cleaned' => 'yes'],
                 ],
             ]),
             $this->fieldModule(SupervisorFieldModule::Recommendations, [
@@ -303,20 +342,53 @@ final class FieldModuleCatalog
             ]),
             $this->fieldModule(SupervisorFieldModule::Alarms, [
                 [
-                    'name' => 'result',
-                    'label' => 'Resultado de la prueba',
+                    'name' => 'alarm_type_id',
+                    'label' => 'Tipo de alarma',
+                    'type' => 'select',
+                    'required' => true,
+                    'empty_label' => 'Sin tipos. Agréguelos en Ajustes',
+                    'options' => $this->namedCatalogOptions(SupervisorAlarmType::class, $companyId),
+                ],
+                [
+                    'name' => 'kind',
+                    'label' => 'Modalidad',
                     'type' => 'radio',
                     'required' => true,
-                    'options' => [
-                        ['value' => 'ok', 'label' => 'OK'],
-                        ['value' => 'fail', 'label' => 'Falla'],
+                    'options' => collect(SupervisorAlarmKind::cases())
+                        ->map(fn (SupervisorAlarmKind $kind) => [
+                            'value' => $kind->value,
+                            'label' => $kind->label(),
+                        ])
+                        ->values()
+                        ->all(),
+                ],
+                [
+                    'name' => 'result',
+                    'label' => 'Resultado',
+                    'type' => 'radio',
+                    'required' => true,
+                    'options' => $this->alarmResultOptions(SupervisorAlarmKind::Test),
+                    'options_when' => [
+                        'field' => 'kind',
+                        'map' => [
+                            SupervisorAlarmKind::Test->value => $this->alarmResultOptions(SupervisorAlarmKind::Test),
+                            SupervisorAlarmKind::Response->value => $this->alarmResultOptions(SupervisorAlarmKind::Response),
+                        ],
                     ],
                 ],
             ]),
             $this->fieldModule(SupervisorFieldModule::Supports, [
                 [
+                    'name' => 'support_type_id',
+                    'label' => 'Tipo de apoyo',
+                    'type' => 'select',
+                    'required' => true,
+                    'empty_label' => 'Sin tipos. Agréguelos en Ajustes',
+                    'options' => $this->namedCatalogOptions(SupervisorSupportType::class, $companyId),
+                ],
+                [
                     'name' => 'reason',
-                    'label' => 'Motivo del apoyo',
+                    'label' => 'Motivo',
                     'type' => 'textarea',
                     'required' => true,
                     'max' => 500,
@@ -404,6 +476,20 @@ final class FieldModuleCatalog
     private function riskTypeOptions(?int $companyId): array
     {
         return $this->namedCatalogOptions(SupervisorRiskType::class, $companyId);
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function alarmResultOptions(SupervisorAlarmKind $kind): array
+    {
+        return collect(SupervisorAlarmResult::forKind($kind))
+            ->map(fn (SupervisorAlarmResult $result) => [
+                'value' => $result->value,
+                'label' => $result->label(),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
