@@ -4,6 +4,9 @@ namespace Tests;
 
 use App\Enums\CompanyPackageSku;
 use App\Enums\SupervisorChecklistKind;
+use App\Models\Client;
+use App\Models\Employee;
+use App\Models\SupervisorPost;
 use App\Models\SupervisorChecklistItem;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
@@ -88,6 +91,40 @@ abstract class TestCase extends BaseTestCase
             'km_end' => 1012,
             'odometer_photo' => UploadedFile::fake()->image('odometer-end.jpg'),
             'selfie_photo' => UploadedFile::fake()->image('selfie-end.jpg'),
+        ], $overrides);
+    }
+
+    protected function supervisorVigilante(): Employee
+    {
+        return Employee::query()->where('document_number', '1144001122')->firstOrFail();
+    }
+
+    protected function supervisionPostFor(Client $client): SupervisorPost
+    {
+        $post = SupervisorPost::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->first();
+
+        $this->assertNotNull($post, 'El cliente piloto debe tener puestos de Supervisión.');
+
+        return $post;
+    }
+
+    /** @return array<string, mixed> */
+    protected function supervisorReviewPayload(Client $client, array $overrides = []): array
+    {
+        return array_merge([
+            'client_id' => $client->id,
+            'supervisor_post_id' => $this->supervisionPostFor($client)->id,
+            'employee_id' => $this->supervisorVigilante()->id,
+            'notes' => 'Revista de puesto',
+            'has_novelty' => 0,
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+            'guard_photo' => UploadedFile::fake()->image('guard.jpg'),
         ], $overrides);
     }
 }

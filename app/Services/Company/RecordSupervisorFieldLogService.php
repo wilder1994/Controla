@@ -11,6 +11,7 @@ use App\Models\Client;
 use App\Models\SupervisorFieldLog;
 use App\Models\SupervisorRecommendation;
 use App\Models\SupervisorShift;
+use App\Models\SupervisorShiftReview;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -28,6 +29,7 @@ final class RecordSupervisorFieldLogService
         SupervisorFieldModule $module,
         array $payload,
         ?int $clientId,
+        ?int $reviewId,
         ?string $notes,
         ?float $lat,
         ?float $lng,
@@ -38,16 +40,22 @@ final class RecordSupervisorFieldLogService
             ]);
         }
 
-        $client = $this->resolveClient($shift, $module, $clientId);
+        $review = $this->resolveReview($shift, $module, $reviewId);
+        $client = $review?->client ?? $this->resolveClient($shift, $module, $clientId);
         $validated = $this->assertPayload->execute($module, $payload);
 
-        return DB::transaction(function () use ($shift, $module, $validated, $client, $notes, $lat, $lng) {
+        return DB::transaction(function () use ($shift, $module, $validated, $client, $review, $notes, $lat, $lng) {
             $recommendationId = null;
 
             if ($module === SupervisorFieldModule::Recommendations) {
+                if ($client === null) {
+                    throw ValidationException::withMessages([
+                        'client_id' => 'La recomendación requiere un cliente.',
+                    ]);
+                }
                 $recommendation = SupervisorRecommendation::query()->create([
                     'security_company_id' => $shift->security_company_id,
-                    'client_id' => $client?->id,
+                    'client_id' => $client->id,
                     'opened_by_user_id' => $shift->user_id,
                     'opened_shift_id' => $shift->id,
                     'status' => SupervisorRecommendationStatus::Open,
@@ -61,6 +69,7 @@ final class RecordSupervisorFieldLogService
 
             return SupervisorFieldLog::query()->create([
                 'supervisor_shift_id' => $shift->id,
+                'supervisor_shift_review_id' => $review?->id,
                 'security_company_id' => $shift->security_company_id,
                 'user_id' => $shift->user_id,
                 'client_id' => $client?->id,
@@ -133,5 +142,37 @@ final class RecordSupervisorFieldLogService
         }
 
         return $client;
+    }
+
+    private function resolveReview(
+        SupervisorShift $shift,
+        SupervisorFieldModule $module,
+        ?int $reviewId,
+    ): ?SupervisorShiftReview {
+        if ($module->hangsOffReview()) {
+            if ($reviewId === null) {
+                throw ValidationException::withMessages([
+                    'supervisor_shift_review_id' => 'Guarde la revista de este puesto antes de registrar el módulo.',
+                ]);
+            }
+        }
+
+        if ($reviewId === null) {
+            return null;
+        }
+
+        $review = SupervisorShiftReview::query()
+            ->where('id', $reviewId)
+            ->where('supervisor_shift_id', $shift->id)
+            ->with('client')
+            ->first();
+
+        if ($review === null) {
+            throw ValidationException::withMessages([
+                'supervisor_shift_review_id' => 'La revista no pertenece a este turno.',
+            ]);
+        }
+
+        return $review;
     }
 }

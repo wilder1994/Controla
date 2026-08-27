@@ -34,6 +34,10 @@ return new class extends Migration
         Schema::create('supervisor_field_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('supervisor_shift_id')->constrained('supervisor_shifts')->cascadeOnDelete();
+            $table->foreignId('supervisor_shift_review_id')
+                ->nullable()
+                ->constrained('supervisor_shift_reviews')
+                ->nullOnDelete();
             $table->foreignId('security_company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->restrictOnDelete();
             $table->foreignId('client_id')->nullable()->constrained()->restrictOnDelete();

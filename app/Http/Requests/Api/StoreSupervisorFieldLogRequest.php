@@ -21,6 +21,7 @@ final class StoreSupervisorFieldLogRequest extends FormRequest
         return [
             'module' => ['required', Rule::enum(SupervisorFieldModule::class)],
             'client_id' => ['nullable', 'integer', 'exists:clients,id'],
+            'supervisor_shift_review_id' => ['nullable', 'integer', 'exists:supervisor_shift_reviews,id'],
             'payload' => ['required', 'array'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'latitude' => ['nullable', 'numeric'],

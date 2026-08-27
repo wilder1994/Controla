@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Tenancy;
 
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Location;
 use App\Models\SecurityCompany;
 use App\Models\User;
@@ -26,8 +27,23 @@ final class TenantIsolationTest extends TestCase
         $clientA = Client::query()->where('slug', 'palmas-del-ingenio')->first();
         $clientB = Client::query()->where('slug', 'torres-loma')->first();
 
+        $site = Installation::query()
+            ->where('client_id', $clientB->id)
+            ->orderBy('id')
+            ->first();
+
+        if ($site === null) {
+            $site = Installation::query()->create([
+                'client_id' => $clientB->id,
+                'name' => 'Sede Torres',
+                'is_client_site' => true,
+                'is_active' => true,
+            ]);
+        }
+
         Location::query()->create([
             'client_id' => $clientB->id,
+            'installation_id' => $site->id,
             'code' => 'PORT-B',
             'name' => 'Portería Torres',
             'type' => 'porteria',

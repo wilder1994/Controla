@@ -8,6 +8,7 @@ use App\Enums\MemberType;
 use App\Models\AccessLog;
 use App\Models\Blocklist;
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Location;
 use App\Models\Structure;
 use App\Models\StructureAppUser;
@@ -156,6 +157,7 @@ final class BuildClientExpedienteService
             'app_users_count' => StructureAppUser::query()->where('client_id', $clientId)->where('is_active', true)->count(),
             'pets_count' => StructurePet::query()->where('client_id', $clientId)->count(),
             'access_points_count' => Location::query()->where('client_id', $clientId)->count(),
+            'installations_count' => Installation::query()->where('client_id', $clientId)->count(),
             'visitors_registered' => Visitor::query()->where('client_id', $clientId)->count(),
             'visitor_vehicles_registered' => $visitorVehiclesRegistered,
             'resident_vehicles_registered' => $residentVehiclesRegistered,

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Company\BillingCheckoutController;
 use App\Http\Controllers\Company\BillingController;
+use App\Http\Controllers\Company\ClientAccessPointController;
 use App\Http\Controllers\Company\ClientController;
+use App\Http\Controllers\Company\ClientInstallationController;
+use App\Http\Controllers\Company\ClientSupervisorPostController;
 use App\Http\Controllers\Company\CollaboratorTypeController;
 use App\Http\Controllers\Company\DashboardController;
 use App\Http\Controllers\Company\EmployeeController;
@@ -154,6 +157,36 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::post('/clients/import/cancel', [ClientController::class, 'cancelImport'])
             ->middleware('permission:company.clients.manage')
             ->name('clients.import.cancel');
+
+        Route::post('/clients/{client}/installations', [ClientInstallationController::class, 'store'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.installations.store');
+        Route::put('/clients/{client}/installations/{installation}', [ClientInstallationController::class, 'update'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.installations.update');
+        Route::delete('/clients/{client}/installations/{installation}', [ClientInstallationController::class, 'destroy'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.installations.destroy');
+
+        Route::post('/clients/{client}/locations', [ClientAccessPointController::class, 'store'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.locations.store');
+        Route::put('/clients/{client}/locations/{location}', [ClientAccessPointController::class, 'update'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.locations.update');
+        Route::delete('/clients/{client}/locations/{location}', [ClientAccessPointController::class, 'destroy'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.locations.destroy');
+
+        Route::post('/clients/{client}/posts', [ClientSupervisorPostController::class, 'store'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.posts.store');
+        Route::put('/clients/{client}/posts/{post}', [ClientSupervisorPostController::class, 'update'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.posts.update');
+        Route::delete('/clients/{client}/posts/{post}', [ClientSupervisorPostController::class, 'destroy'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.posts.destroy');
 
         Route::resource('clients', ClientController::class);
     });

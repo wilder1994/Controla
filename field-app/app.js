@@ -3,10 +3,17 @@ let pingTimer = null;
 let catalog = [];
 let intake = null;
 let currentModule = null;
+let currentReview = null;
 let activity = null;
 let lastGeo = null;
+let sites = [];
+let reviewClient = null;
+let reviewPost = null;
+let reviewGuard = null;
 let streams = {};
-let blobs = { odo: null, self: null, odoEnd: null, selfEnd: null };
+let blobs = { odo: null, self: null, odoEnd: null, selfEnd: null, guard: null };
+let searchTimers = {};
+let moduleReturn = 'home';
 
 function inferApi() {
     const host = location.hostname;
@@ -53,8 +60,19 @@ async function api(path, options = {}) {
 }
 
 function siteId() {
-    const value = document.getElementById('site').value;
-    return value ? Number(value) : null;
+    if (currentModule?.requires_client) {
+        const value = document.getElementById('mod-client')?.value;
+        return value ? Number(value) : null;
+    }
+    return currentReview?.client_id || null;
+}
+
+async function geoRequired() {
+    const pos = await geo();
+    if (pos?.latitude == null || pos?.longitude == null) {
+        throw new Error('Active la ubicación del dispositivo para guardar la revista.');
+    }
+    return pos;
 }
 
 async function geo() {
@@ -87,11 +105,15 @@ function readChecks(prefix) {
     return out;
 }
 
+function cameraAvailable() {
+    return Boolean(window.isSecureContext && navigator.mediaDevices?.getUserMedia);
+}
+
 async function startCam(videoId, facing) {
     stopCam(videoId);
     const video = document.getElementById(videoId);
-    if (!navigator.mediaDevices?.getUserMedia) {
-        setStatus('Este navegador no permite cámara. Use HTTPS o Chrome en el celular.', false);
+    if (!cameraAvailable()) {
+        setStatus('HTTP local: use Tomar foto (evidencia de prueba). Cámara real requiere HTTPS o el celular.');
         return;
     }
     try {
@@ -103,8 +125,33 @@ async function startCam(videoId, facing) {
         video.srcObject = stream;
         await video.play();
     } catch (e) {
-        setStatus('Permita la cámara. En local, Chrome puede exigir HTTPS.', false);
+        setStatus('Sin cámara. Tomar foto genera evidencia de prueba.', false);
     }
+}
+
+function fakeSnap(imgId, key, label) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 960;
+    canvas.height = 720;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0b1220';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#243049';
+    ctx.fillRect(40, 200, 880, 420);
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillText(label, 40, 70);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '22px sans-serif';
+    ctx.fillText(new Date().toLocaleString('es-CO'), 40, 114);
+    ctx.fillText(location.hostname, 40, 148);
+    canvas.toBlob((blob) => {
+        blobs[key] = blob;
+        const img = document.getElementById(imgId);
+        img.src = URL.createObjectURL(blob);
+        img.classList.remove('hidden');
+        setStatus('Foto de prueba lista. En celular con HTTPS se usa la cámara.');
+    }, 'image/jpeg', 0.86);
 }
 
 function stopCam(videoId) {
@@ -117,10 +164,10 @@ function stopAllCams() {
     Object.keys(streams).forEach(stopCam);
 }
 
-function snapTo(videoId, imgId, key) {
+function snapTo(videoId, imgId, key, label) {
     const video = document.getElementById(videoId);
     if (!video.videoWidth) {
-        setStatus('Active la cámara antes de tomar la foto.', false);
+        fakeSnap(imgId, key, label || 'Prueba');
         return;
     }
     const canvas = document.createElement('canvas');
@@ -142,25 +189,31 @@ function bindCameras() {
         blobs.odo = null;
         startCam('cam-odo', { exact: 'environment' }).catch(() => startCam('cam-odo', 'environment'));
     };
-    document.getElementById('btn-snap-odo').onclick = () => snapTo('cam-odo', 'snap-odo', 'odo');
+    document.getElementById('btn-snap-odo').onclick = () => snapTo('cam-odo', 'snap-odo', 'odo', 'Odómetro inicio');
     document.getElementById('btn-cam-self').onclick = () => {
         document.getElementById('snap-self').classList.add('hidden');
         blobs.self = null;
         startCam('cam-self', 'user');
     };
-    document.getElementById('btn-snap-self').onclick = () => snapTo('cam-self', 'snap-self', 'self');
+    document.getElementById('btn-snap-self').onclick = () => snapTo('cam-self', 'snap-self', 'self', 'Selfie inicio');
     document.getElementById('btn-cam-odo-end').onclick = () => {
         document.getElementById('snap-odo-end').classList.add('hidden');
         blobs.odoEnd = null;
         startCam('cam-odo-end', 'environment');
     };
-    document.getElementById('btn-snap-odo-end').onclick = () => snapTo('cam-odo-end', 'snap-odo-end', 'odoEnd');
+    document.getElementById('btn-snap-odo-end').onclick = () => snapTo('cam-odo-end', 'snap-odo-end', 'odoEnd', 'Odómetro cierre');
     document.getElementById('btn-cam-self-end').onclick = () => {
         document.getElementById('snap-self-end').classList.add('hidden');
         blobs.selfEnd = null;
         startCam('cam-self-end', 'user');
     };
-    document.getElementById('btn-snap-self-end').onclick = () => snapTo('cam-self-end', 'snap-self-end', 'selfEnd');
+    document.getElementById('btn-snap-self-end').onclick = () => snapTo('cam-self-end', 'snap-self-end', 'selfEnd', 'Selfie cierre');
+    document.getElementById('btn-cam-guard').onclick = () => {
+        document.getElementById('snap-guard').classList.add('hidden');
+        blobs.guard = null;
+        startCam('cam-guard', 'user');
+    };
+    document.getElementById('btn-snap-guard').onclick = () => snapTo('cam-guard', 'snap-guard', 'guard', 'Vigilante');
 }
 
 function renderIntake() {
@@ -219,17 +272,50 @@ function renderIntake() {
 
 function renderHub() {
     const logs = activity?.logs || {};
-    document.getElementById('mod-grid').innerHTML = catalog.map((mod) => {
-        const count = mod.key === 'reviews' ? (activity?.reviews || 0) : (logs[mod.key] || 0);
-        return `<button type="button" class="mod" data-key="${mod.key}">
+    const hubMods = catalog.filter((mod) => mod.hangs_off_review);
+    document.getElementById('hub-grid').innerHTML = hubMods.map((mod) => `
+        <button type="button" class="mod" data-key="${mod.key}">
             <b>${mod.label}</b>
-            <span>${mod.hint}</span>
-            <span class="n">${count} en este turno</span>
-        </button>`;
-    }).join('');
-    document.getElementById('mod-grid').querySelectorAll('.mod').forEach((btn) => {
-        btn.onclick = () => openModule(btn.dataset.key);
+            <span class="n">${logs[mod.key] || 0} en este turno</span>
+        </button>`).join('');
+    document.querySelectorAll('#hub-grid .mod').forEach((btn) => {
+        btn.onclick = () => openModule(btn.dataset.key, 'review');
     });
+    const ctx = document.getElementById('review-context');
+    ctx.textContent = currentReview
+        ? `${currentReview.client_name} · ${currentReview.post_name || currentReview.location_name || ''} · ${currentReview.employee_name}`
+        : '';
+}
+
+function showOpsHome() {
+    document.getElementById('ops-home').classList.remove('hidden');
+    document.getElementById('review-card').classList.add('hidden');
+    document.getElementById('module-card').classList.add('hidden');
+}
+
+function showReview() {
+    document.getElementById('ops-home').classList.add('hidden');
+    document.getElementById('module-card').classList.add('hidden');
+    document.getElementById('review-card').classList.remove('hidden');
+    startCam('cam-guard', 'user');
+    loadRecs().catch((e) => setStatus(e.message, false));
+}
+
+function openModule(key, from = 'home') {
+    currentModule = catalog.find((m) => m.key === key);
+    if (!currentModule) return;
+    moduleReturn = from;
+    document.getElementById('ops-home').classList.add('hidden');
+    document.getElementById('review-card').classList.add('hidden');
+    const wrap = document.getElementById('module-client-wrap');
+    wrap.classList.toggle('hidden', !(currentModule.requires_client || currentModule.key === 'supports'));
+    document.getElementById('module-card').classList.remove('hidden');
+    document.getElementById('module-title').textContent = currentModule.label;
+    document.getElementById('module-hint').textContent = currentModule.hint;
+    document.getElementById('module-form').innerHTML = (currentModule.fields || []).map((field) => (
+        field.type === 'checkbox' ? fieldControl(field) : `<label>${field.label}</label>${fieldControl(field)}`
+    )).join('');
+    document.getElementById('module-card').scrollIntoView({ behavior: 'smooth' });
 }
 
 function fieldControl(field) {
@@ -247,17 +333,6 @@ function fieldControl(field) {
     if (field.type === 'number') return `<input id="f-${field.name}" type="number" min="${field.min ?? 1}" value="${field.min ?? 1}" ${req}>`;
     if (field.type === 'date') return `<input id="f-${field.name}" type="date" ${req}>`;
     return `<input id="f-${field.name}" type="text" ${req}>`;
-}
-
-function openModule(key) {
-    currentModule = catalog.find((m) => m.key === key);
-    document.getElementById('module-card').classList.remove('hidden');
-    document.getElementById('module-title').textContent = currentModule.label;
-    document.getElementById('module-hint').textContent = currentModule.hint;
-    document.getElementById('module-form').innerHTML = (currentModule.fields || []).map((field) => (
-        field.type === 'checkbox' ? fieldControl(field) : `<label>${field.label}</label>${fieldControl(field)}`
-    )).join('');
-    document.getElementById('module-card').scrollIntoView({ behavior: 'smooth' });
 }
 
 function readPayload() {
@@ -279,9 +354,160 @@ function readPayload() {
 
 async function loadSites() {
     const data = await api('/supervision/sites');
-    const select = document.getElementById('site');
-    select.innerHTML = (data.sites || []).map((s) => `<option value="${s.id}">${s.name}</option>`).join('')
-        || '<option value="">Sin sitios con Supervisión</option>';
+    sites = data.sites || [];
+    const select = document.getElementById('mod-client');
+    if (select) {
+        select.innerHTML = sites.map((s) => `<option value="${s.id}">${s.name}</option>`).join('')
+            || '<option value="">Sin clientes con Supervisión</option>';
+    }
+}
+
+function debounceSearch(key, fn) {
+    clearTimeout(searchTimers[key]);
+    searchTimers[key] = setTimeout(fn, 220);
+}
+
+function fillCombo(listId, rows, emptyText, onPick) {
+    const list = document.getElementById(listId);
+    if (!rows.length) {
+        list.innerHTML = `<p class="hint" style="padding:.5rem .65rem;margin:0;">${emptyText}</p>`;
+        list.classList.remove('hidden');
+        return;
+    }
+    list.innerHTML = rows.map((row) =>
+        `<button type="button" data-id="${row.id}">${row.label}</button>`,
+    ).join('');
+    list.classList.remove('hidden');
+    list.querySelectorAll('button').forEach((btn) => {
+        btn.onclick = () => {
+            const found = rows.find((r) => String(r.id) === btn.dataset.id);
+            list.classList.add('hidden');
+            if (found) onPick(found);
+        };
+    });
+}
+
+function filterSites(query) {
+    const term = query.trim().toLowerCase();
+    return sites
+        .filter((s) => term === '' || s.name.toLowerCase().includes(term))
+        .slice(0, 20)
+        .map((s) => ({ id: s.id, label: s.name, name: s.name }));
+}
+
+function selectReviewClient(row) {
+    reviewClient = { id: row.id, name: row.name || row.label };
+    reviewPost = null;
+    document.getElementById('rev-client-q').value = reviewClient.name;
+    document.getElementById('rev-post-q').disabled = false;
+    document.getElementById('rev-post-q').value = '';
+    document.getElementById('rev-post-q').placeholder = 'Escriba el puesto';
+}
+
+function selectReviewPost(row) {
+    reviewPost = { id: row.id, name: row.name || row.label };
+    document.getElementById('rev-post-q').value = row.label || reviewPost.name;
+}
+
+function selectReviewGuard(row) {
+    reviewGuard = { id: row.id, name: row.name, document_number: row.document_number };
+    document.getElementById('rev-guard-doc').value = row.document_number;
+    document.getElementById('rev-guard-name').value = row.name;
+}
+
+function bindReviewUi() {
+    const clientQ = document.getElementById('rev-client-q');
+    const postQ = document.getElementById('rev-post-q');
+    const guardQ = document.getElementById('rev-guard-doc');
+    clientQ.oninput = () => debounceSearch('client', () => {
+        reviewClient = null;
+        fillCombo('rev-client-list', filterSites(clientQ.value), 'Sin clientes con Supervisión', selectReviewClient);
+    });
+    clientQ.onfocus = () => fillCombo('rev-client-list', filterSites(clientQ.value), 'Sin clientes con Supervisión', selectReviewClient);
+    postQ.oninput = () => debounceSearch('post', () => searchPosts(postQ.value));
+    postQ.onfocus = () => { if (reviewClient) searchPosts(postQ.value); };
+    guardQ.oninput = () => debounceSearch('guard', () => searchGuards(guardQ.value));
+    document.addEventListener('click', (ev) => {
+        if (!ev.target.closest('.combo')) {
+            document.querySelectorAll('.combo-list').forEach((el) => el.classList.add('hidden'));
+        }
+    });
+    document.getElementById('btn-save-review').onclick = saveReview;
+}
+
+async function searchPosts(query) {
+    if (!reviewClient) {
+        fillCombo('rev-post-list', [], 'Primero el cliente', selectReviewPost);
+        return;
+    }
+    try {
+        const data = await api(`/supervision/posts?client_id=${reviewClient.id}&q=${encodeURIComponent(query || '')}`);
+        const rows = (data.posts || []).map((p) => ({
+            id: p.id,
+            name: p.name,
+            label: p.label || [p.installation_name, p.name].filter(Boolean).join(' · '),
+        }));
+        fillCombo('rev-post-list', rows, 'Este cliente no tiene puestos', selectReviewPost);
+    } catch (e) {
+        setStatus(e.message, false);
+    }
+}
+
+async function searchGuards(document) {
+    const term = (document || '').replace(/\s+/g, '');
+    if (term.length < 3) {
+        reviewGuard = null;
+        document.getElementById('rev-guard-name').value = '';
+        document.getElementById('rev-guard-list').classList.add('hidden');
+        return;
+    }
+    try {
+        const data = await api(`/supervision/guards?document=${encodeURIComponent(term)}`);
+        const rows = (data.guards || []).map((g) => ({
+            id: g.id,
+            name: g.name,
+            document_number: g.document_number,
+            label: `${g.document_number} · ${g.name}`,
+        }));
+        fillCombo('rev-guard-list', rows, 'Sin vigilantes con esa cédula', selectReviewGuard);
+    } catch (e) {
+        setStatus(e.message, false);
+    }
+}
+
+async function saveReview() {
+    try {
+        if (!reviewClient) throw new Error('Seleccione el cliente.');
+        if (!reviewPost) throw new Error('Seleccione el puesto.');
+        if (!reviewGuard) throw new Error('Seleccione el vigilante por cédula.');
+        if (!blobs.guard) throw new Error('Tome la foto del vigilante.');
+        const pos = await geoRequired();
+        const fd = new FormData();
+        fd.append('client_id', String(reviewClient.id));
+        fd.append('supervisor_post_id', String(reviewPost.id));
+        fd.append('employee_id', String(reviewGuard.id));
+        fd.append('notes', document.getElementById('rev-notes').value || '');
+        fd.append('has_novelty', document.getElementById('rev-novelty').checked ? '1' : '0');
+        fd.append('latitude', String(pos.latitude));
+        fd.append('longitude', String(pos.longitude));
+        fd.append('guard_photo', blobs.guard, 'guard.jpg');
+        const data = await api('/supervision/reviews', { method: 'POST', body: fd });
+        currentReview = data.review;
+        activity = data.activity || activity;
+        blobs.guard = null;
+        document.getElementById('snap-guard').classList.add('hidden');
+        renderHub();
+        await loadRecs();
+        startCam('cam-guard', 'user');
+        setStatus('Revista guardada.');
+    } catch (e) {
+        setStatus(e.message, false);
+    }
+}
+
+function enterOps() {
+    show('ops');
+    showOpsHome();
 }
 
 async function loadCatalog() {
@@ -298,7 +524,11 @@ async function loadIntake() {
 async function loadCurrent() {
     const data = await api('/supervision/shifts/current');
     activity = data.activity;
+    currentReview = data.current_review || null;
     const shift = data.shift;
+    const nameEl = document.getElementById('sup-name');
+    if (nameEl) nameEl.textContent = data.supervisor?.name || '';
+    if (data.supervisor?.has_selfie) loadSupervisorSelfie();
     if (!shift) {
         document.getElementById('shift-label').textContent = 'Sin turno';
         stopPing();
@@ -311,25 +541,36 @@ async function loadCurrent() {
         shift.fleet_vehicle?.plate,
         shift.km_start != null ? `${shift.km_start} km` : null,
     ].filter(Boolean).join(' · ');
-    document.getElementById('activity').textContent =
-        `${activity?.reviews || 0} revistas · ${Object.values(activity?.logs || {}).reduce((a, b) => a + Number(b || 0), 0)} registros`;
     document.getElementById('km-end').value = shift.km_start || '';
     renderHub();
     startPing();
     return shift;
 }
 
+async function loadSupervisorSelfie() {
+    try {
+        const res = await fetch(`${apiBase()}/supervision/shift-photo/start-selfie`, {
+            headers: { Authorization: `Bearer ${token()}`, Accept: 'image/*' },
+        });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        document.getElementById('sup-avatar').src = URL.createObjectURL(blob);
+    } catch (e) {
+        // sin foto de perfil
+    }
+}
+
 async function loadRecs() {
     const root = document.getElementById('recs');
-    const id = siteId();
+    const id = currentReview?.client_id;
     if (!id) {
-        root.innerHTML = '<p class="hint">Seleccione un sitio.</p>';
+        root.innerHTML = '';
         return;
     }
     const data = await api(`/supervision/recommendations?client_id=${id}`);
     const rows = data.recommendations || [];
     if (!rows.length) {
-        root.innerHTML = '<p class="hint">Sin recomendaciones abiertas.</p>';
+        root.innerHTML = '';
         return;
     }
     root.innerHTML = rows.map((rec) => `
@@ -369,7 +610,7 @@ function startPing() {
         try {
             await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(pos) });
         } catch (e) {
-            setStatus(e.message, false);
+            // ping silencioso
         }
     };
     send();
@@ -394,8 +635,7 @@ async function afterLogin(name) {
     await Promise.all([loadSites(), loadCatalog(), loadIntake()]);
     const shift = await loadCurrent();
     if (shift) {
-        show('ops');
-        await loadRecs();
+        enterOps();
         return;
     }
     show('open-shift');
@@ -405,6 +645,7 @@ async function afterLogin(name) {
 
 document.getElementById('api').value = localStorage.getItem('API_URL') || inferApi();
 bindCameras();
+bindReviewUi();
 document.querySelectorAll('[data-collapse]').forEach((btn) => {
     btn.onclick = () => {
         const body = document.getElementById(btn.dataset.collapse);
@@ -459,9 +700,8 @@ document.getElementById('btn-start').onclick = async () => {
         blobs.odo = blobs.self = null;
         stopAllCams();
         await loadCurrent();
-        show('ops');
-        await loadRecs();
-        setStatus('Turno iniciado. GPS cada 30 s.');
+        enterOps();
+        setStatus('Turno iniciado.');
     } catch (e) {
         setStatus(e.message, false);
     }
@@ -476,6 +716,7 @@ document.getElementById('btn-go-close').onclick = () => {
 document.getElementById('btn-close-back').onclick = () => {
     stopAllCams();
     show('ops');
+    showOpsHome();
 };
 
 document.getElementById('btn-close').onclick = async () => {
@@ -490,11 +731,9 @@ document.getElementById('btn-close').onclick = async () => {
         stopPing();
         stopAllCams();
         activity = null;
+        currentReview = null;
         setStatus('Turno cerrado.');
-        show('open-shift');
-        await loadIntake();
-        startCam('cam-odo', 'environment');
-        startCam('cam-self', 'user');
+        logout();
     } catch (e) {
         setStatus(e.message, false);
     }
@@ -504,42 +743,41 @@ document.getElementById('btn-submit').onclick = async () => {
     if (!currentModule) return;
     try {
         const pos = await geo();
-        const clientId = currentModule.requires_client ? siteId() : (siteId() || null);
-        if (currentModule.requires_client && !clientId) throw new Error('Seleccione un sitio con Supervisión.');
-        if (currentModule.capture === 'reviews') {
-            await api('/supervision/reviews', {
-                method: 'POST',
-                body: JSON.stringify({
-                    client_id: clientId,
-                    notes: readPayload().notes || '',
-                    latitude: pos?.latitude,
-                    longitude: pos?.longitude,
-                }),
-            });
-            setStatus('Revista registrada.');
+        const body = {
+            module: currentModule.key,
+            payload: readPayload(),
+            latitude: pos?.latitude,
+            longitude: pos?.longitude,
+        };
+        if (currentModule.hangs_off_review) {
+            if (!currentReview?.id) throw new Error('Guarde la revista de este puesto primero.');
+            body.supervisor_shift_review_id = currentReview.id;
+        } else if (currentModule.requires_client) {
+            const clientId = siteId();
+            if (!clientId) throw new Error('Seleccione el cliente.');
+            body.client_id = clientId;
         } else {
-            await api('/supervision/logs', {
-                method: 'POST',
-                body: JSON.stringify({
-                    module: currentModule.key,
-                    client_id: clientId,
-                    payload: readPayload(),
-                    latitude: pos?.latitude,
-                    longitude: pos?.longitude,
-                }),
-            });
-            setStatus(`${currentModule.label} registrado.`);
+            const clientId = siteId();
+            if (clientId) body.client_id = clientId;
         }
-        document.getElementById('module-card').classList.add('hidden');
+        await api('/supervision/logs', { method: 'POST', body: JSON.stringify(body) });
+        setStatus(`${currentModule.label} registrado.`);
         await Promise.all([loadCurrent(), loadRecs()]);
+        if (moduleReturn === 'review') showReview();
+        else showOpsHome();
     } catch (e) {
         setStatus(e.message, false);
     }
 };
 
-document.getElementById('btn-mod-back').onclick = () => document.getElementById('module-card').classList.add('hidden');
-document.getElementById('site').onchange = () => loadRecs().catch((e) => setStatus(e.message, false));
-document.getElementById('btn-logout').onclick = logout;
+document.getElementById('btn-mod-back').onclick = () => {
+    if (moduleReturn === 'review') showReview();
+    else showOpsHome();
+};
+document.getElementById('btn-open-review').onclick = showReview;
+document.getElementById('btn-review-back').onclick = showOpsHome;
+document.getElementById('btn-open-alarms').onclick = () => openModule('alarms', 'home');
+document.getElementById('btn-open-supports').onclick = () => openModule('supports', 'home');
 document.getElementById('btn-logout-open').onclick = logout;
 
 if (token()) {

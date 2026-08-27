@@ -13,6 +13,7 @@ final class SupervisorFieldLog extends Model
 {
     protected $fillable = [
         'supervisor_shift_id',
+        'supervisor_shift_review_id',
         'security_company_id',
         'user_id',
         'client_id',
@@ -41,6 +42,11 @@ final class SupervisorFieldLog extends Model
     public function shift(): BelongsTo
     {
         return $this->belongsTo(SupervisorShift::class, 'supervisor_shift_id');
+    }
+
+    public function review(): BelongsTo
+    {
+        return $this->belongsTo(SupervisorShiftReview::class, 'supervisor_shift_review_id');
     }
 
     public function company(): BelongsTo

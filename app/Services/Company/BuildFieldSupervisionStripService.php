@@ -10,6 +10,7 @@ use App\Enums\SupervisorShiftStatus;
 use App\Models\Client;
 use App\Models\SecurityCompany;
 use App\Models\SupervisorFieldLog;
+use App\Models\SupervisorPost;
 use App\Models\SupervisorRecommendation;
 use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
@@ -78,6 +79,13 @@ final class BuildFieldSupervisionStripService
             'open_recommendations' => $openRecs,
             'attention_today' => $attention,
             'km_today' => $km,
+            'posts_count' => SupervisorPost::query()
+                ->whereHas('client', function ($q) use ($companyId): void {
+                    $q->where('security_company_id', $companyId)
+                        ->where('has_supervision', true);
+                })
+                ->where('is_active', true)
+                ->count(),
         ];
     }
 }

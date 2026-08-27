@@ -4,7 +4,7 @@
 
 Maestro de colaboradores de la empresa de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
 
-Fuente de columnas: `Maestro Colaboradores WM.xlsx` (1 hoja `WM`, A–Z).
+Fuente de columnas: `Maestro Colaboradores WM.xlsx`, **sin** las cuatro de asignación a cliente (razón social, instalaciones, sector, puesto). Esas viven en la ficha del cliente.
 
 ---
 
@@ -45,16 +45,17 @@ Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 | F | Sexo | Hombre / Mujer |
 | G | Edad | **No se carga** (se calcula) |
 | H | Tipo Colaborador | Obligatorio. Se crea en el catálogo Tipos si falta. |
-| I–L | Razón social, Instalaciones, Sector, Puesto | Asignación **todo-o-nada**. 4 vacías = OK (sin asignar). Si alguna tiene dato y el árbol aún no existe → **error**. El Excel no crea cliente/instalación/puesto. |
-| M | Cargo | Obligatorio. Se crea en el catálogo si falta. |
-| N | Mismo CC origen? | SI / NO, opcional |
-| O | Fecha Nacimiento | Obligatoria |
-| P–S | Nacimiento / emergencia | Opcional |
-| T | Nacionalidad | Obligatoria |
-| U | Discapacidad | SI / NO, opcional |
-| V | Email Ficha | Gris en archivo, **obligatorio** en sistema. Único por empresa. |
-| W–Y | Expedición documento | Opcional |
-| Z | G.Sanguíneo | O+, O-, A+, A-, B+, B-, AB+, AB- |
+| I | Cargo | Obligatorio. Se crea en el catálogo si falta. |
+| J | Mismo CC origen? | SI / NO, opcional |
+| K | Fecha Nacimiento | Obligatoria |
+| L–O | Nacimiento / emergencia | Opcional |
+| P | Nacionalidad | Obligatoria |
+| Q | Discapacidad | SI / NO, opcional |
+| R | Email Ficha | Gris en archivo, **obligatorio** en sistema. Único por empresa. |
+| S–U | Expedición documento | Opcional |
+| V | G.Sanguíneo | O+, O-, A+, A-, B+, B-, AB+, AB- |
+
+**No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (pestañas Accesos / Supervisión). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 No hay nombre de fantasía. No se archiva ni se crea usuario desde el Excel.
 

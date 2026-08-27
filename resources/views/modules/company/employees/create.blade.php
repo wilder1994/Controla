@@ -4,7 +4,7 @@
     </x-slot:actions>
 
     <div class="max-w-3xl space-y-4">
-        <p class="text-sm text-slate-400">Ficha de colaborador. La asignación a instalación y puesto se habilita cuando exista el árbol del cliente.</p>
+        <p class="text-sm text-slate-400">Ficha de colaborador. Instalaciones y puestos se definen en la ficha del cliente (pestañas Accesos / Supervisión).</p>
 
         <form method="POST" action="{{ route('company.employees.store') }}" class="space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             @csrf

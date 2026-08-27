@@ -33,7 +33,7 @@ final class EmployeeImportTemplateInstructionsSheet implements FromArray, Should
             ['Sexo', 'Hombre o Mujer.'],
             ['Edad', 'No se carga. Controla la calcula con la fecha de nacimiento.'],
             ['Tipo Colaborador', 'Obligatorio. Si no existe en Tipos de la empresa, se crea al aceptar.'],
-            ['Razón Social / Instalaciones / Sector / Puesto', 'Todo o nada: las 4 vacías = empleado sin asignar. Si una tiene dato, las 4 son obligatorias y deben existir en el sistema. Hoy el árbol de instalación/puesto aún no está: deja las 4 vacías.'],
+            ['Razón Social / Instalaciones / Sector / Puesto', 'No se usan. Déjalas vacías. El árbol (instalación, acceso, puesto) se crea a mano en la ficha del cliente.'],
             ['Cargo', 'Obligatorio. Si no existe en Cargos de la empresa, se crea al aceptar.'],
             ['Fecha Nacimiento', 'Obligatoria. Formato dd-mm-aaaa o fecha Excel.'],
             ['Nacionalidad', 'Obligatoria. Ej. COLOMBIANA.'],

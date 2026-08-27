@@ -1,6 +1,7 @@
 @php
     $liveJson = json_encode($map['live'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $historyJson = json_encode($map['history'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    $reviewsJson = json_encode($map['reviews'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $googleMapsJson = json_encode($map['google_maps'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $activeTab = in_array($tab ?? '', ['live', 'history', 'summary'], true) ? $tab : 'live';
     $semaphoreClass = match ($summary->semaphore) {
@@ -175,6 +176,7 @@
             (function () {
                 const live = {!! $liveJson !!};
                 const history = {!! $historyJson !!};
+                const reviews = {!! $reviewsJson !!};
                 const googleMaps = {!! $googleMapsJson !!};
                 const mapEl = document.getElementById('supervision-map');
                 const fallback = document.getElementById('supervision-map-fallback');
@@ -197,6 +199,26 @@
                         if (row.lat == null || row.lng == null) return;
                         const pos = { lat: row.lat, lng: row.lng };
                         new google.maps.Marker({ map, position: pos, title: row.user || 'Supervisor' });
+                        bounds.extend(pos);
+                        hasPoint = true;
+                    });
+
+                    reviews.forEach((row) => {
+                        if (row.lat == null || row.lng == null) return;
+                        const pos = { lat: row.lat, lng: row.lng };
+                        new google.maps.Marker({
+                            map,
+                            position: pos,
+                            title: (row.user || 'Revista') + (row.client ? ' · ' + row.client : '') + (row.post ? ' · ' + row.post : '') + (row.novelty ? ' · novedad' : ''),
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 7,
+                                fillColor: row.novelty ? '#f87171' : '#34d399',
+                                fillOpacity: 1,
+                                strokeColor: '#0b1220',
+                                strokeWeight: 1,
+                            },
+                        });
                         bounds.extend(pos);
                         hasPoint = true;
                     });

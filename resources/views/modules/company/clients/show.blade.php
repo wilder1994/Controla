@@ -45,7 +45,7 @@
                         Sin Accesos: no se opera portería.
                     @endif
                     @if ($client->has_supervision)
-                        Supervisión activa: la revista se firma en la app y llena la minuta del puesto.
+                        Supervisión activa: la revista se firma en la app de campo, en los puestos de esta pestaña.
                     @else
                         Sin Supervisión.
                     @endif
@@ -57,28 +57,20 @@
         </div>
     @elseif (($vista ?? '') === 'supervision')
         <div class="max-w-3xl space-y-4">
-            <section class="rounded-lg border border-amber-800/40 bg-amber-950/10 p-4">
-                <h3 class="text-sm font-semibold text-white">Supervisión</h3>
-                <p class="mt-1 text-sm text-slate-400">
-                    La revista de este sitio se hace en la app de Supervisión. No se vuelve a firmar en portería: Supervisión llena la misma minuta.
-                </p>
-            </section>
-            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4">
-                <h3 class="text-sm font-semibold text-white">Revistas recientes</h3>
-                <ul class="mt-3 space-y-2">
-                    @forelse ($proReviews as $review)
-                        <li class="rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2 text-sm">
-                            <p class="text-slate-200">{{ $review->shift?->user?->name ?? 'Supervisor' }}</p>
-                            <p class="text-xs text-slate-500">{{ $review->recorded_at?->format('d/m/Y H:i') }} · {{ $review->notes ?: 'Sin notas' }}</p>
-                        </li>
-                    @empty
-                        <li class="text-sm text-slate-500">Aún no hay revistas de Supervisión en este sitio.</li>
-                    @endforelse
-                </ul>
-            </section>
+            @include('modules.company.clients.partials.supervision-tree', [
+                'client' => $client,
+                'installations' => $installations ?? collect(),
+                'proReviews' => $proReviews ?? collect(),
+                'canManageTree' => $canManageTree ?? false,
+            ])
         </div>
     @elseif (($vista ?? '') === 'accesos' && $expediente)
     <div class="space-y-4">
+        @include('modules.company.clients.partials.accesos-tree', [
+            'client' => $client,
+            'installations' => $installations ?? collect(),
+            'canManageTree' => $canManageTree ?? false,
+        ])
         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
                 <p class="text-[10px] uppercase tracking-wide text-slate-500">Unidades</p>
@@ -113,6 +105,9 @@
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
                 <p class="text-[10px] uppercase tracking-wide text-slate-500">Puntos de acceso</p>
                 <p class="mt-1 text-lg font-semibold text-white tabular-nums">{{ $expediente['access_points_count'] }}</p>
+                <p class="text-[10px] text-slate-600 mt-1 leading-snug">
+                    {{ ($installations ?? collect())->count() }} instalación{{ ($installations ?? collect())->count() === 1 ? '' : 'es' }}
+                </p>
             </div>
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
                 <p class="text-[10px] uppercase tracking-wide text-slate-500">Bloqueados</p>

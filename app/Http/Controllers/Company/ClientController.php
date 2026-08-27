@@ -270,15 +270,32 @@ final class ClientController extends Controller
             ? $this->buildClientExpedienteService->execute($client)
             : null;
 
+        $installations = in_array($vista, ['accesos', 'supervision'], true)
+            ? $client->installations()
+                ->with([
+                    'locations' => fn ($q) => $q->orderBy('code'),
+                    'supervisorPosts' => fn ($q) => $q->orderBy('name'),
+                ])
+                ->orderByDesc('is_client_site')
+                ->orderBy('name')
+                ->get()
+            : collect();
+
         $proReviews = $vista === 'supervision'
-            ? $client->supervisorShiftReviews()->with('shift.user')->latest('recorded_at')->limit(20)->get()
+            ? $client->supervisorShiftReviews()
+                ->with(['shift.user', 'supervisorPost.installation'])
+                ->latest('recorded_at')
+                ->limit(20)
+                ->get()
             : collect();
 
         return view('modules.company.clients.show', [
             'client' => $client,
             'vista' => $vista,
             'expediente' => $expediente,
+            'installations' => $installations,
             'proReviews' => $proReviews,
+            'canManageTree' => $request->user()->can('update', $client),
             'canOperate' => $client->has_access && $request->user()->can('operate', $client),
             'canUpdate' => $request->user()->can('update', $client),
             'canOperateClientPanel' => $client->has_access

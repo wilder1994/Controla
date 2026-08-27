@@ -547,7 +547,12 @@
                         <p class="text-lg font-semibold text-white tabular-nums">{{ $fieldSupervision['km_today'] }}</p>
                     </div>
                 </div>
-                <p class="text-[11px] text-slate-600 mt-2">Distinto de las revistas de portería (gráficas de abajo). Aquí solo cuenta la app de Supervisión.</p>
+                <p class="text-[11px] text-slate-600 mt-2">
+                    Distinto de las revistas de portería (gráficas de abajo). Aquí solo cuenta la app de Supervisión.
+                    @if (($fieldSupervision['posts_count'] ?? 0) > 0)
+                        · {{ $fieldSupervision['posts_count'] }} puesto{{ $fieldSupervision['posts_count'] === 1 ? '' : 's' }} activos.
+                    @endif
+                </p>
             </div>
         </div>
         @endif

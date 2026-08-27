@@ -227,7 +227,7 @@ final class PreviewEmployeeImportService
             }
         }
         if ($assignmentFilled !== []) {
-            $errors[] = 'Razón social, instalaciones, sector y puesto aún no se asignan por Excel. Déjalas vacías o espera el árbol del cliente.';
+            $errors[] = 'Razón social, instalaciones, sector y puesto no se asignan por Excel. Déjalas vacías: el árbol se crea a mano en la ficha del cliente.';
         }
 
         $birthDate = $this->parseDateString($values['birth_date']);

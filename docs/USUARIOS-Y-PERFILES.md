@@ -17,7 +17,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 | Nombre de producto | Rol Spatie (`users`) | Pertenece a | Resumen |
 |--------------------|----------------------|-------------|---------|
 | **Vigilante** | `guardia` | Empresa | Opera un **puesto/cliente** a la vez. Login usuario+contraseña = control de quién está de turno. |
-| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre puestos. Firma revista en puesto (código 6 dígitos) si el sitio solo tiene Accesos. Con Supervisión en ese sitio, firma en la app de campo (llena la misma minuta). Login API: `/api/supervision/login`. |
+| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre **puestos de Supervisión** (`supervisor_posts`). Si el sitio solo tiene Accesos, firma minuta en portería (código 6 dígitos). Con Supervisión, la revista es en la app de campo. Login API: `/api/supervision/login`. |
 | **Administrador conjunto** | `client-admin` | Cliente (conjunto) | Administra el conjunto. **No** es supervisor ni vigilante. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
@@ -28,7 +28,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 
 Controla **no** factura ni muestra deuda del conjunto hacia la empresa de seguridad. Ese cobro es externo (contrato de vigilancia).
 
-En el cliente se registran datos comerciales (`party_type`, documento, contactos, representante) y **`service_started_at`**: fecha en que se aperturó / inició el servicio en Controla. El **tipo de estructura** se fija en el alta (`structure_type_id`). Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+En el cliente se registran datos comerciales (`party_type`, documento, contactos, representante, ciudad) y **`service_started_at`**. El **tipo de estructura** se fija en el alta. Instalaciones, accesos y puestos **no** van en el Excel; se crean en las pestañas Accesos / Supervisión. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 ---
 

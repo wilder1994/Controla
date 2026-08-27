@@ -89,5 +89,7 @@ return [
         'structure_pets',
         'visitor_pre_authorizations',
         'structure_app_users',
+        'installations',
+        'supervisor_posts',
     ],
 ];

@@ -7,6 +7,7 @@ namespace App\Services\Company;
 use App\Enums\SupervisorShiftStatus;
 use App\Models\SecurityCompany;
 use App\Models\SupervisorShift;
+use App\Models\SupervisorShiftReview;
 use Carbon\CarbonImmutable;
 
 final class BuildSupervisionMapService
@@ -24,7 +25,11 @@ final class BuildSupervisionMapService
         $live = SupervisorShift::query()
             ->where('security_company_id', $company->id)
             ->where('status', SupervisorShiftStatus::Open)
-            ->with(['user', 'locations' => fn ($q) => $q->orderByDesc('recorded_at')->limit(1)])
+            ->with([
+                'user',
+                'locations' => fn ($q) => $q->orderByDesc('recorded_at')->limit(1),
+                'reviews' => fn ($q) => $q->whereNotNull('latitude')->whereNotNull('longitude'),
+            ])
             ->get()
             ->map(function (SupervisorShift $shift) {
                 $last = $shift->locations->first();
@@ -47,6 +52,7 @@ final class BuildSupervisionMapService
             ->with([
                 'user',
                 'locations' => fn ($q) => $q->orderBy('recorded_at'),
+                'reviews',
             ])
             ->orderByDesc('started_at')
             ->limit(40)
@@ -74,9 +80,34 @@ final class BuildSupervisionMapService
             ->values()
             ->all();
 
+        $reviews = SupervisorShiftReview::query()
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereHas('shift', function ($q) use ($company, $fromAt, $toAt): void {
+                $q->where('security_company_id', $company->id)
+                    ->whereBetween('started_at', [$fromAt, $toAt]);
+            })
+            ->with(['shift.user', 'client:id,name', 'supervisorPost:id,name,installation_id'])
+            ->orderByDesc('recorded_at')
+            ->limit(200)
+            ->get()
+            ->map(fn (SupervisorShiftReview $review) => [
+                'id' => $review->id,
+                'lat' => (float) $review->latitude,
+                'lng' => (float) $review->longitude,
+                'user' => $review->shift?->user?->name,
+                'client' => $review->client?->name,
+                'post' => $review->supervisorPost?->name,
+                'novelty' => $review->has_novelty,
+                'at' => $review->recorded_at?->toIso8601String(),
+            ])
+            ->values()
+            ->all();
+
         return [
             'live' => $live,
             'history' => $history,
+            'reviews' => $reviews,
             'from' => $fromAt->toDateString(),
             'to' => $toAt->toDateString(),
             'google_maps' => [

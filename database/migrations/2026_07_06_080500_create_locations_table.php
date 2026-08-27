@@ -13,6 +13,7 @@ return new class extends Migration
         Schema::create('locations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('installation_id')->constrained()->restrictOnDelete();
             $table->string('code', 20);
             $table->string('name', 100);
             $table->string('address', 255)->nullable();

@@ -15,6 +15,7 @@
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Código</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Nombre</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Instalación</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Dirección</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Activo</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Acciones</th>
@@ -25,6 +26,7 @@
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ $location->code }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $location->name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $location->installation?->name ?? '—' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $location->address ?? '-' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs rounded-full {{ $location->is_active ? 'bg-green-900/30 text-green-300 ring-1 ring-green-700' : 'bg-red-900/30 text-red-300 ring-1 ring-red-700' }}">{{ $location->is_active ? 'Sí' : 'No' }}</span>
@@ -39,7 +41,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-sm text-slate-500">Sin puntos de acceso. Cree el primero.</td>
+                            <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-500">Sin puntos de acceso. Cree el primero.</td>
                         </tr>
                         @endforelse
                     </tbody>

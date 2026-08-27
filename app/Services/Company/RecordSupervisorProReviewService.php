@@ -4,71 +4,101 @@ declare(strict_types=1);
 
 namespace App\Services\Company;
 
-use App\Models\Client;
-use App\Models\GuardLog;
-use App\Models\Location;
+use App\Domain\Supervision\Data\RecordSupervisorShiftReviewInput;
+use App\Models\Employee;
+use App\Models\SupervisorPost;
 use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class RecordSupervisorProReviewService
 {
-    public function execute(
-        SupervisorShift $shift,
-        Client $client,
-        string $notes,
-        ?float $lat = null,
-        ?float $lng = null,
-    ): SupervisorShiftReview {
+    public function __construct(
+        private readonly LookupSupervisorVisitService $lookup,
+    ) {}
+
+    public function execute(SupervisorShift $shift, RecordSupervisorShiftReviewInput $input): SupervisorShiftReview
+    {
         if (! $shift->isOpen()) {
             throw ValidationException::withMessages([
                 'shift' => 'El turno está cerrado.',
             ]);
         }
 
-        if ((int) $client->security_company_id !== (int) $shift->security_company_id) {
+        $user = $shift->user;
+        if ($user === null) {
             throw ValidationException::withMessages([
-                'client_id' => 'El cliente no pertenece a esta empresa.',
+                'shift' => 'Turno sin supervisor.',
             ]);
         }
 
-        if (! $client->has_supervision) {
+        $client = $this->lookup->companySupervisionClient($user, $input->clientId);
+        if ($client === null) {
             throw ValidationException::withMessages([
-                'client_id' => 'Este sitio no tiene Supervisión asignada.',
+                'client_id' => 'El cliente no tiene Supervisión o no pertenece a esta empresa.',
             ]);
         }
 
-        $guardLogId = null;
-        if ($client->has_access) {
-            $locationId = Location::withoutGlobalScopes()
-                ->where('client_id', $client->id)
-                ->value('id');
+        $post = SupervisorPost::query()
+            ->withoutGlobalScopes()
+            ->where('id', $input->supervisorPostId)
+            ->where('client_id', $client->id)
+            ->where('is_active', true)
+            ->whereHas('installation', fn ($q) => $q->where('is_active', true))
+            ->first();
 
-            if ($locationId !== null) {
-                $log = GuardLog::withoutGlobalScopes()->create([
-                    'client_id' => $client->id,
-                    'user_id' => $shift->user_id,
-                    'location_id' => $locationId,
-                    'log_time' => now(),
-                    'type' => 'revista',
-                    'description' => $notes !== '' ? $notes : 'Revista Pro en puesto (sin firma en portería).',
-                    'latitude' => $lat,
-                    'longitude' => $lng,
-                    'supervisor_name' => $shift->user?->name,
-                    'signed_at' => now(),
-                ]);
-                $guardLogId = $log->id;
-            }
+        if ($post === null) {
+            throw ValidationException::withMessages([
+                'supervisor_post_id' => 'El puesto no pertenece a este cliente o no está activo.',
+            ]);
         }
 
-        return SupervisorShiftReview::query()->create([
-            'supervisor_shift_id' => $shift->id,
-            'client_id' => $client->id,
-            'guard_log_id' => $guardLogId,
-            'notes' => $notes,
-            'latitude' => $lat,
-            'longitude' => $lng,
-            'recorded_at' => now(),
-        ]);
+        $employee = Employee::query()
+            ->where('id', $input->employeeId)
+            ->where('security_company_id', $shift->security_company_id)
+            ->where('is_active', true)
+            ->whereNull('ceased_at')
+            ->whereHas('jobTitle', fn ($q) => $q->where('name', 'like', '%vigilante%'))
+            ->first();
+
+        if ($employee === null) {
+            throw ValidationException::withMessages([
+                'employee_id' => 'Seleccione un vigilante activo de la empresa.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($shift, $input, $client, $post, $employee) {
+            $review = SupervisorShiftReview::query()->create([
+                'supervisor_shift_id' => $shift->id,
+                'client_id' => $client->id,
+                'supervisor_post_id' => $post->id,
+                'employee_id' => $employee->id,
+                'notes' => $input->notes !== '' ? $input->notes : null,
+                'has_novelty' => $input->hasNovelty,
+                'latitude' => $input->latitude,
+                'longitude' => $input->longitude,
+                'recorded_at' => now(),
+            ]);
+
+            $dir = 'supervision/'.$shift->security_company_id.'/'.$shift->id.'/reviews/'.$review->id;
+            $path = $this->storePhoto($input->guardPhoto, $dir, 'guard.jpg');
+            $review->update(['guard_photo_path' => $path]);
+
+            return $review->fresh(['client', 'supervisorPost.installation', 'employee']);
+        });
+    }
+
+    private function storePhoto(UploadedFile $file, string $directory, string $name): string
+    {
+        $path = $file->storeAs($directory, $name, 'local');
+        if ($path === false) {
+            throw ValidationException::withMessages([
+                'guard_photo' => 'No se pudo guardar la foto del vigilante.',
+            ]);
+        }
+
+        return $path;
     }
 }

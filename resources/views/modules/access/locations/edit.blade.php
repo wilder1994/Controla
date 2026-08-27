@@ -9,6 +9,15 @@
                     @csrf @method('PATCH')
                     <div class="grid grid-cols-1 gap-4" x-data="geoCapture()">
                         <div>
+                            <label class="block text-sm font-medium text-slate-300">Instalación</label>
+                            <select name="installation_id" required class="mt-1 block w-full rounded-md bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
+                                @foreach ($installations as $installation)
+                                    <option value="{{ $installation->id }}" @selected(old('installation_id', $location->installation_id) == $installation->id)>{{ $installation->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('installation_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-slate-300">Código</label>
                             <input type="text" name="code" value="{{ old('code', $location->code) }}" class="mt-1 block w-full rounded-md bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" required>
                             @error('code') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror

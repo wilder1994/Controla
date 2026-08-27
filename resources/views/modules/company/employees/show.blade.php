@@ -57,7 +57,7 @@
 
         <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             <p class="text-sm font-medium text-white">Asignación</p>
-            <p class="mt-1 text-xs text-slate-500">Instalación y puesto quedan vacíos hasta que exista el árbol del cliente.</p>
+            <p class="mt-1 text-xs text-slate-500">Instalaciones, accesos y puestos se gestionan en la ficha del cliente, no en el empleado.</p>
         </div>
 
         @if ($employee->is_active)

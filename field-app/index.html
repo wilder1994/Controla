@@ -32,10 +32,13 @@
         .cam img { position: absolute; inset: 0; }
         .shift { color: var(--gold); font-size: .78rem; font-weight: 650; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
-        .mod { text-align: left; margin: 0; padding: .85rem .75rem; background: var(--navy); border: 1px solid var(--line); border-radius: .8rem; min-height: 4.6rem; }
-        .mod b { display: block; font-size: .82rem; }
-        .mod span { display: block; font-size: .68rem; color: var(--muted); font-weight: 500; margin-top: .2rem; }
-        .mod .n { color: var(--gold); font-size: .7rem; }
+        .mod { text-align: left; margin: 0; padding: .75rem .8rem; background: var(--navy); border: 1px solid var(--line); border-radius: .8rem; min-height: 3.4rem; overflow: hidden; }
+        .mod b { display: block; font-size: .88rem; }
+        .mod .n { color: var(--gold); font-size: .7rem; margin-top: .2rem; font-weight: 600; }
+        .entry { height: auto; min-height: 3.1rem; margin-top: .45rem; padding: .7rem .85rem; justify-content: space-between; }
+        .entry:first-child { margin-top: 0; }
+        .entry span { font-size: .72rem; color: var(--muted); font-weight: 600; }
+        button.gold.entry span { color: #3f3f46; }
         .opts { display: grid; gap: .35rem; margin-top: .35rem; }
         .opt { display: flex; align-items: center; gap: .5rem; padding: .5rem .65rem; border: 1px solid var(--line); border-radius: .55rem; background: var(--navy); font-size: .85rem; }
         .opt input { width: auto; margin: 0; }
@@ -47,7 +50,15 @@
         .collapse { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .5rem; height: 2.25rem; margin: 0; padding: 0 .1rem; background: transparent; border: 0; color: var(--gold); font-size: .8rem; font-weight: 700; text-align: left; }
         .chev { display: inline-block; width: 1rem; transition: transform .15s; font-size: 1rem; line-height: 1; }
         .collapse.is-open .chev { transform: rotate(180deg); }
-        .collapse-body { margin-top: .25rem; }
+        .profile { display: flex; gap: .7rem; align-items: center; }
+        .avatar { width: 3.1rem; height: 3.1rem; border-radius: 999px; object-fit: cover; background: #0b1220; border: 1px solid var(--line); flex-shrink: 0; }
+        .head-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .35rem; }
+        .head-row .shift { margin: 0; }
+        .btn-sm { width: auto; margin: 0; height: 2.25rem; padding: 0 .75rem; flex-shrink: 0; }
+        .combo { position: relative; }
+        .combo-list { position: absolute; z-index: 30; left: 0; right: 0; max-height: 10rem; overflow: auto; background: var(--navy); border: 1px solid var(--line); border-radius: .5rem; margin-top: .15rem; }
+        .combo-list button { width: 100%; height: auto; margin: 0; border-radius: 0; background: transparent; text-align: left; font-weight: 500; font-size: .8rem; padding: .4rem .65rem; }
+        .thumb { width: 4.4rem; height: 4.4rem; border-radius: .5rem; object-fit: cover; border: 1px solid var(--line); background: #000; }
     </style>
 </head>
 <body>
@@ -119,7 +130,7 @@
                 <button type="button" class="gold" id="btn-snap-self">Tomar selfie</button>
                 <button type="button" class="secondary" id="btn-cam-self">Reactivar cámara</button>
             </div>
-            <p class="hint">La galería está bloqueada. Si no aparece la cámara, permita el permiso y use HTTPS.</p>
+            <p class="hint">En HTTP local (*.test / DevTools) <b>Tomar foto</b> genera evidencia de prueba. Cámara real: HTTPS o Chrome en el celular.</p>
             <button type="button" class="gold" id="btn-start">Iniciar turno</button>
         </div>
         <button type="button" class="ghost" id="btn-logout-open">Salir</button>
@@ -127,29 +138,74 @@
 
     <div id="ops" class="hidden">
         <div class="card">
-            <p class="shift" id="shift-label">Turno abierto</p>
-            <p class="hint" id="shift-meta"></p>
-            <p class="hint" id="activity"></p>
-            <label for="site">Sitio con Supervisión</label>
-            <select id="site"></select>
-            <button type="button" class="secondary" id="btn-go-close">Cerrar turno</button>
+            <div class="head-row">
+                <p class="shift" id="shift-label">Turno abierto</p>
+                <button type="button" class="secondary btn-sm" id="btn-go-close">Cerrar</button>
+            </div>
+            <div class="profile">
+                <img id="sup-avatar" class="avatar" alt="">
+                <div>
+                    <p id="sup-name" style="margin:0;font-weight:700;font-size:.9rem;"></p>
+                    <p class="hint" id="shift-meta" style="margin:.15rem 0 0;"></p>
+                </div>
+            </div>
         </div>
-        <div class="card">
-            <p class="sec-title">Módulos</p>
-            <div class="grid" id="mod-grid"></div>
+
+        <div class="card" id="ops-home">
+            <button type="button" class="entry gold" id="btn-open-review">Revista<span>Cliente, puesto y vigilante</span></button>
+            <button type="button" class="entry" id="btn-open-alarms">Alarmas<span>Prueba en sitio</span></button>
+            <button type="button" class="entry" id="btn-open-supports">Apoyos<span>Operativo · sitio opcional</span></button>
         </div>
+
+        <div class="card hidden" id="review-card">
+            <div class="head-row">
+                <p class="sec-title" style="margin:0;">Revista</p>
+                <button type="button" class="ghost btn-sm" id="btn-review-back">Volver</button>
+            </div>
+            <p class="hint" id="review-context"></p>
+            <label for="rev-client-q">Cliente</label>
+            <div class="combo">
+                <input id="rev-client-q" autocomplete="off" placeholder="Escriba para buscar">
+                <div id="rev-client-list" class="combo-list hidden"></div>
+            </div>
+            <label for="rev-post-q">Puesto</label>
+            <div class="combo">
+                <input id="rev-post-q" autocomplete="off" placeholder="Primero el cliente" disabled>
+                <div id="rev-post-list" class="combo-list hidden"></div>
+            </div>
+            <label for="rev-guard-doc">Cédula del vigilante</label>
+            <div class="combo">
+                <input id="rev-guard-doc" autocomplete="off" inputmode="numeric" placeholder="Escriba la cédula">
+                <div id="rev-guard-list" class="combo-list hidden"></div>
+            </div>
+            <label for="rev-guard-name">Nombre del vigilante</label>
+            <input id="rev-guard-name" readonly>
+            <label>Foto del vigilante</label>
+            <div class="cam" style="aspect-ratio:1;max-width:12rem;"><video id="cam-guard" playsinline autoplay muted></video><img id="snap-guard" class="hidden" alt=""></div>
+            <div class="row">
+                <button type="button" class="gold" id="btn-snap-guard">Tomar foto</button>
+                <button type="button" class="secondary" id="btn-cam-guard">Cámara</button>
+            </div>
+            <label for="rev-notes">Observaciones</label>
+            <textarea id="rev-notes"></textarea>
+            <label class="check"><input type="checkbox" id="rev-novelty"><span>Con novedad</span></label>
+            <button type="button" class="gold" id="btn-save-review">Guardar revista</button>
+            <p class="sec-title" style="margin-top:1rem;">En este puesto</p>
+            <div class="grid" id="hub-grid"></div>
+            <div id="recs"></div>
+        </div>
+
         <div class="card hidden" id="module-card">
             <p class="sec-title" id="module-title">Módulo</p>
             <p class="hint" id="module-hint"></p>
+            <div id="module-client-wrap" class="hidden">
+                <label for="mod-client">Cliente</label>
+                <select id="mod-client"></select>
+            </div>
             <form id="module-form"></form>
             <button type="button" id="btn-submit">Registrar</button>
-            <button type="button" class="ghost" id="btn-mod-back">Volver a módulos</button>
+            <button type="button" class="ghost" id="btn-mod-back">Volver</button>
         </div>
-        <div class="card" id="recs-card">
-            <p class="sec-title">Recomendaciones abiertas</p>
-            <div id="recs"></div>
-        </div>
-        <button type="button" class="ghost" id="btn-logout">Salir</button>
     </div>
 
     <div id="close-shift" class="hidden">

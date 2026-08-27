@@ -21,9 +21,10 @@ final class FieldModuleCatalog
             [
                 'key' => 'reviews',
                 'label' => 'Revista',
-                'hint' => 'Visita de supervisión en el sitio. Si el conjunto también tiene Accesos, llena la minuta del puesto.',
+                'hint' => 'Visita de supervisión: cliente, puesto, vigilante y evidencia. No es la minuta de portería.',
                 'capture' => 'reviews',
                 'requires_client' => true,
+                'hangs_off_review' => false,
                 'fields' => [
                     [
                         'name' => 'notes',
@@ -190,6 +191,7 @@ final class FieldModuleCatalog
             'hint' => $module->hint(),
             'capture' => 'logs',
             'requires_client' => $module->requiresClient(),
+            'hangs_off_review' => $module->hangsOffReview(),
             'fields' => $fields,
         ];
     }

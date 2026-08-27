@@ -27,7 +27,10 @@ final class SupervisorFieldLogApiTest extends TestCase
             $keys,
         );
         $this->assertFalse(collect($response->json('modules'))->firstWhere('key', 'supports')['requires_client']);
-        $this->assertTrue(collect($response->json('modules'))->firstWhere('key', 'inventory')['requires_client']);
+        $this->assertFalse(collect($response->json('modules'))->firstWhere('key', 'inventory')['requires_client']);
+        $this->assertTrue(collect($response->json('modules'))->firstWhere('key', 'inventory')['hangs_off_review']);
+        $this->assertTrue(collect($response->json('modules'))->firstWhere('key', 'alarms')['requires_client']);
+        $this->assertFalse(collect($response->json('modules'))->firstWhere('key', 'alarms')['hangs_off_review']);
     }
 
     public function test_inventory_and_support_and_recommendation_lifecycle(): void
@@ -37,9 +40,13 @@ final class SupervisorFieldLogApiTest extends TestCase
 
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload())->assertCreated();
 
+        $review = $this->withToken($token)->post('/api/supervision/reviews', $this->supervisorReviewPayload($client));
+        $review->assertCreated();
+        $reviewId = (int) $review->json('review.id');
+
         $this->withToken($token)->postJson('/api/supervision/logs', [
             'module' => 'inventory',
-            'client_id' => $client->id,
+            'supervisor_shift_review_id' => $reviewId,
             'payload' => ['condition' => 'novelty'],
         ])->assertCreated()->assertJsonPath('log.outcome', 'attention');
 
@@ -50,7 +57,7 @@ final class SupervisorFieldLogApiTest extends TestCase
 
         $opened = $this->withToken($token)->postJson('/api/supervision/logs', [
             'module' => 'recommendations',
-            'client_id' => $client->id,
+            'supervisor_shift_review_id' => $reviewId,
             'payload' => [
                 'title' => 'Reforzar iluminación del acceso peatonal',
                 'body' => 'Quedan tramos oscuros en el costado norte.',
@@ -92,6 +99,11 @@ final class SupervisorFieldLogApiTest extends TestCase
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
+        $reviewId = (int) $this->withToken($token)
+            ->post('/api/supervision/reviews', $this->supervisorReviewPayload($client))
+            ->assertCreated()
+            ->json('review.id');
+
         $payloads = [
             'inventory' => ['condition' => 'good'],
             'documents' => ['kind' => 'minuta', 'status' => 'delivered', 'quantity' => 1],
@@ -108,11 +120,26 @@ final class SupervisorFieldLogApiTest extends TestCase
 
         foreach ($payloads as $module => $payload) {
             $body = ['module' => $module, 'payload' => $payload];
-            if ($module !== 'supports') {
+            if (in_array($module, ['inventory', 'documents', 'folders', 'weapons', 'recommendations'], true)) {
+                $body['supervisor_shift_review_id'] = $reviewId;
+            } elseif ($module === 'alarms') {
                 $body['client_id'] = $client->id;
             }
             $this->withToken($token)->postJson('/api/supervision/logs', $body)->assertCreated();
         }
+    }
+
+    public function test_hanging_module_requires_review(): void
+    {
+        $token = $this->loginSupervisor();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
+
+        $this->withToken($token)->postJson('/api/supervision/logs', [
+            'module' => 'inventory',
+            'client_id' => $client->id,
+            'payload' => ['condition' => 'good'],
+        ])->assertUnprocessable();
     }
 
     private function loginSupervisor(): string

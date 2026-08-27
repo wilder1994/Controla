@@ -12,8 +12,12 @@ final class SupervisorShiftReview extends Model
     protected $fillable = [
         'supervisor_shift_id',
         'client_id',
+        'supervisor_post_id',
+        'employee_id',
         'guard_log_id',
         'notes',
+        'has_novelty',
+        'guard_photo_path',
         'latitude',
         'longitude',
         'recorded_at',
@@ -25,6 +29,7 @@ final class SupervisorShiftReview extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'recorded_at' => 'datetime',
+            'has_novelty' => 'boolean',
         ];
     }
 
@@ -41,5 +46,15 @@ final class SupervisorShiftReview extends Model
     public function guardLog(): BelongsTo
     {
         return $this->belongsTo(GuardLog::class);
+    }
+
+    public function supervisorPost(): BelongsTo
+    {
+        return $this->belongsTo(SupervisorPost::class);
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
     }
 }

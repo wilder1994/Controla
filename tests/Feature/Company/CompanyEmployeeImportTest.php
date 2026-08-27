@@ -123,7 +123,7 @@ final class CompanyEmployeeImportTest extends TestCase
         $this->actingAs($admin)
             ->get(route('company.employees.import.preview'))
             ->assertOk()
-            ->assertSee('aún no se asignan por Excel')
+            ->assertSee('no se asignan por Excel')
             ->assertDontSee('Aceptar y cargar');
 
         $this->actingAs($admin)

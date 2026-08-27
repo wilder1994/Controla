@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Supervision\Data\OpenSupervisorShiftInput;
+use App\Domain\Supervision\Data\RecordSupervisorShiftReviewInput;
 use App\Enums\SupervisorChecklistKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\CloseSupervisorShiftRequest;
 use App\Http\Requests\Api\OpenSupervisorShiftRequest;
-use App\Models\Client;
+use App\Http\Requests\Api\StoreSupervisorShiftReviewRequest;
 use App\Models\SupervisorChecklistItem;
 use App\Models\SupervisorFleetVehicle;
+use App\Models\SupervisorShiftReview;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Services\Company\CloseSupervisorShiftService;
+use App\Services\Company\LookupSupervisorVisitService;
 use App\Services\Company\ManageSupervisorShiftService;
 use App\Services\Company\OpenSupervisorShiftService;
 use App\Services\Company\RecordSupervisorFieldLogService;
@@ -23,8 +26,11 @@ use App\Services\Company\RecordSupervisorProReviewService;
 use App\Services\Company\SeedSupervisorIntakeDefaultsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SupervisorShiftController extends Controller
 {
@@ -35,6 +41,7 @@ final class SupervisorShiftController extends Controller
         private readonly RecordSupervisorProReviewService $reviewService,
         private readonly RecordSupervisorFieldLogService $logService,
         private readonly SeedSupervisorIntakeDefaultsService $intakeDefaults,
+        private readonly LookupSupervisorVisitService $visitLookup,
     ) {}
 
     public function login(Request $request): JsonResponse
@@ -79,24 +86,62 @@ final class SupervisorShiftController extends Controller
     {
         $shift = $this->shiftService->currentFor($request->user());
         if ($shift !== null) {
-            $shift->load(['fleetVehicle', 'zone', 'shiftTemplate']);
+            $shift->load(['fleetVehicle', 'zone', 'shiftTemplate', 'user']);
         }
+
+        $latestReview = $shift?->reviews()->latest('id')->with(['client:id,name', 'supervisorPost.installation:id,name', 'employee'])->first();
 
         return response()->json([
             'shift' => $shift,
+            'supervisor' => [
+                'id' => $request->user()->id,
+                'name' => $request->user()->name,
+                'has_selfie' => $shift?->km_start_selfie_path !== null,
+            ],
+            'current_review' => $latestReview !== null ? $this->reviewPayload($latestReview) : null,
             'activity' => $shift !== null ? $this->logService->activityFor($shift) : null,
         ]);
     }
 
     public function sites(Request $request): JsonResponse
     {
-        $sites = Client::query()
-            ->where('security_company_id', $request->user()->security_company_id)
-            ->where('has_supervision', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug', 'address', 'has_access']);
+        return response()->json(['sites' => $this->visitLookup->sites($request->user())]);
+    }
 
-        return response()->json(['sites' => $sites]);
+    public function posts(Request $request): JsonResponse
+    {
+        $request->validate([
+            'client_id' => ['required', 'integer'],
+            'q' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        return response()->json([
+            'posts' => $this->visitLookup->posts(
+                $request->user(),
+                (int) $request->integer('client_id'),
+                (string) $request->string('q'),
+            ),
+        ]);
+    }
+
+    public function guards(Request $request): JsonResponse
+    {
+        $request->validate([
+            'document' => ['required', 'string', 'max:30'],
+        ]);
+
+        return response()->json([
+            'guards' => $this->visitLookup->guards($request->user(), (string) $request->string('document')),
+        ]);
+    }
+
+    public function startSelfie(Request $request): StreamedResponse|Response
+    {
+        $shift = $this->shiftService->currentFor($request->user());
+        abort_if($shift === null || $shift->km_start_selfie_path === null, 404);
+        abort_unless(Storage::disk('local')->exists($shift->km_start_selfie_path), 404);
+
+        return response()->file(Storage::disk('local')->path($shift->km_start_selfie_path));
     }
 
     public function intake(Request $request): JsonResponse
@@ -212,28 +257,29 @@ final class SupervisorShiftController extends Controller
         return response()->json(['shift' => $closed]);
     }
 
-    public function review(Request $request): JsonResponse
+    public function review(StoreSupervisorShiftReviewRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'client_id' => ['required', 'integer', 'exists:clients,id'],
-            'notes' => ['nullable', 'string', 'max:2000'],
-            'latitude' => ['nullable', 'numeric'],
-            'longitude' => ['nullable', 'numeric'],
-        ]);
-
         $shift = $this->shiftService->currentFor($request->user());
         abort_if($shift === null, 422, 'No hay turno abierto.');
 
-        $client = Client::query()->findOrFail($data['client_id']);
         $review = $this->reviewService->execute(
             $shift,
-            $client,
-            (string) ($data['notes'] ?? ''),
-            isset($data['latitude']) ? (float) $data['latitude'] : null,
-            isset($data['longitude']) ? (float) $data['longitude'] : null,
+            new RecordSupervisorShiftReviewInput(
+                clientId: (int) $request->validated('client_id'),
+                supervisorPostId: (int) $request->validated('supervisor_post_id'),
+                employeeId: (int) $request->validated('employee_id'),
+                notes: (string) ($request->validated('notes') ?? ''),
+                hasNovelty: (bool) $request->validated('has_novelty'),
+                guardPhoto: $request->file('guard_photo'),
+                latitude: (float) $request->validated('latitude'),
+                longitude: (float) $request->validated('longitude'),
+            ),
         );
 
-        return response()->json(['review' => $review], 201);
+        return response()->json([
+            'review' => $this->reviewPayload($review),
+            'activity' => $this->logService->activityFor($shift),
+        ], 201);
     }
 
     /**
@@ -247,5 +293,31 @@ final class SupervisorShiftController extends Controller
         }
 
         return $rows;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function reviewPayload(SupervisorShiftReview $review): array
+    {
+        $review->loadMissing(['client:id,name', 'employee', 'supervisorPost.installation:id,name']);
+        $post = $review->supervisorPost;
+
+        return [
+            'id' => $review->id,
+            'client_id' => $review->client_id,
+            'client_name' => $review->client?->name,
+            'supervisor_post_id' => $review->supervisor_post_id,
+            'post_name' => $post?->name,
+            'installation_name' => $post?->installation?->name,
+            'employee_id' => $review->employee_id,
+            'employee_name' => $review->employee?->fullName(),
+            'employee_document' => $review->employee?->document_number,
+            'has_novelty' => $review->has_novelty,
+            'notes' => $review->notes,
+            'latitude' => $review->latitude !== null ? (float) $review->latitude : null,
+            'longitude' => $review->longitude !== null ? (float) $review->longitude : null,
+            'recorded_at' => $review->recorded_at?->toIso8601String(),
+        ];
     }
 }

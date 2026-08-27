@@ -17,7 +17,6 @@ final class PilotDemoSeeder extends Seeder
     {
         $this->call([
             StructureTypeSeeder::class,
-            LocationSeeder::class,
             TenantSeeder::class,
             PilotUsersSeeder::class,
             StructureSeeder::class,

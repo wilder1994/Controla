@@ -42,6 +42,14 @@ enum SupervisorFieldModule: string
 
     public function requiresClient(): bool
     {
-        return $this !== self::Supports;
+        return $this === self::Alarms;
+    }
+
+    public function hangsOffReview(): bool
+    {
+        return match ($this) {
+            self::Inventory, self::Documents, self::Folders, self::Weapons, self::Recommendations => true,
+            default => false,
+        };
     }
 }

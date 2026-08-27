@@ -21,13 +21,13 @@
             <input type="hidden" name="has_access" value="0">
             <input type="checkbox" name="has_access" value="1" class="rounded border-slate-600 text-indigo-600" @checked($accessOn) @disabled(($accessMax < 1 || ($accessRemaining < 1 && ! $accessOn)))>
             <span class="ml-2 text-sm font-semibold text-white">Accesos</span>
-            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">Portería, censo y supervisión básica en puesto. Cupo {{ $accessRemaining }}/{{ $accessMax }}.</p>
+            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">Portería, censo y puntos de acceso. Cupo {{ $accessRemaining }}/{{ $accessMax }}.</p>
         </label>
         <label class="rounded-xl border px-4 py-3 cursor-pointer {{ $proOn ? 'border-amber-500 bg-amber-950/20' : 'border-slate-800 bg-slate-950/40' }}">
             <input type="hidden" name="has_supervision" value="0">
             <input type="checkbox" name="has_supervision" value="1" class="rounded border-slate-600 text-amber-500" @checked($proOn) @disabled($supervisionDisabled)>
             <span class="ml-2 text-sm font-semibold text-white">Supervisión</span>
-            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">App, GPS y revista en campo (llena el puesto). Cupo {{ $supervisionCap }}.</p>
+            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">App, GPS y revista en puestos de Supervisión. Cupo {{ $supervisionCap }}.</p>
         </label>
     </div>
 </div>

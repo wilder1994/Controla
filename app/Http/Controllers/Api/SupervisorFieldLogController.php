@@ -41,6 +41,9 @@ final class SupervisorFieldLogController extends Controller
             SupervisorFieldModule::from((string) $request->validated('module')),
             $request->validated('payload'),
             $request->validated('client_id') !== null ? (int) $request->validated('client_id') : null,
+            $request->validated('supervisor_shift_review_id') !== null
+                ? (int) $request->validated('supervisor_shift_review_id')
+                : null,
             $request->validated('notes'),
             $request->validated('latitude') !== null ? (float) $request->validated('latitude') : null,
             $request->validated('longitude') !== null ? (float) $request->validated('longitude') : null,

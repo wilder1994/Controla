@@ -225,7 +225,7 @@ Tras la purga se conserva el registro `clients` con nombre anonimizado (`Conjunt
 
 ### Tablas purgadas
 
-Definidas en `config/retention.php` → `purge_tables`: access_logs, correspondence, pre_authorizations, visitor_pre_authorizations, guard_logs, blocklist, structure_*, visitors, residents, housing_units, buildings, locations, client_user_assignments.
+Definidas en `config/retention.php` → `purge_tables`: supervisor_field_logs, supervisor_recommendations, supervisor_shift_reviews, supervisor_posts, access_logs, correspondence, pre_authorizations, visitor_pre_authorizations, guard_logs, blocklist, structure_*, visitors, residents, housing_units, buildings, locations, installations, client_user_assignments.
 
 ### Job automático
 
@@ -287,8 +287,12 @@ Dominio completo: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 | Concepto | Tabla | Quién define |
 |----------|-------|--------------|
 | Tipo del sitio / cliente | `structure_types` → `clients.structure_type_id` | Plataforma (catálogo) + empresa (alta cliente) |
-| Nodos del árbol | `structures` (`parent_id`) | Panel cliente |
-| Puntos de acceso / puertas | `locations` (`access_point`) | Cliente / portería (nombre libre) |
+| Nodos del censo | `structures` (`parent_id`) | Panel cliente `/client/structures` |
+| Instalación | `installations` | Pestaña Accesos y/o Supervisión de la ficha empresa |
+| Puntos de acceso / puertas | `locations` (`access_point`) bajo instalación | Pestaña **Accesos** |
+| Puesto de Supervisión | `supervisor_posts` | Pestaña **Supervisión** |
+
+Detalle: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 Archivo: `routes/modules/admin.php`
 

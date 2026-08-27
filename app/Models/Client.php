@@ -114,4 +114,19 @@ class Client extends Model
     {
         return $this->hasMany(SupervisorFieldLog::class);
     }
+
+    public function installations(): HasMany
+    {
+        return $this->hasMany(Installation::class);
+    }
+
+    public function supervisorPosts(): HasMany
+    {
+        return $this->hasMany(SupervisorPost::class);
+    }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(Location::class);
+    }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
+use App\Models\Installation;
 use App\Models\Location;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -20,14 +21,16 @@ final class LocationController extends Controller
 
     public function index(): View
     {
-        $locations = Location::query()->latest()->paginate(15);
+        $locations = Location::query()->with('installation')->latest()->paginate(15);
 
         return view('modules.access.locations.index', compact('locations'));
     }
 
     public function create(): View
     {
-        return view('modules.access.locations.create');
+        $installations = Installation::query()->where('is_active', true)->orderBy('name')->get();
+
+        return view('modules.access.locations.create', compact('installations'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -36,6 +39,11 @@ final class LocationController extends Controller
         abort_if($clientId === null, 422, 'Seleccione un cliente/conjunto activo.');
 
         $validated = $request->validate([
+            'installation_id' => [
+                'required',
+                'integer',
+                Rule::exists('installations', 'id')->where(fn ($q) => $q->where('client_id', $clientId)),
+            ],
             'code' => [
                 'required',
                 'string',
@@ -68,12 +76,19 @@ final class LocationController extends Controller
 
     public function edit(Location $location): View
     {
-        return view('modules.access.locations.edit', compact('location'));
+        $installations = Installation::query()->where('is_active', true)->orderBy('name')->get();
+
+        return view('modules.access.locations.edit', compact('location', 'installations'));
     }
 
     public function update(Request $request, Location $location): RedirectResponse
     {
         $validated = $request->validate([
+            'installation_id' => [
+                'required',
+                'integer',
+                Rule::exists('installations', 'id')->where(fn ($q) => $q->where('client_id', $location->client_id)),
+            ],
             'code' => [
                 'required',
                 'string',

@@ -40,14 +40,27 @@ final class CompanyClientExpedienteTest extends TestCase
         $response->assertOk();
         $response->assertSee('Accesos');
         $response->assertSee('Cliente');
+        $response->assertSee('Supervisión');
         $response->assertSee('Operar portería');
         $response->assertSee('Operar cliente');
         $response->assertSee('Editar');
-        $response->assertSee('Personas (censo)');
-        $response->assertSee('Usuarios app');
-        $response->assertSee('Parque vehicular');
-        $response->assertSee('Guardas asignados');
+        $response->assertSee('Ficha comercial');
         $response->assertSee('← Cartera');
+
+        $accesos = $this->actingAs($user)->get(route('company.clients.show', [$client, 'vista' => 'accesos']));
+        $accesos->assertOk();
+        $accesos->assertSee('Instalaciones y accesos');
+        $accesos->assertSee('Personas (censo)');
+        $accesos->assertSee('Usuarios app');
+        $accesos->assertSee('Parque vehicular');
+        $accesos->assertSee('Guardas asignados');
+        $accesos->assertSee('Puerta principal');
+
+        $supervision = $this->actingAs($user)->get(route('company.clients.show', [$client, 'vista' => 'supervision']));
+        $supervision->assertOk();
+        $supervision->assertSee('Instalaciones y puestos');
+        $supervision->assertSee('Portería principal');
+        $supervision->assertDontSee('Personas (censo)');
     }
 
     public function test_operate_client_opens_client_panel(): void

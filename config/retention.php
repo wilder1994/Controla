@@ -18,6 +18,10 @@ return [
     | Tablas con client_id a purgar (orden: dependientes primero).
     */
     'purge_tables' => [
+        'supervisor_field_logs',
+        'supervisor_recommendations',
+        'supervisor_shift_reviews',
+        'supervisor_posts',
         'access_logs',
         'correspondence',
         'pre_authorizations',
@@ -34,6 +38,7 @@ return [
         'housing_units',
         'buildings',
         'locations',
+        'installations',
         'client_user_assignments',
     ],
 ];
