@@ -119,7 +119,7 @@ final class EmployeeController extends Controller
 
         return redirect()
             ->route('company.employees.index')
-            ->with('success', $count === 1 ? '1 empleado cargado.' : $count.' empleados cargados.');
+            ->with('success', $count === 1 ? '1 ficha aplicada.' : $count.' fichas aplicadas.');
     }
 
     public function cancelImport(Request $request): RedirectResponse

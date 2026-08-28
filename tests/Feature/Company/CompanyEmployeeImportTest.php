@@ -92,8 +92,6 @@ final class CompanyEmployeeImportTest extends TestCase
         $preview = $this->actingAs($admin)->get(route('company.employees.import.preview'));
         $preview->assertOk();
         $preview->assertSee('Ana');
-        $preview->assertSee('Se creará el cargo');
-        $preview->assertSee('Se creará el tipo de colaborador');
         $preview->assertSee('Aceptar y cargar');
 
         $this->actingAs($admin)
@@ -131,7 +129,9 @@ final class CompanyEmployeeImportTest extends TestCase
             ->post(route('company.employees.import.commit'))
             ->assertRedirect(route('company.employees.import.preview'));
 
-        $this->assertSame(0, Employee::query()->count());
+        $this->assertDatabaseMissing('employees', [
+            'email' => 'ana.import@sj-seguridad.test',
+        ]);
     }
 
     public function test_email_is_required_even_if_grey_in_excel(): void
@@ -172,6 +172,37 @@ final class CompanyEmployeeImportTest extends TestCase
             'last_name_paternal' => 'Pérez',
             'last_name_maternal' => '',
         ]);
+    }
+
+    public function test_import_updates_existing_employee_job_title(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('company.employees.import.preview.store'), [
+            'paste' => $this->pasteRow(),
+        ])->assertRedirect(route('company.employees.import.preview'));
+        $this->actingAs($admin)->post(route('company.employees.import.commit'))
+            ->assertRedirect(route('company.employees.index'));
+
+        $this->actingAs($admin)->post(route('company.employees.import.preview.store'), [
+            'paste' => $this->pasteRow(['job_title' => 'GUARDA DE SEGURIDAD']),
+        ])->assertRedirect(route('company.employees.import.preview'));
+
+        $this->actingAs($admin)
+            ->get(route('company.employees.import.preview'))
+            ->assertOk()
+            ->assertSee('Se actualizará el cargo')
+            ->assertSee('Aceptar y cargar')
+            ->assertDontSee('Ya existe un empleado con este documento.');
+
+        $this->actingAs($admin)
+            ->post(route('company.employees.import.commit'))
+            ->assertRedirect(route('company.employees.index'));
+
+        $employee = Employee::query()->where('document_number', '1098000111')->firstOrFail();
+        $this->assertSame('GUARDA DE SEGURIDAD', $employee->jobTitle?->name);
+        $this->assertSame(1, Employee::query()->where('document_number', '1098000111')->count());
     }
 
     public function test_import_rejects_when_both_last_names_are_empty(): void

@@ -1,6 +1,6 @@
 # Clientes, instalaciones, Accesos y Supervisión
 
-**Última actualización:** 26 agosto 2026
+**Última actualización:** 27 agosto 2026
 
 Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) sigue más abajo; no se mezcla con instalaciones ni con puestos de Supervisión.
 
@@ -40,7 +40,7 @@ Instalaciones, puestos y accesos los crea **a mano** el usuario de la empresa en
 | Excel | Qué crea | Qué no crea |
 |-------|----------|-------------|
 | Clientes | Filas `clients` (mismos campos del formulario) | Instalaciones, puestos, accesos, nodos, personas |
-| Empleados | Ficha de colaborador (persona, cargo, tipo) | Cliente, instalación, puesto, acceso. **Sin** columnas razón social / instalaciones / sector / puesto |
+| Empleados | Ficha de colaborador (alta o **actualización** si el documento ya existe; cargo incluido) | Cliente, instalación, puesto, acceso, usuario. **Sin** columnas razón social / instalaciones / sector / puesto |
 
 ---
 

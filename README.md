@@ -33,7 +33,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
-| **Empleados** | Maestro + Excel (Formato / Carga masiva con preview). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
+| **Empleados** | Maestro + Excel (preview → alta o **actualización** por documento). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
 | **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos empresa). Recomendación = registro de riesgo, no ticket. Fuente de verdad: Controla | ✅ Implementada |
 | **Árbol del cliente** | Instalaciones compartidas; Accesos = puertas (`locations`); Supervisión = puestos (`supervisor_posts`). Excel solo ficha | ✅ Implementada |
 
@@ -51,7 +51,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login correo+clave; API inferida. Instalar desde Descargas (PWA, no APK). Caché SW `controla-sup-v17` |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login correo+clave; API inferida. Instalar desde Descargas (PWA, no APK). Caché SW `controla-sup-v20` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -407,7 +407,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
 | `GET /company/supervision` | Mapa GPS: filtros año/mes/rango/día, zona y supervisor + PPTX; pestañas **En vivo** \| **Historial / replay** \| **Resumen** (KPI y gráficos; el header no muestra conteos) |
-| `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro que el resumen) |
+| `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro; solo cifras). Compositor + párrafos + GRACIAS + DeepSeek + chatbot/PQRS: pendiente, [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md) §§ Informe PPTX y Chatbot y PQRS |
 | `GET /company/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; `SUPERVISION_PWA_URL`; no APK ni tiendas) |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
 | `POST /company/billing/supervision` | Contratar / cambiar Supervisión (self-serve, aplica al corte) |
@@ -419,7 +419,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped |
 | `GET /company/settings` | **Mis datos**: perfil legal y ubicación (sin pestañas) |
 | `PUT /company/settings` | Guardar perfil empresa |
-| `GET /company/employees` | **Empleados**: maestro, Formato Excel, carga masiva (preview → aceptar) |
+| `GET /company/employees` | **Empleados**: maestro, Formato Excel, carga masiva (preview → alta o actualización por documento) |
 | `GET /company/employees/template` | Descarga plantilla (hojas Empleados + Instrucciones) |
 | `GET /company/job-titles` | **Ajustes → Cargos**: catálogo por empresa |
 | `GET /company/collaborator-types` | **Ajustes → Tipos**: catálogo por empresa |

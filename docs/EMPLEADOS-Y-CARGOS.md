@@ -1,6 +1,6 @@
 # Empleados, cargos y tipos (empresa)
 
-**Última actualización:** 26 agosto 2026
+**Última actualización:** 27 agosto 2026
 
 Maestro de colaboradores de la empresa de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
 
@@ -39,7 +39,7 @@ Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 
 | Col | Encabezado | Controla |
 |-----|------------|----------|
-| A–B | Tipo y nro. documento | Obligatorio. Tipo del catálogo (código o nombre). Número único por empresa. |
+| A–B | Tipo y nro. documento | Obligatorio. Tipo del catálogo (código o nombre). Si el número ya existe, se actualiza la ficha. |
 | C–D | Ap. Paterno / Materno | **Al menos uno.** Los dos es mejor, no obligatorio. |
 | E | Nombres | Obligatorio |
 | F | Sexo | Hombre / Mujer |
@@ -51,13 +51,13 @@ Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 | L–O | Nacimiento / emergencia | Opcional |
 | P | Nacionalidad | Obligatoria |
 | Q | Discapacidad | SI / NO, opcional |
-| R | Email Ficha | Gris en archivo, **obligatorio** en sistema. Único por empresa. |
+| R | Email Ficha | Gris en archivo, **obligatorio** en sistema. Único por empresa. El mismo correo de **esa** ficha (mismo documento) se acepta. El de **otro** empleado es error. |
 | S–U | Expedición documento | Opcional |
 | V | G.Sanguíneo | O+, O-, A+, A-, B+, B-, AB+, AB- |
 
 **No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (tarjetas Instalaciones y accesos / Supervisión). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
-No hay nombre de fantasía. No se archiva ni se crea usuario desde el Excel.
+No se archiva desde el Excel. Documento que ya existe: **aviso** (se actualiza la ficha, incluido el cargo). Correo de **otro** empleado: error. No se crea usuario desde el Excel.
 
 ---
 
@@ -66,9 +66,17 @@ No hay nombre de fantasía. No se archiva ni se crea usuario desde el Excel.
 1. **Formato:** xlsx con hoja `Empleados` (vacía, mismos encabezados y colores) + hoja `Instrucciones` (no se importa).
 2. **Carga masiva:** arrastrar, elegir archivo o pegar tabla (con encabezados).
 3. **Revisar datos:** KPIs válidas / avisos / errores. Nada se guarda.
-4. **Aceptar** solo si hay 0 errores. Luego vuelve al listado.
+4. **Aceptar** solo si hay 0 errores. Aviso no bloquea. Luego vuelve al listado. Mensaje: *N fichas aplicadas* (altas y actualizaciones).
 
 El import lee la hoja `Empleados`, o `WM`, o la primera hoja.
+
+| Preview | Al aceptar |
+|---------|------------|
+| Documento nuevo | Crea la ficha |
+| Documento ya en la empresa | **Aviso.** Actualiza la ficha (nombres, cargo, tipo, correo, etc.). Si el cargo cambia, el aviso lo dice. No duplica. |
+| Correo de otro empleado | **Error.** No se acepta el lote |
+| Mismo documento dos veces en el archivo | **Error** (duplicado interno) |
+| Cargo o tipo que no existe | **Aviso.** Se crea en el catálogo al aceptar |
 
 ---
 

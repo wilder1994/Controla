@@ -160,7 +160,7 @@ final class PreviewEmployeeImportService
 
     /**
      * @param  array<string, string>  $values
-     * @param  array{titles: array<string, true>, types: array<string, true>, documents: array<string, true>, emails: array<string, true>, document_types: array<string, string>}  $lookup
+     * @param  array{titles: array<string, true>, types: array<string, true>, documents: array<string, array{id: int, email: string, job_title: string}>, emails: array<string, array{id: int}>, document_types: array<string, string>}  $lookup
      * @return array<string, mixed>
      */
     private function validateRow(array $values, int $line, array $lookup): array
@@ -259,12 +259,30 @@ final class PreviewEmployeeImportService
             $errors[] = 'Fecha de expedición inválida.';
         }
 
-        if ($documentNumber !== '' && isset($lookup['documents'][$documentNumber])) {
-            $errors[] = 'Ya existe un empleado con este documento.';
+        $existingByDocument = ($documentNumber !== '' && isset($lookup['documents'][$documentNumber]))
+            ? $lookup['documents'][$documentNumber]
+            : null;
+        $existingByEmail = ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) && isset($lookup['emails'][$email]))
+            ? $lookup['emails'][$email]
+            : null;
+
+        if ($existingByDocument !== null) {
+            $previousTitle = (string) ($existingByDocument['job_title'] ?? '');
+            if ($jobTitle !== '' && mb_strtolower($previousTitle) !== mb_strtolower($jobTitle)) {
+                $warnings[] = 'Ya existe. Se actualizará el cargo de «'.$previousTitle.'» a «'.$jobTitle.'».';
+            } else {
+                $warnings[] = 'Ya existe un empleado con este documento. Se actualizará la ficha.';
+            }
         }
 
-        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) && isset($lookup['emails'][$email])) {
-            $errors[] = 'Ya existe un empleado con este correo.';
+        if ($existingByEmail !== null) {
+            $emailOwnerId = (int) $existingByEmail['id'];
+            $documentOwnerId = $existingByDocument !== null ? (int) $existingByDocument['id'] : null;
+            if ($documentOwnerId === null) {
+                $errors[] = 'Ya existe un empleado con este correo.';
+            } elseif ($emailOwnerId !== $documentOwnerId) {
+                $errors[] = 'Este correo ya pertenece a otro empleado.';
+            }
         }
 
         $status = $errors !== [] ? 'error' : ($warnings !== [] ? 'warning' : 'ok');
@@ -279,6 +297,7 @@ final class PreviewEmployeeImportService
             'email' => $email,
             'job_title' => $jobTitle,
             'payload' => $status === 'error' ? null : [
+                'employee_id' => $existingByDocument !== null ? $existingByDocument['id'] : null,
                 'document_type' => $documentType,
                 'document_number' => $documentNumber,
                 'last_name_paternal' => $lastNamePaternal,
@@ -340,7 +359,7 @@ final class PreviewEmployeeImportService
     }
 
     /**
-     * @return array{titles: array<string, true>, types: array<string, true>, documents: array<string, true>, emails: array<string, true>, document_types: array<string, string>}
+     * @return array{titles: array<string, true>, types: array<string, true>, documents: array<string, array{id: int, email: string, job_title: string}>, emails: array<string, array{id: int}>, document_types: array<string, string>}
      */
     private function companyLookup(int $companyId): array
     {
@@ -348,6 +367,24 @@ final class PreviewEmployeeImportService
         foreach (IdentityDocumentType::query()->active()->get(['code', 'name']) as $type) {
             $documentTypes[mb_strtolower($type->code)] = $type->code;
             $documentTypes[mb_strtolower($type->name)] = $type->code;
+        }
+
+        $employees = Employee::query()
+            ->where('security_company_id', $companyId)
+            ->with('jobTitle:id,name')
+            ->get(['id', 'document_number', 'email', 'job_title_id']);
+
+        $documents = [];
+        $emails = [];
+        foreach ($employees as $employee) {
+            $documents[(string) $employee->document_number] = [
+                'id' => $employee->id,
+                'email' => mb_strtolower((string) $employee->email),
+                'job_title' => (string) ($employee->jobTitle?->name ?? ''),
+            ];
+            $emails[mb_strtolower((string) $employee->email)] = [
+                'id' => $employee->id,
+            ];
         }
 
         return [
@@ -361,16 +398,8 @@ final class PreviewEmployeeImportService
                 ->pluck('name')
                 ->mapWithKeys(fn (string $name): array => [mb_strtolower($name) => true])
                 ->all(),
-            'documents' => Employee::query()
-                ->where('security_company_id', $companyId)
-                ->pluck('document_number')
-                ->mapWithKeys(fn (mixed $number): array => [(string) $number => true])
-                ->all(),
-            'emails' => Employee::query()
-                ->where('security_company_id', $companyId)
-                ->pluck('email')
-                ->mapWithKeys(fn (mixed $email): array => [mb_strtolower((string) $email) => true])
-                ->all(),
+            'documents' => $documents,
+            'emails' => $emails,
             'document_types' => $documentTypes,
         ];
     }

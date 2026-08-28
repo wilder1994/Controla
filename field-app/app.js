@@ -20,6 +20,10 @@ let cropSession = null;
 
 function inferApi() {
     const host = location.hostname;
+    const port = location.port;
+    if (port === '8085') {
+        return `${location.protocol}//${host}:8084/api`;
+    }
     if (/controla_supervision/i.test(host)) {
         return `${location.protocol}//${host.replace(/controla_supervision/i, 'controla')}/api`;
     }
@@ -43,7 +47,7 @@ function show(id) {
     ['login', 'open-shift', 'ops', 'close-shift'].forEach((key) => {
         document.getElementById(key).classList.toggle('hidden', key !== id);
     });
-    if (id !== 'open-shift' && id !== 'close-shift') stopAllCams();
+    stopAllCams();
 }
 
 async function api(path, options = {}) {
@@ -120,14 +124,14 @@ async function startCam(videoId, facing) {
     }
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: facing },
+            video: { facingMode: { ideal: facing === 'user' ? 'user' : 'environment' } },
             audio: false,
         });
         streams[videoId] = stream;
         video.srcObject = stream;
         await video.play();
     } catch (e) {
-        setStatus('Sin cámara. Tomar foto genera evidencia de prueba.', false);
+        setStatus('Sin cámara o permiso denegado.', false);
     }
 }
 
@@ -160,18 +164,35 @@ function stopCam(videoId) {
     const stream = streams[videoId];
     if (stream) stream.getTracks().forEach((t) => t.stop());
     delete streams[videoId];
+    const video = document.getElementById(videoId);
+    if (video) video.srcObject = null;
 }
 
 function stopAllCams() {
     Object.keys(streams).forEach(stopCam);
 }
 
-function snapTo(videoId, imgId, key, label) {
+function waitForVideo(video, ms = 3000) {
+    return new Promise((resolve) => {
+        if (video.videoWidth) {
+            resolve(true);
+            return;
+        }
+        let settled = false;
+        const finish = (ok) => {
+            if (settled) return;
+            settled = true;
+            video.removeEventListener('loadeddata', onReady);
+            resolve(ok);
+        };
+        const onReady = () => finish(video.videoWidth > 0);
+        video.addEventListener('loadeddata', onReady);
+        setTimeout(() => finish(video.videoWidth > 0), ms);
+    });
+}
+
+function captureFrame(videoId, imgId, key) {
     const video = document.getElementById(videoId);
-    if (!video.videoWidth) {
-        fakeSnap(imgId, key, label || 'Prueba');
-        return;
-    }
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -181,41 +202,45 @@ function snapTo(videoId, imgId, key, label) {
         const img = document.getElementById(imgId);
         img.src = URL.createObjectURL(blob);
         img.classList.remove('hidden');
+        stopCam(videoId);
         setStatus('Foto tomada.');
     }, 'image/jpeg', 0.86);
 }
 
+async function snapTo(videoId, imgId, key, label, facing) {
+    const video = document.getElementById(videoId);
+    if (!video.videoWidth) {
+        if (!cameraAvailable()) {
+            fakeSnap(imgId, key, label || 'Prueba');
+            return;
+        }
+        await startCam(videoId, facing);
+        const ready = await waitForVideo(video);
+        if (!ready) {
+            setStatus('Active Trasera o Frontal y permita la cámara.', false);
+            return;
+        }
+    }
+    captureFrame(videoId, imgId, key);
+}
+
 function bindCameras() {
-    document.getElementById('btn-cam-odo').onclick = () => {
-        document.getElementById('snap-odo').classList.add('hidden');
-        blobs.odo = null;
-        startCam('cam-odo', { exact: 'environment' }).catch(() => startCam('cam-odo', 'environment'));
-    };
-    document.getElementById('btn-snap-odo').onclick = () => snapTo('cam-odo', 'snap-odo', 'odo', 'Odómetro inicio');
-    document.getElementById('btn-cam-self').onclick = () => {
-        document.getElementById('snap-self').classList.add('hidden');
-        blobs.self = null;
-        startCam('cam-self', 'user');
-    };
-    document.getElementById('btn-snap-self').onclick = () => snapTo('cam-self', 'snap-self', 'self', 'Selfie inicio');
-    document.getElementById('btn-cam-odo-end').onclick = () => {
-        document.getElementById('snap-odo-end').classList.add('hidden');
-        blobs.odoEnd = null;
-        startCam('cam-odo-end', 'environment');
-    };
-    document.getElementById('btn-snap-odo-end').onclick = () => snapTo('cam-odo-end', 'snap-odo-end', 'odoEnd', 'Odómetro cierre');
-    document.getElementById('btn-cam-self-end').onclick = () => {
-        document.getElementById('snap-self-end').classList.add('hidden');
-        blobs.selfEnd = null;
-        startCam('cam-self-end', 'user');
-    };
-    document.getElementById('btn-snap-self-end').onclick = () => snapTo('cam-self-end', 'snap-self-end', 'selfEnd', 'Selfie cierre');
-    document.getElementById('btn-cam-guard').onclick = () => {
-        document.getElementById('snap-guard').classList.add('hidden');
-        blobs.guard = null;
-        startCam('cam-guard', 'user');
-    };
-    document.getElementById('btn-snap-guard').onclick = () => snapTo('cam-guard', 'snap-guard', 'guard', 'Vigilante');
+    document.querySelectorAll('[data-live-cam]').forEach((btn) => {
+        btn.onclick = () => {
+            const videoId = btn.dataset.liveCam;
+            const snapId = btn.dataset.snap;
+            const blobKey = btn.dataset.blob;
+            const facing = btn.dataset.facing === 'user' ? 'user' : 'environment';
+            if (snapId) document.getElementById(snapId)?.classList.add('hidden');
+            if (blobKey) blobs[blobKey] = null;
+            startCam(videoId, facing);
+        };
+    });
+    document.getElementById('btn-snap-odo').onclick = () => snapTo('cam-odo', 'snap-odo', 'odo', 'Odómetro inicio', 'environment');
+    document.getElementById('btn-snap-self').onclick = () => snapTo('cam-self', 'snap-self', 'self', 'Selfie inicio', 'user');
+    document.getElementById('btn-snap-odo-end').onclick = () => snapTo('cam-odo-end', 'snap-odo-end', 'odoEnd', 'Odómetro cierre', 'environment');
+    document.getElementById('btn-snap-self-end').onclick = () => snapTo('cam-self-end', 'snap-self-end', 'selfEnd', 'Selfie cierre', 'user');
+    document.getElementById('btn-snap-guard').onclick = () => snapTo('cam-guard', 'snap-guard', 'guard', 'Vigilante', 'environment');
 }
 
 function renderIntake() {
@@ -291,21 +316,23 @@ function draftCount(moduleKey) {
 }
 
 function showOpsHome() {
+    stopAllCams();
     document.getElementById('ops-home').classList.remove('hidden');
     document.getElementById('review-card').classList.add('hidden');
     document.getElementById('module-card').classList.add('hidden');
 }
 
 function showReview() {
+    stopAllCams();
     document.getElementById('ops-home').classList.add('hidden');
     document.getElementById('module-card').classList.add('hidden');
     document.getElementById('review-card').classList.remove('hidden');
-    startCam('cam-guard', 'user');
 }
 
 function openModule(key, from = 'home') {
     currentModule = catalog.find((m) => m.key === key);
     if (!currentModule) return;
+    stopAllCams();
     moduleReturn = from;
     document.getElementById('ops-home').classList.add('hidden');
     document.getElementById('review-card').classList.add('hidden');
@@ -996,8 +1023,6 @@ async function afterLogin(name) {
         return;
     }
     show('open-shift');
-    startCam('cam-odo', 'environment');
-    startCam('cam-self', 'user');
 }
 
 bindCameras();
@@ -1064,8 +1089,6 @@ document.getElementById('btn-start').onclick = async () => {
 
 document.getElementById('btn-go-close').onclick = () => {
     show('close-shift');
-    startCam('cam-odo-end', 'environment');
-    startCam('cam-self-end', 'user');
 };
 
 document.getElementById('btn-close-back').onclick = () => {

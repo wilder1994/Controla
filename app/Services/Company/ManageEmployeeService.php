@@ -100,7 +100,7 @@ final class ManageEmployeeService
             ->where(function ($query) use ($employee): void {
                 $query->where('is_active', true);
                 if ($employee !== null) {
-                    $query->orWhereKey($employee->job_title_id);
+                    $query->orWhere('id', $employee->job_title_id);
                 }
             })
             ->exists();
@@ -120,7 +120,7 @@ final class ManageEmployeeService
             ->where(function ($query) use ($employee): void {
                 $query->where('is_active', true);
                 if ($employee !== null) {
-                    $query->orWhereKey($employee->collaborator_type_id);
+                    $query->orWhere('id', $employee->collaborator_type_id);
                 }
             })
             ->exists();

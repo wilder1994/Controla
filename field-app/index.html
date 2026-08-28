@@ -138,13 +138,15 @@
             <div class="cam"><video id="cam-odo" playsinline autoplay muted></video><img id="snap-odo" class="hidden" alt=""></div>
             <div class="row">
                 <button type="button" class="gold" id="btn-snap-odo">Tomar foto</button>
-                <button type="button" class="secondary" id="btn-cam-odo">Reactivar cámara</button>
+                <button type="button" class="secondary" data-live-cam="cam-odo" data-facing="environment" data-snap="snap-odo" data-blob="odo">Trasera</button>
+                <button type="button" class="secondary" data-live-cam="cam-odo" data-facing="user" data-snap="snap-odo" data-blob="odo">Frontal</button>
             </div>
             <label>Selfie de inicio</label>
             <div class="cam"><video id="cam-self" playsinline autoplay muted></video><img id="snap-self" class="hidden" alt=""></div>
             <div class="row">
                 <button type="button" class="gold" id="btn-snap-self">Tomar selfie</button>
-                <button type="button" class="secondary" id="btn-cam-self">Reactivar cámara</button>
+                <button type="button" class="secondary" data-live-cam="cam-self" data-facing="environment" data-snap="snap-self" data-blob="self">Trasera</button>
+                <button type="button" class="secondary" data-live-cam="cam-self" data-facing="user" data-snap="snap-self" data-blob="self">Frontal</button>
             </div>
             <p class="hint">En HTTP local (*.test / DevTools) <b>Tomar foto</b> genera evidencia de prueba. Cámara real: HTTPS o Chrome en el celular.</p>
             <button type="button" class="gold" id="btn-start">Iniciar turno</button>
@@ -201,7 +203,8 @@
             <div class="cam" style="aspect-ratio:1;max-width:12rem;"><video id="cam-guard" playsinline autoplay muted></video><img id="snap-guard" class="hidden" alt=""></div>
             <div class="row">
                 <button type="button" class="gold" id="btn-snap-guard">Tomar foto</button>
-                <button type="button" class="secondary" id="btn-cam-guard">Cámara</button>
+                <button type="button" class="secondary" data-live-cam="cam-guard" data-facing="environment" data-snap="snap-guard" data-blob="guard">Trasera</button>
+                <button type="button" class="secondary" data-live-cam="cam-guard" data-facing="user" data-snap="snap-guard" data-blob="guard">Frontal</button>
             </div>
             <label for="rev-notes">Observaciones</label>
             <textarea id="rev-notes"></textarea>
@@ -234,13 +237,15 @@
             <div class="cam"><video id="cam-odo-end" playsinline autoplay muted></video><img id="snap-odo-end" class="hidden" alt=""></div>
             <div class="row">
                 <button type="button" class="gold" id="btn-snap-odo-end">Tomar foto</button>
-                <button type="button" class="secondary" id="btn-cam-odo-end">Reactivar cámara</button>
+                <button type="button" class="secondary" data-live-cam="cam-odo-end" data-facing="environment" data-snap="snap-odo-end" data-blob="odoEnd">Trasera</button>
+                <button type="button" class="secondary" data-live-cam="cam-odo-end" data-facing="user" data-snap="snap-odo-end" data-blob="odoEnd">Frontal</button>
             </div>
             <label>Selfie de cierre</label>
             <div class="cam"><video id="cam-self-end" playsinline autoplay muted></video><img id="snap-self-end" class="hidden" alt=""></div>
             <div class="row">
                 <button type="button" class="gold" id="btn-snap-self-end">Tomar selfie</button>
-                <button type="button" class="secondary" id="btn-cam-self-end">Reactivar cámara</button>
+                <button type="button" class="secondary" data-live-cam="cam-self-end" data-facing="environment" data-snap="snap-self-end" data-blob="selfEnd">Trasera</button>
+                <button type="button" class="secondary" data-live-cam="cam-self-end" data-facing="user" data-snap="snap-self-end" data-blob="selfEnd">Frontal</button>
             </div>
             <button type="button" class="gold" id="btn-close">Confirmar cierre</button>
             <button type="button" class="ghost" id="btn-close-back">Volver</button>

@@ -7,6 +7,7 @@ namespace App\Services\Company;
 use App\Domain\Employee\Data\SaveEmployeeData;
 use App\Enums\BloodGroup;
 use App\Enums\Sex;
+use App\Models\Employee;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -73,7 +74,7 @@ final class CommitEmployeeImportService
                         ->id;
                 }
 
-                $this->manageEmployeeService->create(new SaveEmployeeData(
+                $data = new SaveEmployeeData(
                     securityCompanyId: $companyId,
                     jobTitleId: $titleIds[$titleKey],
                     documentType: (string) $payload['document_type'],
@@ -98,7 +99,21 @@ final class CommitEmployeeImportService
                     sameCostCenter: array_key_exists('same_cost_center', $payload)
                         ? ($payload['same_cost_center'] === null ? null : (bool) $payload['same_cost_center'])
                         : null,
-                ));
+                );
+
+                $employeeId = isset($payload['employee_id']) ? (int) $payload['employee_id'] : 0;
+                if ($employeeId > 0) {
+                    $employee = Employee::query()
+                        ->where('security_company_id', $companyId)
+                        ->whereKey($employeeId)
+                        ->first();
+                    if ($employee === null) {
+                        continue;
+                    }
+                    $this->manageEmployeeService->update($employee, $data);
+                } else {
+                    $this->manageEmployeeService->create($data);
+                }
                 $created++;
             }
         });
