@@ -22,6 +22,7 @@ final class CompanySupervisionMapTest extends TestCase
         $this->seedWithPilot();
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $supervisor = $this->companySupervisor();
         app(AssignCompanySupervisionPackageService::class)->execute(
             $user->securityCompany,
             SupervisionPackageSku::Sit1,
@@ -34,6 +35,7 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('En vivo');
         $response->assertSee('Historial / replay');
         $response->assertSee('Resumen');
+        $response->assertSee('Fichas');
         $response->assertSee('Descargar PPTX');
         $response->assertSee('Hoy');
         $response->assertSee('Mes');
@@ -41,9 +43,16 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Zona');
         $response->assertSee('Supervisor');
         $response->assertSee('Norte');
-        $response->assertSee('Supervisor Zona Demo');
+        $response->assertSee($supervisor->name);
         $response->assertSee('Supervisores en turno');
+        $response->assertSee('Satélite');
+        $response->assertSee('Terreno');
+        $response->assertSee('Palmas');
         $response->assertDontSee('Nueve módulos');
+
+        $history = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'history']));
+        $history->assertOk();
+        $history->assertSee('Una ruta a la vez');
 
         $summary = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'summary']));
         $summary->assertOk();
@@ -62,13 +71,8 @@ final class CompanySupervisionMapTest extends TestCase
             SupervisionPackageSku::Sit1,
         );
 
-        $supervisor = User::query()->where('email', 'supervisor@sj-seguridad.test')->firstOrFail();
-        $other = User::factory()->create([
-            'name' => 'Otro Supervisor Filtro',
-            'security_company_id' => $supervisor->security_company_id,
-            'is_active' => true,
-        ]);
-        $other->syncRoles(['supervisor']);
+        $supervisor = $this->companySupervisor();
+        $other = $this->companySupervisor('Otro', 'Filtro', '1199005500', 'otro.filtro.5500');
 
         $norte = SupervisorZone::query()
             ->where('security_company_id', $supervisor->security_company_id)
@@ -96,16 +100,53 @@ final class CompanySupervisionMapTest extends TestCase
 
         $all = $this->actingAs($admin)->get(route('company.supervision.index'));
         $all->assertOk();
-        $all->assertSee('"user":"Supervisor Zona Demo"', false);
-        $all->assertSee('"user":"Otro Supervisor Filtro"', false);
+        $all->assertSee('"user":"'.$supervisor->name.'"', false);
+        $all->assertSee('"user":"'.$other->name.'"', false);
 
         $filtered = $this->actingAs($admin)->get(route('company.supervision.index', [
             'zone_id' => $norte->id,
             'supervisor_id' => $supervisor->id,
         ]));
         $filtered->assertOk();
-        $filtered->assertSee('"user":"Supervisor Zona Demo"', false);
-        $filtered->assertDontSee('"user":"Otro Supervisor Filtro"', false);
+        $filtered->assertSee('"user":"'.$supervisor->name.'"', false);
+        $filtered->assertDontSee('"user":"'.$other->name.'"', false);
+    }
+
+    public function test_live_map_embeds_client_pins_and_shift_path(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+
+        $supervisor = $this->companySupervisor();
+        $shift = SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'started_at' => now()->subHour(),
+        ]);
+        $shift->locations()->create([
+            'recorded_at' => now()->subMinutes(4),
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+            'source' => 'gps',
+        ]);
+        $shift->locations()->create([
+            'recorded_at' => now()->subMinute(),
+            'latitude' => 3.4530,
+            'longitude' => -76.5340,
+            'source' => 'gps',
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('company.supervision.index'));
+        $response->assertOk();
+        $response->assertSee('"name":"Palmas del Ingenio"', false);
+        $response->assertSee('"path":', false);
+        $response->assertSee('en ruta');
     }
 
     public function test_company_admin_can_download_supervision_pptx(): void

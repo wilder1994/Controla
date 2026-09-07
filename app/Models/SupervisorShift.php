@@ -36,6 +36,7 @@ final class SupervisorShift extends Model
         'km_end_selfie_path',
         'ppe_checklist',
         'vehicle_checklist',
+        'close_client_event_id',
     ];
 
     protected function casts(): array

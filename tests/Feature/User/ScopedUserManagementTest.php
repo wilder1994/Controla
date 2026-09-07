@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\User;
 
 use App\Models\Client;
-use App\Models\SecurityCompany;
+use App\Models\CompanyCollaboratorType;
+use App\Models\CompanyJobTitle;
+use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,29 +20,52 @@ final class ScopedUserManagementTest extends TestCase
     {
         $this->seedWithPilot();
 
-        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $employee = Employee::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'job_title_id' => CompanyJobTitle::query()->firstOrCreate(
+                ['security_company_id' => $admin->security_company_id, 'name' => 'Portería extra'],
+                ['is_active' => true, 'sort_order' => 99],
+            )->id,
+            'collaborator_type_id' => CompanyCollaboratorType::query()->firstOrCreate(
+                ['security_company_id' => $admin->security_company_id, 'name' => 'OPERATIVO'],
+                ['is_active' => true, 'sort_order' => 10],
+            )->id,
+            'document_type' => 'CC',
+            'document_number' => '1098000001',
+            'last_name_paternal' => 'Nuevo',
+            'last_name_maternal' => 'Ficha',
+            'first_names' => 'Vigilante',
+            'sex' => 'hombre',
+            'birth_date' => '1991-01-01',
+            'email' => 'vigilante.ficha@sj-seguridad.test',
+            'nationality' => 'COLOMBIANA',
+            'blood_group' => 'O+',
+            'is_active' => true,
+        ]);
 
         $response = $this->actingAs($admin)->post(route('company.users.store'), [
-            'name' => 'Vigilante Nuevo',
-            'email' => 'vigilante.nuevo@sj-seguridad.test',
+            'role' => 'guardia',
+            'employee_id' => $employee->id,
+            'job_title' => 'Portería extra',
+            'username' => 'vigilante.nuevo.1001',
             'password' => 'Guardia123!',
             'password_confirmation' => 'Guardia123!',
-            'role' => 'guardia',
             'client_ids' => [$client->id],
-            'job_title' => 'Portería',
             'is_active' => '1',
         ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('users', [
-            'email' => 'vigilante.nuevo@sj-seguridad.test',
-            'job_title' => 'Portería',
+            'employee_id' => $employee->id,
+            'username' => 'vigilante.nuevo.1001',
+            'email' => null,
+            'job_title' => 'Portería extra',
         ]);
         $this->assertDatabaseHas('client_user_assignments', [
             'client_id' => $client->id,
-            'user_id' => User::query()->where('email', 'vigilante.nuevo@sj-seguridad.test')->value('id'),
+            'user_id' => User::query()->where('employee_id', $employee->id)->value('id'),
         ]);
     }
 
@@ -49,19 +74,41 @@ final class ScopedUserManagementTest extends TestCase
         $this->seedWithPilot();
 
         $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $employee = Employee::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'job_title_id' => CompanyJobTitle::query()->firstOrCreate(
+                ['security_company_id' => $admin->security_company_id, 'name' => 'Supervisor extra'],
+                ['is_active' => true, 'sort_order' => 98],
+            )->id,
+            'collaborator_type_id' => CompanyCollaboratorType::query()->firstOrCreate(
+                ['security_company_id' => $admin->security_company_id, 'name' => 'OPERATIVO'],
+                ['is_active' => true, 'sort_order' => 10],
+            )->id,
+            'document_type' => 'CC',
+            'document_number' => '1098000002',
+            'last_name_paternal' => 'Norte',
+            'last_name_maternal' => 'Zona',
+            'first_names' => 'Supervisor',
+            'sex' => 'hombre',
+            'birth_date' => '1985-01-01',
+            'email' => 'sup.ficha@sj-seguridad.test',
+            'nationality' => 'COLOMBIANA',
+            'blood_group' => 'O+',
+            'is_active' => true,
+        ]);
 
         $response = $this->actingAs($admin)->post(route('company.users.store'), [
-            'name' => 'Supervisor Zona Norte',
-            'email' => 'supervisor.norte@sj-seguridad.test',
+            'role' => 'supervisor',
+            'employee_id' => $employee->id,
+            'job_title' => 'Supervisor extra',
+            'username' => 'supervisor.norte.4401',
             'password' => 'Super123!',
             'password_confirmation' => 'Super123!',
-            'role' => 'supervisor',
-            'job_title' => 'Supervisor de zona',
             'is_active' => '1',
         ]);
 
         $response->assertRedirect();
-        $user = User::query()->where('email', 'supervisor.norte@sj-seguridad.test')->firstOrFail();
+        $user = User::query()->where('employee_id', $employee->id)->firstOrFail();
         $this->assertTrue($user->hasRole('supervisor'));
         $this->assertNotNull($user->supervisor_code);
         $this->assertSame(6, strlen($user->supervisor_code));
@@ -80,8 +127,8 @@ final class ScopedUserManagementTest extends TestCase
 
         $denied = $this->actingAs($admin)->put(route('company.users.update', $vigilante), [
             'name' => $vigilante->name,
-            'email' => $vigilante->email,
             'role' => 'guardia',
+            'job_title' => $vigilante->job_title,
             'client_ids' => [$torres->id],
             'is_active' => '1',
         ]);
@@ -90,8 +137,8 @@ final class ScopedUserManagementTest extends TestCase
 
         $ok = $this->actingAs($admin)->put(route('company.users.update', $vigilante), [
             'name' => $vigilante->name,
-            'email' => $vigilante->email,
             'role' => 'guardia',
+            'job_title' => $vigilante->job_title,
             'client_ids' => [$torres->id],
             'password' => 'NuevaClave123!',
             'password_confirmation' => 'NuevaClave123!',

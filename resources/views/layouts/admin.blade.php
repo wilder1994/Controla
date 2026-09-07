@@ -69,6 +69,20 @@
 
             <x-ui.flash-toasts />
 
+            @if ($resumeSupportCompany ?? null)
+                <div class="max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-3 shrink-0">
+                    <div class="rounded-lg border border-violet-500/40 bg-violet-950/40 px-4 py-3 text-sm text-violet-100 flex flex-wrap items-center justify-between gap-3">
+                        <p>Última empresa en soporte: <span class="font-medium text-white">{{ $resumeSupportCompany->displayName() }}</span></p>
+                        <form method="POST" action="{{ route('admin.companies.enter', $resumeSupportCompany) }}">
+                            @csrf
+                            <button type="submit" class="h-9 px-3 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-500">
+                                Entrar de nuevo
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
             <main class="flex-1 max-w-[1600px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 min-h-0 flex flex-col">
                 {{ $slot }}
             </main>

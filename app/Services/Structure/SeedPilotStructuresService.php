@@ -27,9 +27,10 @@ final class SeedPilotStructuresService
             return;
         }
 
-        $generalAreaId = StructureType::idByCode('general_area');
-        $blockId = StructureType::idByCode('block');
-        $apartmentId = StructureType::idByCode('apartment');
+        $companyId = (int) $client->security_company_id;
+        $generalAreaId = StructureType::idByCode($companyId, 'general_area');
+        $blockId = StructureType::idByCode($companyId, 'block');
+        $apartmentId = StructureType::idByCode($companyId, 'apartment');
 
         DB::transaction(function () use ($client, $generalAreaId, $blockId, $apartmentId): void {
             $root = Structure::query()->firstOrCreate(

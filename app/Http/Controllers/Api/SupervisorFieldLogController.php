@@ -45,6 +45,7 @@ final class SupervisorFieldLogController extends Controller
             $request->validated('notes'),
             $request->validated('latitude') !== null ? (float) $request->validated('latitude') : null,
             $request->validated('longitude') !== null ? (float) $request->validated('longitude') : null,
+            $request->validated('client_event_id'),
         );
 
         return response()->json([

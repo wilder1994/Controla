@@ -2,11 +2,28 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de conjuntos.
 
-**Última actualización:** 27 agosto 2026
+**Última actualización:** 5 septiembre 2026
 
 La **ficha de empleado** (maestro, Excel) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
-Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+
+---
+
+## Alta de usuario en empresa (regla única)
+
+Panel `/company/users`. **Crear y editar usan el mismo formulario** (`modules/company/users/partials/form.blade.php`). No se da acceso desde la ficha de Empleados.
+
+1. Primera fila: **Nombre** y **Cédula**. Ambos buscan empleados activos **sin** usuario. Elegir uno llena los dos campos.
+2. **Usuario de acceso** (todos los roles de empresa: admin empresa, admin conjunto, supervisor, vigilante): primer nombre + primer apellido paterno, ASCII, minúsculas, más **4 dígitos aleatorios** que cambian en cada generación (`ana.perez.4821`). No es la cédula. Único en `users.username`. Ese es el **login**.
+3. **Cargo / función**: select del catálogo `company_job_titles`. Al elegir empleado se precarga el cargo de la ficha.
+4. **Email personal**: el de la ficha (`employees.email`). Solo lectura. **No** es login. No se copia a `users.email` en altas nuevas. Envío de usuario/clave por correo: pendiente.
+5. Rol, conjunto (solo vigilante / admin conjunto), generar clave, activo.
+6. Clave aleatoria; `must_change_password` en la primera entrada. Supervisor: además `supervisor_code` de 6 dígitos (revista Accesos, no login).
+7. La zona de Supervisión **no** se pega al usuario ni se muestra en la tabla: se elige al abrir turno.
+8. **No se elimina** la cuenta. **Desactivar** (pestaña Activos) pone `is_active = false`: sale del listado activo, no puede entrar al panel ni a la PWA, el historial queda. Pestaña **Desactivados** → Reactivar. No se puede desactivar a uno mismo.
+
+Cuentas antiguas pueden seguir entrando con `users.email` si lo tienen. Plataforma (`/admin/users`) y conjunto (`/client/users`) no usan este flujo.
 
 ---
 
@@ -17,7 +34,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 | Nombre de producto | Rol Spatie (`users`) | Pertenece a | Resumen |
 |--------------------|----------------------|-------------|---------|
 | **Vigilante** | `guardia` | Empresa | Opera un **puesto/cliente** a la vez. Login usuario+contraseña = control de quién está de turno. |
-| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre **puestos de Supervisión** (`supervisor_posts`). Si el sitio solo tiene Accesos, firma minuta en portería (código 6 dígitos). Con Supervisión, la revista es en la app de campo. Login API: `/api/supervision/login`. |
+| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre **puestos de Supervisión** (`supervisor_posts`). Login PWA: `users.username` (o correo legado). **No** se le pega zona. Si el sitio **no** tiene paquete Supervisión (solo Accesos), firma minuta en portería con código **6 dígitos**. Con Supervisión, la revista es en la app de campo; no se usa ese código en el PC. API: `/api/supervision/login`. |
 | **Administrador conjunto** | `client-admin` | Cliente (conjunto) | Administra el conjunto. **No** es supervisor ni vigilante. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
@@ -46,11 +63,11 @@ Slug técnico: `guardia`. Label UI: **Vigilante**.
 
 ## Reglas: Supervisor de vigilancia
 
-1. Pertenece a la **empresa** (`security_company_id`). **No** requiere asignación fija a un conjunto.
-2. Al crear el usuario se genera un **`supervisor_code`**: numérico, **6 dígitos**, **permanente** hasta regeneración deliberada.
-3. El código es único **por empresa**.
-4. **Revista:** si el sitio solo tiene Accesos, firma en la sesión del vigilante (código). Si el sitio tiene Supervisión, la revista se hace en la app de campo; no se vuelve a firmar en puesto.
-5. Con Supervisión: rito de turno (catálogo de turno/zona, EPP, flota, fotos) y 8 módulos. Recomendaciones = registro de riesgo (tipo de catálogo, P×I, fotos), no ticket. Ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+1. Pertenece a la **empresa** (`security_company_id`). **No** requiere asignación fija a un conjunto ni a una zona.
+2. Alta de acceso: **Usuarios** → Nuevo → nombre y cédula del empleado (misma fila) → se genera **usuario de acceso** (`nombre.apellido.####`) y clave. Rol supervisor. El **email personal** de la ficha se muestra; no es el login. El correo corporativo de avisos está en **Ajustes → Zonas** y se toma al **abrir turno**. La ficha de empleado (Ver/Editar) no crea usuarios.
+3. Al crear el usuario también se genera un **`supervisor_code`**: numérico, **6 dígitos**, **permanente** hasta regeneración deliberada. **Solo** para revista básica en portería Accesos cuando el cliente **no** tiene paquete Supervisión. No es el usuario de la PWA.
+4. El código de 6 dígitos es único **por empresa**.
+5. **Revista Supervisión:** en la app de campo; no se vuelve a firmar en puesto. Zona se elige al abrir turno (Norte hoy, Sur mañana, o las dos el mismo día). Ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 6. No confundir con admin del conjunto ni con el vigilante de turno.
 
 Slug técnico: `supervisor`. Label UI: **Supervisor de vigilancia**.
@@ -88,9 +105,11 @@ Roles que requieren asignación a conjunto (`client_ids`): `client-admin`, `guar
 
 | Campo | Uso |
 |-------|-----|
+| `username` | Login: `nombre.apellido.####` (4 dígitos aleatorios) para **todos** los usuarios creados en empresa |
+| `email` | Opcional. No es el login de las altas nuevas. Cuentas viejas pueden seguir entrando con él. El correo de la persona es `employees.email` (email personal). |
 | `job_title` | Cargo / función del empleado (portería, ronda, etc.) |
 | `avatar_path` | Foto de perfil (storage `public`) |
-| `supervisor_code` | Código revista 6 dígitos (solo rol supervisor) |
+| `supervisor_code` | Código revista Accesos 6 dígitos (solo rol supervisor; no es login PWA) |
 | `primary_client_id` | Cliente actual del vigilante (y otros roles con asignación) |
 | `must_change_password` | Flag existente; usable si se fuerza cambio en login |
 
@@ -135,9 +154,11 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 
 | Ruta | Función |
 |------|---------|
-| `GET /company/users` | Listado scoped |
+| `GET /company/users` | Listado (`status=active` \| `inactive`) |
 | `GET/POST /company/users/create` | Crear usuario empresa / vigilante / supervisor |
 | `GET/PUT /company/users/{user}/edit` | Editar (foto, cargo, reasignación, código supervisor) |
+| `POST /company/users/{user}/deactivate` | Desactiva el acceso; conserva historial |
+| `POST /company/users/{user}/reactivate` | Reactiva el acceso |
 | `GET /company/settings` | **Mis datos**: perfil legal y ubicación |
 | `PUT /company/settings` | Guardar perfil + ubicación |
 | `GET/POST /company/clients` | Cartera de conjuntos (`service_started_at`) |
@@ -170,7 +191,7 @@ Componente Blade: `x-ui.geo-address-fields` (dirección, ciudad, departamento + 
 
 JS: `resources/js/geo-address-picker.js` (Places Autocomplete + Geocoding; requiere APIs en la clave Google Maps).
 
-Icono: `resources/images/ui/map-pin.png` → servir en `public/images/ui/` (carpeta `public/images` ignorada por git).
+Icono dirección: `resources/images/ui/map-pin.png`. Icono GPS supervisor (mapa Supervisión): `resources/images/ui/supervisor-moto.png`. Servir ambos en `public/images/ui/` (`public/images` ignorada por git).
 
 Usado en: signup paso 1, **Mis datos** (`/company/settings`), perfil/alta admin empresa, alta/edición de conjuntos.
 
@@ -192,13 +213,13 @@ Usado en: signup paso 1, **Mis datos** (`/company/settings`), perfil/alta admin 
 | Roles / labels | `AssignableRoles` |
 | Listado paginado | `UserRepository::paginateScoped()` |
 
-Vistas compartidas: `modules/shared/managed-user-form.blade.php`, `modules/shared/company-profile-form.blade.php`.
+Vistas empresa (crear = editar): `modules/company/users/partials/form.blade.php`. Plataforma y conjunto: `modules/shared/managed-user-form.blade.php`. Perfil: `modules/shared/company-profile-form.blade.php`.
 
 ---
 
 ## Portería (minuta y turno)
 
-- Firma de **revista / minuta** por código en `/access` (tipo Revista + código de catálogo o `users.supervisor_code`).
+- Firma de **revista / minuta** por código en `/access` (tipo Revista + código de catálogo o `users.supervisor_code`). Solo sitios **sin** paquete Supervisión de campo.
 - Turno abierto del vigilante: `guard_shifts` + `TurnoService` (`/access/turnos`).
 - Turno del **supervisor** (Supervisión): `supervisor_shifts` + PWA. Distinto del turno de portería.
 

@@ -5,7 +5,7 @@
         <div class="lg:col-span-2 rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
             <div class="px-4 py-3 border-b border-slate-800">
                 <h3 class="text-sm font-semibold text-white">Catálogo de zonas</h3>
-                <p class="text-xs text-slate-500 mt-1">Rutas de Supervisión. No es la zona de Accesos/portería.</p>
+                <p class="text-xs text-slate-500 mt-1">Rutas de Supervisión. El correo es el remitente de avisos de esa zona (puede repetirse). No es la zona de Accesos/portería.</p>
             </div>
             <div class="divide-y divide-slate-800">
                 @forelse ($zones as $zone)
@@ -13,6 +13,9 @@
                         <div x-show="!editing" class="flex flex-wrap items-center justify-between gap-3">
                             <div class="flex flex-wrap items-center gap-3 text-sm">
                                 <span class="text-white font-medium">{{ $zone->name }}</span>
+                                @if ($zone->email)
+                                    <span class="text-xs text-slate-400">{{ $zone->email }}</span>
+                                @endif
                                 <span class="text-xs px-2 py-0.5 rounded-full {{ $zone->is_active ? 'bg-emerald-900/40 text-emerald-300' : 'bg-rose-900/40 text-rose-300' }}">
                                     {{ $zone->is_active ? 'Activo' : 'Inactivo' }}
                                 </span>
@@ -30,6 +33,7 @@
                             @csrf
                             @method('PUT')
                             <input type="text" name="name" value="{{ old('name', $zone->name) }}" required class="w-full h-9 rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-white">
+                            <input type="email" name="email" value="{{ old('email', $zone->email) }}" placeholder="Correo corporativo de la zona" class="w-full h-9 rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-white">
                             <label class="inline-flex items-center gap-2 text-xs text-slate-300">
                                 <input type="hidden" name="is_active" value="0">
                                 <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $zone->is_active)) class="rounded border-slate-700 text-indigo-600">
@@ -52,6 +56,8 @@
                 @csrf
                 <input type="text" name="name" value="{{ old('name') }}" required placeholder="Norte" class="w-full h-9 rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-white">
                 <x-ui.field-error :messages="$errors->get('name')" />
+                <input type="email" name="email" value="{{ old('email') }}" placeholder="Correo corporativo (opcional)" class="w-full h-9 rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-white">
+                <x-ui.field-error :messages="$errors->get('email')" />
                 <label class="inline-flex items-center gap-2 text-xs text-slate-300">
                     <input type="hidden" name="is_active" value="0">
                     <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true)) class="rounded border-slate-700 text-indigo-600">

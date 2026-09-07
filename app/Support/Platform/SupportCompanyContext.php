@@ -8,9 +8,14 @@ final class SupportCompanyContext
 {
     public const SESSION_KEY = 'support.acting_company_id';
 
+    public const LAST_COMPANY_COOKIE = 'support_last_company_id';
+
+    public const EXPIRED_FLASH = 'La sesión de soporte terminó. Entra otra vez desde el expediente de la empresa.';
+
     public static function enter(int $companyId): void
     {
         session([self::SESSION_KEY => $companyId]);
+        cookie()->queue(cookie(self::LAST_COMPANY_COOKIE, (string) $companyId, 60 * 24 * 30));
     }
 
     public static function exit(): void
@@ -32,5 +37,24 @@ final class SupportCompanyContext
         }
 
         return (int) session(self::SESSION_KEY);
+    }
+
+    public static function lastCompanyId(): ?int
+    {
+        $id = (int) request()->cookie(self::LAST_COMPANY_COOKIE, 0);
+
+        return $id > 0 ? $id : null;
+    }
+
+    public static function isCompanyPanelUrl(?string $url): bool
+    {
+        if ($url === null || $url === '') {
+            return false;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        $path = is_string($path) ? $path : $url;
+
+        return str_starts_with($path, '/company');
     }
 }

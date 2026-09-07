@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class SupervisorShiftReview extends Model
 {
@@ -21,6 +22,7 @@ final class SupervisorShiftReview extends Model
         'latitude',
         'longitude',
         'recorded_at',
+        'client_event_id',
     ];
 
     protected function casts(): array
@@ -56,5 +58,10 @@ final class SupervisorShiftReview extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function fieldLogs(): HasMany
+    {
+        return $this->hasMany(SupervisorFieldLog::class);
     }
 }

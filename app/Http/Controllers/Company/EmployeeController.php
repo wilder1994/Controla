@@ -9,21 +9,17 @@ use App\Enums\BloodGroup;
 use App\Enums\Sex;
 use App\Exports\EmployeeImportTemplateExport;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Company\GrantEmployeeAccessRequest;
 use App\Http\Requests\Company\PreviewEmployeeImportRequest;
 use App\Http\Requests\Company\StoreEmployeeRequest;
 use App\Http\Requests\Company\UpdateEmployeeRequest;
-use App\Models\Client;
 use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
 use App\Models\IdentityDocumentType;
 use App\Repositories\EmployeeRepository;
 use App\Services\Company\CommitEmployeeImportService;
-use App\Services\Company\GrantEmployeeAccessService;
 use App\Services\Company\ManageEmployeeService;
 use App\Services\Company\PreviewEmployeeImportService;
-use App\Support\Auth\AssignableRoles;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,7 +34,6 @@ final class EmployeeController extends Controller
     public function __construct(
         private readonly EmployeeRepository $employeeRepository,
         private readonly ManageEmployeeService $manageEmployeeService,
-        private readonly GrantEmployeeAccessService $grantEmployeeAccessService,
         private readonly PreviewEmployeeImportService $previewEmployeeImportService,
         private readonly CommitEmployeeImportService $commitEmployeeImportService,
     ) {}
@@ -153,19 +148,10 @@ final class EmployeeController extends Controller
     {
         $this->assertCompany($request, $employee);
         $this->authorize('view', $employee);
-        $employee->load(['jobTitle', 'collaboratorType', 'user.roles', 'user.clients']);
-
-        $companyId = $this->companyId($request);
-        $clients = Client::query()
-            ->where('security_company_id', $companyId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $employee->load(['jobTitle', 'collaboratorType']);
 
         return view('modules.company.employees.show', [
             'employee' => $employee,
-            'clients' => $clients,
-            'roleOptions' => AssignableRoles::forEmployeeAccess(),
-            'canGrantAccess' => $request->user()?->can('grantAccess', $employee) ?? false,
         ]);
     }
 
@@ -215,27 +201,6 @@ final class EmployeeController extends Controller
             ->with('success', 'Empleado restaurado.');
     }
 
-    public function grantAccess(GrantEmployeeAccessRequest $request, Employee $employee): RedirectResponse
-    {
-        $this->assertCompany($request, $employee);
-        $user = $this->grantEmployeeAccessService->execute(
-            $employee,
-            $request->user(),
-            $request->validated('role'),
-            $request->validated('password'),
-            array_map('intval', $request->input('client_ids', [])),
-        );
-
-        $message = 'Acceso creado.';
-        if ($user->supervisor_code) {
-            $message .= ' Código de revista: '.$user->supervisor_code;
-        }
-
-        return redirect()
-            ->route('company.employees.show', $employee)
-            ->with('success', $message);
-    }
-
     /** @return array<string, mixed> */
     private function formPayload(int $companyId, ?Employee $employee = null): array
     {
@@ -244,7 +209,7 @@ final class EmployeeController extends Controller
             ->where(function ($query) use ($employee): void {
                 $query->where('is_active', true);
                 if ($employee !== null) {
-                    $query->orWhereKey($employee->job_title_id);
+                    $query->orWhere('id', $employee->job_title_id);
                 }
             })
             ->orderBy('sort_order')
@@ -256,7 +221,7 @@ final class EmployeeController extends Controller
             ->where(function ($query) use ($employee): void {
                 $query->where('is_active', true);
                 if ($employee !== null) {
-                    $query->orWhereKey($employee->collaborator_type_id);
+                    $query->orWhere('id', $employee->collaborator_type_id);
                 }
             })
             ->orderBy('sort_order')

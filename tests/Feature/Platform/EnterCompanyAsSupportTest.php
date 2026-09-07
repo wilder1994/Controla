@@ -47,6 +47,51 @@ final class EnterCompanyAsSupportTest extends TestCase
         ]);
     }
 
+    public function test_super_admin_without_support_context_is_redirected_from_company_supervision(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('company.supervision.index'))
+            ->assertRedirect(route('admin.dashboard'))
+            ->assertSessionHas('warning', SupportCompanyContext::EXPIRED_FLASH);
+    }
+
+    public function test_login_does_not_restore_company_intended_url_for_super_admin(): void
+    {
+        $this->seedWithPilot();
+
+        $this->get(route('company.supervision.index'));
+
+        $this->post(route('login'), [
+            'email' => 'admin@control-acceso.test',
+            'password' => 'Admin123!',
+        ])->assertRedirect(route('admin.dashboard'))
+            ->assertSessionHas('warning', SupportCompanyContext::EXPIRED_FLASH);
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_admin_dashboard_offers_resume_support_from_last_company_cookie(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
+
+        $response = $this->actingAs($admin)->call(
+            'GET',
+            route('admin.dashboard'),
+            cookies: [SupportCompanyContext::LAST_COMPANY_COOKIE => (string) $company->id],
+        );
+
+        $response->assertOk()
+            ->assertSee('Entrar de nuevo', false)
+            ->assertSee('Última empresa en soporte', false);
+    }
+
     public function test_company_show_renders_expediente_without_ver_en_resumen(): void
     {
         $this->seedWithPilot();

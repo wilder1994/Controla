@@ -11,6 +11,7 @@ use App\Http\Requests\Client\StoreUserRequest;
 use App\Http\Requests\Client\UpdateUserRequest;
 use App\Models\User;
 use App\Repositories\UserRepository;
+use App\Services\Auth\AllocateLoginUsername;
 use App\Services\User\ManageScopedUserService;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
@@ -24,6 +25,7 @@ final class UserController extends Controller
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly ManageScopedUserService $manageUserService,
+        private readonly AllocateLoginUsername $usernames,
     ) {}
 
     public function index(Request $request): View
@@ -54,6 +56,7 @@ final class UserController extends Controller
         $user = $this->manageUserService->create(
             new CreateUserData(
                 name: $request->validated('name'),
+                username: $this->usernames->fromEmail($request->validated('email')),
                 email: $request->validated('email'),
                 password: $request->validated('password'),
                 role: $request->validated('role'),

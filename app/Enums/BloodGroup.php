@@ -14,6 +14,7 @@ enum BloodGroup: string
     case BNegative = 'B-';
     case AbPositive = 'AB+';
     case AbNegative = 'AB-';
+    case Pending = 'Pendiente';
 
     public function label(): string
     {
@@ -38,7 +39,14 @@ enum BloodGroup: string
         $value = preg_replace('/\s*\(.*\)\s*/u', '', $value) ?? $value;
         $value = strtoupper(str_replace([' ', '–', '—'], ['', '-', '-'], trim($value)));
 
+        if ($value === 'PENDIENTE') {
+            return self::Pending;
+        }
+
         foreach (self::cases() as $case) {
+            if ($case === self::Pending) {
+                continue;
+            }
             if (strtoupper($case->value) === $value) {
                 return $case;
             }

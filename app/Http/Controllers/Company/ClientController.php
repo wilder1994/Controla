@@ -222,7 +222,7 @@ final class ClientController extends Controller
         $metrics = $this->clientRepository->metricsForCompany($companyId);
 
         $documentTypes = IdentityDocumentType::optionsForSelect();
-        $structureTypes = StructureType::optionsForSelect();
+        $structureTypes = StructureType::optionsForSelect($companyId);
 
         return view('modules.company.clients.create', compact('metrics', 'documentTypes', 'structureTypes'));
     }
@@ -317,7 +317,7 @@ final class ClientController extends Controller
             'client' => $client,
             'metrics' => $metrics,
             'documentTypes' => IdentityDocumentType::optionsForSelect(),
-            'structureTypes' => StructureType::optionsForSelect(),
+            'structureTypes' => StructureType::optionsForSelect((int) $client->security_company_id),
             'canOperate' => $client->has_access && $request->user()->can('operate', $client),
             'canUpdate' => true,
             'canOperateClientPanel' => $client->has_access

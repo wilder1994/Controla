@@ -205,6 +205,31 @@ final class CompanyEmployeeImportTest extends TestCase
         $this->assertSame(1, Employee::query()->where('document_number', '1098000111')->count());
     }
 
+    public function test_import_accepts_pending_blood_group(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('company.employees.import.preview.store'), [
+            'paste' => $this->pasteRow(['blood_group' => 'Pendiente']),
+        ])->assertRedirect(route('company.employees.import.preview'));
+
+        $this->actingAs($admin)
+            ->get(route('company.employees.import.preview'))
+            ->assertOk()
+            ->assertSee('Aceptar y cargar')
+            ->assertDontSee('Grupo sanguíneo no válido');
+
+        $this->actingAs($admin)
+            ->post(route('company.employees.import.commit'))
+            ->assertRedirect(route('company.employees.index'));
+
+        $this->assertDatabaseHas('employees', [
+            'document_number' => '1098000111',
+            'blood_group' => 'Pendiente',
+        ]);
+    }
+
     public function test_import_rejects_when_both_last_names_are_empty(): void
     {
         $this->seedWithPilot();

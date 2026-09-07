@@ -27,7 +27,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **UI Plataforma** | Dashboard analítico + empresa expediente (Resumen/Perfil/Docs/Historial) + soporte | ✅ Implementada (v3) |
 | **Membresía** | Pago manual/online, cancelar al fin de periodo, reactivar, cambio de plan diferido | ✅ Implementada (v1) |
 | **Expediente conjunto** | Cartera → Ver: KPIs, charts, Operar portería/cliente + banner «Volver al expediente» | ✅ Implementada (v2) |
-| **Ajustes plataforma** | Catálogo `structure_types` + `identity_document_types` (CRUD) + puntos de acceso | ✅ Implementada (v2) |
+| **Ajustes plataforma** | Catálogo `identity_document_types` (CRUD) + puntos de acceso | ✅ Implementada (v2) |
 | **Cliente comercial** | Alta empresa: party_type, documento, contactos, representante; `structure_type_id` fijo; slug/login auto | ✅ Implementada (v1) |
 | **Ciclo comercial** | Paquetes + acceso: gracia 5d → suspensión → archivo `non_payment` → purga | ✅ Implementada |
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
@@ -45,13 +45,13 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 
 | Panel | Prefijo | Rol(es) | Descripción |
 |-------|---------|---------|-------------|
-| **Plataforma** | `/admin` | `super-admin` | Dashboard, **Descargas**, precios, empresas, documentos, **Ajustes** (tipos de estructura + tipos de documento) |
+| **Plataforma** | `/admin` | `super-admin` | Dashboard, **Descargas**, precios, empresas, documentos, **Ajustes** (tipos de documento) |
 | **Empresa** | `/company` | `company-admin` | Command Center (**Mi empresa**), cartera, **Empleados**, **Mis datos**, **Ajustes** (cargos/tipos + zonas/turnos/preoperacional), usuarios, billing, Supervisión, **Descargas** |
 | **Cliente** | `/client` | `client-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones |
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login correo+clave; API inferida. Instalar desde Descargas (PWA, no APK). Caché SW `controla-sup-v20` |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola IndexedDB tras abrir turno. Instalar desde Descargas (PWA, no APK). Caché SW `controla-sup-v26` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -158,7 +158,7 @@ GOOGLE_MAPS_DEFAULT_ZOOM=6
 4. Pegar la clave en `GOOGLE_MAPS_API_KEY` y ejecutar `php artisan config:clear`.
 
 Sin clave, el dashboard muestra un aviso en el contenedor del mapa; el formulario geo sigue permitiendo captura manual.  
-Icono del botón mapa: `resources/images/ui/map-pin.png` (copiar a `public/images/ui/` en local; `/public/images` está en `.gitignore`).  
+Icono del botón mapa: `resources/images/ui/map-pin.png`. Icono GPS del supervisor: `resources/images/ui/supervisor-moto.png`. Ambos se copian a `public/images/ui/` en local (`/public/images` está en `.gitignore`).  
 Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa geográfico · [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md) § Ubicación.
 
 > **Importante:** No ejecutar `migrate:fresh` ni `db:wipe` en entornos con datos reales sin autorización explícita.
@@ -181,7 +181,7 @@ Guía detallada: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md) § Mapa 
 
 **Se siembran en mínimo:** roles, normoteca+TRD, tipos de documento de identidad (CC/CE/NIT/PA), súper admin.
 
-**No se siembran en mínimo:** empresas, clientes, tipos de estructura, instalaciones, accesos, puestos de Supervisión, censo ni otros usuarios. Se crean desde la UI (precios: al abrir la tabla se generan defaults editables). Tipos de estructura: Ajustes o `PilotDemoSeeder`.
+**No se siembran en mínimo:** empresas, clientes, tipos de estructura, instalaciones, accesos, puestos de Supervisión, censo ni otros usuarios. Se crean desde la UI (precios: al abrir la tabla se generan defaults editables). Tipos de estructura: Ajustes empresa (`/company/structure-types`). El piloto SJ crea solo los 4 tipos que usa Palmas.
 
 Orden en `DatabaseSeeder`:
 
@@ -203,8 +203,9 @@ Incluye: catálogo `structure_types`, empresa SJ Seguridad (`900123456-1`), clie
 | Admin Empresa | `empresa@sj-seguridad.test` | `Empresa123!` |
 | Admin Cliente | `admin@palmasdelingenio.test` | `Cliente123!` |
 | Vigilante | `guardia@control-acceso.test` | `Guardia123!` |
-| Supervisor | `supervisor@sj-seguridad.test` | `Super123!` (código revista `123456`) |
 | Residente | `anfitrion@control-acceso.test` | `Anfitrion123!` |
+
+Supervisor de vigilancia: no se siembra. Alta real en **Usuarios** desde un empleado (`nombre.apellido.####`).
 
 ```bash
 php artisan db:seed --class=PlatformDocumentsSeeder  # solo normoteca + TRD
@@ -254,7 +255,7 @@ Layout wizard: `layouts/public.blade.php` · Rutas: `routes/modules/public.php`
 
 ### Usuarios y perfiles
 
-Documentación: [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md)
+Documentación: [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md). En empresa, todos los usuarios se crean igual: empleado (nombre + cédula) → `nombre.apellido.####` + clave.
 
 | Panel | Rutas clave |
 |-------|-------------|
@@ -355,9 +356,6 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `POST /admin/companies/{id}/package/schedule` | Programar cambio de plan (pago ahora, aplica al corte) |
 | `POST /admin/companies/{id}/enter` | Entrar como empresa (soporte, sesión + banner + audit) |
 | `POST /admin/support/exit` | Salir del modo soporte → expediente empresa |
-| `GET /admin/settings/structure-types` | **Ajustes**: catálogo de tipos de estructura |
-| `POST /admin/settings/structure-types` | Crear tipo (`name`, `is_active`; código auto) |
-| `PUT/DELETE /admin/settings/structure-types/{id}` | Actualizar / eliminar (bloqueado si hay clientes o estructuras) |
 | `GET /admin/settings/document-types` | **Ajustes**: tipos de documento de identidad |
 | `POST/PUT/DELETE /admin/settings/document-types/{id}` | CRUD + reordenar |
 | `PUT /admin/companies/{id}/package` | Asignar SKU comercial y facturación (legacy; preferir programar cambio) |
@@ -393,7 +391,7 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
-Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
 
 | Ruta | Función |
 |------|---------|
@@ -406,7 +404,8 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos de Supervisión (tarjeta Supervisión) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
-| `GET /company/supervision` | Mapa GPS: filtros año/mes/rango/día, zona y supervisor + PPTX; pestañas **En vivo** \| **Historial / replay** \| **Resumen** (KPI y gráficos; el header no muestra conteos) |
+| `GET /company/supervision` | Mapa satélite: clientes + ruta por turno (inicio/moto/parada/bandera); pestañas **En vivo** \| **Historial** \| **Resumen** \| **Fichas** |
+| `GET /company/supervision/fichas/{kind}/{id}` | Ficha de campo HTML carta (revista, alarma, apoyo, documentos) |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro; solo cifras). Compositor + párrafos + GRACIAS + DeepSeek + chatbot/PQRS: pendiente, [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md) §§ Informe PPTX y Chatbot y PQRS |
 | `GET /company/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; `SUPERVISION_PWA_URL`; no APK ni tiendas) |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
@@ -423,6 +422,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `GET /company/employees/template` | Descarga plantilla (hojas Empleados + Instrucciones) |
 | `GET /company/job-titles` | **Ajustes → Cargos**: catálogo por empresa |
 | `GET /company/collaborator-types` | **Ajustes → Tipos**: catálogo por empresa |
+| `GET /company/structure-types` | **Ajustes → Estructuras**: tipos de sitio por empresa |
 | `GET /company/supervision-zones` | **Ajustes → Zonas**: rutas de Supervisión (no Accesos) |
 | `GET /company/supervision-shifts` | **Ajustes → Turnos**: plantillas nombre + horario |
 | `GET /company/supervision-preop` | **Ajustes → Preoperacional**: EPP y vehículo |
@@ -477,14 +477,14 @@ Ver [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
 
 | Concepto | Dónde | Detalle |
 |----------|-------|---------|
-| Tipos de estructura | `/admin/settings/structure-types` | Nombre + activo; código interno automático; orden ↑↓; no borrar si hay clientes o nodos |
+| Tipos de estructura | `/company/structure-types` | Por empresa. Nombre + activo + unidad ocupable; código interno automático; no borrar si hay clientes o nodos |
 | Tipos de documento | `/admin/settings/document-types` | CC/CE/NIT…; alta cliente + clickwrap legal |
-| Tipo fijo del cliente | Alta/edición `/company/clients` | Los nodos nuevos heredan ese tipo |
+| Tipo fijo del cliente | Alta/edición `/company/clients` | Solo tipos de **esa** empresa. Los nodos nuevos heredan ese tipo |
 | Instalaciones | Pestañas Accesos / Supervisión de la ficha | Catálogo compartido; sede = nombre del cliente |
 | Accesos (puertas) | Pestaña Accesos o `/access/locations` | `locations.installation_id` obligatorio |
 | Puestos de Supervisión | Pestaña Supervisión | `supervisor_posts`; la app de campo no usa puertas |
 | Seed mínimo | `IdentityDocumentTypeSeeder` | Documentos de identidad |
-| Seed opcional | `PilotDemoSeeder` | `structure_types` + empresa/clientes + árbol Palmas/Torres + censo |
+| Seed opcional | `PilotDemoSeeder` | empresa/clientes + 4 tipos de estructura del piloto + árbol Palmas/Torres + censo |
 
 #### Command Center (`/company/dashboard`)
 
@@ -547,7 +547,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 | Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
 | Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` · expediente conjunto: `BuildClientExpedienteService` |
 | Contexto | `CompanyLayoutComposer` → `companyContext` + `supportMode`; `OperateReturnLayoutComposer` → banner en access/client |
-| Vistas | `company/dashboard` (Mi empresa), `company/clients/*`, `company/billing`, `company/downloads`, `company/users/*`, `company/settings` (Mis datos), `company/employees/*`, `company/job-titles`, `company/collaborator-types` |
+| Vistas | `company/dashboard` (Mi empresa), `company/clients/*`, `company/billing`, `company/downloads`, `company/users/*`, `company/settings` (Mis datos), `company/employees/*`, `company/job-titles`, `company/collaborator-types`, `company/structure-types` |
 
 Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `platform` (violet en `/admin`). Tamaños: `sm`, `md`.
 
@@ -723,7 +723,7 @@ Suites relevantes:
 - `tests/Feature/Api/SupervisorShiftApiTest.php`
 - `tests/Feature/Api/SupervisorFieldLogApiTest.php`
 - `tests/Feature/Company/CompanySupervisionCatalogTest.php`
-- `tests/Feature/Platform/StructureTypeSettingsTest.php`
+- `tests/Feature/Company/CompanyStructureTypeTest.php`
 - `tests/Feature/Billing/LocalPaymentCheckoutTest.php`
 - `tests/Feature/Public/PublicSignupFlowTest.php`
 - `tests/Feature/User/ScopedUserManagementTest.php`
@@ -779,7 +779,10 @@ API autenticada con tokens Laravel Sanctum para consumo desde app móvil futura.
 | `/api/supervision/catalog` | GET | Contrato de 8 módulos de campo |
 | `/api/supervision/posts` | GET | Puestos `supervisor_posts` del cliente (no `locations`) |
 | `/api/supervision/reviews` | POST | Revista en puesto de Supervisión (no llena minuta Accesos) |
-| `/api/supervision/logs` | POST | Inventario, libros, carpetas, armamento, recomendaciones, etc. |
+| `/api/supervision/offline-pack` | GET | Snapshot offline: sitios, puestos, vigilantes, catálogo |
+| `/api/supervision/logs` | POST | Inventario, libros, carpetas, armamento, recomendaciones, etc. `client_event_id` opcional |
+| `/api/supervision/sheets` | GET | Fichas del supervisor autenticado |
+| `/api/supervision/sheets/{kind}/{id}` | GET | Carta HTML de la ficha (imprimir / PDF) |
 | `/api/supervision/recommendations` | GET | Recomendaciones de riesgo (registro inmutable; sin ciclo ni PATCH) |
 
 ```

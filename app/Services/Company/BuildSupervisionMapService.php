@@ -6,6 +6,7 @@ namespace App\Services\Company;
 
 use App\Domain\Supervision\Data\SupervisionQueryFilter;
 use App\Enums\SupervisorShiftStatus;
+use App\Models\Client;
 use App\Models\SecurityCompany;
 use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
@@ -13,6 +14,10 @@ use Carbon\CarbonImmutable;
 
 final class BuildSupervisionMapService
 {
+    public function __construct(
+        private readonly BuildSupervisorTrailService $trail,
+    ) {}
+
     /** @return array<string, mixed> */
     public function execute(SecurityCompany $company, SupervisionQueryFilter $filter): array
     {
@@ -29,20 +34,25 @@ final class BuildSupervisionMapService
             ->matchingFilter($filter)
             ->with([
                 'user',
-                'locations' => fn ($q) => $q->orderByDesc('recorded_at')->limit(1),
-                'reviews' => fn ($q) => $q->whereNotNull('latitude')->whereNotNull('longitude'),
+                'locations' => fn ($q) => $q->orderBy('recorded_at'),
             ])
             ->get()
             ->map(function (SupervisorShift $shift) {
-                $last = $shift->locations->first();
+                $built = $this->trail->execute($shift->locations, true);
+                $last = $built['end'];
 
                 return [
                     'shift_id' => $shift->id,
                     'user' => $shift->user?->name,
                     'started_at' => $shift->started_at?->toIso8601String(),
-                    'lat' => $last !== null ? (float) $last->latitude : null,
-                    'lng' => $last !== null ? (float) $last->longitude : null,
-                    'recorded_at' => $last?->recorded_at?->toIso8601String(),
+                    'lat' => $last['lat'] ?? null,
+                    'lng' => $last['lng'] ?? null,
+                    'recorded_at' => $last['at'] ?? null,
+                    'path' => $built['path'],
+                    'start' => $built['start'],
+                    'end' => $built['end'],
+                    'stops' => $built['stops'],
+                    'parked' => $built['parked'],
                 ];
             })
             ->values()
@@ -55,20 +65,13 @@ final class BuildSupervisionMapService
             ->with([
                 'user',
                 'locations' => fn ($q) => $q->orderBy('recorded_at'),
-                'reviews',
             ])
             ->orderByDesc('started_at')
             ->limit(40)
             ->get()
             ->map(function (SupervisorShift $shift) {
-                $path = $shift->locations
-                    ->map(fn ($loc) => [
-                        'lat' => (float) $loc->latitude,
-                        'lng' => (float) $loc->longitude,
-                        'at' => $loc->recorded_at?->toIso8601String(),
-                    ])
-                    ->values()
-                    ->all();
+                $open = $shift->status === SupervisorShiftStatus::Open;
+                $built = $this->trail->execute($shift->locations, $open);
 
                 return [
                     'shift_id' => $shift->id,
@@ -77,7 +80,11 @@ final class BuildSupervisionMapService
                     'started_at' => $shift->started_at?->toIso8601String(),
                     'ended_at' => $shift->ended_at?->toIso8601String(),
                     'km_traveled' => $shift->km_traveled,
-                    'path' => $path,
+                    'path' => $built['path'],
+                    'start' => $built['start'],
+                    'end' => $open ? null : $built['end'],
+                    'stops' => $built['stops'],
+                    'parked' => $built['parked'],
                 ];
             })
             ->values()
@@ -97,6 +104,7 @@ final class BuildSupervisionMapService
             ->get()
             ->map(fn (SupervisorShiftReview $review) => [
                 'id' => $review->id,
+                'shift_id' => (int) $review->supervisor_shift_id,
                 'lat' => (float) $review->latitude,
                 'lng' => (float) $review->longitude,
                 'user' => $review->shift?->user?->name,
@@ -108,10 +116,28 @@ final class BuildSupervisionMapService
             ->values()
             ->all();
 
+        $clients = Client::query()
+            ->where('security_company_id', $company->id)
+            ->where('has_supervision', true)
+            ->where('is_active', true)
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->orderBy('name')
+            ->get(['id', 'name', 'latitude', 'longitude'])
+            ->map(fn (Client $client) => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'lat' => (float) $client->latitude,
+                'lng' => (float) $client->longitude,
+            ])
+            ->values()
+            ->all();
+
         return [
             'live' => $live,
             'history' => $history,
             'reviews' => $reviews,
+            'clients' => $clients,
             'from' => $fromAt->toDateString(),
             'to' => $toAt->toDateString(),
             'google_maps' => [

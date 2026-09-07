@@ -13,6 +13,7 @@ final class SupervisorZone extends Model
     protected $fillable = [
         'security_company_id',
         'name',
+        'email',
         'is_active',
         'sort_order',
     ];

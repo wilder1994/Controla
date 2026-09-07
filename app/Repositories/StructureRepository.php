@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
+use App\Models\Client;
 use App\Models\Structure;
 use App\Models\StructureType;
 use Illuminate\Database\Eloquent\Collection;
@@ -68,7 +69,7 @@ final class StructureRepository
 
     public function leafUnitsCount(int $clientId): int
     {
-        $unitTypeIds = StructureType::query()->where('is_unit', true)->pluck('id');
+        $unitTypeIds = $this->unitTypeIdsForClient($clientId);
 
         return Structure::query()
             ->where('client_id', $clientId)
@@ -79,7 +80,7 @@ final class StructureRepository
     /** @return Collection<int, Structure> */
     public function leafUnitsForClient(int $clientId): Collection
     {
-        $unitTypeIds = StructureType::query()->where('is_unit', true)->pluck('id');
+        $unitTypeIds = $this->unitTypeIdsForClient($clientId);
 
         return Structure::query()
             ->where('client_id', $clientId)
@@ -87,6 +88,17 @@ final class StructureRepository
             ->with('structureType')
             ->orderBy('name')
             ->get();
+    }
+
+    /** @return \Illuminate\Support\Collection<int, int> */
+    private function unitTypeIdsForClient(int $clientId)
+    {
+        $companyId = (int) Client::query()->whereKey($clientId)->value('security_company_id');
+
+        return StructureType::query()
+            ->where('security_company_id', $companyId)
+            ->where('is_unit', true)
+            ->pluck('id');
     }
 
     public function codeExists(int $clientId, string $code, ?int $exceptId = null): bool

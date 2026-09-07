@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Services\Auth\ResolveUserHomeRoute;
+use App\Support\Platform\SupportCompanyContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +30,21 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended($this->resolveUserHomeRoute->forUser($request->user()));
+        $user = $request->user();
+        $home = $this->resolveUserHomeRoute->forUser($user);
+
+        if ($user->hasRole('super-admin')) {
+            $intended = $request->session()->pull('url.intended', $home);
+            if (SupportCompanyContext::isCompanyPanelUrl($intended)) {
+                return redirect()
+                    ->route('admin.dashboard')
+                    ->with('warning', SupportCompanyContext::EXPIRED_FLASH);
+            }
+
+            return redirect()->to($intended);
+        }
+
+        return redirect()->intended($home);
     }
 
     public function destroy(Request $request): RedirectResponse

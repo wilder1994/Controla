@@ -15,7 +15,9 @@ use App\Http\Controllers\Company\EmployeeController;
 use App\Http\Controllers\Company\JobTitleController;
 use App\Http\Controllers\Company\PorteriaController;
 use App\Http\Controllers\Company\SettingsController;
+use App\Http\Controllers\Company\StructureTypeController;
 use App\Http\Controllers\Company\SupervisionMapController;
+use App\Http\Controllers\Company\SupervisionFieldSheetController;
 use App\Http\Controllers\Company\SupervisorChecklistItemController;
 use App\Http\Controllers\Company\SupervisorControlBookTypeController;
 use App\Http\Controllers\Company\SupervisorDocumentTypeController;
@@ -82,9 +84,6 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
             Route::post('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
             Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
-            Route::post('/employees/{employee}/access', [EmployeeController::class, 'grantAccess'])
-                ->middleware('permission:company.users.assign')
-                ->name('employees.access');
 
             Route::get('/job-titles', [JobTitleController::class, 'index'])->name('job-titles.index');
             Route::post('/job-titles', [JobTitleController::class, 'store'])->name('job-titles.store');
@@ -95,6 +94,11 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::post('/collaborator-types', [CollaboratorTypeController::class, 'store'])->name('collaborator-types.store');
             Route::put('/collaborator-types/{collaboratorType}', [CollaboratorTypeController::class, 'update'])->name('collaborator-types.update');
             Route::delete('/collaborator-types/{collaboratorType}', [CollaboratorTypeController::class, 'destroy'])->name('collaborator-types.destroy');
+
+            Route::get('/structure-types', [StructureTypeController::class, 'index'])->name('structure-types.index');
+            Route::post('/structure-types', [StructureTypeController::class, 'store'])->name('structure-types.store');
+            Route::put('/structure-types/{structureType}', [StructureTypeController::class, 'update'])->name('structure-types.update');
+            Route::delete('/structure-types/{structureType}', [StructureTypeController::class, 'destroy'])->name('structure-types.destroy');
 
             Route::get('/supervision-zones', [SupervisorZoneController::class, 'index'])->name('supervision-zones.index');
             Route::post('/supervision-zones', [SupervisorZoneController::class, 'store'])->name('supervision-zones.store');
@@ -153,6 +157,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/supervision/informe.pptx', [SupervisionMapController::class, 'report'])
             ->middleware('permission:company.supervision.view')
             ->name('supervision.report');
+        Route::get('/supervision/fichas/{kind}/{id}', [SupervisionFieldSheetController::class, 'show'])
+            ->middleware('permission:company.supervision.view')
+            ->name('supervision.sheets.show');
 
         Route::get('/descargas', [DownloadsController::class, 'index'])
             ->middleware('permission:company.dashboard')
@@ -164,6 +171,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/users/create', [UserController::class, 'create'])
             ->middleware('permission:company.users.assign')
             ->name('users.create');
+        Route::get('/users/employee-search', [UserController::class, 'searchEmployees'])
+            ->middleware('permission:company.users.assign')
+            ->name('users.employee-search');
+        Route::post('/users/credentials-preview', [UserController::class, 'previewCredentials'])
+            ->middleware('permission:company.users.assign')
+            ->name('users.credentials-preview');
         Route::post('/users', [UserController::class, 'store'])
             ->middleware('permission:company.users.assign')
             ->name('users.store');
@@ -173,6 +186,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::put('/users/{user}', [UserController::class, 'update'])
             ->middleware('permission:company.users.assign')
             ->name('users.update');
+        Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])
+            ->middleware('permission:company.users.assign')
+            ->name('users.deactivate');
+        Route::post('/users/{user}/reactivate', [UserController::class, 'reactivate'])
+            ->middleware('permission:company.users.assign')
+            ->name('users.reactivate');
 
         Route::get('/porteria', [PorteriaController::class, 'enter'])
             ->name('porteria.enter');

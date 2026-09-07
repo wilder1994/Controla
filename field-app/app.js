@@ -17,12 +17,19 @@ let moduleReturn = 'home';
 let reviewDraftLogs = [];
 let modulePhotos = {};
 let cropSession = null;
+let postsCache = [];
+let guardsCache = [];
+let syncing = false;
+let closeQueued = false;
 
 function inferApi() {
     const host = location.hostname;
     const port = location.port;
     if (port === '8085') {
         return `${location.protocol}//${host}:8084/api`;
+    }
+    if (/\.ts\.net$/i.test(host)) {
+        return `${location.origin.replace(/\/$/, '')}/api`;
     }
     if (/controla_supervision/i.test(host)) {
         return `${location.protocol}//${host.replace(/controla_supervision/i, 'controla')}/api`;
@@ -44,7 +51,7 @@ function setStatus(text, ok = true) {
 }
 
 function show(id) {
-    ['login', 'open-shift', 'ops', 'close-shift'].forEach((key) => {
+    ['login', 'change-password', 'open-shift', 'ops', 'close-shift'].forEach((key) => {
         document.getElementById(key).classList.toggle('hidden', key !== id);
     });
     stopAllCams();
@@ -56,13 +63,152 @@ async function api(path, options = {}) {
         headers['Content-Type'] = 'application/json';
     }
     if (token()) headers.Authorization = `Bearer ${token()}`;
-    const res = await fetch(`${apiBase()}${path}`, Object.assign({}, options, { headers }));
+    let res;
+    try {
+        res = await fetch(`${apiBase()}${path}`, Object.assign({}, options, { headers }));
+    } catch (err) {
+        const offline = new Error('Sin conexión. El registro queda en el teléfono.');
+        offline.offline = true;
+        throw offline;
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
         const first = data.errors ? Object.values(data.errors)[0] : null;
-        throw new Error((first && first[0]) || data.message || data.email?.[0] || `HTTP ${res.status}`);
+        throw new Error((first && first[0]) || data.message || data.login?.[0] || data.email?.[0] || `HTTP ${res.status}`);
     }
     return data;
+}
+
+function applyPack(pack) {
+    if (!pack) return;
+    sites = pack.sites || sites;
+    postsCache = pack.posts || postsCache;
+    guardsCache = pack.guards || guardsCache;
+    if (pack.modules?.length) catalog = pack.modules;
+    const select = document.getElementById('mod-client');
+    if (select) {
+        select.innerHTML = (sites || []).map((s) => `<option value="${s.id}">${s.name}</option>`).join('')
+            || '<option value="">Sin clientes con Supervisión</option>';
+    }
+    renderHub();
+}
+
+async function refreshOfflinePack() {
+    const pack = await api('/supervision/offline-pack');
+    await ControlaOffline.metaSet('pack', pack);
+    applyPack(pack);
+    return pack;
+}
+
+async function restorePack() {
+    const pack = await ControlaOffline.metaGet('pack');
+    applyPack(pack);
+    closeQueued = Boolean(await ControlaOffline.metaGet('closeQueued'));
+    return pack;
+}
+
+async function updateSyncBar() {
+    const bar = document.getElementById('sync-bar');
+    if (!bar) return;
+    const n = await ControlaOffline.outboxCount();
+    if (n < 1 && !closeQueued) {
+        bar.classList.add('hidden');
+        bar.textContent = '';
+        return;
+    }
+    bar.classList.remove('hidden');
+    const net = navigator.onLine ? 'Subiendo…' : 'Sin cobertura';
+    bar.textContent = n
+        ? `${n} registro(s) en el teléfono. ${net}. No borre datos del sitio.`
+        : 'Cierre de turno pendiente de envío.';
+}
+
+async function enqueueOrThrow(item, okMessage) {
+    await ControlaOffline.enqueue(item);
+    await updateSyncBar();
+    setStatus(okMessage);
+}
+
+async function flushOutbox() {
+    if (syncing || !navigator.onLine || !token()) return;
+    syncing = true;
+    try {
+        const rows = await ControlaOffline.allOutbox();
+        for (const row of rows) {
+            try {
+                await sendOutboxItem(row);
+                await ControlaOffline.removeOutbox(row.id);
+            } catch (e) {
+                if (ControlaOffline.isOfflineError(e)) break;
+                throw e;
+            }
+        }
+        const left = await ControlaOffline.outboxCount();
+        if (left === 0 && closeQueued) {
+            closeQueued = false;
+            await ControlaOffline.metaSet('closeQueued', false);
+            await ControlaOffline.metaSet('shift', null);
+            stopPing();
+            setStatus('Turno cerrado. Datos enviados.');
+            logout();
+            return;
+        }
+    } catch (e) {
+        if (!ControlaOffline.isOfflineError(e)) setStatus(e.message, false);
+    } finally {
+        syncing = false;
+        await updateSyncBar();
+    }
+}
+
+async function sendOutboxItem(row) {
+    if (row.type === 'ping') {
+        await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(row.body) });
+        return;
+    }
+    if (row.type === 'log') {
+        await api('/supervision/logs', { method: 'POST', body: JSON.stringify(row.body) });
+        return;
+    }
+    if (row.type === 'review') {
+        const fd = reviewFormFromQueue(row);
+        await api('/supervision/reviews', { method: 'POST', body: fd });
+        return;
+    }
+    if (row.type === 'close') {
+        const fd = new FormData();
+        fd.append('km_end', String(row.body.km_end));
+        fd.append('client_event_id', row.clientEventId);
+        fd.append('odometer_photo', row.files.odometer, 'odometer-end.jpg');
+        fd.append('selfie_photo', row.files.selfie, 'selfie-end.jpg');
+        await api('/supervision/shifts/close', { method: 'POST', body: fd });
+    }
+}
+
+function reviewFormFromQueue(row) {
+    const fd = new FormData();
+    Object.entries(row.body).forEach(([key, value]) => {
+        if (value == null) return;
+        fd.append(key, typeof value === 'string' ? value : String(value));
+    });
+    fd.append('client_event_id', row.clientEventId);
+    fd.append('guard_photo', row.files.guard, 'guard.jpg');
+    Object.entries(row.files.logPhotos || {}).forEach(([slot, blob]) => {
+        const [index, name] = slot.split('::');
+        fd.append(`log_photos[${index}][${name}]`, blob, `${name}.jpg`);
+    });
+    return fd;
+}
+
+async function apiHtml(path) {
+    const headers = { Accept: 'text/html' };
+    if (token()) headers.Authorization = `Bearer ${token()}`;
+    const res = await fetch(`${apiBase()}${path}`, { headers });
+    const text = await res.text();
+    if (!res.ok) {
+        throw new Error('No se pudo abrir la ficha.');
+    }
+    return text;
 }
 
 function siteId() {
@@ -73,10 +219,10 @@ function siteId() {
     return currentReview?.client_id || null;
 }
 
-async function geoRequired() {
+async function geoRequired(message = 'Active la ubicación del dispositivo.') {
     const pos = await geo();
     if (pos?.latitude == null || pos?.longitude == null) {
-        throw new Error('Active la ubicación del dispositivo para guardar la revista.');
+        throw new Error(message);
     }
     return pos;
 }
@@ -119,7 +265,7 @@ async function startCam(videoId, facing) {
     stopCam(videoId);
     const video = document.getElementById(videoId);
     if (!cameraAvailable()) {
-        setStatus('HTTP local: use Tomar foto (evidencia de prueba). Cámara real requiere HTTPS o el celular.');
+        setStatus('Cámara no disponible. Abra la PWA por HTTPS (Tailscale Serve), no por http://IP:8085.', false);
         return;
     }
     try {
@@ -133,31 +279,6 @@ async function startCam(videoId, facing) {
     } catch (e) {
         setStatus('Sin cámara o permiso denegado.', false);
     }
-}
-
-function fakeSnap(imgId, key, label) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 960;
-    canvas.height = 720;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#0b1220';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#243049';
-    ctx.fillRect(40, 200, 880, 420);
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 36px sans-serif';
-    ctx.fillText(label, 40, 70);
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '22px sans-serif';
-    ctx.fillText(new Date().toLocaleString('es-CO'), 40, 114);
-    ctx.fillText(location.hostname, 40, 148);
-    canvas.toBlob((blob) => {
-        blobs[key] = blob;
-        const img = document.getElementById(imgId);
-        img.src = URL.createObjectURL(blob);
-        img.classList.remove('hidden');
-        setStatus('Foto de prueba lista. En celular con HTTPS se usa la cámara.');
-    }, 'image/jpeg', 0.86);
 }
 
 function stopCam(videoId) {
@@ -211,7 +332,7 @@ async function snapTo(videoId, imgId, key, label, facing) {
     const video = document.getElementById(videoId);
     if (!video.videoWidth) {
         if (!cameraAvailable()) {
-            fakeSnap(imgId, key, label || 'Prueba');
+            setStatus('Cámara no disponible. Abra la PWA por HTTPS (Tailscale Serve), no por http://IP:8085.', false);
             return;
         }
         await startCam(videoId, facing);
@@ -320,12 +441,14 @@ function showOpsHome() {
     document.getElementById('ops-home').classList.remove('hidden');
     document.getElementById('review-card').classList.add('hidden');
     document.getElementById('module-card').classList.add('hidden');
+    document.getElementById('sheets-card')?.classList.add('hidden');
 }
 
 function showReview() {
     stopAllCams();
     document.getElementById('ops-home').classList.add('hidden');
     document.getElementById('module-card').classList.add('hidden');
+    document.getElementById('sheets-card')?.classList.add('hidden');
     document.getElementById('review-card').classList.remove('hidden');
 }
 
@@ -336,8 +459,9 @@ function openModule(key, from = 'home') {
     moduleReturn = from;
     document.getElementById('ops-home').classList.add('hidden');
     document.getElementById('review-card').classList.add('hidden');
+    document.getElementById('sheets-card')?.classList.add('hidden');
     const wrap = document.getElementById('module-client-wrap');
-    wrap.classList.toggle('hidden', !(currentModule.requires_client || currentModule.key === 'supports'));
+    wrap.classList.toggle('hidden', !currentModule.requires_client);
     document.getElementById('module-card').classList.remove('hidden');
     document.getElementById('module-title').textContent = currentModule.label;
     document.getElementById('module-hint').textContent = currentModule.hint;
@@ -744,12 +868,16 @@ function readRepeatable(field) {
 }
 
 async function loadSites() {
-    const data = await api('/supervision/sites');
-    sites = data.sites || [];
-    const select = document.getElementById('mod-client');
-    if (select) {
-        select.innerHTML = sites.map((s) => `<option value="${s.id}">${s.name}</option>`).join('')
-            || '<option value="">Sin clientes con Supervisión</option>';
+    try {
+        await refreshOfflinePack();
+    } catch (e) {
+        await restorePack();
+        if (!sites.length) throw e;
+        if (ControlaOffline.isOfflineError(e)) {
+            setStatus('Sin cobertura. Usando clientes guardados en el teléfono.');
+            return;
+        }
+        throw e;
     }
 }
 
@@ -831,6 +959,20 @@ async function searchPosts(query) {
         fillCombo('rev-post-list', [], 'Primero el cliente', selectReviewPost);
         return;
     }
+    const term = (query || '').trim().toLowerCase();
+    const local = (postsCache || [])
+        .filter((p) => Number(p.client_id) === Number(reviewClient.id))
+        .filter((p) => term === '' || (p.label || p.name || '').toLowerCase().includes(term))
+        .slice(0, 30)
+        .map((p) => ({
+            id: p.id,
+            name: p.name,
+            label: p.label || [p.installation_name, p.name].filter(Boolean).join(' · '),
+        }));
+    if (local.length || !navigator.onLine) {
+        fillCombo('rev-post-list', local, 'Este cliente no tiene puestos', selectReviewPost);
+        return;
+    }
     try {
         const data = await api(`/supervision/posts?client_id=${reviewClient.id}&q=${encodeURIComponent(query || '')}`);
         const rows = (data.posts || []).map((p) => ({
@@ -840,7 +982,8 @@ async function searchPosts(query) {
         }));
         fillCombo('rev-post-list', rows, 'Este cliente no tiene puestos', selectReviewPost);
     } catch (e) {
-        setStatus(e.message, false);
+        fillCombo('rev-post-list', local, 'Este cliente no tiene puestos', selectReviewPost);
+        if (!ControlaOffline.isOfflineError(e)) setStatus(e.message, false);
     }
 }
 
@@ -850,6 +993,19 @@ async function searchGuards(document) {
         reviewGuard = null;
         document.getElementById('rev-guard-name').value = '';
         document.getElementById('rev-guard-list').classList.add('hidden');
+        return;
+    }
+    const local = (guardsCache || [])
+        .filter((g) => String(g.document_number || '').startsWith(term))
+        .slice(0, 20)
+        .map((g) => ({
+            id: g.id,
+            name: g.name,
+            document_number: g.document_number,
+            label: `${g.document_number} · ${g.name}`,
+        }));
+    if (local.length || !navigator.onLine) {
+        fillCombo('rev-guard-list', local, 'Sin vigilantes con esa cédula', selectReviewGuard);
         return;
     }
     try {
@@ -862,35 +1018,52 @@ async function searchGuards(document) {
         }));
         fillCombo('rev-guard-list', rows, 'Sin vigilantes con esa cédula', selectReviewGuard);
     } catch (e) {
-        setStatus(e.message, false);
+        fillCombo('rev-guard-list', local, 'Sin vigilantes con esa cédula', selectReviewGuard);
+        if (!ControlaOffline.isOfflineError(e)) setStatus(e.message, false);
     }
 }
 
 async function persistReview() {
+    if (closeQueued) throw new Error('Hay un cierre pendiente de envío.');
     if (!reviewClient) throw new Error('Seleccione el cliente.');
     if (!reviewPost) throw new Error('Seleccione el puesto.');
     if (!reviewGuard) throw new Error('Seleccione el vigilante por cédula.');
     if (!blobs.guard) throw new Error('Tome la foto del vigilante.');
-    const pos = await geoRequired();
-    const fd = new FormData();
-    fd.append('client_id', String(reviewClient.id));
-    fd.append('supervisor_post_id', String(reviewPost.id));
-    fd.append('employee_id', String(reviewGuard.id));
-    fd.append('notes', document.getElementById('rev-notes').value || '');
-    fd.append('has_novelty', document.getElementById('rev-novelty').checked ? '1' : '0');
-    fd.append('latitude', String(pos.latitude));
-    fd.append('longitude', String(pos.longitude));
-    fd.append('guard_photo', blobs.guard, 'guard.jpg');
+    const pos = await geoRequired('Active la ubicación del dispositivo para guardar la revista.');
+    const clientEventId = ControlaOffline.uuid();
     const outgoing = reviewDraftLogs.map((row) => ({ module: row.module, payload: row.payload }));
-    fd.append('logs', JSON.stringify(outgoing));
+    const logPhotos = {};
     reviewDraftLogs.forEach((row, index) => {
         Object.entries(row.photos || {}).forEach(([slot, blob]) => {
-            fd.append(`log_photos[${index}][${slot}]`, blob, `${slot}.jpg`);
+            logPhotos[`${index}::${slot}`] = blob;
         });
     });
-    const data = await api('/supervision/reviews', { method: 'POST', body: fd });
-    currentReview = data.review;
-    activity = data.activity || activity;
+    const body = {
+        client_id: String(reviewClient.id),
+        supervisor_post_id: String(reviewPost.id),
+        employee_id: String(reviewGuard.id),
+        notes: document.getElementById('rev-notes').value || '',
+        has_novelty: document.getElementById('rev-novelty').checked ? '1' : '0',
+        latitude: String(pos.latitude),
+        longitude: String(pos.longitude),
+        logs: JSON.stringify(outgoing),
+    };
+    const queued = {
+        type: 'review',
+        clientEventId,
+        body,
+        files: { guard: blobs.guard, logPhotos },
+    };
+    try {
+        const fd = reviewFormFromQueue(queued);
+        const data = await api('/supervision/reviews', { method: 'POST', body: fd });
+        currentReview = data.review;
+        activity = data.activity || activity;
+    } catch (e) {
+        if (!ControlaOffline.isOfflineError(e)) throw e;
+        await enqueueOrThrow(queued, 'Revista guardada en el teléfono. Se enviará al reconectar.');
+        currentReview = { id: null, pending: true, client_id: reviewClient.id };
+    }
     blobs.guard = null;
     document.getElementById('snap-guard').classList.add('hidden');
     reviewDraftLogs = [];
@@ -925,7 +1098,7 @@ function discardReviewSession() {
 async function saveReview() {
     try {
         await persistReview();
-        setStatus('Revista guardada.');
+        if (!currentReview?.pending) setStatus('Revista guardada.');
         showOpsHome();
     } catch (e) {
         setStatus(e.message, false);
@@ -938,23 +1111,63 @@ function enterOps() {
 }
 
 async function loadCatalog() {
-    const data = await api('/supervision/catalog');
-    catalog = data.modules || [];
-    renderHub();
+    try {
+        const data = await api('/supervision/catalog');
+        catalog = data.modules || [];
+        const pack = await ControlaOffline.metaGet('pack') || {};
+        pack.modules = catalog;
+        await ControlaOffline.metaSet('pack', pack);
+        renderHub();
+    } catch (e) {
+        await restorePack();
+        if (!catalog.length) throw e;
+        if (ControlaOffline.isOfflineError(e)) {
+            setStatus('Sin cobertura. Catálogo del teléfono.');
+            return;
+        }
+        throw e;
+    }
 }
 
 async function loadIntake() {
-    intake = await api('/supervision/intake');
-    renderIntake();
+    try {
+        intake = await api('/supervision/intake');
+        await ControlaOffline.metaSet('intake', intake);
+        renderIntake();
+    } catch (e) {
+        intake = await ControlaOffline.metaGet('intake');
+        if (intake) {
+            renderIntake();
+            if (ControlaOffline.isOfflineError(e)) {
+                setStatus('Sin cobertura. Abrir turno necesita red.');
+            }
+            return;
+        }
+        throw e;
+    }
 }
 
 async function loadCurrent() {
-    const data = await api('/supervision/shifts/current');
-    activity = data.activity;
-    const shift = data.shift;
-    const nameEl = document.getElementById('sup-name');
-    if (nameEl) nameEl.textContent = data.supervisor?.name || '';
-    if (data.supervisor?.has_selfie) loadSupervisorSelfie();
+    try {
+        const data = await api('/supervision/shifts/current');
+        activity = data.activity;
+        const shift = data.shift;
+        await ControlaOffline.metaSet('shift', shift || null);
+        const nameEl = document.getElementById('sup-name');
+        if (nameEl) nameEl.textContent = data.supervisor?.name || '';
+        if (data.supervisor?.has_selfie) loadSupervisorSelfie();
+        return applyShift(shift);
+    } catch (e) {
+        const shift = await ControlaOffline.metaGet('shift');
+        if (shift && ControlaOffline.isOfflineError(e)) {
+            setStatus('Sin cobertura. Turno en el teléfono.');
+            return applyShift(shift);
+        }
+        throw e;
+    }
+}
+
+function applyShift(shift) {
     if (!shift) {
         document.getElementById('shift-label').textContent = 'Sin turno';
         stopPing();
@@ -988,13 +1201,23 @@ async function loadSupervisorSelfie() {
 
 function startPing() {
     stopPing();
+    if (closeQueued) return;
     const send = async () => {
         const pos = await geo();
         if (!pos) return;
+        const body = {
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            accuracy: pos.accuracy,
+            client_event_id: ControlaOffline.uuid(),
+        };
         try {
-            await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(pos) });
+            await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(body) });
         } catch (e) {
-            // ping silencioso
+            if (ControlaOffline.isOfflineError(e)) {
+                await ControlaOffline.enqueue({ type: 'ping', clientEventId: body.client_event_id, body });
+                await updateSyncBar();
+            }
         }
     };
     send();
@@ -1014,10 +1237,36 @@ function logout() {
     setStatus('Sesión cerrada.');
 }
 
-async function afterLogin(name) {
+async function afterLogin(data = {}) {
+    const name = data.user?.name;
     setStatus(name ? `Hola ${name}` : 'Sesión activa');
-    await Promise.all([loadSites(), loadCatalog(), loadIntake()]);
-    const shift = await loadCurrent();
+    if (data.must_change_password) {
+        show('change-password');
+        return;
+    }
+    await restorePack();
+    try {
+        await Promise.all([loadSites(), loadIntake()]);
+        if (!catalog.length) await loadCatalog();
+    } catch (e) {
+        if (!ControlaOffline.isOfflineError(e)) {
+            setStatus(e.message, false);
+            return;
+        }
+    }
+    let shift = null;
+    try {
+        shift = await loadCurrent();
+    } catch (e) {
+        if (!ControlaOffline.isOfflineError(e)) {
+            setStatus(e.message, false);
+            return;
+        }
+        shift = await ControlaOffline.metaGet('shift');
+        if (shift) applyShift(shift);
+    }
+    await updateSyncBar();
+    flushOutbox();
     if (shift) {
         enterOps();
         return;
@@ -1043,13 +1292,31 @@ document.getElementById('btn-login').onclick = async () => {
         const data = await api('/supervision/login', {
             method: 'POST',
             body: JSON.stringify({
-                email: document.getElementById('email').value,
+                login: document.getElementById('login-user').value.trim(),
                 password: document.getElementById('password').value,
                 device_name: 'supervision-pwa',
             }),
         });
         localStorage.setItem('token', data.token);
-        await afterLogin(data.user?.name);
+        await afterLogin(data);
+    } catch (e) {
+        setStatus(e.message, false);
+    }
+};
+
+document.getElementById('btn-change-password').onclick = async () => {
+    try {
+        const password = document.getElementById('new-password').value;
+        const confirm = document.getElementById('new-password-confirm').value;
+        if (password !== confirm) throw new Error('Las contraseñas no coinciden.');
+        await api('/supervision/password', {
+            method: 'POST',
+            body: JSON.stringify({
+                password,
+                password_confirmation: confirm,
+            }),
+        });
+        await afterLogin({ user: { name: '' }, must_change_password: false });
     } catch (e) {
         setStatus(e.message, false);
     }
@@ -1074,14 +1341,16 @@ document.getElementById('btn-start').onclick = async () => {
             fd.append('vehicle[soat_expires_at]', document.getElementById('v-soat').value);
             fd.append('vehicle[technical_review_expires_at]', document.getElementById('v-tm').value);
         }
+        if (!navigator.onLine) throw new Error('Abrir turno necesita internet. Conéctese y vuelva a intentar.');
         fd.append('odometer_photo', blobs.odo, 'odometer.jpg');
         fd.append('selfie_photo', blobs.self, 'selfie.jpg');
         await api('/supervision/shifts/open', { method: 'POST', body: fd });
         blobs.odo = blobs.self = null;
         stopAllCams();
+        try { await refreshOfflinePack(); } catch (e) { /* el turno ya abrió */ }
         await loadCurrent();
         enterOps();
-        setStatus('Turno iniciado.');
+        setStatus('Turno iniciado. Clientes y catálogo en el teléfono.');
     } catch (e) {
         setStatus(e.message, false);
     }
@@ -1100,19 +1369,42 @@ document.getElementById('btn-close-back').onclick = () => {
 document.getElementById('btn-close').onclick = async () => {
     try {
         if (!blobs.odoEnd || !blobs.selfEnd) throw new Error('Tome foto del odómetro y selfie de cierre.');
+        const clientEventId = ControlaOffline.uuid();
         const fd = new FormData();
         fd.append('km_end', document.getElementById('km-end').value);
+        fd.append('client_event_id', clientEventId);
         fd.append('odometer_photo', blobs.odoEnd, 'odometer-end.jpg');
         fd.append('selfie_photo', blobs.selfEnd, 'selfie-end.jpg');
-        await api('/supervision/shifts/close', { method: 'POST', body: fd });
-        blobs.odoEnd = blobs.selfEnd = null;
-        stopPing();
-        stopAllCams();
-        activity = null;
-        currentReview = null;
-        reviewDraftLogs = [];
-        setStatus('Turno cerrado.');
-        logout();
+        try {
+            await api('/supervision/shifts/close', { method: 'POST', body: fd });
+            blobs.odoEnd = blobs.selfEnd = null;
+            stopPing();
+            stopAllCams();
+            activity = null;
+            currentReview = null;
+            reviewDraftLogs = [];
+            await ControlaOffline.metaSet('shift', null);
+            setStatus('Turno cerrado.');
+            logout();
+            return;
+        } catch (e) {
+            if (!ControlaOffline.isOfflineError(e)) throw e;
+            await ControlaOffline.enqueue({
+                type: 'close',
+                clientEventId,
+                body: { km_end: document.getElementById('km-end').value },
+                files: { odometer: blobs.odoEnd, selfie: blobs.selfEnd },
+            });
+            closeQueued = true;
+            await ControlaOffline.metaSet('closeQueued', true);
+            blobs.odoEnd = blobs.selfEnd = null;
+            stopPing();
+            stopAllCams();
+            await updateSyncBar();
+            show('ops');
+            showOpsHome();
+            setStatus('Cierre guardado en el teléfono. Al reconectar se envía. No borre datos del sitio.');
+        }
     } catch (e) {
         setStatus(e.message, false);
     }
@@ -1121,6 +1413,7 @@ document.getElementById('btn-close').onclick = async () => {
 document.getElementById('btn-submit').onclick = async () => {
     if (!currentModule) return;
     try {
+        if (closeQueued) throw new Error('Hay un cierre pendiente de envío.');
         const payload = readPayload();
         assertDraftPayload(currentModule, payload);
         if (currentModule.hangs_off_review) {
@@ -1143,24 +1436,32 @@ document.getElementById('btn-submit').onclick = async () => {
             showReview();
             return;
         }
-        const pos = await geo();
+        const pos = currentModule.requires_gps
+            ? await geoRequired('Active la ubicación del dispositivo para registrar este módulo.')
+            : await geo();
         const body = {
             module: currentModule.key,
             payload,
             latitude: pos?.latitude,
             longitude: pos?.longitude,
+            client_event_id: ControlaOffline.uuid(),
         };
         if (currentModule.requires_client) {
             const clientId = siteId();
             if (!clientId) throw new Error('Seleccione el cliente.');
             body.client_id = clientId;
-        } else if (currentModule.key === 'supports') {
-            const value = document.getElementById('mod-client')?.value;
-            if (value) body.client_id = Number(value);
         }
-        await api('/supervision/logs', { method: 'POST', body: JSON.stringify(body) });
-        setStatus(`${currentModule.label} registrado.`);
-        await loadCurrent();
+        try {
+            await api('/supervision/logs', { method: 'POST', body: JSON.stringify(body) });
+            setStatus(`${currentModule.label} registrado.`);
+            try { await loadCurrent(); } catch (e) { /* cola / offline */ }
+        } catch (e) {
+            if (!ControlaOffline.isOfflineError(e)) throw e;
+            await enqueueOrThrow(
+                { type: 'log', clientEventId: body.client_event_id, body },
+                `${currentModule.label} guardado en el teléfono. Se enviará al reconectar.`,
+            );
+        }
         showOpsHome();
     } catch (e) {
         setStatus(e.message, false);
@@ -1257,6 +1558,55 @@ document.getElementById('btn-review-back').onclick = () => {
 document.getElementById('btn-open-alarms').onclick = () => openModule('alarms', 'home');
 document.getElementById('btn-open-supports').onclick = () => openModule('supports', 'home');
 document.getElementById('btn-open-documents').onclick = () => openModule('documents', 'home');
+document.getElementById('btn-open-sheets').onclick = () => {
+    showSheets();
+};
+document.getElementById('btn-sheets-back').onclick = showOpsHome;
+
+async function showSheets() {
+    stopAllCams();
+    document.getElementById('ops-home').classList.add('hidden');
+    document.getElementById('review-card').classList.add('hidden');
+    document.getElementById('module-card').classList.add('hidden');
+    document.getElementById('sheets-card').classList.remove('hidden');
+    const list = document.getElementById('sheets-list');
+    list.innerHTML = '<p class="hint">Cargando…</p>';
+    try {
+        const data = await api('/supervision/sheets');
+        const rows = data.sheets || [];
+        if (!rows.length) {
+            list.innerHTML = '<p class="hint">Aún no hay fichas en sus turnos.</p>';
+            return;
+        }
+        list.innerHTML = rows.map((row) => `
+            <button type="button" class="entry" data-sheet-kind="${row.kind}" data-sheet-id="${row.id}">
+                ${row.folio}<span>${row.type}${row.client ? ' · ' + row.client : ''}${row.novelty ? ' · novedad' : ''}</span>
+            </button>
+        `).join('');
+        list.querySelectorAll('[data-sheet-kind]').forEach((btn) => {
+            btn.onclick = () => openSheet(btn.dataset.sheetKind, btn.dataset.sheetId);
+        });
+    } catch (e) {
+        list.innerHTML = '';
+        setStatus(e.message, false);
+    }
+}
+
+async function openSheet(kind, id) {
+    try {
+        const html = await apiHtml(`/supervision/sheets/${kind}/${id}`);
+        const w = window.open('', '_blank');
+        if (!w) {
+            setStatus('Permita ventanas emergentes para ver la ficha.', false);
+            return;
+        }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+    } catch (e) {
+        setStatus(e.message, false);
+    }
+}
 document.getElementById('btn-logout-open').onclick = logout;
 
 if (token()) {
@@ -1269,3 +1619,12 @@ if (token()) {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+window.addEventListener('online', () => {
+    setStatus('Conexión recuperada. Enviando pendientes…');
+    flushOutbox();
+});
+window.addEventListener('offline', () => {
+    updateSyncBar();
+    setStatus('Sin cobertura. Puede seguir registrando; se enviará al reconectar.');
+});

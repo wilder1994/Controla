@@ -19,17 +19,17 @@
         @csrf
 
         <div>
-            <x-input-label for="email" :value="__('Correo electrónico')" class="{{ $labelClass }}" />
+            <x-input-label for="email" :value="__('Usuario o correo')" class="{{ $labelClass }}" />
             <x-text-input
                 id="email"
                 class="{{ $inputClass }}"
-                type="email"
+                type="text"
                 name="email"
                 :value="old('email')"
                 required
                 autofocus
                 autocomplete="username"
-                placeholder="admin@control-acceso.test"
+                placeholder="usuario o correo"
             />
             <x-input-error :messages="$errors->get('email')" class="mt-2 text-sm text-red-400" />
         </div>

@@ -51,12 +51,12 @@
                                 @else
                                     <span class="text-xs text-slate-500">Archivado</span>
                                 @endif
-                                @if ($employee->user)
-                                    <span class="ml-2 text-xs text-indigo-300">Con acceso</span>
-                                @endif
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('company.employees.show', $employee) }}" class="text-indigo-400 hover:text-indigo-300">Ver</a>
+                                @if ($employee->is_active)
+                                    <a href="{{ route('company.employees.edit', $employee) }}" class="ml-3 text-indigo-400 hover:text-indigo-300">Editar</a>
+                                @endif
                             </td>
                         </tr>
                     @empty

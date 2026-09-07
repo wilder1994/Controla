@@ -37,15 +37,26 @@ enum SupervisorFieldModule: string
             self::Folders => 'Carpeta del puesto: completa o con faltantes.',
             self::Weapons => 'Revista del arma: identificación, novedad y aseo opcional con foto.',
             self::Recommendations => 'Hasta tres riesgos del puesto: probabilidad, impacto, consecuencia y evidencia.',
-            self::Alarms => 'Prueba o atención de alarma en el sitio: tipo, modalidad y resultado.',
-            self::Supports => 'Apoyo operativo (tipo + motivo). El sitio es opcional (puede ser en vía).',
-            self::Documents => 'Papeles que recogen o entregan en el turno. Sin cliente ni puesto.',
+            self::Alarms => 'Prueba o atención de alarma en el sitio: tipo, modalidad, resultado y GPS.',
+            self::Supports => 'Apoyo operativo en un cliente: tipo, motivo y GPS.',
+            self::Documents => 'Papeles que recogen o entregan en el turno. Sin cliente ni GPS.',
         };
     }
 
     public function requiresClient(): bool
     {
-        return $this === self::Alarms;
+        return match ($this) {
+            self::Alarms, self::Supports => true,
+            default => false,
+        };
+    }
+
+    public function requiresGps(): bool
+    {
+        return match ($this) {
+            self::Alarms, self::Supports => true,
+            default => false,
+        };
     }
 
     public function hangsOffReview(): bool

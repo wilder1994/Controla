@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -19,6 +20,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'username',
         'job_title',
         'avatar_path',
         'email',
@@ -48,6 +50,19 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'must_change_password' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            if (filled($user->username)) {
+                return;
+            }
+            $seed = filled($user->email)
+                ? (string) $user->email
+                : 'user'.Str::lower(Str::random(8)).'@local.test';
+            $user->username = app(\App\Services\Auth\AllocateLoginUsername::class)->fromEmail($seed);
+        });
     }
 
     public function securityCompany(): BelongsTo

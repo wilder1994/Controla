@@ -32,12 +32,18 @@ final class AssignableRoles
         ];
     }
 
-    /** Acceso desde ficha de empleado (no incluye admin de conjunto). */
+    public static function needsEmployee(string $role): bool
+    {
+        return in_array($role, self::forEmployeeAccess(), true);
+    }
+
+    /** Roles de empresa: siempre se crean sobre una ficha de empleado. */
     /** @return list<string> */
     public static function forEmployeeAccess(): array
     {
         return [
             'company-admin',
+            'client-admin',
             'supervisor',
             'guardia',
         ];

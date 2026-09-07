@@ -99,6 +99,7 @@
                 @php
                     $onAjustes = request()->routeIs('company.job-titles.*')
                         || request()->routeIs('company.collaborator-types.*')
+                        || request()->routeIs('company.structure-types.*')
                         || request()->routeIs('company.supervision-zones.*')
                         || request()->routeIs('company.supervision-shifts.*')
                         || request()->routeIs('company.supervision-preop.*')

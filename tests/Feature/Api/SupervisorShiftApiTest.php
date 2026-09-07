@@ -12,7 +12,6 @@ use App\Models\SupervisorRecommendation;
 use App\Models\SupervisorRiskType;
 use App\Models\SupervisorWeaponBrand;
 use App\Models\SupervisorWeaponType;
-use App\Models\User;
 use App\Support\Supervision\RecommendationEvidencePhotos;
 use App\Support\Supervision\WeaponInspectionPhotos;
 use Illuminate\Http\UploadedFile;
@@ -24,22 +23,37 @@ final class SupervisorShiftApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_supervisor_can_login_with_username_or_legacy_email(): void
+    {
+        $this->seedWithPilot();
+        $user = $this->companySupervisor();
+
+        $this->postJson('/api/supervision/login', [
+            'login' => $user->username,
+            'password' => self::COMPANY_SUPERVISOR_PASSWORD,
+        ])->assertOk()
+            ->assertJsonPath('must_change_password', true)
+            ->assertJsonPath('user.username', $user->username);
+
+        $user->update(['email' => 'legado.supervisor@sj-seguridad.test']);
+
+        $this->postJson('/api/supervision/login', [
+            'login' => 'legado.supervisor@sj-seguridad.test',
+            'password' => self::COMPANY_SUPERVISOR_PASSWORD,
+        ])->assertOk()->assertJsonPath('user.username', $user->username);
+    }
+
     public function test_supervisor_can_open_ping_and_close_shift(): void
     {
         $this->seedWithPilot();
 
-        $user = User::query()->where('email', 'supervisor@sj-seguridad.test')->firstOrFail();
+        $user = $this->companySupervisor();
         app(AssignCompanySupervisionPackageService::class)->execute(
             $user->securityCompany,
             SupervisionPackageSku::Sit1,
         );
 
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $login->assertOk();
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
 
         $open = $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
         $open->assertCreated();
@@ -59,11 +73,7 @@ final class SupervisorShiftApiTest extends TestCase
     public function test_open_shift_requires_ppe_and_photos(): void
     {
         $this->seedWithPilot();
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
 
         $this->withToken($token)
             ->withHeaders(['Accept' => 'application/json'])
@@ -75,11 +85,7 @@ final class SupervisorShiftApiTest extends TestCase
     public function test_intake_lists_checklists_and_empty_fleet(): void
     {
         $this->seedWithPilot();
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
 
         $this->withToken($token)->getJson('/api/supervision/intake')
             ->assertOk()
@@ -93,12 +99,12 @@ final class SupervisorShiftApiTest extends TestCase
     {
         $this->seedWithPilot();
 
-        $user = User::query()->where('email', 'supervisor@sj-seguridad.test')->firstOrFail();
+        $user = $this->companySupervisor();
         app(AssignCompanySupervisionPackageService::class)->execute($user->securityCompany, null);
 
         $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
+            'login' => $user->username,
+            'password' => self::COMPANY_SUPERVISOR_PASSWORD,
         ])->assertForbidden();
     }
 
@@ -106,7 +112,7 @@ final class SupervisorShiftApiTest extends TestCase
     {
         $this->seedWithPilot();
 
-        $user = User::query()->where('email', 'supervisor@sj-seguridad.test')->firstOrFail();
+        $user = $this->companySupervisor();
         app(AssignCompanySupervisionPackageService::class)->execute(
             $user->securityCompany,
             SupervisionPackageSku::Sit5,
@@ -115,11 +121,7 @@ final class SupervisorShiftApiTest extends TestCase
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
         $client->update(['has_supervision' => false]);
 
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
 
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
@@ -132,11 +134,7 @@ final class SupervisorShiftApiTest extends TestCase
     public function test_review_saves_supervisor_gps_without_minuta(): void
     {
         $this->seedWithPilot();
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
@@ -173,11 +171,7 @@ final class SupervisorShiftApiTest extends TestCase
     public function test_review_commits_inventory_logs_in_same_request(): void
     {
         $this->seedWithPilot();
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
@@ -206,14 +200,10 @@ final class SupervisorShiftApiTest extends TestCase
     public function test_review_commits_weapons_with_photos(): void
     {
         $this->seedWithPilot();
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
-        $companyId = (int) User::query()->where('email', 'supervisor@sj-seguridad.test')->value('security_company_id');
+        $companyId = $this->pilotCompanyId();
         $type = SupervisorWeaponType::query()->create([
             'security_company_id' => $companyId,
             'name' => 'Pistola',
@@ -270,14 +260,10 @@ final class SupervisorShiftApiTest extends TestCase
     public function test_review_commits_recommendations_with_photos(): void
     {
         $this->seedWithPilot();
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
-        $companyId = (int) User::query()->where('email', 'supervisor@sj-seguridad.test')->value('security_company_id');
+        $companyId = $this->pilotCompanyId();
         $physical = SupervisorRiskType::query()->create([
             'security_company_id' => $companyId,
             'name' => 'Riesgo físico',
@@ -344,11 +330,7 @@ final class SupervisorShiftApiTest extends TestCase
     public function test_review_requires_photo_and_gps(): void
     {
         $this->seedWithPilot();
-        $login = $this->postJson('/api/supervision/login', [
-            'email' => 'supervisor@sj-seguridad.test',
-            'password' => 'Super123!',
-        ]);
-        $token = $login->json('token');
+        $token = $this->loginCompanySupervisor();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload());
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();

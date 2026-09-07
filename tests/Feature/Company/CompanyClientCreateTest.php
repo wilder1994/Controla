@@ -35,7 +35,8 @@ final class CompanyClientCreateTest extends TestCase
         $this->seedWithPilot();
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
-        $structureTypeId = StructureType::idByCode('ph');
+        $companyId = (int) $user->security_company_id;
+        $structureTypeId = StructureType::idByCode($companyId, 'ph');
 
         $response = $this->actingAs($user)->post(route('company.clients.store'), [
             'party_type' => 'legal_entity',
@@ -75,7 +76,8 @@ final class CompanyClientCreateTest extends TestCase
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $company = $user->securityCompany;
         $company->update(['max_clients' => max(1, $company->accessSeatsCount())]);
-        $structureTypeId = StructureType::idByCode('ph');
+        $companyId = (int) $user->security_company_id;
+        $structureTypeId = StructureType::idByCode($companyId, 'ph');
 
         $response = $this->actingAs($user)->post(route('company.clients.store'), [
             'party_type' => 'legal_entity',
@@ -109,7 +111,8 @@ final class CompanyClientCreateTest extends TestCase
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $company = $user->securityCompany;
         $company->update(['max_clients' => max(1, $company->accessSeatsCount())]);
-        $structureTypeId = StructureType::idByCode('ph');
+        $companyId = (int) $user->security_company_id;
+        $structureTypeId = StructureType::idByCode($companyId, 'ph');
 
         $response = $this->actingAs($user)->post(route('company.clients.store'), [
             'party_type' => 'legal_entity',

@@ -321,7 +321,10 @@ final class PreviewClientImportService
             ->all();
 
         $structureTypes = [];
-        foreach (StructureType::query()->where('is_active', true)->get(['id', 'code', 'name']) as $type) {
+        foreach (StructureType::query()
+            ->where('security_company_id', $companyId)
+            ->where('is_active', true)
+            ->get(['id', 'code', 'name']) as $type) {
             $structureTypes[mb_strtolower((string) $type->code)] = $type->id;
             $structureTypes[mb_strtolower((string) $type->name)] = $type->id;
         }

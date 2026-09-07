@@ -232,7 +232,7 @@ return [
                 ['label' => 'Empresas', 'route' => 'admin.companies.index', 'permission' => 'platform.companies.view'],
                 ['label' => 'Usuarios', 'route' => 'admin.users.index', 'permission' => 'platform.users.view'],
                 ['label' => 'Documentos', 'route' => 'admin.documents.index', 'permission' => 'platform.documents.view'],
-                ['label' => 'Ajustes', 'route' => 'admin.settings.structure-types.index', 'permission' => 'platform.settings.manage'],
+                ['label' => 'Ajustes', 'route' => 'admin.settings.document-types.index', 'permission' => 'platform.settings.manage'],
             ],
         ],
         'company' => [

@@ -17,7 +17,18 @@ final class CloseSupervisorShiftService
         int $kmEnd,
         UploadedFile $odometerPhoto,
         UploadedFile $selfiePhoto,
+        ?string $clientEventId = null,
     ): SupervisorShift {
+        if ($clientEventId !== null && $clientEventId !== '') {
+            $replay = SupervisorShift::query()
+                ->where('close_client_event_id', $clientEventId)
+                ->where('user_id', $shift->user_id)
+                ->first();
+            if ($replay !== null) {
+                return $replay->load('fleetVehicle');
+            }
+        }
+
         if (! $shift->isOpen()) {
             throw ValidationException::withMessages([
                 'shift' => 'El turno ya está cerrado.',
@@ -30,7 +41,7 @@ final class CloseSupervisorShiftService
             ]);
         }
 
-        return DB::transaction(function () use ($shift, $kmEnd, $odometerPhoto, $selfiePhoto) {
+        return DB::transaction(function () use ($shift, $kmEnd, $odometerPhoto, $selfiePhoto, $clientEventId) {
             $shift->load('fleetVehicle');
             $dir = 'supervision/'.$shift->security_company_id.'/'.$shift->id;
             $odoPath = $odometerPhoto->storeAs($dir, 'end_odometer.jpg', 'local');
@@ -45,6 +56,7 @@ final class CloseSupervisorShiftService
                 'km_end_photo_path' => $odoPath,
                 'km_end_selfie_path' => $selfiePath,
                 'ended_at' => now(),
+                'close_client_event_id' => $clientEventId,
             ]);
 
             if ($shift->fleetVehicle !== null) {

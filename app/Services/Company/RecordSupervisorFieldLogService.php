@@ -36,6 +36,7 @@ final class RecordSupervisorFieldLogService
         ?string $notes,
         ?float $lat,
         ?float $lng,
+        ?string $clientEventId = null,
     ): SupervisorFieldLog {
         if (! $shift->isOpen()) {
             throw ValidationException::withMessages([
@@ -43,13 +44,24 @@ final class RecordSupervisorFieldLogService
             ]);
         }
 
+        if ($clientEventId !== null && $clientEventId !== '') {
+            $replay = SupervisorFieldLog::query()
+                ->where('client_event_id', $clientEventId)
+                ->where('supervisor_shift_id', $shift->id)
+                ->first();
+            if ($replay !== null) {
+                return $replay;
+            }
+        }
+
         $review = $this->resolveReview($shift, $module, $reviewId);
         $client = $module === SupervisorFieldModule::Documents
             ? null
             : ($review?->client ?? $this->resolveClient($shift, $module, $clientId));
+        $this->assertGps($module, $lat, $lng);
         $validated = $this->assertPayload->execute($module, $payload, (int) $shift->security_company_id);
 
-        return DB::transaction(function () use ($shift, $module, $validated, $client, $review, $notes, $lat, $lng) {
+        return DB::transaction(function () use ($shift, $module, $validated, $client, $review, $notes, $lat, $lng, $clientEventId) {
             $recommendationId = null;
             $payload = $validated->payload;
 
@@ -100,6 +112,7 @@ final class RecordSupervisorFieldLogService
                 'latitude' => $lat,
                 'longitude' => $lng,
                 'recorded_at' => now(),
+                'client_event_id' => $clientEventId,
             ]);
         });
     }
@@ -191,5 +204,18 @@ final class RecordSupervisorFieldLogService
         }
 
         return $review;
+    }
+
+    private function assertGps(SupervisorFieldModule $module, ?float $lat, ?float $lng): void
+    {
+        if (! $module->requiresGps()) {
+            return;
+        }
+
+        if ($lat === null || $lng === null) {
+            throw ValidationException::withMessages([
+                'latitude' => 'Active la ubicación del dispositivo para registrar este módulo.',
+            ]);
+        }
     }
 }

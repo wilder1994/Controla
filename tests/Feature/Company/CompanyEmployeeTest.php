@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Company;
 
-use App\Models\Client;
 use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
@@ -52,6 +51,7 @@ final class CompanyEmployeeTest extends TestCase
             ->assertSee('Ajustes')
             ->assertSee('Cargos')
             ->assertSee('Tipos')
+            ->assertSee('Estructuras')
             ->assertSee('Zonas')
             ->assertSee('Turnos')
             ->assertSee('Preoperacional')
@@ -70,6 +70,7 @@ final class CompanyEmployeeTest extends TestCase
         $this->actingAs($guard)->get(route('company.employees.index'))->assertForbidden();
         $this->actingAs($guard)->get(route('company.job-titles.index'))->assertForbidden();
         $this->actingAs($guard)->get(route('company.collaborator-types.index'))->assertForbidden();
+        $this->actingAs($guard)->get(route('company.structure-types.index'))->assertForbidden();
     }
 
     public function test_company_admin_can_create_job_title(): void
@@ -263,97 +264,16 @@ final class CompanyEmployeeTest extends TestCase
         $this->assertNull($employee->ceased_at);
     }
 
-    public function test_can_grant_supervisor_access_from_employee(): void
+    public function test_employee_edit_form_renders(): void
     {
         $this->seedWithPilot();
         $admin = $this->companyAdmin();
         $employee = $this->createEmployee($this->createJobTitle('Supervisor de zona'));
 
-        $response = $this->actingAs($admin)->post(route('company.employees.access', $employee), [
-            'role' => 'supervisor',
-            'password' => 'Clave123!',
-            'password_confirmation' => 'Clave123!',
-        ]);
-
-        $response->assertRedirect(route('company.employees.show', $employee));
-        $user = User::query()->where('email', $employee->email)->firstOrFail();
-        $this->assertTrue($user->hasRole('supervisor'));
-        $this->assertSame($employee->id, (int) $user->employee_id);
-        $this->assertSame('Supervisor de zona', $user->job_title);
-        $this->assertNotNull($user->supervisor_code);
-        $this->assertDatabaseMissing('client_user_assignments', ['user_id' => $user->id]);
-    }
-
-    public function test_grant_guard_access_requires_client(): void
-    {
-        $this->seedWithPilot();
-        $admin = $this->companyAdmin();
-        $employee = $this->createEmployee($this->createJobTitle('Portería'));
-
-        $this->actingAs($admin)->from(route('company.employees.show', $employee))->post(
-            route('company.employees.access', $employee),
-            [
-                'role' => 'guardia',
-                'password' => 'Clave123!',
-                'password_confirmation' => 'Clave123!',
-            ],
-        )->assertSessionHasErrors('client_ids');
-
-        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
-
-        $this->actingAs($admin)->post(route('company.employees.access', $employee), [
-            'role' => 'guardia',
-            'password' => 'Clave123!',
-            'password_confirmation' => 'Clave123!',
-            'client_ids' => [$client->id],
-        ])->assertRedirect(route('company.employees.show', $employee));
-
-        $user = User::query()->where('email', $employee->email)->firstOrFail();
-        $this->assertTrue($user->hasRole('guardia'));
-        $this->assertDatabaseHas('client_user_assignments', [
-            'user_id' => $user->id,
-            'client_id' => $client->id,
-        ]);
-    }
-
-    public function test_cannot_grant_client_admin_from_employee(): void
-    {
-        $this->seedWithPilot();
-        $admin = $this->companyAdmin();
-        $employee = $this->createEmployee($this->createJobTitle('Admin conjunto'));
-        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
-
-        $this->actingAs($admin)->from(route('company.employees.show', $employee))->post(
-            route('company.employees.access', $employee),
-            [
-                'role' => 'client-admin',
-                'password' => 'Clave123!',
-                'password_confirmation' => 'Clave123!',
-                'client_ids' => [$client->id],
-            ],
-        )->assertSessionHasErrors('role');
-    }
-
-    public function test_cannot_grant_access_twice(): void
-    {
-        $this->seedWithPilot();
-        $admin = $this->companyAdmin();
-        $employee = $this->createEmployee($this->createJobTitle('Supervisor de zona'));
-
-        $this->actingAs($admin)->post(route('company.employees.access', $employee), [
-            'role' => 'supervisor',
-            'password' => 'Clave123!',
-            'password_confirmation' => 'Clave123!',
-        ])->assertRedirect();
-
-        $this->actingAs($admin)->from(route('company.employees.show', $employee))->post(
-            route('company.employees.access', $employee),
-            [
-                'role' => 'supervisor',
-                'password' => 'Clave123!',
-                'password_confirmation' => 'Clave123!',
-            ],
-        )->assertSessionHasErrors('role');
+        $this->actingAs($admin)
+            ->get(route('company.employees.edit', $employee))
+            ->assertOk()
+            ->assertSee('Pérez');
     }
 
     private function companyAdmin(): User

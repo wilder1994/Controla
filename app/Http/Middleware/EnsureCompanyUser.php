@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use App\Support\Platform\SupportCompanyContext;
 use Symfony\Component\HttpFoundation\Response;
 
 final class EnsureCompanyUser
@@ -19,6 +20,12 @@ final class EnsureCompanyUser
         }
 
         if ($user->hasRole('super-admin')) {
+            if (! SupportCompanyContext::isActive() && ! $this->allowsSuperAdminWithoutSupport($request)) {
+                return redirect()
+                    ->route('admin.dashboard')
+                    ->with('warning', SupportCompanyContext::EXPIRED_FLASH);
+            }
+
             return $next($request);
         }
 
@@ -33,5 +40,17 @@ final class EnsureCompanyUser
         }
 
         abort(403, 'Acceso restringido al panel de empresa.');
+    }
+
+    private function allowsSuperAdminWithoutSupport(Request $request): bool
+    {
+        return $request->routeIs([
+            'company.porteria.enter',
+            'company.clients.select',
+            'company.clients.index',
+            'company.clients.show',
+            'company.clients.activate',
+            'company.clients.operate-client',
+        ]);
     }
 }

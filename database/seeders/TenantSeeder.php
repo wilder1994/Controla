@@ -72,6 +72,7 @@ final class TenantSeeder extends Seeder
 
         app(SeedSupervisorIntakeDefaultsService::class)->execute((int) $company->id);
         $this->seedPilotVigilante((int) $company->id);
+        $this->ensurePilotStructureTypes((int) $company->id);
 
         $palmas = Client::query()->updateOrCreate(
             ['security_company_id' => $company->id, 'slug' => 'palmas-del-ingenio'],
@@ -84,7 +85,7 @@ final class TenantSeeder extends Seeder
                 'email' => 'admin@palmas.test',
                 'representative_name' => 'Ana Admin',
                 'representative_email' => 'ana@palmas.test',
-                'structure_type_id' => StructureType::idByCode('ph'),
+                'structure_type_id' => StructureType::idByCode((int) $company->id, 'ph'),
                 'login_suffix' => 'palmasdelingenio',
                 'address' => 'Cra 100 # 14-25, Cali',
                 'latitude' => 3.3678,
@@ -110,7 +111,7 @@ final class TenantSeeder extends Seeder
                 'email' => 'admin@torres.test',
                 'representative_name' => 'Luis Torres',
                 'representative_email' => 'luis@torres.test',
-                'structure_type_id' => StructureType::idByCode('ph'),
+                'structure_type_id' => StructureType::idByCode((int) $company->id, 'ph'),
                 'login_suffix' => 'torresloma',
                 'address' => 'Av 6N # 28-90, Cali',
                 'latitude' => 3.3742,
@@ -233,5 +234,30 @@ final class TenantSeeder extends Seeder
                 'is_active' => true,
             ],
         );
+    }
+
+    private function ensurePilotStructureTypes(int $companyId): void
+    {
+        $types = [
+            ['code' => 'general_area', 'name' => 'Conjunto / Zona', 'is_unit' => false, 'sort_order' => 10],
+            ['code' => 'ph', 'name' => 'Propiedad horizontal', 'is_unit' => false, 'sort_order' => 20],
+            ['code' => 'block', 'name' => 'Torre / Bloque', 'is_unit' => false, 'sort_order' => 40],
+            ['code' => 'apartment', 'name' => 'Apartamento', 'is_unit' => true, 'sort_order' => 50],
+        ];
+
+        foreach ($types as $type) {
+            StructureType::query()->firstOrCreate(
+                [
+                    'security_company_id' => $companyId,
+                    'code' => $type['code'],
+                ],
+                [
+                    'name' => $type['name'],
+                    'is_unit' => $type['is_unit'],
+                    'is_active' => true,
+                    'sort_order' => $type['sort_order'],
+                ],
+            );
+        }
     }
 }

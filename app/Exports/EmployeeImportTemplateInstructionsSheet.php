@@ -38,7 +38,7 @@ final class EmployeeImportTemplateInstructionsSheet implements FromArray, Should
             ['Fecha Nacimiento', 'Obligatoria. Formato dd-mm-aaaa o fecha Excel.'],
             ['Nacionalidad', 'Obligatoria. Ej. COLOMBIANA.'],
             ['Email Ficha', 'Obligatorio en Controla aunque el encabezado sea gris. Único por empresa.'],
-            ['G.Sanguíneo', 'O+, O-, A+, A-, B+, B-, AB+, AB-. Se ignora el texto entre paréntesis.'],
+            ['G.Sanguíneo', 'O+, O-, A+, A-, B+, B-, AB+, AB- o Pendiente (si aún no se conoce). Se ignora el texto entre paréntesis.'],
             ['Mismo CC origen? / Discapacidad', 'SI o NO. Vacío = sin dato / No.'],
             [''],
             ['No va en este archivo'],

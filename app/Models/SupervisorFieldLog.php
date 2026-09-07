@@ -25,6 +25,7 @@ final class SupervisorFieldLog extends Model
         'latitude',
         'longitude',
         'recorded_at',
+        'client_event_id',
     ];
 
     protected function casts(): array

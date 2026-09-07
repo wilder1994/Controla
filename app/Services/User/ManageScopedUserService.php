@@ -26,7 +26,13 @@ final class ManageScopedUserService
     {
         $this->assertRoleAllowed($data->role, $context, $actor);
 
-        if (User::query()->where('email', $data->email)->exists()) {
+        if (User::query()->where('username', $data->username)->exists()) {
+            throw ValidationException::withMessages([
+                'username' => 'Ya existe una cuenta con este usuario.',
+            ]);
+        }
+
+        if (filled($data->email) && User::query()->where('email', $data->email)->exists()) {
             throw ValidationException::withMessages([
                 'email' => 'Ya existe una cuenta con este email.',
             ]);
@@ -38,9 +44,11 @@ final class ManageScopedUserService
         return DB::transaction(function () use ($data, $companyId, $clientIds): User {
             $attributes = [
                 'name' => $data->name,
-                'email' => $data->email,
+                'username' => $data->username,
+                'email' => filled($data->email) ? $data->email : null,
                 'password' => $data->password,
                 'is_active' => $data->isActive,
+                'must_change_password' => $data->mustChangePassword,
                 'security_company_id' => $companyId,
                 'employee_id' => $data->employeeId,
                 'job_title' => $data->jobTitle,
@@ -66,7 +74,7 @@ final class ManageScopedUserService
             $this->assertRoleAllowed($data->role, $context, $actor);
         }
 
-        if ($data->email !== $target->email && User::query()->where('email', $data->email)->exists()) {
+        if (filled($data->email) && $data->email !== $target->email && User::query()->where('email', $data->email)->exists()) {
             throw ValidationException::withMessages([
                 'email' => 'Ya existe una cuenta con este email.',
             ]);
@@ -90,7 +98,7 @@ final class ManageScopedUserService
         return DB::transaction(function () use ($target, $data, $role, $clientIds, $companyId, $clientChanged): User {
             $attributes = [
                 'name' => $data->name,
-                'email' => $data->email,
+                'email' => filled($data->email) ? $data->email : null,
                 'is_active' => $data->isActive,
                 'job_title' => $data->jobTitle,
             ];
@@ -127,6 +135,27 @@ final class ManageScopedUserService
 
             return $target->fresh(['roles', 'clients']);
         });
+    }
+
+    public function setActive(User $target, User $actor, bool $active): void
+    {
+        if ($actor->is($target) && ! $active) {
+            throw ValidationException::withMessages([
+                'user' => 'No puede desactivar su propia cuenta.',
+            ]);
+        }
+
+        if ($target->hasRole('super-admin') && ! $actor->hasRole('super-admin')) {
+            throw ValidationException::withMessages([
+                'user' => 'No puede desactivar un súper administrador.',
+            ]);
+        }
+
+        if (! $active) {
+            $target->tokens()->delete();
+        }
+
+        $target->update(['is_active' => $active]);
     }
 
     private function generateSupervisorCode(?int $companyId, ?int $exceptUserId = null): string

@@ -24,7 +24,7 @@ final class StructureModuleTest extends TestCase
 
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
         $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
-        $expectedTypeId = StructureType::idByCode('ph');
+        $expectedTypeId = StructureType::idByCode((int) $client->security_company_id, 'ph');
 
         $this->assertNotNull($client);
         $this->assertNotNull($admin);
@@ -61,7 +61,7 @@ final class StructureModuleTest extends TestCase
             'client_id' => $clientB->id,
             'name' => 'Apto B1',
             'code' => 'B1-TEST',
-            'structure_type_id' => StructureType::idByCode('apartment'),
+            'structure_type_id' => StructureType::idByCode((int) $clientB->security_company_id, 'apartment'),
             'is_active' => true,
         ]);
 

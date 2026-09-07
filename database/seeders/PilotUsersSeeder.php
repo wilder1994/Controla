@@ -12,13 +12,13 @@ use Illuminate\Database\Seeder;
 
 /**
  * Usuarios demo de empresa/conjunto/ops (requiere TenantSeeder previo).
+ * No crea supervisor: el acceso de vigilancia sale de un empleado en Usuarios.
  */
 final class PilotUsersSeeder extends Seeder
 {
     public function run(): void
     {
         $this->seedCompanyAdmin();
-        $this->seedCompanySupervisor();
         $this->seedClientAdmin();
         $this->linkOperationalUsersToPilotClient();
     }
@@ -44,29 +44,6 @@ final class PilotUsersSeeder extends Seeder
             ]
         );
         $companyAdmin->syncRoles(['company-admin']);
-    }
-
-    private function seedCompanySupervisor(): void
-    {
-        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->first();
-
-        if ($company === null) {
-            return;
-        }
-
-        $supervisor = User::query()->updateOrCreate(
-            ['email' => 'supervisor@sj-seguridad.test'],
-            [
-                'name' => 'Supervisor Zona Demo',
-                'job_title' => 'Supervisor de vigilancia',
-                'password' => 'Super123!',
-                'email_verified_at' => now(),
-                'is_active' => true,
-                'security_company_id' => $company->id,
-                'supervisor_code' => '123456',
-            ]
-        );
-        $supervisor->syncRoles(['supervisor']);
     }
 
     private function seedClientAdmin(): void

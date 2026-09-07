@@ -1,6 +1,6 @@
 # Empleados, cargos y tipos (empresa)
 
-**Última actualización:** 27 agosto 2026
+**Última actualización:** 5 septiembre 2026
 
 Maestro de colaboradores de la empresa de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
 
@@ -10,7 +10,7 @@ Fuente de columnas: `Maestro Colaboradores WM.xlsx`, **sin** las cuatro de asign
 
 ## Dónde vive
 
-Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos** | **Zonas** | **Turnos** | **Preoperacional** | **Documentos** | **Libros** | **Tipos de arma** | **Marcas** | **Riesgos** | **Alarmas** | **Apoyos**. Las de Supervisión de campo: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos** | **Estructuras** | **Zonas** | **Turnos** | **Preoperacional** | **Documentos** | **Libros** | **Tipos de arma** | **Marcas** | **Riesgos** | **Alarmas** | **Apoyos**. Las de Supervisión de campo: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
 | Pieza | Dónde |
 |-------|--------|
@@ -19,11 +19,12 @@ Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos*
 | Listado / alta / ficha | Sidebar **Empleados** (`/company/employees`) |
 | Cargos | Ajustes → `/company/job-titles` |
 | Tipos de colaborador | Ajustes → `/company/collaborator-types` |
+| Tipos de estructura | Ajustes → `/company/structure-types` |
 | Zonas / turnos / preoperacional (Supervisión) | Ajustes → `/company/supervision-zones`, `…-shifts`, `…-preop` |
 | Formato Excel | `GET /company/employees/template` |
 | Carga masiva | modal en el listado → preview → aceptar |
 
-Permiso: `company.settings.manage`. Dar acceso (login) también pide `company.users.assign`.
+Permiso: `company.settings.manage`. El login se da en **Usuarios** (`company.users.assign`): mismo formulario crear/editar; todos los roles con empleado; usuario `nombre.apellido.####`. El email personal es el de la ficha; el From de avisos es el correo de la **zona** de Supervisión.
 
 ---
 
@@ -53,7 +54,7 @@ Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 | Q | Discapacidad | SI / NO, opcional |
 | R | Email Ficha | Gris en archivo, **obligatorio** en sistema. Único por empresa. El mismo correo de **esa** ficha (mismo documento) se acepta. El de **otro** empleado es error. |
 | S–U | Expedición documento | Opcional |
-| V | G.Sanguíneo | O+, O-, A+, A-, B+, B-, AB+, AB- |
+| V | G.Sanguíneo | O+, O-, A+, A-, B+, B-, AB+, AB- o **Pendiente** (si no se conoce). |
 
 **No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (tarjetas Instalaciones y accesos / Supervisión). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 

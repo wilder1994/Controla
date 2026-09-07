@@ -29,7 +29,7 @@ final class ManageSupervisorCompanyCatalogService
         $this->defaults->execute($companyId);
     }
 
-    /** @param array{name: string, is_active?: bool} $data */
+    /** @param array{name: string, is_active?: bool, email?: ?string} $data */
     public function createZone(int $companyId, array $data): SupervisorZone
     {
         $name = trim($data['name']);
@@ -38,15 +38,22 @@ final class ManageSupervisorCompanyCatalogService
         return SupervisorZone::query()->create([
             'security_company_id' => $companyId,
             'name' => $name,
+            'email' => filled($data['email'] ?? null) ? trim((string) $data['email']) : null,
             'is_active' => (bool) ($data['is_active'] ?? true),
             'sort_order' => $this->nextOrder(SupervisorZone::class, $companyId),
         ]);
     }
 
-    /** @param array{name?: string, is_active?: bool} $data */
+    /** @param array{name?: string, is_active?: bool, email?: ?string} $data */
     public function updateZone(SupervisorZone $zone, array $data): SupervisorZone
     {
-        return $this->updateNamed($zone, $data);
+        $zone = $this->updateNamed($zone, $data);
+        if (array_key_exists('email', $data)) {
+            $zone->email = filled($data['email']) ? trim((string) $data['email']) : null;
+            $zone->save();
+        }
+
+        return $zone->refresh();
     }
 
     public function deleteZone(SupervisorZone $zone): void

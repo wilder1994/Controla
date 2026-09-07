@@ -505,6 +505,7 @@ final class FieldModuleCatalog
             'capture' => 'logs',
             'requires_client' => $module->requiresClient(),
             'hangs_off_review' => $module->hangsOffReview(),
+            'requires_gps' => $module->requiresGps(),
             'fields' => $fields,
         ];
     }

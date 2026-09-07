@@ -21,5 +21,6 @@ final readonly class RecordSupervisorShiftReviewInput
         public array $logs = [],
         /** @var array<int, array<string, UploadedFile>> */
         public array $logPhotos = [],
+        public ?string $clientEventId = null,
     ) {}
 }

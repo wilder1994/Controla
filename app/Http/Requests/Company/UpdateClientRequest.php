@@ -49,7 +49,9 @@ final class UpdateClientRequest extends FormRequest
             'structure_type_id' => [
                 'required',
                 'integer',
-                Rule::exists('structure_types', 'id')->where('is_active', true),
+                Rule::exists('structure_types', 'id')
+                    ->where('is_active', true)
+                    ->where('security_company_id', $companyId),
             ],
             ...GeoAddressRules::optional(),
             'service_started_at' => ['nullable', 'date'],

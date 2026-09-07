@@ -38,16 +38,24 @@
         <x-ui.field-error :messages="$errors->get('name')" />
     </div>
 
+    @if ($isEdit)
+        <div>
+            <x-ui.label for="username">Usuario de acceso</x-ui.label>
+            <x-ui.input id="username" name="username_display" :value="$managedUser?->username" disabled :accent="$accent" />
+            <p class="mt-1 text-[11px] text-slate-500">No se cambia. El correo de abajo no es el login de Supervisión.</p>
+        </div>
+    @endif
+
     <div>
         <x-ui.label for="job_title">Cargo / función</x-ui.label>
         <x-ui.input id="job_title" name="job_title" :value="old('job_title', $managedUser?->job_title)" placeholder="Ej. Portería, Ronda, Supervisor de zona" :accent="$accent" />
-        <p class="mt-1 text-[11px] text-slate-500">Misma cuenta: puedes cambiar solo la ficha del empleado (p. ej. portería ↔ ronda).</p>
+        <p class="mt-1 text-[11px] text-slate-500">Dato de la cuenta. El cargo de RH se edita en Empleados.</p>
         <x-ui.field-error :messages="$errors->get('job_title')" />
     </div>
 
     <div>
         <x-ui.label for="email">Email de acceso</x-ui.label>
-        <x-ui.input type="email" id="email" name="email" :value="old('email', $managedUser?->email)" required :accent="$accent" />
+        <x-ui.input type="email" id="email" name="email" :value="old('email', $managedUser?->email)" :accent="$accent" />
         <x-ui.field-error :messages="$errors->get('email')" />
     </div>
 

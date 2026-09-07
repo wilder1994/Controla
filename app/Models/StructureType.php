@@ -6,12 +6,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
 
 final class StructureType extends Model
 {
     protected $fillable = [
+        'security_company_id',
         'code',
         'name',
         'description',
@@ -27,6 +29,11 @@ final class StructureType extends Model
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    public function securityCompany(): BelongsTo
+    {
+        return $this->belongsTo(SecurityCompany::class);
     }
 
     public function structures(): HasMany
@@ -45,21 +52,27 @@ final class StructureType extends Model
         return $query->where('is_active', true)->orderBy('sort_order')->orderBy('name');
     }
 
-    public static function idByCode(string $code): int
+    public static function idByCode(int $companyId, string $code): int
     {
-        $id = self::query()->where('code', $code)->value('id');
+        $id = self::query()
+            ->where('security_company_id', $companyId)
+            ->where('code', $code)
+            ->value('id');
 
         if ($id === null) {
-            throw new InvalidArgumentException("Structure type [{$code}] is not seeded.");
+            throw new InvalidArgumentException("Structure type [{$code}] is not defined for company [{$companyId}].");
         }
 
         return (int) $id;
     }
 
     /** @return array<int, string> */
-    public static function optionsForSelect(bool $activeOnly = true): array
+    public static function optionsForSelect(int $companyId, bool $activeOnly = true): array
     {
-        $query = self::query()->orderBy('sort_order')->orderBy('name');
+        $query = self::query()
+            ->where('security_company_id', $companyId)
+            ->orderBy('sort_order')
+            ->orderBy('name');
 
         if ($activeOnly) {
             $query->where('is_active', true);
@@ -67,4 +80,4 @@ final class StructureType extends Model
 
         return $query->pluck('name', 'id')->all();
     }
-}
+};

@@ -27,9 +27,10 @@ final class MigrateLegacyStructuresService
             return ['skipped' => true, 'structures' => 0, 'members' => 0];
         }
 
-        $generalAreaId = StructureType::idByCode('general_area');
-        $blockId = StructureType::idByCode('block');
-        $apartmentId = StructureType::idByCode('apartment');
+        $companyId = (int) $client->security_company_id;
+        $generalAreaId = StructureType::idByCode($companyId, 'general_area');
+        $blockId = StructureType::idByCode($companyId, 'block');
+        $apartmentId = StructureType::idByCode($companyId, 'apartment');
 
         return DB::transaction(function () use ($client, $generalAreaId, $blockId, $apartmentId): array {
             $root = Structure::query()->create([

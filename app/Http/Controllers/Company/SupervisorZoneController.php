@@ -38,6 +38,7 @@ final class SupervisorZoneController extends Controller
     {
         $this->catalog->createZone($this->companyId($request), [
             'name' => $request->validated('name'),
+            'email' => $request->validated('email'),
             'is_active' => $request->boolean('is_active', true),
         ]);
 
@@ -49,6 +50,7 @@ final class SupervisorZoneController extends Controller
         abort_unless((int) $zone->security_company_id === $this->companyId($request), 404);
         $this->catalog->updateZone($zone, [
             'name' => $request->validated('name'),
+            'email' => $request->validated('email'),
             'is_active' => $request->boolean('is_active'),
         ]);
 

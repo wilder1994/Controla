@@ -43,7 +43,7 @@
                         <option value="{{ $id }}" @selected((string) old('structure_type_id') === (string) $id)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <p class="mt-1 text-[11px] text-slate-500">Queda fijo para este cliente; los nodos del árbol heredan este tipo.</p>
+                <p class="mt-1 text-[11px] text-slate-500">Queda fijo para este cliente; los nodos del árbol heredan este tipo. Si el listado está vacío, crea tipos en <a href="{{ route('company.structure-types.index') }}" class="text-indigo-400 hover:text-indigo-300">Ajustes → Estructuras</a>.</p>
                 <x-ui.field-error :messages="$errors->get('structure_type_id')" />
             </div>
 

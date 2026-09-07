@@ -2,15 +2,20 @@
 
 namespace Tests;
 
+use App\Enums\BloodGroup;
 use App\Enums\CompanyPackageSku;
 use App\Enums\SupervisorChecklistKind;
 use App\Models\Client;
+use App\Models\CompanyCollaboratorType;
+use App\Models\CompanyJobTitle;
 use App\Models\Employee;
+use App\Models\SecurityCompany;
 use App\Models\SupervisorPost;
 use App\Models\SupervisorChecklistItem;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
 use App\Models\User;
+use App\Services\Company\GrantEmployeeAccessService;
 use App\Services\Company\SeedSupervisorIntakeDefaultsService;
 use App\Support\Legal\CorpusAcceptanceRules;
 use Database\Seeders\DatabaseSeeder;
@@ -20,11 +25,84 @@ use Illuminate\Http\UploadedFile;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected const COMPANY_SUPERVISOR_PASSWORD = 'Super123!';
+
     /** Seed mínimo + datos piloto (empresa, conjuntos, censo, usuarios demo). */
     protected function seedWithPilot(): void
     {
         $this->seed(DatabaseSeeder::class);
         $this->seed(PilotDemoSeeder::class);
+    }
+
+    protected function pilotCompany(): SecurityCompany
+    {
+        return SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
+    }
+
+    protected function pilotCompanyId(): int
+    {
+        return (int) $this->pilotCompany()->id;
+    }
+
+    protected function companySupervisor(
+        string $firstNames = 'Luis',
+        string $lastName = 'Rojas',
+        string $documentNumber = '1199004400',
+        string $username = 'luis.rojas.4400',
+    ): User {
+        $existing = User::query()->where('username', $username)->first();
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $companyId = $this->pilotCompanyId();
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $title = CompanyJobTitle::query()->firstOrCreate(
+            ['security_company_id' => $companyId, 'name' => 'Supervisor de vigilancia'],
+            ['is_active' => true, 'sort_order' => 10],
+        );
+        $type = CompanyCollaboratorType::query()->firstOrCreate(
+            ['security_company_id' => $companyId, 'name' => 'OPERATIVO'],
+            ['is_active' => true, 'sort_order' => 10],
+        );
+        $employee = Employee::query()->create([
+            'security_company_id' => $companyId,
+            'job_title_id' => $title->id,
+            'collaborator_type_id' => $type->id,
+            'document_type' => 'CC',
+            'document_number' => $documentNumber,
+            'last_name_paternal' => $lastName,
+            'last_name_maternal' => '',
+            'first_names' => $firstNames,
+            'sex' => 'hombre',
+            'birth_date' => '1988-03-15',
+            'email' => str_replace('.', '', $username).'@sj-seguridad.test',
+            'nationality' => 'COLOMBIANA',
+            'blood_group' => BloodGroup::OPositive,
+            'is_active' => true,
+        ]);
+
+        return app(GrantEmployeeAccessService::class)->execute(
+            $employee,
+            $admin,
+            'supervisor',
+            self::COMPANY_SUPERVISOR_PASSWORD,
+            [],
+            $username,
+            $title->name,
+        );
+    }
+
+    protected function loginCompanySupervisor(): string
+    {
+        $user = $this->companySupervisor();
+        $login = $this->postJson('/api/supervision/login', [
+            'login' => $user->username,
+            'password' => self::COMPANY_SUPERVISOR_PASSWORD,
+        ]);
+        $login->assertOk();
+
+        return (string) $login->json('token');
     }
 
     /** @return array<string, array<string, string>> */
@@ -41,9 +119,7 @@ abstract class TestCase extends BaseTestCase
     /** @return array<string, mixed> */
     protected function supervisorShiftOpenPayload(array $overrides = []): array
     {
-        $companyId = (int) User::query()
-            ->where('email', 'supervisor@sj-seguridad.test')
-            ->value('security_company_id');
+        $companyId = $this->pilotCompanyId();
 
         if ($companyId > 0) {
             app(SeedSupervisorIntakeDefaultsService::class)->execute($companyId);

@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Company;
 
 use App\Domain\Supervision\Data\SupervisionQueryFilter;
+use App\Enums\SupervisorFieldSheetKind;
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\SecurityCompany;
 use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Services\Company\BuildSupervisionMapService;
 use App\Services\Company\BuildSupervisionSummaryService;
 use App\Services\Company\ExportSupervisionExecutiveReportService;
+use App\Services\Company\ListSupervisorFieldSheetsService;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,6 +26,7 @@ final class SupervisionMapController extends Controller
         private readonly BuildSupervisionMapService $buildSupervisionMapService,
         private readonly BuildSupervisionSummaryService $buildSupervisionSummaryService,
         private readonly ExportSupervisionExecutiveReportService $exportReport,
+        private readonly ListSupervisorFieldSheetsService $listSheets,
     ) {}
 
     public function index(Request $request): View
@@ -33,7 +37,27 @@ final class SupervisionMapController extends Controller
         $company = SecurityCompany::query()->findOrFail($companyId);
         $filter = $this->queryFilter($request, $company);
 
-        $map = $this->buildSupervisionMapService->execute($company, $filter);
+        $tab = $request->string('tab')->toString();
+        if (! in_array($tab, ['live', 'history', 'summary', 'sheets'], true)) {
+            $tab = 'live';
+        }
+
+        $map = $tab === 'sheets'
+            ? [
+                'live' => [],
+                'history' => [],
+                'reviews' => [],
+                'clients' => [],
+                'from' => $filter->from,
+                'to' => $filter->to,
+                'google_maps' => [
+                    'api_key' => null,
+                    'center' => null,
+                    'zoom' => 6,
+                ],
+            ]
+            : $this->buildSupervisionMapService->execute($company, $filter);
+
         $summary = $this->buildSupervisionSummaryService->execute(
             $company,
             $filter->withDates(
@@ -42,10 +66,13 @@ final class SupervisionMapController extends Controller
             ),
         );
 
-        $tab = $request->string('tab')->toString();
-        if (! in_array($tab, ['live', 'history', 'summary'], true)) {
-            $tab = 'live';
-        }
+        $sheets = $tab === 'sheets'
+            ? $this->listSheets->execute(
+                $companyId,
+                $filter->withDates($summary->from, $summary->to),
+                max(1, $request->integer('page', 1)),
+            )
+            : null;
 
         return view('modules.company.supervision.index', [
             'company' => $company,
@@ -53,6 +80,12 @@ final class SupervisionMapController extends Controller
             'summary' => $summary,
             'tab' => $tab,
             'filter' => $filter,
+            'sheets' => $sheets,
+            'clients' => Client::query()
+                ->where('security_company_id', $companyId)
+                ->where('has_supervision', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'zones' => SupervisorZone::query()
                 ->where('security_company_id', $companyId)
                 ->orderBy('sort_order')
@@ -88,6 +121,9 @@ final class SupervisionMapController extends Controller
         $to = $request->string('to')->toString();
         $zoneId = $request->integer('zone_id');
         $supervisorId = $request->integer('supervisor_id');
+        $clientId = $request->integer('client_id');
+        $sheetKind = $request->string('kind')->toString();
+        $novelty = $request->string('novelty')->toString();
 
         if ($zoneId > 0) {
             $owned = SupervisorZone::query()
@@ -106,11 +142,24 @@ final class SupervisionMapController extends Controller
             $supervisorId = $owned ? $supervisorId : 0;
         }
 
+        if ($clientId > 0) {
+            $owned = Client::query()
+                ->where('security_company_id', $company->id)
+                ->whereKey($clientId)
+                ->exists();
+            $clientId = $owned ? $clientId : 0;
+        }
+
+        $kind = SupervisorFieldSheetKind::tryFrom($sheetKind);
+
         return new SupervisionQueryFilter(
             from: $from !== '' ? $from : null,
             to: $to !== '' ? $to : null,
             zoneId: $zoneId > 0 ? $zoneId : null,
             supervisorId: $supervisorId > 0 ? $supervisorId : null,
+            sheetKind: $kind?->value,
+            clientId: $clientId > 0 ? $clientId : null,
+            hasNovelty: $novelty === '1' ? true : ($novelty === '0' ? false : null),
         );
     }
 }

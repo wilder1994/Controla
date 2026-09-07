@@ -245,7 +245,7 @@ class SecurityCompany extends Model
 
     public function displayName(): string
     {
-        return $this->trade_name ?: $this->legal_name;
+        return (string) ($this->trade_name ?: $this->legal_name ?: 'Empresa');
     }
 
     public function activeClients(): HasMany

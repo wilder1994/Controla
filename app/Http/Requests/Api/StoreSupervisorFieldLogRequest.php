@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Api;
 
 use App\Enums\SupervisorFieldModule;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,6 +27,25 @@ final class StoreSupervisorFieldLogRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
+            'client_event_id' => ['nullable', 'uuid'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $module = SupervisorFieldModule::tryFrom((string) $this->input('module'));
+            if ($module === null) {
+                return;
+            }
+
+            if ($module->requiresClient() && $this->input('client_id') === null) {
+                $validator->errors()->add('client_id', 'Este módulo requiere un sitio con Supervisión.');
+            }
+
+            if ($module->requiresGps() && ($this->input('latitude') === null || $this->input('longitude') === null)) {
+                $validator->errors()->add('latitude', 'Active la ubicación del dispositivo para registrar este módulo.');
+            }
+        });
     }
 }

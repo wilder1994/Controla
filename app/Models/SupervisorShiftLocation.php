@@ -16,6 +16,7 @@ final class SupervisorShiftLocation extends Model
         'longitude',
         'accuracy',
         'source',
+        'client_event_id',
     ];
 
     protected function casts(): array

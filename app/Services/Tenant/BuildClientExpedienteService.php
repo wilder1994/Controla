@@ -38,6 +38,7 @@ final class BuildClientExpedienteService
             ->pluck('aggregate', 'structure_type_id');
 
         $structuresBreakdown = StructureType::query()
+            ->where('security_company_id', $client->security_company_id)
             ->orderBy('sort_order')
             ->get()
             ->map(fn (StructureType $type) => [

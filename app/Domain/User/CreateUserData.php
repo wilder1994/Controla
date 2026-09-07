@@ -9,7 +9,8 @@ final readonly class CreateUserData
     /** @param list<int> $clientIds */
     public function __construct(
         public string $name,
-        public string $email,
+        public string $username,
+        public ?string $email,
         public string $password,
         public string $role,
         public ?int $securityCompanyId,
@@ -18,5 +19,6 @@ final readonly class CreateUserData
         public ?string $jobTitle = null,
         public ?string $avatarPath = null,
         public ?int $employeeId = null,
+        public bool $mustChangePassword = false,
     ) {}
 }

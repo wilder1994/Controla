@@ -2,7 +2,7 @@
 
 Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo de cartera y retención legal de datos.
 
-**Última actualización:** agosto 2026
+**Última actualización:** 5 septiembre 2026
 
 ---
 
@@ -16,6 +16,14 @@ Layout: `resources/views/layouts/admin.blade.php` (acento **violet**).
 Shell: altura de viewport fija (`h-screen`); sidebar sin scroll; pie de usuario anclado abajo; scroll solo en la columna de contenido.  
 Módulo Documentos (definición + v1 implementado; fases futuras §12): [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md).  
 Guía visual: [`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md) §13.
+
+### Sesión de soporte (entrar como empresa)
+
+El súper admin no tiene `security_company_id`. El panel `/company` solo vale con `support.acting_company_id` en sesión (`POST /admin/companies/{company}/enter`, auditado).
+
+Si la sesión web caduca en una URL de empresa, al volver a entrar **no** se restaura el soporte (no hay `platform.enter_company` silencioso). Laravel ignora `url.intended` hacia `/company/*` y manda a `/admin`. Si abre `/company/supervision` (u otra ruta de empresa que no sea portería) sin contexto: redirect a `/admin` con aviso, no 403. Cookie `support_last_company_id`: botón **Entrar de nuevo** en el layout plataforma.
+
+Tests: `EnterCompanyAsSupportTest`.
 
 ---
 
@@ -263,23 +271,17 @@ Servicios:
 | POST | `/admin/documents/expedientes/{company}/payments/manual` | Pago manual + factura demo |
 | GET | `/admin/documents/expedientes` | Listado expedientes |
 | GET | `/admin/documents/expedientes/{company}` | Detalle expediente (corpus congelado) |
-| GET | `/admin/settings/structure-types` | Ajustes: catálogo de tipos de estructura |
-| POST | `/admin/settings/structure-types` | Crear tipo |
-| PUT | `/admin/settings/structure-types/{structureType}` | Actualizar tipo |
-| DELETE | `/admin/settings/structure-types/{structureType}` | Eliminar (si no hay estructuras) |
+| GET | `/admin/settings/document-types` | Ajustes: tipos de documento de identidad |
 
 Permisos: `platform.documents.view`, `platform.documents.manage`, `platform.settings.manage` (solo `super-admin` en v1).
 
-### Ajustes — tipos de estructura y documentos
+### Ajustes — tipos de documento
 
-Sidebar **Ajustes** con pestañas:
+Sidebar **Ajustes** de plataforma: tipos de documento de identidad (`/admin/settings/document-types`). CC, CE, NIT, PA… Usado en alta de cliente y aceptación legal.
 
-| Catálogo | Ruta | Notas |
-|----------|------|--------|
-| Tipos de estructura | `/admin/settings/structure-types` | Nombre + activo; código auto; orden ↑↓. No eliminar si hay **clientes** o nodos. |
-| Tipos de documento | `/admin/settings/document-types` | CC, CE, NIT, PA… Usado en alta de cliente y aceptación legal. |
+Los **tipos de estructura** son catálogo **por empresa** (`/company/structure-types`). Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
-**Tipo fijo del cliente:** al crear/editar cliente en `/company/clients` se elige `structure_type_id`. Los nodos nuevos en `/client/structures` **heredan** ese tipo (ya no se elige por nodo).
+**Tipo fijo del cliente:** al crear/editar cliente en `/company/clients` se elige `structure_type_id` de esa empresa. Los nodos nuevos en `/client/structures` **heredan** ese tipo (ya no se elige por nodo).
 
 Dominio completo: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
@@ -287,7 +289,7 @@ Dominio completo: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 | Concepto | Tabla | Quién define |
 |----------|-------|--------------|
-| Tipo del sitio / cliente | `structure_types` → `clients.structure_type_id` | Plataforma (catálogo) + empresa (alta cliente) |
+| Tipo del sitio / cliente | `structure_types` → `clients.structure_type_id` | Empresa (Ajustes → Estructuras) + alta cliente |
 | Nodos del censo | `structures` (`parent_id`) | Panel cliente `/client/structures` |
 | Instalación | `installations` | Pestaña Accesos y/o Supervisión de la ficha empresa |
 | Puntos de acceso / puertas | `locations` (`access_point`) bajo instalación | Pestaña **Accesos** |
@@ -305,7 +307,6 @@ Archivo: `routes/modules/admin.php`
 app/Services/Platform/
 ├── PlatformDashboardService.php      # Orquesta datos del dashboard
 ├── PlatformDashboardAnalytics.php    # KPIs, gráficas, marcadores mapa, TOP facturación
-├── ManageStructureTypeService.php    # CRUD catálogo structure_types (Ajustes)
 ├── ManageIdentityDocumentTypeService.php # CRUD tipos de documento identidad
 ├── ArchiveCompanyService.php         # Archivo en cascada
 ├── ReleaseClientService.php          # Retiro de conjunto
@@ -353,7 +354,7 @@ Tablas clave incluyen de origen: geo (`city`/`department`), `service_started_at`
 ## Tests
 
 ```bash
-php artisan test --filter=PlatformDashboardTest
+php artisan test --filter=EnterCompanyAsSupportTest
 php artisan test --filter=PlatformCompaniesIndexTest
 php artisan test --filter=CreateCompanyTest
 php artisan test --filter=SubscriptionLifecycleTest
@@ -361,6 +362,7 @@ php artisan test --filter=PlatformDocumentsTest
 php artisan test --filter=DataRetentionPurgeTest
 ```
 
+- `tests/Feature/Platform/EnterCompanyAsSupportTest.php`
 - `tests/Feature/Platform/PlatformDashboardTest.php`
 - `tests/Feature/Platform/PlatformCompaniesIndexTest.php`
 - `tests/Feature/Platform/PlatformDocumentsTest.php`

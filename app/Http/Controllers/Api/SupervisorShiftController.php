@@ -13,10 +13,12 @@ use App\Http\Requests\Api\OpenSupervisorShiftRequest;
 use App\Http\Requests\Api\StoreSupervisorShiftReviewRequest;
 use App\Models\SupervisorChecklistItem;
 use App\Models\SupervisorFleetVehicle;
+use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
-use App\Models\User;
+use App\Services\Auth\FindUserByLogin;
+use App\Services\Company\BuildSupervisorOfflinePackService;
 use App\Services\Company\CloseSupervisorShiftService;
 use App\Services\Company\LookupSupervisorVisitService;
 use App\Services\Company\ManageSupervisorShiftService;
@@ -42,21 +44,37 @@ final class SupervisorShiftController extends Controller
         private readonly RecordSupervisorFieldLogService $logService,
         private readonly SeedSupervisorIntakeDefaultsService $intakeDefaults,
         private readonly LookupSupervisorVisitService $visitLookup,
+        private readonly FindUserByLogin $findUserByLogin,
+        private readonly BuildSupervisorOfflinePackService $offlinePack,
     ) {}
 
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email' => 'required|email',
+            'login' => 'nullable|string|max:255',
+            'email' => 'nullable|string|max:255',
             'password' => 'required',
             'device_name' => 'nullable|string|max:100',
         ]);
 
-        $user = User::query()->where('email', $request->string('email'))->with('securityCompany')->first();
+        $login = trim((string) ($request->input('login') ?: $request->input('email')));
+        if ($login === '') {
+            throw ValidationException::withMessages([
+                'login' => ['Indique el usuario o el correo.'],
+            ]);
+        }
+
+        $user = $this->findUserByLogin->execute($login)?->load('securityCompany');
 
         if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Credenciales inválidas.'],
+                'login' => ['Credenciales inválidas.'],
+            ]);
+        }
+
+        if (! $user->is_active) {
+            throw ValidationException::withMessages([
+                'login' => ['Esta cuenta está desactivada.'],
             ]);
         }
 
@@ -73,13 +91,30 @@ final class SupervisorShiftController extends Controller
 
         return response()->json([
             'token' => $token,
+            'must_change_password' => (bool) $user->must_change_password,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'company_id' => $user->security_company_id,
             ],
         ]);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'password' => ['required', 'confirmed', 'min:8'],
+        ]);
+
+        $user = $request->user();
+        $user->update([
+            'password' => $request->string('password')->toString(),
+            'must_change_password' => false,
+        ]);
+
+        return response()->json(['ok' => true]);
     }
 
     public function current(Request $request): JsonResponse
@@ -106,6 +141,11 @@ final class SupervisorShiftController extends Controller
     public function sites(Request $request): JsonResponse
     {
         return response()->json(['sites' => $this->visitLookup->sites($request->user())]);
+    }
+
+    public function offlinePack(Request $request): JsonResponse
+    {
+        return response()->json($this->offlinePack->execute($request->user()));
     }
 
     public function posts(Request $request): JsonResponse
@@ -157,7 +197,7 @@ final class SupervisorShiftController extends Controller
         $zones = SupervisorZone::query()
             ->where('security_company_id', $companyId)
             ->active()
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'email']);
 
         $templates = SupervisorShiftTemplate::query()
             ->where('security_company_id', $companyId)
@@ -168,6 +208,7 @@ final class SupervisorShiftController extends Controller
             'zones' => $zones->map(fn (SupervisorZone $zone) => [
                 'id' => $zone->id,
                 'name' => $zone->name,
+                'email' => $zone->email,
             ])->values()->all(),
             'shift_templates' => $templates->map(fn (SupervisorShiftTemplate $template) => [
                 'id' => $template->id,
@@ -227,6 +268,7 @@ final class SupervisorShiftController extends Controller
             'latitude' => ['required', 'numeric'],
             'longitude' => ['required', 'numeric'],
             'accuracy' => ['nullable', 'numeric'],
+            'client_event_id' => ['nullable', 'uuid'],
         ]);
 
         $shift = $this->shiftService->currentFor($request->user());
@@ -237,6 +279,8 @@ final class SupervisorShiftController extends Controller
             (float) $data['latitude'],
             (float) $data['longitude'],
             isset($data['accuracy']) ? (float) $data['accuracy'] : null,
+            'app',
+            isset($data['client_event_id']) ? (string) $data['client_event_id'] : null,
         );
 
         return response()->json(['location' => $point]);
@@ -244,6 +288,17 @@ final class SupervisorShiftController extends Controller
 
     public function close(CloseSupervisorShiftRequest $request): JsonResponse
     {
+        $eventId = $request->validated('client_event_id');
+        if (is_string($eventId) && $eventId !== '') {
+            $replay = SupervisorShift::query()
+                ->where('user_id', $request->user()->id)
+                ->where('close_client_event_id', $eventId)
+                ->first();
+            if ($replay !== null) {
+                return response()->json(['shift' => $replay]);
+            }
+        }
+
         $shift = $this->shiftService->currentFor($request->user());
         abort_if($shift === null, 422, 'No hay turno abierto.');
 
@@ -252,6 +307,7 @@ final class SupervisorShiftController extends Controller
             (int) $request->validated('km_end'),
             $request->file('odometer_photo'),
             $request->file('selfie_photo'),
+            is_string($eventId) && $eventId !== '' ? $eventId : null,
         );
 
         return response()->json(['shift' => $closed]);
@@ -275,6 +331,7 @@ final class SupervisorShiftController extends Controller
                 longitude: (float) $request->validated('longitude'),
                 logs: $request->validated('logs') ?? [],
                 logPhotos: is_array($request->file('log_photos')) ? $request->file('log_photos') : [],
+                clientEventId: $request->validated('client_event_id'),
             ),
         );
 

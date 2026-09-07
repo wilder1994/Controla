@@ -1,6 +1,6 @@
 # Clientes, instalaciones, Accesos y Supervisión
 
-**Última actualización:** 27 agosto 2026
+**Última actualización:** 3 septiembre 2026
 
 Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) sigue más abajo; no se mezcla con instalaciones ni con puestos de Supervisión.
 
@@ -17,7 +17,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 | **Instalación** | Sitio físico del cliente. Puede ser **el mismo cliente** (sede única: una instalación con el nombre del cliente). | Tarjeta **Instalaciones y accesos** y/o **Supervisión** |
 | **Acceso** | Punto de portería (puerta, vehicular, peatonal). Tabla `locations` (`type = access_point`). **No** es un puesto de Supervisión. | Tarjeta **Instalaciones y accesos** |
 | **Puesto** | Puesto de vigilancia de Supervisión de campo. Tabla nueva `supervisor_posts`. **Nunca** un `location`. | Tarjeta **Supervisión** |
-| **Tipo de estructura** | Catálogo plataforma (`structure_types`), fijo en el alta (`clients.structure_type_id`). | Ficha cliente |
+| **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
 | **Nodo / subnodo** | Censo residencial (`structures`, `parent_id`). Torre, apto, casa. Distinto de instalación/puesto/acceso. | Panel `/client/structures` |
 | **Persona (censo)** | `structure_members` en un nodo. | Panel cliente |
 
@@ -113,7 +113,7 @@ No se clonan tablas de Patrulla (`review_posts`, etc.). Flota de Supervisión si
 
 Sigue siendo el árbol de **personas y unidades**, no el de portería ni el de Supervisión.
 
-1. Plataforma: tipos de estructura y de documento en `/admin/settings/…`
+1. Empresa: tipos de estructura en Ajustes → Estructuras. Plataforma: tipos de documento en `/admin/settings/document-types`.
 2. Empresa: alta de cliente (ficha o Excel de clientes).
 3. Panel cliente (`/client/structures`): nodos; el tipo se **hereda** del cliente.
 4. Personas en **un** nodo.
@@ -146,7 +146,8 @@ También válido: nodo hoja directo (casa sin torre) → persona en ese nodo.
 Migraciones de ficha:  
 `2026_08_16_180000_add_commercial_fields_to_clients_table` ·  
 `2026_08_16_190000_add_structure_type_id_to_clients_table` ·  
-`2026_08_16_170000_create_identity_document_types_table`
+`2026_08_16_170000_create_identity_document_types_table` ·  
+`2026_09_03_144000_add_security_company_id_to_structure_types` (catálogo de tipos por empresa)
 
 ---
 

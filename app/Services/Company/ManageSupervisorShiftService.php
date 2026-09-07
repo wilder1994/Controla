@@ -54,12 +54,28 @@ final class ManageSupervisorShiftService
         ]);
     }
 
-    public function ping(SupervisorShift $shift, float $lat, float $lng, ?float $accuracy = null, string $source = 'app'): SupervisorShiftLocation
-    {
+    public function ping(
+        SupervisorShift $shift,
+        float $lat,
+        float $lng,
+        ?float $accuracy = null,
+        string $source = 'app',
+        ?string $clientEventId = null,
+    ): SupervisorShiftLocation {
         if (! $shift->isOpen()) {
             throw ValidationException::withMessages([
                 'shift' => 'El turno está cerrado.',
             ]);
+        }
+
+        if ($clientEventId !== null && $clientEventId !== '') {
+            $replay = SupervisorShiftLocation::query()
+                ->where('client_event_id', $clientEventId)
+                ->where('supervisor_shift_id', $shift->id)
+                ->first();
+            if ($replay !== null) {
+                return $replay;
+            }
         }
 
         return $shift->locations()->create([
@@ -68,6 +84,7 @@ final class ManageSupervisorShiftService
             'longitude' => $lng,
             'accuracy' => $accuracy,
             'source' => $source,
+            'client_event_id' => $clientEventId,
         ]);
     }
 

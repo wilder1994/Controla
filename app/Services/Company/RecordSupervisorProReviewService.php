@@ -38,6 +38,16 @@ final class RecordSupervisorProReviewService
             ]);
         }
 
+        if ($input->clientEventId !== null && $input->clientEventId !== '') {
+            $replay = SupervisorShiftReview::query()
+                ->where('client_event_id', $input->clientEventId)
+                ->where('supervisor_shift_id', $shift->id)
+                ->first();
+            if ($replay !== null) {
+                return $replay->load(['client', 'supervisorPost.installation', 'employee']);
+            }
+        }
+
         $client = $this->lookup->companySupervisionClient($user, $input->clientId);
         if ($client === null) {
             throw ValidationException::withMessages([
@@ -84,6 +94,7 @@ final class RecordSupervisorProReviewService
                 'latitude' => $input->latitude,
                 'longitude' => $input->longitude,
                 'recorded_at' => now(),
+                'client_event_id' => $input->clientEventId,
             ]);
 
             $dir = 'supervision/'.$shift->security_company_id.'/'.$shift->id.'/reviews/'.$review->id;

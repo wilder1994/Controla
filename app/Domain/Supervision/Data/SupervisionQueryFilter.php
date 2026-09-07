@@ -11,6 +11,9 @@ final readonly class SupervisionQueryFilter
         public ?string $to = null,
         public ?int $zoneId = null,
         public ?int $supervisorId = null,
+        public ?string $sheetKind = null,
+        public ?int $clientId = null,
+        public ?bool $hasNovelty = null,
     ) {}
 
     public function withDates(?string $from, ?string $to): self
@@ -20,6 +23,9 @@ final readonly class SupervisionQueryFilter
             to: $to,
             zoneId: $this->zoneId,
             supervisorId: $this->supervisorId,
+            sheetKind: $this->sheetKind,
+            clientId: $this->clientId,
+            hasNovelty: $this->hasNovelty,
         );
     }
 }
