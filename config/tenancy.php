@@ -9,7 +9,7 @@ return [
     ],
 
     /*
-    | Legacy Axesa-style tiers (kept for DB columns on clients; not sold commercially).
+    | Tiers legacy en columnas de clients (no se venden).
     */
     'plan_tiers' => [
         'economic' => ['label' => 'Económico', 'max_structures' => 20],

@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature\Company;
 
 use App\Enums\SupervisionPackageSku;
+use App\Enums\SupervisorFieldModule;
+use App\Enums\SupervisorFieldOutcome;
 use App\Enums\SupervisorShiftStatus;
+use App\Models\Client;
+use App\Models\SupervisorFieldLog;
 use App\Models\SupervisorShift;
 use App\Models\SupervisorZone;
 use App\Models\User;
@@ -46,6 +50,10 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Norte');
         $response->assertSee($supervisor->name);
         $response->assertSee('Supervisores en turno');
+        $response->assertSee('Inicio de turno');
+        $response->assertSee('Apoyo');
+        $response->assertSee('Alarma');
+        $response->assertSee('Hover en la moto');
         $response->assertSee('Se actualiza solo');
         $response->assertSee('Satélite');
         $response->assertSee('Terreno');
@@ -55,9 +63,24 @@ final class CompanySupervisionMapTest extends TestCase
         $history = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'history']));
         $history->assertOk();
         $history->assertSee('Turnos del periodo');
+        $history->assertSee('Inicio de turno');
         $history->assertSee('Una ruta a la vez');
         $history->assertDontSee('Replay');
         $history->assertDontSee('Reproducir');
+
+        SupervisorShift::query()->create([
+            'security_company_id' => $user->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Closed,
+            'started_at' => now()->subHours(8),
+            'ended_at' => now()->subHours(2),
+            'closed_by_system' => true,
+            'pending_outbox_count' => 2,
+        ]);
+        $historyClosed = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'history']));
+        $historyClosed->assertOk();
+        $historyClosed->assertSee('Cierre por el sistema');
+        $historyClosed->assertSee('2 registros en cola');
 
         $summary = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'summary']));
         $summary->assertOk();
@@ -197,7 +220,59 @@ final class CompanySupervisionMapTest extends TestCase
         $response = $this->actingAs($admin)->getJson(route('company.supervision.live-feed'));
         $response->assertOk();
         $response->assertJsonPath('live.0.user', $supervisor->name);
-        $response->assertJsonStructure(['live', 'reviews']);
+        $response->assertJsonStructure(['live', 'reviews', 'events']);
+    }
+
+    public function test_live_feed_includes_support_and_alarm_pins(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+        $supervisor = $this->companySupervisor();
+        $client = Client::query()
+            ->where('security_company_id', $supervisor->security_company_id)
+            ->where('name', 'Palmas del Ingenio')
+            ->firstOrFail();
+        $shift = SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'started_at' => now()->subHour(),
+        ]);
+        SupervisorFieldLog::query()->create([
+            'supervisor_shift_id' => $shift->id,
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'client_id' => $client->id,
+            'module' => SupervisorFieldModule::Supports,
+            'outcome' => SupervisorFieldOutcome::Ok,
+            'payload' => ['support_type' => 'Refuerzo', 'reason' => 'Apoyo de prueba'],
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+            'recorded_at' => now()->subMinutes(5),
+        ]);
+        SupervisorFieldLog::query()->create([
+            'supervisor_shift_id' => $shift->id,
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'client_id' => $client->id,
+            'module' => SupervisorFieldModule::Alarms,
+            'outcome' => SupervisorFieldOutcome::Attention,
+            'payload' => ['alarm_type' => 'Intrusión'],
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+            'recorded_at' => now()->subMinutes(3),
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(route('company.supervision.live-feed'));
+        $response->assertOk();
+        $response->assertJsonCount(2, 'events');
+        $kinds = collect($response->json('events'))->pluck('kind')->sort()->values()->all();
+        $this->assertSame(['alarm', 'support'], $kinds);
     }
 
     public function test_snapped_route_uses_roads_once_for_closed_shift(): void

@@ -8,6 +8,7 @@ use App\Enums\SupervisionPackageSku;
 use App\Models\Client;
 use App\Models\GuardLog;
 use App\Models\SupervisorFieldLog;
+use App\Models\SupervisorShift;
 use App\Models\SupervisorRecommendation;
 use App\Models\SupervisorRiskType;
 use App\Models\SupervisorWeaponBrand;
@@ -61,8 +62,10 @@ final class SupervisorShiftApiTest extends TestCase
         $ping = $this->withToken($token)->postJson('/api/supervision/shifts/ping', [
             'latitude' => 3.4516,
             'longitude' => -76.5320,
+            'pending_outbox' => 3,
         ]);
         $ping->assertOk();
+        $this->assertSame(3, (int) SupervisorShift::query()->findOrFail($open->json('shift.id'))->pending_outbox_count);
 
         $close = $this->withToken($token)->post('/api/supervision/shifts/close', $this->supervisorShiftClosePayload());
         $close->assertOk();
@@ -80,6 +83,30 @@ final class SupervisorShiftApiTest extends TestCase
             ->post('/api/supervision/shifts/open', [
                 'km_start' => 100,
             ])->assertUnprocessable();
+    }
+
+    public function test_open_shift_rejects_unchecked_ppe_in_spanish(): void
+    {
+        $this->seedWithPilot();
+        $user = $this->companySupervisor();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $user->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+        $token = $this->loginCompanySupervisor();
+        $payload = $this->supervisorShiftOpenPayload();
+        $payload['ppe_checklist']['gloves_ok'] = false;
+
+        $response = $this->withToken($token)
+            ->withHeaders(['Accept' => 'application/json'])
+            ->post('/api/supervision/shifts/open', $payload);
+
+        $response->assertUnprocessable();
+        $this->assertSame(
+            'Debe confirmar: Guantes',
+            $response->json('errors')['ppe_checklist.gloves_ok'][0] ?? $response->json('errors.ppe_checklist.gloves_ok.0'),
+        );
+        $this->assertStringNotContainsString('validation.accepted', (string) $response->getContent());
     }
 
     public function test_intake_lists_checklists_and_empty_fleet(): void

@@ -4,7 +4,7 @@ Controla es la fuente de verdad. La PWA (`field-app/` y el host `controla_superv
 
 No choca con: minuta de portería (`/access/supervision`), `SupervisorReview`, `PlatformDocument`, zonas/vehículos de Accesos, `locations` (accesos) ni correspondencia.
 
-**Última actualización:** 5 septiembre 2026
+**Última actualización:** 8 septiembre 2026
 
 Árbol del cliente (instalación → puesto): [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md). La app **no** usa puntos de Accesos como puesto.
 
@@ -38,14 +38,14 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v28`.
+PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v34`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
 Fotos: no se enciende la cámara al abrir. **Trasera** / **Frontal** o **Tomar foto** piden `getUserMedia` (hace falta HTTPS o localhost). Tras capturar se apaga. Galería solo si no hay contexto seguro.
 
 1. Login (`POST /api/supervision/login`) → rito de **apertura**: turno y zona del catálogo, EPP/vehículo plegables, km + foto odómetro + selfie (cámara, no galería).
-2. Hub: ficha de perfil + **Cerrar**. Cuatro entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**. Debajo: **Mis fichas**. Ping GPS cada **15 s**, silencioso.
+2. Hub: ficha de perfil + **Cerrar**. Cuatro entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**. Debajo: **Mis fichas**. Ping GPS cada **15 s** (`watchPosition` + intervalo; al volver a primer plano reanuda). **En línea** en el mapa = último GPS &lt; 90 s. Con la pantalla apagada Android/iOS pausan el JS y el GPS de la PWA; Tailscale no sustituye eso. Tracking con pantalla off requiere app nativa.
 3. **Revista** (al clic): cliente, puesto, vigilante, foto. Los módulos del puesto (inventario, libros de control, etc.) se registran en borrador. **Guardar revista** (abajo) envía GPS + foto + módulos juntos. Mientras envía: botón bloqueado y texto *Guardando revista…* (mismo candado en Entrar, iniciar/cerrar turno y Registrar). Un `client_event_id` por intento: el API no duplica. Si cancela, no queda nada.
 4. Alarmas y apoyos: cada uno abre su formulario (cliente + GPS obligatorios). Documentos: sin cliente ni GPS.
 5. Cierre: km final + odómetro + selfie → sesión cerrada.
@@ -60,7 +60,7 @@ Sin puestos de Supervisión en la ficha del cliente no se guarda revista. Los `l
 
 Login y **abrir turno** requieren internet. Al iniciar turno (o al entrar con turno abierto) la PWA baja un **paquete** (`GET /api/supervision/offline-pack`: clientes, puestos, vigilantes, catálogo) a IndexedDB.
 
-Sin red puede registrar revistas, alarmas, apoyos, documentos y pings GPS: quedan en una **cola** en el teléfono. Banner de pendientes. Al reconectar (`online` o reabrir la app) se envían en orden. Cada ítem lleva `client_event_id` (UUID): el API no duplica si se reenvía.
+Sin red puede registrar revistas, alarmas, apoyos, documentos y pings GPS: quedan en una **cola por supervisor** (`controla-sup-u{id}`). Con red, la PWA sube **todas** las colas del teléfono usando el token guardado de quien las generó. El supervisor de turno sigue trabajando: un cierre/cola ajena no bloquea Registrar ni GPS. Solo su propio cierre pendiente traba su sesión. Al abrir turno se limpia ese candado.
 
 Cerrar turno sin red también se encola (fotos incluidas). No borrar datos del sitio hasta que el banner desaparezca. iPhone: hay que **abrir la app** al recuperar señal.
 
@@ -82,7 +82,7 @@ Cerrar turno sin red también se encola (fotos incluidas). No borrar datos del s
 
 Contrato de campos: `GET /api/supervision/catalog` (`FieldModuleCatalog`). Logs append-only en `supervisor_field_logs` (`supervisor_shift_review_id` si cuelga de revista). Recomendaciones: `supervisor_recommendations` (registro inmutable del turno; `GET /recommendations` lista recientes).
 
-El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno). En vivo e Historial: **dos columnas** (mapa alto + lista). Estado En vivo: en ruta / detenido con horas (`Se detuvo a las HH:mm · lleva N min`); paradas cerradas `de HH:mm a HH:mm`. Pin de moto: **En línea** (GPS &lt; 90 s) o **Sin señal**. Poll 10 s, sin Roads. Historial: misma barra de filtros; **sin replay**. Turno cerrado: Snap to Roads (azul, cache). Turno aún abierto: GPS ámbar. Trail: `BuildSupervisorTrailService` (~28 m; parada 75 m y ≥120 s; minutos de detenido actual contra el reloj).
+El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno). En vivo e Historial: **dos columnas** (mapa alto + lista). Estado En vivo: en ruta / detenido con horas (`Se detuvo a las HH:mm · lleva N min`); paradas cerradas `de HH:mm a HH:mm`. Pin de moto: **En línea** (GPS &lt; 90 s) o **Sin señal**. Poll 10 s, sin Roads. Pines a ≤50 m se agrupan. La moto queda detrás (`pointer-events: none` en hover: tooltip nombre + señal). Clic en la moto o en el grupo abre la lista de eventos (sin la moto). Fichas de pin: OverlayView compacto (no InfoWindow blanco de Google). Apoyo (cian) y alarma (ámbar) tienen pin. Leyenda en la columna. Historial no pinta moto “en línea”. Turno cerrado por el sistema: texto **Cierre por el sistema** y, si el teléfono reportó cola en el GPS, **N registros en cola**. Historial: misma barra de filtros; **sin replay**. Turno cerrado: Snap to Roads (azul, cache `snapped_route`; hace falta `GOOGLE_MAPS_SERVER_API_KEY` sin restricción de sitios web). Turno aún abierto: GPS ámbar. Trail: `BuildSupervisorTrailService` (~28 m; parada 75 m y ≥120 s; minutos de detenido actual contra el reloj).
 
 Cierre automático (`supervision:auto-close-shifts`, cada 5 min en el scheduler): fin de **plantilla** (`starts_at`/`ends_at`) + **30 min** de gabela. Ej. 06:00–14:00 cierra a las 14:30; noche 18:00–06:00 cierra a las 06:30 del día siguiente. Sin fotos de km; nota en el turno. Sin plantilla: **3 h** desde el último GPS o `started_at`. El turno sale de En vivo. En Windows hace falta `php artisan schedule:work` (o Tarea programada con `schedule:run`).
 
@@ -211,7 +211,7 @@ Fuera de alcance de este corte: chatbot en la PWA de campo, app de residentes, W
 | GET | `/api/supervision/shifts/current` | Turno abierto + `current_review` + actividad |
 | GET | `/api/supervision/shift-photo/start-selfie` | Selfie de apertura |
 | POST | `/api/supervision/shifts/open` | Multipart: `shift_template_id`, `zone_id`, checklists, fotos |
-| POST | `/api/supervision/shifts/ping` | GPS silencioso. `client_event_id` opcional |
+| POST | `/api/supervision/shifts/ping` | GPS silencioso. `client_event_id` opcional. `pending_outbox` = cola IndexedDB del supervisor (el panel muestra “N registros en cola” si el turno se cierra por el sistema) |
 | POST | `/api/supervision/shifts/close` | Multipart km + fotos. `client_event_id` opcional (idempotente) |
 | GET | `/api/supervision/offline-pack` | Snapshot para captura sin red: sitios, puestos, vigilantes, catálogo |
 | GET | `/api/supervision/sites` | Clientes con `has_supervision` |
@@ -224,7 +224,7 @@ Fuera de alcance de este corte: chatbot en la PWA de campo, app de residentes, W
 | GET | `/api/supervision/sheets/{kind}/{id}` | Carta HTML de la ficha |
 | GET | `/api/supervision/recommendations` | Recomendaciones registradas |
 
-Apertura exige turno/zona **activos de esa empresa** y todos los ítems preoperacionales activos en `true`.
+Apertura: todos los ítems EPP y vehículo en sí; si falta uno la API responde en español (`Debe confirmar: Guantes`). Cola offline por `user_id` (celular compartido).
 
 ---
 
@@ -243,12 +243,14 @@ Apertura exige turno/zona **activos de esa empresa** y todos los ítems preopera
 - `2026_09_05_150000_add_username_to_users_table` (`users.username`; `email` nullable)
 - `2026_09_05_151000_add_email_to_supervisor_zones_table`
 - `2026_09_07_193000_add_snapped_route_to_supervisor_shifts` (`snapped_route` JSON cacheado)
+- `2026_09_08_103900_add_auto_close_queue_to_supervisor_shifts` (`pending_outbox_count`, `closed_by_system`)
 
 Tipos de estructura por empresa (panel, no Supervisión): `2026_09_03_144000_add_security_company_id_to_structure_types`.
 
 ```bash
-php artisan migrate:fresh --seed
-php artisan db:seed --class=PilotDemoSeeder
+php artisan migrate
 ```
+
+Tests contra `controla_test` (`phpunit.xml`). No usar `migrate:fresh` en la BD `controla`.
 
 Tests: `SupervisorShiftApiTest`, `SupervisorFieldLogApiTest`, `SupervisorOfflineSyncTest`, `CompanySupervisionCatalogTest`, `CompanySupervisionFieldSheetTest`, `CompanySupervisionMapTest`, `AutoCloseExpiredSupervisorShiftsTest`, `BuildSupervisorTrailTest`, `ResolveSupervisorShiftDeadlineTest`, `SnapSupervisorTrailToRoadsTest`, `CompanyClientSiteTreeTest` (BD `controla_test`).

@@ -10,7 +10,7 @@ Documentación de la implementación de pricing B2B para empresas de seguridad (
 |--------------|------------|------------|------------------|
 | Empresa de seguridad | Cupo de **conjuntos** (clientes) + modalidad + ciclo | Nº de `clients` que puede crear | Portafolio de cada conjunto (unidades, personas, mascotas, vehículos) |
 
-El modelo **reemplaza** el pricing estilo Axesa por unidades (`plan_tier` / `max_structures` en `clients`). Esas columnas siguen en BD por compatibilidad pero **no limitan** el censo.
+El modelo **reemplaza** el pricing por unidades (`plan_tier` / `max_structures` en `clients`). Esas columnas siguen en BD por compatibilidad pero **no limitan** el censo.
 
 **Actualización ago 2026:** el cupo de Accesos ya no bloquea el alta de fichas. Ver [`PAQUETES-ACCESOS-Y-SUPERVISION.md`](PAQUETES-ACCESOS-Y-SUPERVISION.md).
 

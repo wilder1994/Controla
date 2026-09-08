@@ -1,6 +1,6 @@
 # Controla
 
-Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de seguridad privada y conjuntos residenciales en Colombia. Construida sobre **Laravel 11** (Laragon), con referencia funcional **Axesa Control v13**.
+Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de seguridad privada y conjuntos residenciales en Colombia. Construida sobre **Laravel 11** (Laragon).
 
 **Repositorio:** [github.com/wmcodesoft/Controla](https://github.com/wmcodesoft/Controla)
 
@@ -34,7 +34,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
 | **Empleados** | Maestro + Excel (preview → alta o **actualización** por documento). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
-| **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos empresa). Recomendación = registro de riesgo, no ticket. Fuente de verdad: Controla | ✅ Implementada |
+| **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos). Mapa En vivo/Historial, cierre automático, cola offline por usuario. Fuente de verdad: Controla | ✅ Implementada |
 | **Árbol del cliente** | Instalaciones compartidas; Accesos = puertas (`locations`); Supervisión = puestos (`supervisor_posts`). Excel solo ficha | ✅ Implementada |
 
 Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
@@ -51,7 +51,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola IndexedDB tras abrir turno. Instalar desde Descargas (PWA, no APK). Ping GPS 15 s. Caché SW `controla-sup-v28` |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola por supervisor (flush en segundo plano, no bloquea al de turno). Caché SW `controla-sup-v34` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -88,8 +88,9 @@ DB_USERNAME=root
 DB_PASSWORD=
 SESSION_DRIVER=file
 
-# Mapa del dashboard plataforma (opcional)
+# Mapa del dashboard plataforma y supervisión (opcional)
 GOOGLE_MAPS_API_KEY=
+GOOGLE_MAPS_SERVER_API_KEY=
 GOOGLE_MAPS_DEFAULT_LAT=4.5709
 GOOGLE_MAPS_DEFAULT_LNG=-74.2973
 GOOGLE_MAPS_DEFAULT_ZOOM=6
@@ -143,6 +144,7 @@ El mapa de **Distribución geográfica** y el picker de `x-ui.geo-address-fields
 
 ```env
 GOOGLE_MAPS_API_KEY=
+GOOGLE_MAPS_SERVER_API_KEY=
 GOOGLE_MAPS_DEFAULT_LAT=4.5709
 GOOGLE_MAPS_DEFAULT_LNG=-74.2973
 GOOGLE_MAPS_DEFAULT_ZOOM=6

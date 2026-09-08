@@ -77,22 +77,23 @@ Configuración: `config/google-maps.php`
 
 ```env
 GOOGLE_MAPS_API_KEY=
+GOOGLE_MAPS_SERVER_API_KEY=
 GOOGLE_MAPS_DEFAULT_LAT=4.5709
 GOOGLE_MAPS_DEFAULT_LNG=-74.2973
 GOOGLE_MAPS_DEFAULT_ZOOM=6
 ```
 
-Sin API key se muestra aviso en el contenedor del mapa.
+Sin API key se muestra aviso en el contenedor del mapa. Historial de Supervisión (Snap to Roads) usa `GOOGLE_MAPS_SERVER_API_KEY` (clave servidor, no sitios web); detalle en el README.
 
 #### Alta de clave en Google Cloud
 
 1. Proyecto en [Google Cloud Console](https://console.cloud.google.com/).
-2. **APIs y servicios → Biblioteca** → buscar y habilitar **Maps JavaScript API** (única API requerida por Controla).
+2. **APIs y servicios → Biblioteca** → habilitar **Maps JavaScript API** (dashboard) y **Roads API** (historial de Supervisión).
 3. **APIs y servicios → Credenciales → Crear credenciales → Clave de API**.
-4. Editar la clave creada:
+4. Editar la clave del **navegador**:
    - **Restricciones de aplicación:** Sitios web → agregar `http://controla.test/*` y `http://localhost/*` (ajustar dominio en producción).
-   - **Restricciones de API:** Restringir clave → marcar solo **Maps JavaScript API**.
-5. Copiar la clave a `.env` → `GOOGLE_MAPS_API_KEY=...`
+   - **Restricciones de API:** Maps JavaScript API (y Places/Geocoding si usas el picker de dirección).
+5. Copiar esa clave a `.env` → `GOOGLE_MAPS_API_KEY=...`. Para Roads, otra clave (IP o sin sitios web) en `GOOGLE_MAPS_SERVER_API_KEY`.
 6. En el proyecto: `php artisan config:clear` y recargar `/admin`.
 
 **Facturación:** Google exige cuenta de facturación activa en el proyecto (incluye crédito gratuito mensual).

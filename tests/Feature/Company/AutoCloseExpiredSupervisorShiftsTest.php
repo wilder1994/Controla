@@ -47,7 +47,37 @@ final class AutoCloseExpiredSupervisorShiftsTest extends TestCase
         $this->assertSame(SupervisorShiftStatus::Closed, $closed->status);
         $this->assertNull($closed->km_end_photo_path);
         $this->assertStringContainsString('Cierre automático: fin de turno 14:00 + 30 min.', (string) $closed->notes);
+        $this->assertTrue($closed->closed_by_system);
         $this->assertSame(0, $service->execute(CarbonImmutable::parse('2026-09-05 15:00:00')));
+    }
+
+    public function test_auto_close_records_pending_outbox_in_notes_and_history_label(): void
+    {
+        $this->seedWithPilot();
+        $supervisor = $this->companySupervisor();
+        $template = SupervisorShiftTemplate::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'name' => 'Tarde',
+            'starts_at' => '06:00',
+            'ends_at' => '14:00',
+            'is_active' => true,
+            'sort_order' => 2,
+        ]);
+        $shift = SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'supervisor_shift_template_id' => $template->id,
+            'started_at' => CarbonImmutable::parse('2026-09-05 06:05:00'),
+            'pending_outbox_count' => 4,
+        ]);
+
+        app(AutoCloseExpiredSupervisorShiftsService::class)
+            ->execute(CarbonImmutable::parse('2026-09-05 14:30:00'));
+
+        $closed = $shift->fresh();
+        $this->assertTrue($closed->closed_by_system);
+        $this->assertStringContainsString('Pendiente en cola: 4 registros.', (string) $closed->notes);
     }
 
     public function test_overnight_template_closes_next_morning_plus_grace(): void

@@ -1,5 +1,8 @@
 const statusEl = document.getElementById('status');
 let pingTimer = null;
+let pingWatchId = null;
+let pingBusy = false;
+let lastPingSentAt = 0;
 let catalog = [];
 let intake = null;
 let currentModule = null;
@@ -66,6 +69,10 @@ function token() {
     return localStorage.getItem('token');
 }
 
+function offlineReady() {
+    return Boolean(window.ControlaOffline && typeof ControlaOffline.setUser === 'function');
+}
+
 function setStatus(text, ok = true) {
     statusEl.textContent = text;
     statusEl.className = ok ? 'ok' : 'err';
@@ -79,14 +86,17 @@ function show(id) {
 }
 
 async function api(path, options = {}) {
+    const authToken = options.authToken || token();
     const headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
     if (!(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
     }
-    if (token()) headers.Authorization = `Bearer ${token()}`;
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const fetchOpts = Object.assign({}, options);
+    delete fetchOpts.authToken;
     let res;
     try {
-        res = await fetch(`${apiBase()}${path}`, Object.assign({}, options, { headers }));
+        res = await fetch(`${apiBase()}${path}`, Object.assign({}, fetchOpts, { headers }));
     } catch (err) {
         const offline = new Error('Sin conexión. El registro queda en el teléfono.');
         offline.offline = true;
@@ -94,8 +104,17 @@ async function api(path, options = {}) {
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        const first = data.errors ? Object.values(data.errors)[0] : null;
-        throw new Error((first && first[0]) || data.message || data.login?.[0] || data.email?.[0] || `HTTP ${res.status}`);
+        const parts = data.errors
+            ? Object.values(data.errors).flat().filter(Boolean)
+            : [];
+        const text = parts.join(' ')
+            || data.message
+            || data.login?.[0]
+            || data.email?.[0]
+            || `HTTP ${res.status}`;
+        const error = new Error(String(text).replace(/\bvalidation\.\w+\b/g, 'Revise los datos e inténtelo de nuevo.'));
+        error.status = res.status;
+        throw error;
     }
     return data;
 }
@@ -128,10 +147,20 @@ async function restorePack() {
     return pack;
 }
 
+async function clearOwnCloseLock() {
+    closeQueued = false;
+    try {
+        await ControlaOffline.metaSet('closeQueued', false);
+    } catch (e) {
+        // sin usuario
+    }
+}
+
 async function updateSyncBar() {
     const bar = document.getElementById('sync-bar');
     if (!bar) return;
-    const n = await ControlaOffline.outboxCount();
+    const stats = await ControlaOffline.outboxStats();
+    const n = stats.total;
     if (n < 1 && !closeQueued) {
         bar.classList.add('hidden');
         bar.textContent = '';
@@ -139,39 +168,84 @@ async function updateSyncBar() {
     }
     bar.classList.remove('hidden');
     const net = navigator.onLine ? 'Subiendo…' : 'Sin cobertura';
+    if (stats.others && !stats.mine && !closeQueued) {
+        bar.textContent = `${stats.others} registro(s) de otro supervisor. ${net}`;
+        return;
+    }
+    if (stats.others) {
+        bar.textContent = `${n} registro(s) en el teléfono (${stats.others} de otro supervisor). ${net}. No borre datos del sitio.`;
+        return;
+    }
     bar.textContent = n
         ? `${n} registro(s) en el teléfono. ${net}. No borre datos del sitio.`
         : 'Cierre de turno pendiente de envío.';
 }
 
 async function enqueueOrThrow(item, okMessage) {
-    await ControlaOffline.enqueue(item);
+    await ControlaOffline.enqueue(Object.assign({}, item, { authToken: token() || '' }));
     await updateSyncBar();
     setStatus(okMessage);
 }
 
 async function flushOutbox() {
-    if (syncing || !navigator.onLine || !token()) return;
+    if (syncing || !navigator.onLine) return;
     syncing = true;
+    const sessionUser = ControlaOffline.currentUserId();
+    let closedMine = false;
     try {
-        const rows = await ControlaOffline.allOutbox();
-        for (const row of rows) {
+        const jobs = await ControlaOffline.allPendingJobs();
+        for (const job of jobs) {
+            if (job.row?.type === 'close-meta') continue;
+            const uid = Number(job.userId || job.row?.userId || 0) || 0;
+            const sessionTok = token();
+            let auth = job.row?.authToken || job.authToken || (uid ? ControlaOffline.tokenForUser(uid) : '');
+            if (job.row?.type === 'close') {
+                if (!uid || (sessionUser && uid !== Number(sessionUser) && auth && sessionTok && auth === sessionTok)) {
+                    auth = uid ? ControlaOffline.tokenForUser(uid) : '';
+                }
+                if (!auth || (sessionUser && uid !== Number(sessionUser) && auth === sessionTok)) {
+                    continue;
+                }
+                if (sessionUser && !uid) {
+                    continue;
+                }
+            } else if (!auth) {
+                if (sessionUser && uid === Number(sessionUser) && sessionTok) auth = sessionTok;
+                else continue;
+            } else if (sessionUser && uid && uid !== Number(sessionUser) && auth === sessionTok) {
+                auth = ControlaOffline.tokenForUser(uid) || '';
+                if (!auth) continue;
+            }
             try {
-                await sendOutboxItem(row);
-                await ControlaOffline.removeOutbox(row.id);
+                await sendOutboxItem(job.row, auth);
+                if (job.row.id != null) {
+                    await ControlaOffline.removeOutboxIn(job.dbName, job.row.id);
+                }
+                if (job.row.type === 'close') {
+                    await ControlaOffline.metaSetIn(job.dbName, 'closeQueued', false);
+                    await ControlaOffline.metaSetIn(job.dbName, 'shift', null);
+                    if (sessionUser && uid === Number(sessionUser)) {
+                        closedMine = true;
+                    }
+                }
             } catch (e) {
                 if (ControlaOffline.isOfflineError(e)) break;
-                throw e;
+                const foreign = sessionUser && uid && uid !== Number(sessionUser);
+                if (foreign || !e.status || (e.status >= 400 && e.status < 500)) {
+                    if (job.row.id != null && e.status !== 401) {
+                        await ControlaOffline.removeOutboxIn(job.dbName, job.row.id);
+                    }
+                    continue;
+                }
+                continue;
             }
         }
-        const left = await ControlaOffline.outboxCount();
-        if (left === 0 && closeQueued) {
+        if (closedMine) {
             closeQueued = false;
-            await ControlaOffline.metaSet('closeQueued', false);
-            await ControlaOffline.metaSet('shift', null);
             stopPing();
             setStatus('Turno cerrado. Datos enviados.');
-            logout();
+            syncing = false;
+            logout({ skipFlush: true });
             return;
         }
     } catch (e) {
@@ -182,18 +256,19 @@ async function flushOutbox() {
     }
 }
 
-async function sendOutboxItem(row) {
+async function sendOutboxItem(row, authToken) {
+    const auth = { authToken };
     if (row.type === 'ping') {
-        await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(row.body) });
+        await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(row.body), ...auth });
         return;
     }
     if (row.type === 'log') {
-        await api('/supervision/logs', { method: 'POST', body: JSON.stringify(row.body) });
+        await api('/supervision/logs', { method: 'POST', body: JSON.stringify(row.body), ...auth });
         return;
     }
     if (row.type === 'review') {
         const fd = reviewFormFromQueue(row);
-        await api('/supervision/reviews', { method: 'POST', body: fd });
+        await api('/supervision/reviews', { method: 'POST', body: fd, ...auth });
         return;
     }
     if (row.type === 'close') {
@@ -202,7 +277,7 @@ async function sendOutboxItem(row) {
         fd.append('client_event_id', row.clientEventId);
         fd.append('odometer_photo', row.files.odometer, 'odometer-end.jpg');
         fd.append('selfie_photo', row.files.selfie, 'selfie-end.jpg');
-        await api('/supervision/shifts/close', { method: 'POST', body: fd });
+        await api('/supervision/shifts/close', { method: 'POST', body: fd, ...auth });
     }
 }
 
@@ -1174,6 +1249,9 @@ async function loadCurrent() {
     try {
         const data = await api('/supervision/shifts/current');
         activity = data.activity;
+        if (data.supervisor?.id && typeof ControlaOffline.setUser === 'function') {
+            await ControlaOffline.setUser(data.supervisor.id, token());
+        }
         const shift = data.shift;
         await ControlaOffline.metaSet('shift', shift || null);
         const nameEl = document.getElementById('sup-name');
@@ -1196,6 +1274,7 @@ function applyShift(shift) {
         stopPing();
         return null;
     }
+    clearOwnCloseLock();
     document.getElementById('shift-label').textContent = 'Turno abierto';
     document.getElementById('shift-meta').textContent = [
         shift.schedule_label,
@@ -1225,39 +1304,81 @@ async function loadSupervisorSelfie() {
 function startPing() {
     stopPing();
     if (closeQueued) return;
-    const send = async () => {
-        const pos = await geo();
-        if (!pos) return;
-        const body = {
-            latitude: pos.latitude,
-            longitude: pos.longitude,
-            accuracy: pos.accuracy,
-            client_event_id: ControlaOffline.uuid(),
-        };
+    const send = async (force = false) => {
+        if (closeQueued) return;
+        const now = Date.now();
+        if (!force && now - lastPingSentAt < 12000) return;
+        if (pingBusy) return;
+        pingBusy = true;
         try {
-            await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(body) });
-        } catch (e) {
-            if (ControlaOffline.isOfflineError(e)) {
-                await ControlaOffline.enqueue({ type: 'ping', clientEventId: body.client_event_id, body });
-                await updateSyncBar();
+            const pos = await geo();
+            if (!pos) return;
+            lastPingSentAt = Date.now();
+            const stats = offlineReady() && ControlaOffline.outboxStats
+                ? await ControlaOffline.outboxStats()
+                : { mine: 0 };
+            const body = {
+                latitude: pos.latitude,
+                longitude: pos.longitude,
+                accuracy: pos.accuracy,
+                client_event_id: ControlaOffline.uuid(),
+                pending_outbox: Number(stats.mine || 0),
+            };
+            try {
+                await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(body) });
+            } catch (e) {
+                if (ControlaOffline.isOfflineError(e)) {
+                    await ControlaOffline.enqueue({ type: 'ping', clientEventId: body.client_event_id, body });
+                    await updateSyncBar();
+                }
             }
+        } finally {
+            pingBusy = false;
         }
     };
-    send();
-    pingTimer = setInterval(send, 15000);
+    send(true);
+    pingTimer = setInterval(() => {
+        if (document.visibilityState === 'hidden') return;
+        send();
+    }, 15000);
+    if (navigator.geolocation?.watchPosition) {
+        pingWatchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                lastGeo = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy,
+                };
+                send();
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 },
+        );
+    }
 }
 
 function stopPing() {
     if (pingTimer) clearInterval(pingTimer);
     pingTimer = null;
+    if (pingWatchId != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(pingWatchId);
+        pingWatchId = null;
+    }
 }
 
-function logout() {
+function logout(opts = {}) {
     stopPing();
     stopAllCams();
+    const uid = ControlaOffline.currentUserId?.() || null;
+    const tok = token();
+    if (uid && tok) ControlaOffline.rememberUser?.(uid, tok);
     localStorage.removeItem('token');
+    if (typeof ControlaOffline.setUser === 'function') {
+        ControlaOffline.setUser(null);
+    }
     show('login');
     setStatus('Sesión cerrada.');
+    if (!opts.skipFlush) flushOutbox();
 }
 
 async function afterLogin(data = {}) {
@@ -1322,7 +1443,14 @@ document.getElementById('btn-login').onclick = () => withBusy(
                 device_name: 'supervision-pwa',
             }),
         });
+        if (!offlineReady()) {
+            throw new Error('App desactualizada. Recargue o borre datos del sitio.');
+        }
+        const prevTok = token();
+        const prevId = localStorage.getItem('sup_user_id');
+        if (prevId && prevTok) ControlaOffline.rememberUser(prevId, prevTok);
         localStorage.setItem('token', data.token);
+        await ControlaOffline.setUser(data.user?.id, data.token);
         await afterLogin(data);
     },
 );
@@ -1370,6 +1498,7 @@ document.getElementById('btn-start').onclick = () => withBusy(
         fd.append('odometer_photo', blobs.odo, 'odometer.jpg');
         fd.append('selfie_photo', blobs.self, 'selfie.jpg');
         await api('/supervision/shifts/open', { method: 'POST', body: fd });
+        await clearOwnCloseLock();
         blobs.odo = blobs.self = null;
         stopAllCams();
         try { await refreshOfflinePack(); } catch (e) { /* el turno ya abrió */ }
@@ -1639,14 +1768,41 @@ async function openSheet(kind, id) {
 document.getElementById('btn-logout-open').onclick = logout;
 
 if (token()) {
-    afterLogin().catch((e) => {
-        show('login');
-        setStatus(e.message, false);
-    });
+    if (!offlineReady()) {
+        setStatus('Actualice la app (borre datos del sitio o recargue).', false);
+    } else {
+        ControlaOffline.restoreUserFromStorage();
+        afterLogin().catch((e) => {
+            setStatus(e.message || 'No se pudo restaurar la sesión.', false);
+            if (e.status === 401) {
+                localStorage.removeItem('token');
+                show('login');
+            }
+        });
+    }
 }
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+        if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        reg.addEventListener('updatefound', () => {
+            const sw = reg.installing;
+            if (!sw) return;
+            sw.addEventListener('statechange', () => {
+                if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                    sw.postMessage({ type: 'SKIP_WAITING' });
+                }
+            });
+        });
+    }).catch(() => {});
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+    });
 }
 
 window.addEventListener('online', () => {
@@ -1656,4 +1812,9 @@ window.addEventListener('online', () => {
 window.addEventListener('offline', () => {
     updateSyncBar();
     setStatus('Sin cobertura. Puede seguir registrando; se enviará al reconectar.');
+});
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && pingTimer) {
+        startPing();
+    }
 });

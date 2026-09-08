@@ -78,6 +78,53 @@ final class OpenSupervisorShiftRequest extends FormRequest
         return $rules;
     }
 
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        $companyId = (int) $this->user()?->security_company_id;
+        $attrs = [
+            'shift_template_id' => 'turno',
+            'zone_id' => 'zona',
+            'km_start' => 'kilometraje de inicio',
+            'vehicle_id' => 'vehículo',
+            'odometer_photo' => 'foto del odómetro',
+            'selfie_photo' => 'selfie de inicio',
+            'ppe_checklist' => 'preoperacional EPP',
+            'vehicle_checklist' => 'preoperacional del vehículo',
+        ];
+        foreach (SupervisorChecklistItem::keyedLabels($companyId, SupervisorChecklistKind::Ppe) as $key => $label) {
+            $attrs['ppe_checklist.'.$key] = $label;
+        }
+        foreach (SupervisorChecklistItem::keyedLabels($companyId, SupervisorChecklistKind::Vehicle) as $key => $label) {
+            $attrs['vehicle_checklist.'.$key] = $label;
+        }
+
+        return $attrs;
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        $companyId = (int) $this->user()?->security_company_id;
+        $messages = [
+            'odometer_photo.required' => 'Tome la foto del odómetro.',
+            'selfie_photo.required' => 'Tome la selfie de inicio.',
+            'km_start.required' => 'Indique el kilometraje de inicio.',
+            'shift_template_id.required' => 'Seleccione el turno.',
+            'zone_id.required' => 'Seleccione la zona.',
+        ];
+        foreach (SupervisorChecklistItem::keyedLabels($companyId, SupervisorChecklistKind::Ppe) as $key => $label) {
+            $messages['ppe_checklist.'.$key.'.accepted'] = 'Debe confirmar: '.$label;
+            $messages['ppe_checklist.'.$key.'.required'] = 'Debe confirmar: '.$label;
+        }
+        foreach (SupervisorChecklistItem::keyedLabels($companyId, SupervisorChecklistKind::Vehicle) as $key => $label) {
+            $messages['vehicle_checklist.'.$key.'.accepted'] = 'Debe confirmar: '.$label;
+            $messages['vehicle_checklist.'.$key.'.required'] = 'Debe confirmar: '.$label;
+        }
+
+        return $messages;
+    }
+
     /**
      * @return array<string, bool>
      */

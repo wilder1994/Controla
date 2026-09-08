@@ -1,6 +1,6 @@
 # Plan de Inicio — Proyecto Controla
 
-> **Propósito:** Hoja de ruta ejecutable para pasar de documentación (referencia Axesa / Creawilder) a implementación incremental en Controla.  
+> **Propósito:** Hoja de ruta ejecutable para pasar de documentación (Creawilder) a implementación incremental en Controla.  
 > **Versión:** 1.0  
 > **Fecha:** 2026-07-07  
 > **Estado:** Aprobación pendiente por fase — **no iniciar código de una fase sin firmar su Definition of Done**
@@ -9,16 +9,16 @@
 
 ## 1. Resumen ejecutivo
 
-**Controla** es una plataforma SaaS B2B de control de accesos y vigilancia para empresas de seguridad privada y conjuntos residenciales en Colombia. Se construye sobre **Laravel 11** en Laragon, tomando como referencia funcional **Axesa Control v13** y superándola en:
+**Controla** es una plataforma SaaS B2B de control de accesos y vigilancia para empresas de seguridad privada y conjuntos residenciales en Colombia. Se construye sobre **Laravel 11** en Laragon, con estos pilares:
 
 1. **Panel Admin Empresa** — gestión centralizada de clientes (sin Excel).
 2. **Multi-tenant estricto** — 3 niveles: Súper Admin → Empresa → Cliente.
 3. **Stack unificado** — API-first, permisos enforced en backend, arquitectura por capas.
 
-El plan divide el trabajo en **6 fases (0–5)**. La **Fase 0 es bloqueante**: sin multi-tenant y roles correctos, el resto acumula deuda técnica como en Axesa.
+El plan divide el trabajo en **6 fases (0–5)**. La **Fase 0 es bloqueante**: sin multi-tenant y roles correctos, el resto acumula deuda técnica.
 
 **MVP operativo (portería + censo + un cliente piloto):** fin de **Fase 2**.  
-**Paridad mínima vs Axesa v13 (checklist Anexo C.12):** fin de **Fase 4**.
+**Portal residente + API (checklist de aceptación):** fin de **Fase 4**.
 
 ---
 
@@ -26,12 +26,10 @@ El plan divide el trabajo en **6 fases (0–5)**. La **Fase 0 es bloqueante**: s
 
 | Documento | Uso en este plan |
 |-----------|------------------|
-| [REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md](./REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) | Especificación funcional, BD, UI de referencia (v1.9) |
+| [REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md](./REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) | Índice a la documentación funcional de Controla |
 | [assets/referencia/01-estructura-por-roles.png](./assets/referencia/01-estructura-por-roles.png) | Matriz roles × módulo Estructura |
-| Anexo A (referencia) | Gap analysis Controla actual vs Axesa |
-| Anexo C (referencia) | Inteligencia pública, backlog y checklist paridad |
 
-**Regla:** cada ítem implementado debe citar la sección de referencia que lo originó (ej. `§1.2.2 Personas`).
+**Regla:** cada ítem implementado debe citar el doc de Controla que lo cubre (p. ej. [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md)).
 
 ---
 
@@ -39,7 +37,7 @@ El plan divide el trabajo en **6 fases (0–5)**. La **Fase 0 es bloqueante**: s
 
 ### 3.1 Propuesta de valor
 
-| Actor | Problema hoy (Axesa) | Solución Controla |
+| Actor | Problema hoy | Solución Controla |
 |-------|----------------------|-------------------|
 | Empresa de seguridad | Excel + solicitud manual por cada cliente nuevo | Panel único: alta cliente, asignación guardas, métricas |
 | Admin conjunto | Censo fragmentado, sin API clara | Módulo Estructura unificado + directorios globales |
@@ -48,7 +46,7 @@ El plan divide el trabajo en **6 fases (0–5)**. La **Fase 0 es bloqueante**: s
 
 ### 3.2 Posicionamiento
 
-> *Axesa en operación portería + panel B2B moderno + Laravel 11.*  
+> *Operación portería + panel B2B moderno + Laravel 11.*  
 > No competir en v1 con contabilidad PH (Properix); sí en control de accesos + vigilancia.
 
 ### 3.3 Tres superficies de producto
@@ -175,7 +173,7 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 | **5** | PH avanzado + integraciones | Continuo | Parqueaderos, hardware, white label |
 
 **Duración total estimada al MVP (Fase 2):** 8–11 semanas con 1 dev full-time.  
-**Paridad Axesa (Fase 4):** +5–7 semanas adicionales.
+**Portal residente (Fase 4):** +5–7 semanas adicionales.
 
 ---
 
@@ -183,7 +181,7 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 **Objetivo:** Toda query y toda pantalla respeta `company_id` / `client_id`. Admin Empresa operativo.
 
-**Referencia:** §0, Anexo C.8 Fase 0, Anexo A (modelo B2B).
+**Referencia:** [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md), [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 #### 0.1 Base de datos
 
@@ -216,7 +214,7 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 | Pantalla | Ruta | Función |
 |----------|------|---------|
-| Listado clientes | `GET /company/clients` | Reemplaza Excel Axesa |
+| Listado clientes | `GET /company/clients` | Alta y listado de clientes (sin Excel) |
 | Crear cliente | `GET/POST /company/clients/create` | Slug, sufijo login, plan |
 | Detalle cliente | `GET /company/clients/{id}` | Usuarios asignados, métricas |
 | Asignar operativos | `POST /company/clients/{id}/assign` | Guardas/supervisores |
@@ -226,7 +224,7 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 - [ ] 2 clientes aislados en misma BD sin fuga de datos (test automatizado).
 - [ ] `company-admin` crea cliente sin intervención de Súper Admin.
 - [ ] Rutas `/access/*` rechazan acceso sin `client_id` válido.
-- [ ] Documento Anexo A actualizado con nuevos estados.
+- [ ] Documentación de estados de acceso actualizada.
 - [ ] Demo grabada: flujo alta cliente → login guarda en ese cliente.
 
 **Gate:** aprobación explícita antes de Fase 1.
@@ -235,9 +233,9 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 ### FASE 1 — Módulo Estructura / censo
 
-**Objetivo:** Censo unificado tipo Axesa §1. Admin Cliente gestiona todo el árbol y directorios.
+**Objetivo:** Censo unificado. Admin Cliente gestiona todo el árbol y directorios.
 
-**Referencia:** §1.2, migraciones §1.6, capturas `01-*` a `08-*`.
+**Referencia:** [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 #### 1.1 Modelo `structures`
 
@@ -287,7 +285,7 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 - [ ] Admin Cliente carga conjunto piloto completo (torre + 10 aptos + 20 personas).
 - [ ] Import Excel autorizaciones con ≥50 filas sin error.
 - [ ] QR generado y escaneable en ingreso portería (integración manual OK).
-- [ ] Capturas de referencia §1.2 replicadas en staging (checklist visual).
+- [ ] Capturas de censo/estructura en staging (checklist visual).
 - [ ] Tests Feature: CRUD estructura, persona, vehículo con scoping.
 
 **Gate:** aprobación antes de Fase 2.
@@ -298,7 +296,7 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 **Objetivo:** Reemplazar flujo diario del guarda. Módulo **Ingresos y Salidas** como hub central.
 
-**Referencia:** §2, dashboard rojo §0.6, Anexo C checklist ítems portería.
+**Referencia:** operación portería en el README (rutas `/access`).
 
 #### 2.1 Consola unificada Ingresos/Salidas
 
@@ -339,7 +337,7 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 **Objetivo:** Reportes gerenciales y minutas con trazabilidad legal.
 
-**Referencia:** §3, §4.
+**Referencia:** reportes y minuta en el README (Ops portería+).
 
 #### 3.1 Business Intelligence
 
@@ -369,9 +367,9 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 
 ### FASE 4 — Portal / API residente
 
-**Objetivo:** Paridad app Axesa (stores) vía portal responsive + API.
+**Objetivo:** Portal residente responsive + API.
 
-**Referencia:** Anexo C.5.3, checklist C.12.
+**Referencia:** API Sanctum en el README.
 
 #### 4.1 API REST (`/api/v1/resident/*`)
 
@@ -397,9 +395,9 @@ Middleware `EnsureTenantScope` inyecta scope global en repositories.
 - Laravel Notifications + FCM (Android) / APNs (iOS) — configuración en `config/services.php`.
 - Eventos: correspondencia lista, pre-auth aprobada, pánico, circular nueva.
 
-#### Definition of Done — Fase 4 (paridad Axesa)
+#### Definition of Done — Fase 4 (portal residente)
 
-- [ ] Checklist Anexo C.12 completo.
+- [ ] Checklist de módulos residente (pre-auth, visitas, correspondencia, pánico).
 - [ ] Residente crea pre-auth → guarda aprueba → ingreso registrado (E2E).
 - [ ] Push notificación correspondencia en dispositivo real.
 
@@ -481,7 +479,7 @@ flowchart LR
 | `v0.2.0` | Fase 1 completa |
 | `v0.3.0` | **MVP** Fase 2 |
 | `v0.4.0` | Fase 3 |
-| `v1.0.0` | Fase 4 — paridad Axesa operativa + residente |
+| `v1.0.0` | Fase 4 — operación + portal residente |
 
 ---
 
@@ -492,14 +490,14 @@ flowchart LR
 | Migración `structures` rompe datos | Media | Alto | Script reversible + backup + migración en transacción por cliente |
 | Scope tenant omitido en query | Alta | Crítico | Global scope en Repository + test de aislamiento en CI |
 | Scope creep PH contable | Media | Medio | Fase 5 explícitamente opcional; rechazar en v1 |
-| Paridad visual Axesa consume tiempo | Alta | Medio | Checklist visual por submódulo, no pixel-perfect |
+| Paridad visual consume tiempo | Alta | Medio | Checklist visual por submódulo, no pixel-perfect |
 | App móvil nativa pedida antes de API | Media | Alto | API-first; PWA (Descargas) como puente. APK/tiendas fuera de este corte |
 
 ---
 
 ## 10. Métricas de éxito
 
-### 10.1 KPIs de producto (inspirados Axesa — Anexo C.3)
+### 10.1 KPIs de producto
 
 | KPI | Meta MVP (6 meses post Fase 2) |
 |-----|--------------------------------|
@@ -530,7 +528,7 @@ flowchart LR
 | 5 | Spatie roles Fase 0.2 | Dev | Seeder + tests rol |
 | 6 | Middleware scope Fase 0.3 | Dev | Tests aislamiento |
 | 7 | UI listado clientes Fase 0.4 | Dev | Demo `company/clients` |
-| 8 | Completar capturas pendientes referencia | Documentación | §1.2 pendientes (porterías, zonas, torres) |
+| 8 | Completar capturas de estructura / portería | Documentación | Porterías, zonas, torres |
 
 **No iniciar Fase 1 hasta tag `v0.1.0`.**
 

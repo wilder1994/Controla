@@ -40,9 +40,13 @@ final class AutoCloseExpiredSupervisorShiftsService
     {
         $template = $shift->shiftTemplate;
         $grace = ResolveSupervisorShiftDeadlineService::GRACE_MINUTES;
+        $n = (int) ($shift->pending_outbox_count ?? 0);
+        $queue = $n > 0
+            ? ' Pendiente en cola: '.$n.' registro'.($n === 1 ? '' : 's').'.'
+            : '';
         $note = $template?->ends_at
-            ? 'Cierre automático: fin de turno '.substr((string) $template->ends_at, 0, 5).' + '.$grace.' min.'
-            : 'Cierre automático: '.ResolveSupervisorShiftDeadlineService::FALLBACK_IDLE_HOURS.' h desde último GPS o inicio (sin plantilla de turno).';
+            ? 'Cierre automático: fin de turno '.substr((string) $template->ends_at, 0, 5).' + '.$grace.' min.'.$queue
+            : 'Cierre automático: '.ResolveSupervisorShiftDeadlineService::FALLBACK_IDLE_HOURS.' h desde último GPS o inicio (sin plantilla de turno).'.$queue;
 
         DB::transaction(function () use ($shift, $note, $deadline, $nowAt): void {
             $kmEnd = (int) ($shift->km_start ?? 0);
@@ -52,6 +56,7 @@ final class AutoCloseExpiredSupervisorShiftsService
                 'km_end' => $shift->km_end ?? $kmEnd,
                 'km_traveled' => $shift->km_traveled ?? 0,
                 'notes' => trim((string) $shift->notes."\n".$note),
+                'closed_by_system' => true,
             ]);
         });
     }

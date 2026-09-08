@@ -45,12 +45,15 @@ final class TenantSeeder extends Seeder
             ['tax_id' => '900123456-1'],
             [
                 'legal_name' => 'SJ Seguridad Privada S.A.S.',
-                'trade_name' => 'SJ Seguridad / BigSky',
+                'trade_name' => 'SJ Seguridad',
                 'email' => 'contacto@sj-seguridad.test',
                 'phone' => '+57 300 000 0000',
                 'is_active' => true,
             ]
         );
+        if ($company->trade_name !== 'SJ Seguridad') {
+            $company->update(['trade_name' => 'SJ Seguridad']);
+        }
 
         app(AssignCompanyPackageService::class)->execute(
             $company,

@@ -61,11 +61,16 @@ final class ManageSupervisorShiftService
         ?float $accuracy = null,
         string $source = 'app',
         ?string $clientEventId = null,
+        ?int $pendingOutbox = null,
     ): SupervisorShiftLocation {
         if (! $shift->isOpen()) {
             throw ValidationException::withMessages([
                 'shift' => 'El turno está cerrado.',
             ]);
+        }
+
+        if ($pendingOutbox !== null) {
+            $shift->update(['pending_outbox_count' => max(0, $pendingOutbox)]);
         }
 
         if ($clientEventId !== null && $clientEventId !== '') {
