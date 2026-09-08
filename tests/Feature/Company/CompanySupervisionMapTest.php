@@ -34,7 +34,7 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertOk();
         $response->assertSee('Supervisión');
         $response->assertSee('En vivo');
-        $response->assertSee('Historial / replay');
+        $response->assertSee('Historial');
         $response->assertSee('Resumen');
         $response->assertSee('Fichas');
         $response->assertSee('Descargar PPTX');
@@ -54,7 +54,10 @@ final class CompanySupervisionMapTest extends TestCase
 
         $history = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'history']));
         $history->assertOk();
+        $history->assertSee('Turnos del periodo');
         $history->assertSee('Una ruta a la vez');
+        $history->assertDontSee('Replay');
+        $history->assertDontSee('Reproducir');
 
         $summary = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'summary']));
         $summary->assertOk();

@@ -405,8 +405,9 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos de Supervisión (tarjeta Supervisión) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
-| `GET /company/supervision` | En vivo: mapa + tabla (GPS, en línea/sin señal); Historial: ruta callejero; Resumen; Fichas |
+| `GET /company/supervision` | En vivo: mapa + tabla (GPS, en línea/sin señal); Historial: mapa + lista (Roads si el turno está cerrado); Resumen; Fichas |
 | `GET /company/supervision/live.json` | Feed En vivo (turnos abiertos + revistas); no llama Roads |
+| `GET /company/supervision/turnos/{shift}/ruta` | Historial: Snap to Roads en turno cerrado (cache `snapped_route`) |
 | `GET /company/supervision/fichas/{kind}/{id}` | Ficha de campo HTML carta (revista, alarma, apoyo, documentos) |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro; solo cifras). Compositor + párrafos + GRACIAS + DeepSeek + chatbot/PQRS: pendiente, [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md) §§ Informe PPTX y Chatbot y PQRS |
 | `GET /company/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; `SUPERVISION_PWA_URL`; no APK ni tiendas) |
@@ -844,6 +845,8 @@ routes/api.php                   # Sanctum endpoints
 php artisan migrate:fresh --seed            # reset desarrollo (baseline unificado; requiere OK explícito)
 php artisan migrate                         # aplicar migraciones pendientes
 php artisan subscriptions:process-lifecycle # gracia 5d → suspensión → archivo non_payment (diario 02:00)
+php artisan supervision:auto-close-shifts   # fin de plantilla + 30 min; sin plantilla, 3 h idle (cada 5 min)
+php artisan schedule:work                   # corre el scheduler en local (Windows no tiene cron)
 php artisan data:purge-retention            # purga censo post-retención (también programado mensual)
 php artisan db:seed                         # datos demo (aditivo, todos los seeders)
 php artisan db:seed --class=RoleAndPermissionSeeder  # sincronizar permisos tras cambios en config/access.php

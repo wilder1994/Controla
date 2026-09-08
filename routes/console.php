@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('subscriptions:process-lifecycle')->dailyAt('02:00');
 Schedule::command('data:purge-retention')->monthlyOn(1, '03:00');
+Schedule::command('supervision:auto-close-shifts')->everyFiveMinutes();

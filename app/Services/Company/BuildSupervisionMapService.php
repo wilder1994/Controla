@@ -50,6 +50,7 @@ final class BuildSupervisionMapService
             ->matchingFilter($filter)
             ->with([
                 'user',
+                'shiftTemplate',
                 'locations' => fn ($q) => $q->orderBy('recorded_at'),
             ])
             ->orderByDesc('started_at')
@@ -58,17 +59,25 @@ final class BuildSupervisionMapService
             ->map(function (SupervisorShift $shift) {
                 $open = $shift->status === SupervisorShiftStatus::Open;
                 $built = $this->trail->execute($shift->locations, $open);
+                $tz = (string) config('app.timezone');
+                $started = $shift->started_at;
+                $ended = $shift->ended_at;
+                $auto = str_contains((string) $shift->notes, 'Cierre automático');
 
                 return [
                     'shift_id' => $shift->id,
                     'user' => $shift->user?->name,
                     'status' => $shift->status->value,
-                    'started_at' => $shift->started_at?->toIso8601String(),
-                    'ended_at' => $shift->ended_at?->toIso8601String(),
-                    'km_traveled' => $shift->km_traveled,
+                    'status_label' => $open ? 'Abierto' : ($auto ? 'Cerrado (automático)' : 'Cerrado'),
+                    'started_at' => $started?->toIso8601String(),
+                    'started_at_label' => $started?->timezone($tz)->format('d/m H:i'),
+                    'ended_at' => $ended?->toIso8601String(),
+                    'ended_at_label' => $ended?->timezone($tz)->format('d/m H:i'),
+                    'schedule_label' => $shift->schedule_label ?? $shift->shiftTemplate?->scheduleLabel(),
+                    'km_traveled' => $shift->km_traveled ?? $built['km'],
                     'path' => $built['path'],
                     'start' => $built['start'],
-                    'end' => $open ? null : $built['end'],
+                    'end' => $built['end'],
                     'stops' => $built['stops'],
                     'parked' => $built['parked'],
                     'route_cached' => is_array($shift->snapped_route) && $shift->snapped_route !== [],

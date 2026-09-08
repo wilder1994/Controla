@@ -82,7 +82,9 @@ Cerrar turno sin red también se encola (fotos incluidas). No borrar datos del s
 
 Contrato de campos: `GET /api/supervision/catalog` (`FieldModuleCatalog`). Logs append-only en `supervisor_field_logs` (`supervisor_shift_review_id` si cuelga de revista). Recomendaciones: `supervisor_recommendations` (registro inmutable del turno; `GET /recommendations` lista recientes).
 
-El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno). En vivo: **dos columnas** (mapa alto + tabla). Estado: en ruta / detenido con horas (`Se detuvo a las HH:mm · lleva N min`); paradas cerradas `de HH:mm a HH:mm`. Pin de moto: **En línea** (GPS &lt; 90 s) o **Sin señal**. Poll 10 s, sin Roads. Historial: Snap to Roads en turno cerrado, cacheado. Trail: `BuildSupervisorTrailService` (~28 m; parada 75 m y ≥120 s; minutos de detenido actual contra el reloj).
+El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno). En vivo e Historial: **dos columnas** (mapa alto + lista). Estado En vivo: en ruta / detenido con horas (`Se detuvo a las HH:mm · lleva N min`); paradas cerradas `de HH:mm a HH:mm`. Pin de moto: **En línea** (GPS &lt; 90 s) o **Sin señal**. Poll 10 s, sin Roads. Historial: misma barra de filtros; **sin replay**. Turno cerrado: Snap to Roads (azul, cache). Turno aún abierto: GPS ámbar. Trail: `BuildSupervisorTrailService` (~28 m; parada 75 m y ≥120 s; minutos de detenido actual contra el reloj).
+
+Cierre automático (`supervision:auto-close-shifts`, cada 5 min en el scheduler): fin de **plantilla** (`starts_at`/`ends_at`) + **30 min** de gabela. Ej. 06:00–14:00 cierra a las 14:30; noche 18:00–06:00 cierra a las 06:30 del día siguiente. Sin fotos de km; nota en el turno. Sin plantilla: **3 h** desde el último GPS o `started_at`. El turno sale de En vivo. En Windows hace falta `php artisan schedule:work` (o Tarea programada con `schedule:run`).
 
 ---
 
@@ -126,7 +128,9 @@ Panel: KPIs de **volumen y nivel**, no de tickets abiertos. Tira de hoy: recomen
 
 ## Panel empresa — operación
 
-`/company/supervision`: En vivo / Historial / Resumen / **Fichas**. En vivo: mapa + tabla (inicio, en línea/sin señal, detención con horas, km, revistas). Historial: una ruta callejero cacheada. Header: filtros y **Descargar PPTX**. En Fichas: tipo, cliente, novedad. PPTX: `GET /company/supervision/informe.pptx`. Compositor IA: § Informe PPTX (pendiente).
+`/company/supervision`: En vivo / Historial / Resumen / **Fichas**. En vivo: mapa + tabla (inicio, en línea/sin señal, detención con horas, km, revistas); `GET /company/supervision/live.json`. Historial: mapa + lista del periodo (inicio/fin, km, plantilla); callejero solo si el turno está cerrado (`GET /company/supervision/turnos/{shift}/ruta`). Header: filtros y **Descargar PPTX**. En Fichas: tipo, cliente, novedad. PPTX: `GET /company/supervision/informe.pptx`. Compositor IA: § Informe PPTX (pendiente).
+
+Servicios: `BuildSupervisionMapService`, `BuildSupervisorTrailService`, `SnapSupervisorTrailToRoadsService`, `ResolveSupervisorShiftDeadlineService` (gabela 30 min), `AutoCloseExpiredSupervisorShiftsService` (comando `supervision:auto-close-shifts`). El cierre manual de la PWA sigue exigiendo fotos (`CloseSupervisorShiftService`).
 
 `/company/descargas` y `/admin/descargas`: tarjeta **App de Supervisión** (QR, abrir, copiar, pasos Android/iPhone). Una sola PWA para todas las empresas; el login identifica la empresa. No es la app de residentes de Accesos.
 
@@ -247,4 +251,4 @@ php artisan migrate:fresh --seed
 php artisan db:seed --class=PilotDemoSeeder
 ```
 
-Tests: `SupervisorShiftApiTest`, `SupervisorFieldLogApiTest`, `SupervisorOfflineSyncTest`, `CompanySupervisionCatalogTest`, `CompanySupervisionFieldSheetTest`, `CompanySupervisionMapTest`, `BuildSupervisorTrailTest`, `SnapSupervisorTrailToRoadsTest`, `CompanyClientSiteTreeTest` (BD `controla_test`).
+Tests: `SupervisorShiftApiTest`, `SupervisorFieldLogApiTest`, `SupervisorOfflineSyncTest`, `CompanySupervisionCatalogTest`, `CompanySupervisionFieldSheetTest`, `CompanySupervisionMapTest`, `AutoCloseExpiredSupervisorShiftsTest`, `BuildSupervisorTrailTest`, `ResolveSupervisorShiftDeadlineTest`, `SnapSupervisorTrailToRoadsTest`, `CompanyClientSiteTreeTest` (BD `controla_test`).

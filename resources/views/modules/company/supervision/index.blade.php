@@ -132,7 +132,7 @@
         <a
             href="{{ route('company.supervision.index', $tabQuery + ['tab' => 'history']) }}"
             @class(['admin-header-tab', 'is-active' => $activeTab === 'history'])
-        >Historial / replay</a>
+        >Historial</a>
         <a
             href="{{ route('company.supervision.index', $tabQuery + ['tab' => 'summary']) }}"
             @class(['admin-header-tab', 'is-active' => $activeTab === 'summary'])
@@ -145,12 +145,12 @@
 
     <div class="space-y-4">
         @if ($activeTab !== 'summary' && $activeTab !== 'sheets')
-            <div @class(['grid gap-4 lg:grid-cols-12 lg:items-stretch' => $activeTab === 'live'])>
-                <div @class(['relative' => true, 'lg:col-span-7 xl:col-span-8' => $activeTab === 'live'])>
+            <div @class(['grid gap-4 lg:grid-cols-12 lg:items-stretch' => in_array($activeTab, ['live', 'history'], true)])>
+                <div @class(['relative' => true, 'lg:col-span-7 xl:col-span-8' => in_array($activeTab, ['live', 'history'], true)])>
                     <div id="supervision-map" @class([
                         'w-full rounded-lg border border-slate-800 bg-slate-950/60 overflow-hidden relative',
-                        'h-[min(78vh,740px)] min-h-[420px]' => $activeTab === 'live',
-                        'h-[420px]' => $activeTab !== 'live',
+                        'h-[min(78vh,740px)] min-h-[420px]' => in_array($activeTab, ['live', 'history'], true),
+                        'h-[420px]' => ! in_array($activeTab, ['live', 'history'], true),
                     ])>
                         <div class="absolute top-3 left-3 z-10 inline-flex rounded-md border border-slate-700 bg-slate-950/90 p-0.5 text-xs">
                             <button type="button" class="supervision-map-type-btn rounded px-2 py-1 font-medium text-white bg-indigo-600/80" data-map-type="satellite">Satélite</button>
@@ -171,6 +171,35 @@
                         <p class="text-xs text-slate-500 mt-0.5 shrink-0">Se actualiza solo. En línea = GPS reciente.</p>
                         <div class="mt-3 overflow-auto flex-1" id="supervision-live-list">
                             @include('modules.company.supervision.partials.live-roster', ['rows' => $map['live']])
+                        </div>
+                    </section>
+                @endif
+
+                @if ($activeTab === 'history')
+                    <section class="lg:col-span-5 xl:col-span-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-h-[420px] lg:min-h-0 lg:h-[min(78vh,740px)] flex flex-col">
+                        <h3 class="text-sm font-semibold text-white shrink-0">Turnos del periodo</h3>
+                        <p class="text-xs text-slate-500 mt-0.5 shrink-0">Una ruta a la vez. Cerrado: callejero (Roads). Abierto: GPS hasta el cierre (automático al fin de plantilla + 30 min).</p>
+                        <div class="mt-3 overflow-auto flex-1 space-y-1">
+                            @forelse ($map['history'] as $row)
+                                <button type="button"
+                                        class="supervision-trail-pick w-full text-left rounded-md px-2 py-2 hover:bg-slate-800 border border-transparent"
+                                        data-shift-id="{{ $row['shift_id'] }}">
+                                    <p class="text-sm font-medium text-slate-100">{{ $row['user'] ?? 'Supervisor' }}</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">{{ $row['status_label'] ?? $row['status'] }}
+                                        @if (! empty($row['schedule_label']))
+                                            · {{ $row['schedule_label'] }}
+                                        @endif
+                                    </p>
+                                    <p class="text-xs text-slate-500 mt-0.5">Inicio {{ $row['started_at_label'] ?? '—' }}
+                                        @if (! empty($row['ended_at_label']))
+                                            · fin {{ $row['ended_at_label'] }}
+                                        @endif
+                                        · {{ number_format((float) ($row['km_traveled'] ?? 0), 1) }} km
+                                    </p>
+                                </button>
+                            @empty
+                                <p class="text-sm text-slate-500">Sin turnos en el rango.</p>
+                            @endforelse
                         </div>
                     </section>
                 @endif
@@ -223,35 +252,6 @@
                 @if ($sheets)
                     <div class="px-4 py-3">{{ $sheets->links() }}</div>
                 @endif
-            </section>
-        @endif
-
-        @if ($activeTab === 'history')
-            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4">
-                <h3 class="text-sm font-semibold text-white">Rutas del periodo</h3>
-                <p class="text-xs text-slate-500 mt-1">Una ruta a la vez. En turnos cerrados el trazo sigue el callejero (Roads). En vivo no llama a esa API.</p>
-                <div class="mt-3 flex flex-wrap items-center gap-3 hidden" id="supervision-replay-wrap">
-                    <label class="text-xs text-slate-500" for="supervision-replay">Replay</label>
-                    <input id="supervision-replay" type="range" min="0" value="0" class="flex-1 accent-amber-400">
-                    <x-ui.button type="button" size="sm" variant="secondary" id="supervision-replay-play">Reproducir</x-ui.button>
-                </div>
-                <ul class="mt-3 space-y-1 max-h-64 overflow-y-auto">
-                    @forelse ($map['history'] as $row)
-                        <li>
-                            <button type="button"
-                                    class="supervision-trail-pick w-full text-left text-sm text-slate-300 rounded-md px-2 py-1.5 hover:bg-slate-800"
-                                    data-shift-id="{{ $row['shift_id'] }}">
-                                {{ $row['user'] ?? 'Supervisor' }} · {{ $row['status'] === 'open' ? 'abierto' : 'cerrado' }}
-                                · {{ \Illuminate\Support\Carbon::parse($row['started_at'])->format('d/m H:i') }}
-                                @if ($row['km_traveled'])
-                                    · {{ $row['km_traveled'] }} km
-                                @endif
-                            </button>
-                        </li>
-                    @empty
-                        <li class="text-sm text-slate-500">Sin turnos en el rango.</li>
-                    @endforelse
-                </ul>
             </section>
         @endif
 
@@ -380,9 +380,6 @@
 
                 let googleMap = null;
                 let overlays = [];
-                let replayMarker = null;
-                let replayTimer = null;
-                let replayPath = [];
                 let livePollTimer = null;
                 let liveFitted = false;
                 let reviewInfo = null;
@@ -433,11 +430,6 @@
                 function clearOverlays() {
                     overlays.forEach((item) => item.setMap(null));
                     overlays = [];
-                    if (replayMarker) {
-                        replayMarker.setMap(null);
-                        replayMarker = null;
-                    }
-                    clearInterval(replayTimer);
                 }
 
                 function addOverlay(item) {
@@ -619,37 +611,12 @@
                         }
                         hasPoint = drawTrail(googleMap, bounds, trailRow, { current: !closed, flag: closed, street }) || hasPoint;
                         hasPoint = drawReviews(googleMap, bounds, row.shift_id) || hasPoint;
-                        setupReplay(trailRow.path || []);
                     }
                     if (hasPoint) googleMap.fitBounds(bounds, 48);
                     document.querySelectorAll('.supervision-trail-pick').forEach((btn) => {
                         btn.classList.toggle('bg-slate-800', Number(btn.dataset.shiftId) === Number(row?.shift_id));
                         btn.classList.toggle('text-white', Number(btn.dataset.shiftId) === Number(row?.shift_id));
                     });
-                }
-
-                function setupReplay(path) {
-                    replayPath = path || [];
-                    const wrap = document.getElementById('supervision-replay-wrap');
-                    const slider = document.getElementById('supervision-replay');
-                    if (!wrap || !slider) return;
-                    wrap.classList.toggle('hidden', replayPath.length < 2);
-                    slider.max = Math.max(0, replayPath.length - 1);
-                    slider.value = 0;
-                    if (replayMarker) replayMarker.setMap(null);
-                    replayMarker = null;
-                    if (!replayPath.length) return;
-                    replayMarker = new google.maps.Marker({
-                        map: googleMap,
-                        position: { lat: replayPath[0].lat, lng: replayPath[0].lng },
-                        zIndex: 8,
-                        icon: iconMoto(),
-                        title: 'Replay',
-                    });
-                    slider.oninput = () => {
-                        const point = replayPath[Number(slider.value)] || replayPath[0];
-                        replayMarker.setPosition({ lat: point.lat, lng: point.lng });
-                    };
                 }
 
                 function syncMapTypeButtons(type) {
@@ -689,19 +656,6 @@
                         paintHistory(history[0]?.shift_id);
                         document.querySelectorAll('.supervision-trail-pick').forEach((btn) => {
                             btn.addEventListener('click', () => paintHistory(btn.dataset.shiftId));
-                        });
-                        document.getElementById('supervision-replay-play')?.addEventListener('click', () => {
-                            if (!replayPath.length || !replayMarker) return;
-                            const slider = document.getElementById('supervision-replay');
-                            let i = 0;
-                            clearInterval(replayTimer);
-                            replayTimer = setInterval(() => {
-                                const point = replayPath[i] || replayPath[0];
-                                replayMarker.setPosition({ lat: point.lat, lng: point.lng });
-                                if (slider) slider.value = String(i);
-                                i += 1;
-                                if (i >= replayPath.length) clearInterval(replayTimer);
-                            }, 400);
                         });
                         return;
                     }

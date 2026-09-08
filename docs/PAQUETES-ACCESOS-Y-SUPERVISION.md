@@ -27,7 +27,7 @@ Accesos incluye **supervisión básica en puesto** (código + minuta de porterí
 
 1 · 5 · 10 · 50 · 100 e **ilimitado** (precio = **2×** el paquete de 100). Requiere Accesos de 5 o más.
 
-GPS (~15 s), turnos, mapa/replay. Revista en la app; no se vuelve a firmar en portería.
+GPS (~15 s), turnos, mapa En vivo / Historial. Revista en la app; no se vuelve a firmar en portería.
 
 ## Checkout y cambios
 
