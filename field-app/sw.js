@@ -1,9 +1,9 @@
 self.addEventListener('install', (event) => {
-    event.waitUntil(caches.open('controla-sup-v26').then((cache) => cache.addAll(['./', './index.html', './offline.js', './app.js', './manifest.json'])));
+    event.waitUntil(caches.open('controla-sup-v28').then((cache) => cache.addAll(['./', './index.html', './offline.js', './app.js', './manifest.json'])));
 });
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== 'controla-sup-v26').map((k) => caches.delete(k)))),
+        caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== 'controla-sup-v28').map((k) => caches.delete(k)))),
     );
 });
 self.addEventListener('fetch', (event) => {

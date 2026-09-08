@@ -51,7 +51,7 @@ Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-IN
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola IndexedDB tras abrir turno. Instalar desde Descargas (PWA, no APK). Caché SW `controla-sup-v26` |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola IndexedDB tras abrir turno. Instalar desde Descargas (PWA, no APK). Ping GPS 15 s. Caché SW `controla-sup-v28` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -150,12 +150,13 @@ GOOGLE_MAPS_DEFAULT_ZOOM=6
 
 **Configurar en Google Cloud Console:**
 
-1. [APIs y servicios → Biblioteca](https://console.cloud.google.com/apis/library) → habilitar **Maps JavaScript API**, **Places API** y **Geocoding API**.
+1. [APIs y servicios → Biblioteca](https://console.cloud.google.com/apis/library) → habilitar **Maps JavaScript API**, **Places API**, **Geocoding API** y **Roads API** (ruta de historial).
 2. [Credenciales](https://console.cloud.google.com/apis/credentials) → **Crear credenciales → Clave de API**.
-3. Restringir la clave:
+3. Restringir la clave **del mapa** (navegador):
    - **Aplicación:** referentes HTTP → `http://controla.test/*` y `http://localhost/*`
-   - **API:** Maps JavaScript API, Places API, Geocoding API
-4. Pegar la clave en `GOOGLE_MAPS_API_KEY` y ejecutar `php artisan config:clear`.
+   - **API:** Maps JavaScript API, Places API, Geocoding API, Roads API
+4. Pegar esa clave en `GOOGLE_MAPS_API_KEY` y ejecutar `php artisan config:clear`.
+5. **Ruta de historial (Roads):** la llamada sale del servidor Laravel, no del navegador. Una clave solo con sitios web suele fallar. Crea **otra clave** (restricción de IP: `127.0.0.1` en local, o ninguna en pruebas) limitada a **Roads API** y pégala en `GOOGLE_MAPS_SERVER_API_KEY`. Presupuesto y cuota diaria en Cloud. En vivo **no** usa Roads.
 
 Sin clave, el dashboard muestra un aviso en el contenedor del mapa; el formulario geo sigue permitiendo captura manual.  
 Icono del botón mapa: `resources/images/ui/map-pin.png`. Icono GPS del supervisor: `resources/images/ui/supervisor-moto.png`. Ambos se copian a `public/images/ui/` en local (`/public/images` está en `.gitignore`).  
@@ -404,7 +405,8 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos de Supervisión (tarjeta Supervisión) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
-| `GET /company/supervision` | Mapa satélite: clientes + ruta por turno (inicio/moto/parada/bandera); pestañas **En vivo** \| **Historial** \| **Resumen** \| **Fichas** |
+| `GET /company/supervision` | En vivo: mapa + tabla (GPS, en línea/sin señal); Historial: ruta callejero; Resumen; Fichas |
+| `GET /company/supervision/live.json` | Feed En vivo (turnos abiertos + revistas); no llama Roads |
 | `GET /company/supervision/fichas/{kind}/{id}` | Ficha de campo HTML carta (revista, alarma, apoyo, documentos) |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro; solo cifras). Compositor + párrafos + GRACIAS + DeepSeek + chatbot/PQRS: pendiente, [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md) §§ Informe PPTX y Chatbot y PQRS |
 | `GET /company/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; `SUPERVISION_PWA_URL`; no APK ni tiendas) |

@@ -37,6 +37,8 @@ final class SupervisorShift extends Model
         'ppe_checklist',
         'vehicle_checklist',
         'close_client_event_id',
+        'snapped_route',
+        'snapped_route_hash',
     ];
 
     protected function casts(): array
@@ -51,6 +53,7 @@ final class SupervisorShift extends Model
             'shift_slot' => SupervisorShiftSlot::class,
             'ppe_checklist' => 'array',
             'vehicle_checklist' => 'array',
+            'snapped_route' => 'array',
         ];
     }
 

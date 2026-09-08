@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Models\SupervisorShiftLocation;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
@@ -12,9 +13,11 @@ final class BuildSupervisorTrailService
 {
     private const SIMPLIFY_METERS = 28.0;
 
-    private const STOP_METERS = 45.0;
+    private const STOP_METERS = 75.0;
 
     private const STOP_SECONDS = 120;
+
+    public const OFFLINE_SECONDS = 90;
 
     /**
      * @param  Collection<int, SupervisorShiftLocation>  $locations
@@ -22,12 +25,15 @@ final class BuildSupervisorTrailService
      *     path: list<array{lat: float, lng: float, at: ?string}>,
      *     start: ?array{lat: float, lng: float, at: ?string},
      *     end: ?array{lat: float, lng: float, at: ?string},
-     *     stops: list<array{lat: float, lng: float, minutes: int, from: ?string, to: ?string}>,
-     *     parked: ?array{lat: float, lng: float, minutes: int}
+     *     stops: list<array{lat: float, lng: float, minutes: int, from: ?string, to: ?string, current: bool, label: string}>,
+     *     parked: ?array{lat: float, lng: float, minutes: int, from: ?string, to: ?string, current: bool, label: string},
+     *     km: float,
+     *     online: bool
      * }
      */
-    public function execute(Collection $locations, bool $shiftOpen = false): array
+    public function execute(Collection $locations, bool $shiftOpen = false, ?CarbonInterface $now = null): array
     {
+        $now ??= CarbonImmutable::now();
         $points = $locations
             ->map(fn (SupervisorShiftLocation $loc) => [
                 'lat' => (float) $loc->latitude,
@@ -43,6 +49,8 @@ final class BuildSupervisorTrailService
                 'end' => null,
                 'stops' => [],
                 'parked' => null,
+                'km' => 0.0,
+                'online' => false,
             ];
         }
 
@@ -63,7 +71,10 @@ final class BuildSupervisorTrailService
                 continue;
             }
 
-            $this->flushStop($cluster, $stops);
+            $closed = $this->clusterStop($cluster, false, $cluster[array_key_last($cluster)]['at']);
+            if ($closed !== null) {
+                $stops[] = $closed;
+            }
             $cluster = [$point];
             $lastPath = $path[array_key_last($path)];
             if ($this->meters($lastPath['lat'], $lastPath['lng'], $point['lat'], $point['lng']) >= self::SIMPLIFY_METERS) {
@@ -71,13 +82,21 @@ final class BuildSupervisorTrailService
             }
         }
 
-        $parked = $this->flushStop($cluster, $stops);
-        if (! $shiftOpen) {
-            $parked = null;
+        $parked = null;
+        if ($shiftOpen) {
+            $parked = $this->clusterStop($cluster, true, $now);
+        } else {
+            $closed = $this->clusterStop($cluster, false, $cluster[array_key_last($cluster)]['at'] ?? null);
+            if ($closed !== null) {
+                $stops[] = $closed;
+            }
         }
 
         $first = $points->first();
         $last = $points->last();
+        $lastAt = $last['at'] ?? null;
+        $online = $lastAt instanceof CarbonInterface
+            && $lastAt->diffInSeconds($now, true) <= self::OFFLINE_SECONDS;
 
         return [
             'path' => $path,
@@ -85,47 +104,67 @@ final class BuildSupervisorTrailService
             'end' => $this->point($last),
             'stops' => $stops,
             'parked' => $parked,
+            'km' => $this->km($path),
+            'online' => $online,
         ];
     }
 
     /**
-     * @param  list<array{lat: float, lng: float, at: ?CarbonInterface}>  $cluster
-     * @param  list<array{lat: float, lng: float, minutes: int, from: ?string, to: ?string}>  $stops
-     * @return array{lat: float, lng: float, minutes: int}|null
+     * @param  list<array{lat: float, lng: float, at: mixed}>  $cluster
+     * @return array{lat: float, lng: float, minutes: int, from: ?string, to: ?string, current: bool, label: string}|null
      */
-    private function flushStop(array $cluster, array &$stops): ?array
+    private function clusterStop(array $cluster, bool $current, mixed $until): ?array
     {
-        if (count($cluster) < 2) {
+        if ($cluster === [] || ! $until instanceof CarbonInterface) {
             return null;
         }
 
         $firstAt = $cluster[0]['at'];
-        $lastAt = $cluster[array_key_last($cluster)]['at'];
-        if (! $firstAt instanceof CarbonInterface || ! $lastAt instanceof CarbonInterface) {
+        if (! $firstAt instanceof CarbonInterface) {
             return null;
         }
 
-        $seconds = $firstAt->diffInSeconds($lastAt, true);
-        if ($seconds < self::STOP_SECONDS) {
+        if (! $current && count($cluster) < 2) {
             return null;
         }
 
-        $minutes = max(2, (int) round($seconds / 60));
+        $lastPing = $cluster[array_key_last($cluster)]['at'];
+        if (! $lastPing instanceof CarbonInterface) {
+            $lastPing = $firstAt;
+        }
+
+        $spanNow = $firstAt->diffInSeconds($until, true);
+        $spanPings = $firstAt->diffInSeconds($lastPing, true);
+        $stale = $lastPing->diffInSeconds($until, true) > self::OFFLINE_SECONDS;
+
+        if ($spanNow < self::STOP_SECONDS) {
+            return null;
+        }
+        if ($current && $stale && $spanPings < self::STOP_SECONDS) {
+            return null;
+        }
+        if (! $current && $spanPings < self::STOP_SECONDS) {
+            return null;
+        }
+
+        $minutes = max(2, (int) round(($current ? $spanNow : $spanPings) / 60));
         $lat = array_sum(array_column($cluster, 'lat')) / count($cluster);
         $lng = array_sum(array_column($cluster, 'lng')) / count($cluster);
-        $stop = [
-            'lat' => $lat,
-            'lng' => $lng,
-            'minutes' => $minutes,
-            'from' => $firstAt->toIso8601String(),
-            'to' => $lastAt->toIso8601String(),
-        ];
-        $stops[] = $stop;
+        $from = $firstAt->toIso8601String();
+        $to = $until->toIso8601String();
+        $fromLabel = $this->clock($firstAt);
+        $toLabel = $this->clock($until);
 
         return [
             'lat' => $lat,
             'lng' => $lng,
             'minutes' => $minutes,
+            'from' => $from,
+            'to' => $to,
+            'current' => $current,
+            'label' => $current
+                ? 'Se detuvo a las '.$fromLabel.' · lleva '.$minutes.' min'
+                : 'Se detuvo de '.$fromLabel.' a '.$toLabel.' ('.$minutes.' min)',
         ];
     }
 
@@ -142,6 +181,22 @@ final class BuildSupervisorTrailService
             'lng' => $point['lng'],
             'at' => $at instanceof CarbonInterface ? $at->toIso8601String() : null,
         ];
+    }
+
+    /** @param  list<array{lat: float, lng: float}>  $path */
+    private function km(array $path): float
+    {
+        $total = 0.0;
+        for ($i = 1, $n = count($path); $i < $n; $i++) {
+            $total += $this->meters($path[$i - 1]['lat'], $path[$i - 1]['lng'], $path[$i]['lat'], $path[$i]['lng']);
+        }
+
+        return round($total / 1000, 1);
+    }
+
+    private function clock(CarbonInterface $at): string
+    {
+        return $at->timezone((string) config('app.timezone'))->format('H:i');
     }
 
     private function meters(float $lat1, float $lng1, float $lat2, float $lng2): float

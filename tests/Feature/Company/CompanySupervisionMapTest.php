@@ -11,6 +11,7 @@ use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 final class CompanySupervisionMapTest extends TestCase
@@ -45,6 +46,7 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Norte');
         $response->assertSee($supervisor->name);
         $response->assertSee('Supervisores en turno');
+        $response->assertSee('Se actualiza solo');
         $response->assertSee('Satélite');
         $response->assertSee('Terreno');
         $response->assertSee('Palmas');
@@ -170,5 +172,79 @@ final class CompanySupervisionMapTest extends TestCase
             now()->startOfMonth()->toDateString(),
             (string) $response->headers->get('content-disposition'),
         );
+    }
+
+    public function test_live_feed_json_lists_open_shifts(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+        $supervisor = $this->companySupervisor();
+        SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'started_at' => now()->subHour(),
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(route('company.supervision.live-feed'));
+        $response->assertOk();
+        $response->assertJsonPath('live.0.user', $supervisor->name);
+        $response->assertJsonStructure(['live', 'reviews']);
+    }
+
+    public function test_snapped_route_uses_roads_once_for_closed_shift(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+        $supervisor = $this->companySupervisor();
+        $shift = SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Closed,
+            'started_at' => now()->subHours(2),
+            'ended_at' => now(),
+        ]);
+        $shift->locations()->create([
+            'recorded_at' => now()->subMinutes(20),
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+            'source' => 'gps',
+        ]);
+        $shift->locations()->create([
+            'recorded_at' => now()->subMinutes(10),
+            'latitude' => 3.4600,
+            'longitude' => -76.5400,
+            'source' => 'gps',
+        ]);
+
+        Http::fake([
+            'roads.googleapis.com/*' => Http::response([
+                'snappedPoints' => [
+                    ['location' => ['latitude' => 3.4517, 'longitude' => -76.5321]],
+                    ['location' => ['latitude' => 3.4601, 'longitude' => -76.5401]],
+                ],
+            ], 200),
+        ]);
+        config(['google-maps.server_api_key' => 'test-roads-key']);
+
+        $first = $this->actingAs($admin)->getJson(route('company.supervision.snapped-route', $shift));
+        $first->assertOk();
+        $first->assertJsonPath('snapped', true);
+        $first->assertJsonPath('path.0.lat', 3.4517);
+
+        $second = $this->actingAs($admin)->getJson(route('company.supervision.snapped-route', $shift));
+        $second->assertOk();
+        $second->assertJsonPath('snapped', true);
+        Http::assertSentCount(1);
     }
 }

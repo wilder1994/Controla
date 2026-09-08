@@ -38,15 +38,15 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v26`.
+PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v28`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
 Fotos: no se enciende la cámara al abrir. **Trasera** / **Frontal** o **Tomar foto** piden `getUserMedia` (hace falta HTTPS o localhost). Tras capturar se apaga. Galería solo si no hay contexto seguro.
 
 1. Login (`POST /api/supervision/login`) → rito de **apertura**: turno y zona del catálogo, EPP/vehículo plegables, km + foto odómetro + selfie (cámara, no galería).
-2. Hub: ficha de perfil + **Cerrar**. Cuatro entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**. Debajo: **Mis fichas**. Ping GPS cada 30 s, silencioso.
-3. **Revista** (al clic): cliente, puesto, vigilante, foto. Los módulos del puesto (inventario, libros de control, etc.) se registran en borrador. **Guardar revista** (abajo) envía GPS + foto + módulos juntos. Si cancela, no queda nada.
+2. Hub: ficha de perfil + **Cerrar**. Cuatro entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**. Debajo: **Mis fichas**. Ping GPS cada **15 s**, silencioso.
+3. **Revista** (al clic): cliente, puesto, vigilante, foto. Los módulos del puesto (inventario, libros de control, etc.) se registran en borrador. **Guardar revista** (abajo) envía GPS + foto + módulos juntos. Mientras envía: botón bloqueado y texto *Guardando revista…* (mismo candado en Entrar, iniciar/cerrar turno y Registrar). Un `client_event_id` por intento: el API no duplica. Si cancela, no queda nada.
 4. Alarmas y apoyos: cada uno abre su formulario (cliente + GPS obligatorios). Documentos: sin cliente ni GPS.
 5. Cierre: km final + odómetro + selfie → sesión cerrada.
 
@@ -82,7 +82,7 @@ Cerrar turno sin red también se encola (fotos incluidas). No borrar datos del s
 
 Contrato de campos: `GET /api/supervision/catalog` (`FieldModuleCatalog`). Logs append-only en `supervisor_field_logs` (`supervisor_shift_review_id` si cuelga de revista). Recomendaciones: `supervisor_recommendations` (registro inmutable del turno; `GET /recommendations` lista recientes).
 
-El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno, igual que Mi empresa). Pinta clientes con Supervisión y geo (pines índigo), revistas (verde / rojo si novedad) y **una ruta GPS por turno**: inicio verde, supervisor (`resources/images/ui/supervisor-moto.png` → copiar a `public/images/ui/`), paradas con minutos, banderita al cierre. En vivo: solo turnos abiertos. Historial: se elige un turno; no se dibujan 40 polilíneas a la vez. El trazo une pings (~30 s), no el callejero de Google (Roads API queda fuera de este corte). Trail: `BuildSupervisorTrailService` (simplifica ~28 m; parada ~45 m y ≥120 s).
+El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno). En vivo: **dos columnas** (mapa alto + tabla). Estado: en ruta / detenido con horas (`Se detuvo a las HH:mm · lleva N min`); paradas cerradas `de HH:mm a HH:mm`. Pin de moto: **En línea** (GPS &lt; 90 s) o **Sin señal**. Poll 10 s, sin Roads. Historial: Snap to Roads en turno cerrado, cacheado. Trail: `BuildSupervisorTrailService` (~28 m; parada 75 m y ≥120 s; minutos de detenido actual contra el reloj).
 
 ---
 
@@ -126,7 +126,7 @@ Panel: KPIs de **volumen y nivel**, no de tickets abiertos. Tira de hoy: recomen
 
 ## Panel empresa — operación
 
-`/company/supervision`: En vivo / Historial / Resumen / **Fichas**. Mapa satélite + pines de cliente + **una ruta por turno** (inicio / moto / paradas / bandera). En vivo: turnos abiertos. Historial: clic en un turno. Trazo GPS simplificado, no callejero. Header: filtros (año, mes, rango o un día, zona, supervisor) y **Descargar PPTX**. En Fichas se suman tipo, cliente y novedad. El PPTX vigente sale de un clic (`GET /company/supervision/informe.pptx`). Resumen: KPI (cobertura de sitios, revistas, km, recs por nivel) y gráficos por módulo. Año (>45 días) agrupa por mes; si no, por día. Compositor con narrativa e IA: § Informe PPTX (pendiente).
+`/company/supervision`: En vivo / Historial / Resumen / **Fichas**. En vivo: mapa + tabla (inicio, en línea/sin señal, detención con horas, km, revistas). Historial: una ruta callejero cacheada. Header: filtros y **Descargar PPTX**. En Fichas: tipo, cliente, novedad. PPTX: `GET /company/supervision/informe.pptx`. Compositor IA: § Informe PPTX (pendiente).
 
 `/company/descargas` y `/admin/descargas`: tarjeta **App de Supervisión** (QR, abrir, copiar, pasos Android/iPhone). Una sola PWA para todas las empresas; el login identifica la empresa. No es la app de residentes de Accesos.
 
@@ -238,7 +238,7 @@ Apertura exige turno/zona **activos de esa empresa** y todos los ítems preopera
 - `2026_08_26_234800_replace_recommendation_title_with_risk_type`
 - `2026_09_05_150000_add_username_to_users_table` (`users.username`; `email` nullable)
 - `2026_09_05_151000_add_email_to_supervisor_zones_table`
-- `2026_09_05_220000_add_client_event_id_to_supervision_capture` (`client_event_id` en revistas, logs, pings; `close_client_event_id` en turnos)
+- `2026_09_07_193000_add_snapped_route_to_supervisor_shifts` (`snapped_route` JSON cacheado)
 
 Tipos de estructura por empresa (panel, no Supervisión): `2026_09_03_144000_add_security_company_id_to_structure_types`.
 
@@ -247,4 +247,4 @@ php artisan migrate:fresh --seed
 php artisan db:seed --class=PilotDemoSeeder
 ```
 
-Tests: `SupervisorShiftApiTest`, `SupervisorFieldLogApiTest`, `SupervisorOfflineSyncTest`, `CompanySupervisionCatalogTest`, `CompanySupervisionFieldSheetTest`, `CompanySupervisionMapTest`, `BuildSupervisorTrailTest`, `CompanyClientSiteTreeTest` (BD `controla_test`).
+Tests: `SupervisorShiftApiTest`, `SupervisorFieldLogApiTest`, `SupervisorOfflineSyncTest`, `CompanySupervisionCatalogTest`, `CompanySupervisionFieldSheetTest`, `CompanySupervisionMapTest`, `BuildSupervisorTrailTest`, `SnapSupervisorTrailToRoadsTest`, `CompanyClientSiteTreeTest` (BD `controla_test`).

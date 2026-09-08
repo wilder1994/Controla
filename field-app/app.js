@@ -21,6 +21,27 @@ let postsCache = [];
 let guardsCache = [];
 let syncing = false;
 let closeQueued = false;
+let reviewEventId = null;
+let closeEventId = null;
+let logEventId = null;
+
+async function withBusy(btn, busyLabel, fn) {
+    if (!btn || btn.dataset.busy === '1') return;
+    btn.dataset.busy = '1';
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = busyLabel;
+    setStatus(busyLabel);
+    try {
+        await fn();
+    } catch (e) {
+        setStatus(e.message, false);
+    } finally {
+        btn.dataset.busy = '';
+        btn.disabled = false;
+        btn.textContent = original;
+    }
+}
 
 function inferApi() {
     const host = location.hostname;
@@ -1030,7 +1051,8 @@ async function persistReview() {
     if (!reviewGuard) throw new Error('Seleccione el vigilante por cédula.');
     if (!blobs.guard) throw new Error('Tome la foto del vigilante.');
     const pos = await geoRequired('Active la ubicación del dispositivo para guardar la revista.');
-    const clientEventId = ControlaOffline.uuid();
+    if (!reviewEventId) reviewEventId = ControlaOffline.uuid();
+    const clientEventId = reviewEventId;
     const outgoing = reviewDraftLogs.map((row) => ({ module: row.module, payload: row.payload }));
     const logPhotos = {};
     reviewDraftLogs.forEach((row, index) => {
@@ -1059,10 +1081,12 @@ async function persistReview() {
         const data = await api('/supervision/reviews', { method: 'POST', body: fd });
         currentReview = data.review;
         activity = data.activity || activity;
+        reviewEventId = null;
     } catch (e) {
         if (!ControlaOffline.isOfflineError(e)) throw e;
         await enqueueOrThrow(queued, 'Revista guardada en el teléfono. Se enviará al reconectar.');
         currentReview = { id: null, pending: true, client_id: reviewClient.id };
+        reviewEventId = null;
     }
     blobs.guard = null;
     document.getElementById('snap-guard').classList.add('hidden');
@@ -1096,13 +1120,12 @@ function discardReviewSession() {
 }
 
 async function saveReview() {
-    try {
+    const btn = document.getElementById('btn-save-review');
+    await withBusy(btn, 'Guardando revista…', async () => {
         await persistReview();
         if (!currentReview?.pending) setStatus('Revista guardada.');
         showOpsHome();
-    } catch (e) {
-        setStatus(e.message, false);
-    }
+    });
 }
 
 function enterOps() {
@@ -1221,7 +1244,7 @@ function startPing() {
         }
     };
     send();
-    pingTimer = setInterval(send, 30000);
+    pingTimer = setInterval(send, 15000);
 }
 
 function stopPing() {
@@ -1286,8 +1309,10 @@ document.querySelectorAll('[data-collapse]').forEach((btn) => {
     };
 });
 
-document.getElementById('btn-login').onclick = async () => {
-    try {
+document.getElementById('btn-login').onclick = () => withBusy(
+    document.getElementById('btn-login'),
+    'Entrando…',
+    async () => {
         localStorage.removeItem('API_URL');
         const data = await api('/supervision/login', {
             method: 'POST',
@@ -1299,13 +1324,13 @@ document.getElementById('btn-login').onclick = async () => {
         });
         localStorage.setItem('token', data.token);
         await afterLogin(data);
-    } catch (e) {
-        setStatus(e.message, false);
-    }
-};
+    },
+);
 
-document.getElementById('btn-change-password').onclick = async () => {
-    try {
+document.getElementById('btn-change-password').onclick = () => withBusy(
+    document.getElementById('btn-change-password'),
+    'Guardando…',
+    async () => {
         const password = document.getElementById('new-password').value;
         const confirm = document.getElementById('new-password-confirm').value;
         if (password !== confirm) throw new Error('Las contraseñas no coinciden.');
@@ -1317,13 +1342,13 @@ document.getElementById('btn-change-password').onclick = async () => {
             }),
         });
         await afterLogin({ user: { name: '' }, must_change_password: false });
-    } catch (e) {
-        setStatus(e.message, false);
-    }
-};
+    },
+);
 
-document.getElementById('btn-start').onclick = async () => {
-    try {
+document.getElementById('btn-start').onclick = () => withBusy(
+    document.getElementById('btn-start'),
+    'Iniciando turno…',
+    async () => {
         if (!blobs.odo || !blobs.self) throw new Error('Tome foto del odómetro y selfie de inicio.');
         const fd = new FormData();
         fd.append('shift_template_id', document.getElementById('shift-template').value);
@@ -1351,10 +1376,8 @@ document.getElementById('btn-start').onclick = async () => {
         await loadCurrent();
         enterOps();
         setStatus('Turno iniciado. Clientes y catálogo en el teléfono.');
-    } catch (e) {
-        setStatus(e.message, false);
-    }
-};
+    },
+);
 
 document.getElementById('btn-go-close').onclick = () => {
     show('close-shift');
@@ -1366,10 +1389,13 @@ document.getElementById('btn-close-back').onclick = () => {
     showOpsHome();
 };
 
-document.getElementById('btn-close').onclick = async () => {
-    try {
+document.getElementById('btn-close').onclick = () => withBusy(
+    document.getElementById('btn-close'),
+    'Cerrando turno…',
+    async () => {
         if (!blobs.odoEnd || !blobs.selfEnd) throw new Error('Tome foto del odómetro y selfie de cierre.');
-        const clientEventId = ControlaOffline.uuid();
+        if (!closeEventId) closeEventId = ControlaOffline.uuid();
+        const clientEventId = closeEventId;
         const fd = new FormData();
         fd.append('km_end', document.getElementById('km-end').value);
         fd.append('client_event_id', clientEventId);
@@ -1377,6 +1403,7 @@ document.getElementById('btn-close').onclick = async () => {
         fd.append('selfie_photo', blobs.selfEnd, 'selfie-end.jpg');
         try {
             await api('/supervision/shifts/close', { method: 'POST', body: fd });
+            closeEventId = null;
             blobs.odoEnd = blobs.selfEnd = null;
             stopPing();
             stopAllCams();
@@ -1395,6 +1422,7 @@ document.getElementById('btn-close').onclick = async () => {
                 body: { km_end: document.getElementById('km-end').value },
                 files: { odometer: blobs.odoEnd, selfie: blobs.selfEnd },
             });
+            closeEventId = null;
             closeQueued = true;
             await ControlaOffline.metaSet('closeQueued', true);
             blobs.odoEnd = blobs.selfEnd = null;
@@ -1405,14 +1433,14 @@ document.getElementById('btn-close').onclick = async () => {
             showOpsHome();
             setStatus('Cierre guardado en el teléfono. Al reconectar se envía. No borre datos del sitio.');
         }
-    } catch (e) {
-        setStatus(e.message, false);
-    }
-};
+    },
+);
 
-document.getElementById('btn-submit').onclick = async () => {
-    if (!currentModule) return;
-    try {
+document.getElementById('btn-submit').onclick = () => withBusy(
+    document.getElementById('btn-submit'),
+    'Registrando…',
+    async () => {
+        if (!currentModule) return;
         if (closeQueued) throw new Error('Hay un cierre pendiente de envío.');
         const payload = readPayload();
         assertDraftPayload(currentModule, payload);
@@ -1439,12 +1467,13 @@ document.getElementById('btn-submit').onclick = async () => {
         const pos = currentModule.requires_gps
             ? await geoRequired('Active la ubicación del dispositivo para registrar este módulo.')
             : await geo();
+        if (!logEventId) logEventId = ControlaOffline.uuid();
         const body = {
             module: currentModule.key,
             payload,
             latitude: pos?.latitude,
             longitude: pos?.longitude,
-            client_event_id: ControlaOffline.uuid(),
+            client_event_id: logEventId,
         };
         if (currentModule.requires_client) {
             const clientId = siteId();
@@ -1453,6 +1482,7 @@ document.getElementById('btn-submit').onclick = async () => {
         }
         try {
             await api('/supervision/logs', { method: 'POST', body: JSON.stringify(body) });
+            logEventId = null;
             setStatus(`${currentModule.label} registrado.`);
             try { await loadCurrent(); } catch (e) { /* cola / offline */ }
         } catch (e) {
@@ -1461,12 +1491,11 @@ document.getElementById('btn-submit').onclick = async () => {
                 { type: 'log', clientEventId: body.client_event_id, body },
                 `${currentModule.label} guardado en el teléfono. Se enviará al reconectar.`,
             );
+            logEventId = null;
         }
         showOpsHome();
-    } catch (e) {
-        setStatus(e.message, false);
-    }
-};
+    },
+);
 
 function assertDraftPayload(mod, payload) {
     if (mod.key === 'inventory') {

@@ -16,7 +16,7 @@ Mis fichas: lista del supervisor y carta HTML para imprimir.
 
 Fotos: la cámara no arranca sola. Trasera/Frontal o Tomar foto. Solo HTTPS (Tailscale Serve). En HTTP no hay foto de prueba.
 
-Caché SW: `controla-sup-v26`. Hard-refresh tras cambios.
+Caché SW: `controla-sup-v28`. Hard-refresh tras cambios. Ping GPS cada 15 s.
 
 Tailscale: cámara = `https://sjpcanaope.tail5fcfbc.ts.net/` (Serve). No `http://IP:8085`. API: puerto `8085` → `:8084/api`; host `.ts.net` → mismo origen `/api`. `.env` local sigue `http://controla.test`.
 

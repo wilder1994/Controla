@@ -9,13 +9,16 @@ use App\Enums\SupervisorFieldSheetKind;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\SecurityCompany;
+use App\Models\SupervisorShift;
 use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Services\Company\BuildSupervisionMapService;
 use App\Services\Company\BuildSupervisionSummaryService;
+use App\Services\Company\EnsureSnappedSupervisorRouteService;
 use App\Services\Company\ExportSupervisionExecutiveReportService;
 use App\Services\Company\ListSupervisorFieldSheetsService;
 use App\Support\Platform\ActingCompanyResolver;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -27,6 +30,7 @@ final class SupervisionMapController extends Controller
         private readonly BuildSupervisionSummaryService $buildSupervisionSummaryService,
         private readonly ExportSupervisionExecutiveReportService $exportReport,
         private readonly ListSupervisorFieldSheetsService $listSheets,
+        private readonly EnsureSnappedSupervisorRouteService $ensureSnappedRoute,
     ) {}
 
     public function index(Request $request): View
@@ -113,6 +117,27 @@ final class SupervisionMapController extends Controller
         return response()
             ->download($file['path'], $file['filename'])
             ->deleteFileAfterSend();
+    }
+
+    public function liveFeed(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('company.supervision.view'), 403);
+
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
+        $company = SecurityCompany::query()->findOrFail($companyId);
+        $filter = $this->queryFilter($request, $company);
+
+        return response()->json($this->buildSupervisionMapService->liveFeed($company, $filter));
+    }
+
+    public function snappedRoute(Request $request, SupervisorShift $shift): JsonResponse
+    {
+        abort_unless($request->user()?->can('company.supervision.view'), 403);
+
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
+        abort_unless((int) $shift->security_company_id === $companyId, 404);
+
+        return response()->json($this->ensureSnappedRoute->execute($shift));
     }
 
     private function queryFilter(Request $request, SecurityCompany $company): SupervisionQueryFilter

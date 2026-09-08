@@ -154,6 +154,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/supervision', [SupervisionMapController::class, 'index'])
             ->middleware('permission:company.supervision.view')
             ->name('supervision.index');
+        Route::get('/supervision/live.json', [SupervisionMapController::class, 'liveFeed'])
+            ->middleware('permission:company.supervision.view')
+            ->name('supervision.live-feed');
+        Route::get('/supervision/turnos/{shift}/ruta', [SupervisionMapController::class, 'snappedRoute'])
+            ->middleware('permission:company.supervision.view')
+            ->name('supervision.snapped-route');
         Route::get('/supervision/informe.pptx', [SupervisionMapController::class, 'report'])
             ->middleware('permission:company.supervision.view')
             ->name('supervision.report');
