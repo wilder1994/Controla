@@ -1,4 +1,4 @@
-<x-client-layout title="Estructura" :wide="true">
+<x-client-layout title="Instalaciones" :wide="true">
     <div
         class="space-y-4"
         x-data="{ parentId: @js((string) old('parent_id', '')) }"

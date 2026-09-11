@@ -6,54 +6,54 @@
         @endcan
     </x-slot:actions>
 
-    <div class="max-w-4xl space-y-4">
-        <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
-            <div>
-                <p class="text-xs text-slate-500">Instalación</p>
-                <h3 class="text-lg font-semibold text-white">{{ $installation->name }}</h3>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    {{ $installation->client?->name }}
-                    @if ($installation->is_client_site)
-                        · Mismo cliente
-                    @endif
-                    · {{ $installation->is_active ? 'Activa' : 'Inactiva' }}
-                </p>
+    <div class="space-y-4">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch">
+            <div class="min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
+                @if ($installation->hasCoordinates() && $maps['api_key'])
+                    <div id="installation-pin-map" class="h-96 w-full"></div>
+                @elseif ($installation->hasCoordinates())
+                    <p class="p-4 text-xs text-slate-500">
+                        Pin {{ $installation->latitude }}, {{ $installation->longitude }}. Configura <code class="text-indigo-300">GOOGLE_MAPS_API_KEY</code> para ver el mapa.
+                    </p>
+                @else
+                    <p class="p-4 text-sm text-slate-500">Esta instalación no tiene pin.</p>
+                @endif
             </div>
-            <dl class="grid sm:grid-cols-3 gap-3 text-sm">
+            <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
                 <div>
-                    <dt class="text-xs text-slate-500">Código</dt>
-                    <dd class="font-mono text-indigo-300">{{ $installation->code ?: '—' }}</dd>
+                    <p class="text-xs text-slate-500">Instalación</p>
+                    <h3 class="text-lg font-semibold text-white">{{ $installation->name }}</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        {{ $installation->client?->name }}
+                        @if ($installation->is_client_site)
+                            · Mismo cliente
+                        @endif
+                        · {{ $installation->is_active ? 'Activa' : 'Inactiva' }}
+                    </p>
                 </div>
-                <div>
-                    <dt class="text-xs text-slate-500">Comuna</dt>
-                    <dd class="text-slate-200">{{ $installation->commune ?: '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-slate-500">Admin de sede</dt>
-                    <dd class="text-slate-200">{{ $installation->siteAdminLabel() }}</dd>
-                </div>
-            </dl>
-            @if ($installation->address || $installation->city)
-                <p class="text-xs text-slate-500">
-                    {{ $installation->address }}
-                    @if ($installation->city)
-                        · {{ $installation->city }}{{ $installation->department ? ', '.$installation->department : '' }}
-                    @endif
-                </p>
-            @endif
-        </div>
-
-        <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
-            <p class="text-sm font-medium text-white">Ubicación</p>
-            @if ($installation->hasCoordinates() && $maps['api_key'])
-                <div id="installation-pin-map" class="h-72 rounded-lg border border-slate-800 overflow-hidden"></div>
-            @elseif ($installation->hasCoordinates())
-                <p class="text-xs text-slate-500">
-                    Pin {{ $installation->latitude }}, {{ $installation->longitude }}. Configura <code class="text-indigo-300">GOOGLE_MAPS_API_KEY</code> para ver el mapa.
-                </p>
-            @else
-                <p class="text-xs text-slate-500">Esta instalación no tiene pin.</p>
-            @endif
+                <dl class="space-y-3 text-sm">
+                    <div>
+                        <dt class="text-xs text-slate-500">Código</dt>
+                        <dd class="font-mono text-indigo-300">{{ $installation->code ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-slate-500">Comuna</dt>
+                        <dd class="text-slate-200">{{ $installation->commune ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-slate-500">Admin de sede</dt>
+                        <dd class="text-slate-200">{{ $installation->siteAdminLabel() }}</dd>
+                    </div>
+                </dl>
+                @if ($installation->address || $installation->city)
+                    <p class="text-xs text-slate-500">
+                        {{ $installation->address }}
+                        @if ($installation->city)
+                            · {{ $installation->city }}{{ $installation->department ? ', '.$installation->department : '' }}
+                        @endif
+                    </p>
+                @endif
+            </div>
         </div>
 
         @if ($installation->client?->has_access || $installation->client?->has_supervision)
@@ -101,6 +101,10 @@
                         position: pos,
                         map,
                         title: @json($installation->name),
+                    });
+                    google.maps.event.addListenerOnce(map, 'idle', function () {
+                        google.maps.event.trigger(map, 'resize');
+                        map.setCenter(pos);
                     });
                 };
             </script>

@@ -1,4 +1,10 @@
 <x-client-layout :title="$structure->name">
+    @php
+        $client = $activeClient ?? view()->shared('activeClient');
+        $showVehicles = $client instanceof \App\Models\Client && $client->panelModuleEnabled('vehicles');
+        $showPets = $client instanceof \App\Models\Client && $client->panelModuleEnabled('pets');
+        $statCols = 1 + (int) $showVehicles + (int) $showPets;
+    @endphp
     <div class="space-y-6">
         <div>
             <a href="{{ route('client.installations.show', $structure->installation_id) }}" class="text-sm text-teal-400 hover:text-teal-300">← Volver a la instalación</a>
@@ -14,19 +20,23 @@
             </nav>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-4">
+        <div class="grid gap-4 {{ $statCols === 1 ? 'md:grid-cols-1' : ($statCols === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3') }}">
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
                 <p class="text-xs uppercase text-slate-500">Personas</p>
                 <p class="text-2xl font-bold text-white">{{ $structure->members->count() }}</p>
             </div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <p class="text-xs uppercase text-slate-500">Vehículos</p>
-                <p class="text-2xl font-bold text-white">{{ $structure->vehicles->count() }}</p>
-            </div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <p class="text-xs uppercase text-slate-500">Mascotas</p>
-                <p class="text-2xl font-bold text-white">{{ $structure->pets->count() }}</p>
-            </div>
+            @if ($showVehicles)
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                    <p class="text-xs uppercase text-slate-500">Vehículos</p>
+                    <p class="text-2xl font-bold text-white">{{ $structure->vehicles->count() }}</p>
+                </div>
+            @endif
+            @if ($showPets)
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                    <p class="text-xs uppercase text-slate-500">Mascotas</p>
+                    <p class="text-2xl font-bold text-white">{{ $structure->pets->count() }}</p>
+                </div>
+            @endif
         </div>
 
         <div class="rounded-xl border border-slate-800 overflow-hidden">
@@ -50,6 +60,7 @@
             </table>
         </div>
 
+        @if ($showPets)
         <div class="rounded-xl border border-slate-800 overflow-hidden">
             <div class="px-4 py-3 bg-slate-950/60 border-b border-slate-800">
                 <h3 class="text-sm font-semibold text-white">Mascotas</h3>
@@ -83,5 +94,6 @@
                 </tbody>
             </table>
         </div>
+        @endif
     </div>
 </x-client-layout>

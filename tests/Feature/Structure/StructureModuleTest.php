@@ -176,11 +176,41 @@ final class StructureModuleTest extends TestCase
             ->withSession(['tenancy.active_client_id' => $client->id])
             ->get(route('client.installations.show', $installation))
             ->assertOk()
-            ->assertSee('Estructura')
+            ->assertSee('>Instalaciones</h3>', false)
             ->assertSee('Crear dentro de')
             ->assertSee('Admin de sede')
             ->assertDontSee('El censo se arma por instalación')
             ->assertDontSee('name="code"', false);
+    }
+
+    public function test_structure_tree_hides_disabled_vehicle_and_pet_modules(): void
+    {
+        $this->seedWithPilot();
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+        $installation = Installation::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->orderByDesc('is_client_site')
+            ->firstOrFail();
+
+        $client->update([
+            'panel_modules' => [
+                'vehicles' => false,
+                'pets' => false,
+                'authorizations' => true,
+                'doors' => true,
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->get(route('client.installations.show', $installation))
+            ->assertOk()
+            ->assertSee('personas')
+            ->assertDontSee('vehículos')
+            ->assertDontSee('mascotas');
     }
 
     public function test_structure_store_requires_installation(): void

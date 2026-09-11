@@ -359,9 +359,10 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Alta de nodo sin código visible: `code` interno (slug, `-2` si choca, prefijo del padre). Panel ancho: árbol + **Crear dentro de** indentado; **+** en el nodo. |
 | 2026-09-11 | Administradores del cliente interno (empleado, 1+ clientes) o externo (ficha propia, 1 cliente). Línea **Admin instalaciones**: varias sedes del mismo cliente; Ajustes solo ver; no crea usuarios. |
 | 2026-09-11 | `/company/users`: pestañas Activos/Desactivados en el header; foto circular; Cliente + Instalaciones en una fila con filtro. |
-| 2026-09-11 | Ficha cliente: tarjeta **Gestión de módulos**. Sidebar fijo (Resumen, Estructura, Personas, Usuarios, Accesos, Ajustes) y opcional (Vehículos, Mascotas, Autorizaciones, Puertas). |
+| 2026-09-11 | Ficha cliente: tarjeta **Gestión de módulos**. Sidebar fijo (Resumen, Instalaciones, Personas, Usuarios, Accesos, Ajustes) y opcional (Vehículos, Mascotas, Autorizaciones, Puertas). |
 | 2026-09-11 | Alta de usuarios solo súper admin y admin empresa. Personas: tipo de documento (TI/RC) + fecha de nacimiento. Menores: Ley 1581 art. 7; portería solo nombre; sin export. |
 | 2026-09-11 | Protección de menores en Normoteca (`minors_data_policy`): clickwrap de contrato; aviso al crear cliente y admin cliente/instalaciones; Personas lee el texto vigente. |
 | 2026-09-11 | Anexo 7.5 *Herramienta de Seguridad Educativa* (4 puntos, 7 factores): brecha vs Controla, definición del Observatorio (institución / reporte / evento / mapa / tablero / API). Sin código. |
 | 2026-09-11 | Factor 1 (directorio): módulo `/company/installations` (tabla, búsqueda, ficha con código, comuna, rector = admin de instalaciones, mapa). |
 | 2026-09-11 | Instalaciones unificadas: alta en módulo y en ficha cliente; admin de sede = rol + cargo; ficha empresa con puestos; sidebar cliente **Instalaciones** (estructura dentro de la ficha). |
+| 2026-09-11 | Ficha de sede: mapa a la izquierda, datos a la derecha. Árbol: sin vehículos/mascotas si el módulo está apagado. Miniaturas del indexador: worker pdf.js como blob (MIME `.mjs` en CloudPanel). |

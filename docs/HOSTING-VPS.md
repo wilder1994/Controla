@@ -33,3 +33,11 @@ chown -R wcodex-controla:wcodex-controla "$SITE"
 ```
 
 Cron del sitio: `* * * * * php8.3 artisan schedule:run`.
+
+El indexador de Documentos no depende del MIME de `.mjs` (el worker se carga como blob). Si otro módulo ES falla en consola con `application/octet-stream`, en el vhost de CloudPanel (directivas extra de Nginx):
+
+```nginx
+types { application/javascript mjs; }
+```
+
+Luego `nginx -t && systemctl reload nginx`.

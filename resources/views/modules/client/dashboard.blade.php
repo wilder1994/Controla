@@ -1,7 +1,7 @@
 <x-client-layout title="Resumen">
     <div class="space-y-6">
         <h2 class="text-2xl font-bold text-white">Panel del cliente</h2>
-        <p class="text-slate-400 text-sm">Estructura por instalación, personas del censo y accesos.</p>
+        <p class="text-slate-400 text-sm">Instalaciones, personas del censo y accesos.</p>
         <div class="grid sm:grid-cols-3 gap-4">
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-xs uppercase text-slate-500">Unidades hoja</p>

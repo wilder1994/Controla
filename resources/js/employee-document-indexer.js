@@ -588,15 +588,30 @@ function initHistoryIndexer() {
     });
     paintSelection();
 
+    async function pdfWorkerSrc() {
+        const { default: url } = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('No se pudo cargar el worker de PDF.');
+        }
+        const buffer = await response.arrayBuffer();
+
+        return URL.createObjectURL(new Blob([buffer], { type: 'application/javascript' }));
+    }
+
     async function paintThumbnails() {
         if (!meta.preview_url) {
             return;
         }
         try {
             const pdfjs = await import('pdfjs-dist');
-            const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
-            pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
-            const doc = await pdfjs.getDocument({ url: meta.preview_url, withCredentials: true }).promise;
+            pdfjs.GlobalWorkerOptions.workerSrc = await pdfWorkerSrc();
+            const doc = await pdfjs.getDocument({
+                url: meta.preview_url,
+                withCredentials: true,
+                disableRange: true,
+                disableStream: true,
+            }).promise;
             for (let pageNum = 1; pageNum <= doc.numPages; pageNum += 1) {
                 const card = thumbs.querySelector(`.page-thumb[data-page="${pageNum}"]`);
                 const canvas = card?.querySelector('canvas');
@@ -607,11 +622,17 @@ function initHistoryIndexer() {
                 const viewport = page.getViewport({ scale: 0.28 });
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
-                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                const ctx = canvas.getContext('2d', { alpha: false });
+                if (!ctx) {
+                    continue;
+                }
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                await page.render({ canvasContext: ctx, viewport, background: '#ffffff' }).promise;
                 card.classList.add('is-ready');
             }
-        } catch {
-            // Las tarjetas quedan con el número de página.
+        } catch (error) {
+            console.error('No se pudieron pintar las miniaturas del lote.', error);
         }
     }
 

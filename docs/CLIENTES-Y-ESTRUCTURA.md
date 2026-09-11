@@ -47,7 +47,7 @@ Instalaciones las crea **solo la empresa**, en `/company/installations` (con cli
 
 ## Directorio de instalaciones
 
-`/company/installations`: tabla, buscador y **Crear** (siempre con cliente). La ficha muestra nombre, código, comuna, **admin de sede** (cargo del usuario: rector, auxiliar…) y el mapa. También puestos (modalidad + empleados). El alta también se puede hacer en la ficha del cliente. El admin de sede es un `client-installation-admin`; al asignarlo queda amarrado a esa sede. El código se genera si no se escribe. El panel cliente tiene el mismo directorio (sin crear) y el árbol de nodos en la ficha.
+`/company/installations`: tabla, buscador y **Crear** (siempre con cliente). La ficha: mapa a la izquierda, datos (código, comuna, **admin de sede**) a la derecha. También puestos (modalidad + empleados). El alta también se puede hacer en la ficha del cliente. El admin de sede es un `client-installation-admin`; al asignarlo queda amarrado a esa sede. El código se genera si no se escribe. El panel cliente tiene el mismo directorio (sin crear) y el árbol de nodos en la ficha.
 
 ## Árbol del sitio (tarjeta Instalaciones y puestos)
 
@@ -126,7 +126,7 @@ No se clonan tablas de Patrulla (`review_posts`, etc.). Flota de Supervisión si
 Cliente (tipo fijo, ej. Propiedad horizontal)
   └── Instalación (sede, colegio…)
         ├── Puestos / puertas
-        └── Estructura
+        └── Nodos (bloque Instalaciones en la ficha)
               Torre A
                 Apto 101 → Persona → acceso de persona
               Salón A    → Persona → acceso de persona
@@ -188,7 +188,7 @@ Sidebar del panel cliente:
 - **Fijos:** Resumen, Instalaciones, Personas, Usuarios, Accesos, Ajustes.
 - **Opcionales** (check en Gestión de módulos): Vehículos, Mascotas, Autorizaciones, **Puertas** (antes Consola portería). Puertas solo se puede activar si ya hay `locations` activas. Nav oculto y ruta 403 si está apagado. Portería de empresa (`Operar portería` / vigilante) no usa este corte.
 
-El panel `/client/installations` es el directorio de sedes (tabla + ficha). La **estructura** (nodos) vive dentro de la ficha. `/client/structures` redirige ahí. Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. Personas: tipo de documento (catálogo + TI/RC) y fecha de nacimiento; si es menor de 18, aviso Ley 1581 art. 7 / Decreto 1377 / Ley 1098, autorización del representante, sin export ni acceso de persona; en portería solo el nombre. `/client/users` lista administradores **externos** de ese cliente; **no crea** (alta en empresa o plataforma). `/client/app-users` es **Accesos** (personas del censo). `/client/settings/member-types` es **Ajustes** (tipos de persona; admin instalaciones solo ve). Banner al operar: **panel del cliente**.
+El panel `/client/installations` es el directorio de sedes (tabla + ficha). En la ficha el mapa va a la izquierda y los datos a la derecha. Los nodos van en el bloque **Instalaciones**; las pastillas de vehículos/mascotas solo si el módulo está activo. `/client/structures` redirige ahí. Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. Personas: tipo de documento (catálogo + TI/RC) y fecha de nacimiento; si es menor de 18, aviso Ley 1581 art. 7 / Decreto 1377 / Ley 1098, autorización del representante, sin export ni acceso de persona; en portería solo el nombre. `/client/users` lista administradores **externos** de ese cliente; **no crea** (alta en empresa o plataforma). `/client/app-users` es **Accesos** (personas del censo). `/client/settings/member-types` es **Ajustes** (tipos de persona; admin instalaciones solo ve). Banner al operar: **panel del cliente**.
 
 ---
 

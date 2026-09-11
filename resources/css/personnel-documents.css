@@ -241,6 +241,8 @@
     width: 100%;
     height: auto;
     display: block;
+    color-scheme: only light;
+    background: #fff;
 }
 
 .page-thumb-fallback {
