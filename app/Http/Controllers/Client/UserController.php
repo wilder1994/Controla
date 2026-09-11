@@ -6,18 +6,22 @@ namespace App\Http\Controllers\Client;
 
 use App\Domain\User\CreateUserData;
 use App\Domain\User\UpdateUserData;
+use App\Enums\ClientAdminOrigin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreUserRequest;
 use App\Http\Requests\Client\UpdateUserRequest;
+use App\Models\Installation;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use App\Services\Auth\AllocateLoginUsername;
 use App\Services\User\ManageScopedUserService;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
+use App\Support\Tenancy\TenantContext;
 use App\Support\User\UserAvatarUploader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 final class UserController extends Controller
@@ -26,6 +30,7 @@ final class UserController extends Controller
         private readonly UserRepository $userRepository,
         private readonly ManageScopedUserService $manageUserService,
         private readonly AllocateLoginUsername $usernames,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): View
@@ -48,6 +53,7 @@ final class UserController extends Controller
 
         return view('modules.client.users.create', [
             'roleOptions' => AssignableRoles::forClient(),
+            'installations' => $this->clientInstallations(),
         ]);
     }
 
@@ -56,7 +62,7 @@ final class UserController extends Controller
         $user = $this->manageUserService->create(
             new CreateUserData(
                 name: $request->validated('name'),
-                username: $this->usernames->fromEmail($request->validated('email')),
+                username: $this->usernames->forFullName($request->validated('name')),
                 email: $request->validated('email'),
                 password: $request->validated('password'),
                 role: $request->validated('role'),
@@ -66,6 +72,9 @@ final class UserController extends Controller
                 jobTitle: $request->validated('job_title'),
                 avatarPath: UserAvatarUploader::store($request->file('avatar')),
                 mustChangePassword: true,
+                adminOrigin: ClientAdminOrigin::External,
+                documentNumber: $request->validated('document_number'),
+                installationIds: array_map('intval', $request->input('installation_ids', [])),
             ),
             $request->user(),
             UserManagementContext::Client,
@@ -73,18 +82,19 @@ final class UserController extends Controller
 
         return redirect()
             ->route('client.users.edit', $user)
-            ->with('success', 'Usuario creado correctamente.');
+            ->with('success', 'Administrador externo creado.');
     }
 
     public function edit(User $user): View
     {
         $this->authorize('update', $user);
 
-        $user->load(['roles', 'clients']);
+        $user->load(['roles', 'clients', 'assignedInstallations']);
 
         return view('modules.client.users.edit', [
             'managedUser' => $user,
             'roleOptions' => AssignableRoles::forClient(),
+            'installations' => $this->clientInstallations(),
         ]);
     }
 
@@ -101,6 +111,8 @@ final class UserController extends Controller
                 isActive: $request->boolean('is_active', true),
                 jobTitle: $request->validated('job_title'),
                 avatarPath: UserAvatarUploader::store($request->file('avatar')),
+                documentNumber: $request->validated('document_number'),
+                installationIds: array_map('intval', $request->input('installation_ids', [])),
             ),
             $request->user(),
             UserManagementContext::Client,
@@ -109,5 +121,16 @@ final class UserController extends Controller
         return redirect()
             ->route('client.users.edit', $user)
             ->with('success', 'Usuario actualizado.');
+    }
+
+    /** @return Collection<int, Installation> */
+    private function clientInstallations(): Collection
+    {
+        return Installation::query()
+            ->where('client_id', (int) $this->tenantContext->clientId())
+            ->where('is_active', true)
+            ->orderByDesc('is_client_site')
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 }

@@ -31,12 +31,16 @@ final class StructureController extends Controller
 
         $clientId = (int) $this->tenantContext->clientId();
         $client = Client::query()->with('structureType')->findOrFail($clientId);
-        $installations = Installation::query()
+        $installationsQuery = Installation::query()
             ->where('client_id', $clientId)
             ->where('is_active', true)
             ->orderByDesc('is_client_site')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+        $allowedIds = $this->tenantContext->installationIds();
+        if ($allowedIds !== null) {
+            $installationsQuery->whereIn('id', $allowedIds);
+        }
+        $installations = $installationsQuery->get();
 
         $selectedId = $request->integer('installation_id') ?: (int) $installations->first()?->id;
         $installation = $installations->firstWhere('id', $selectedId);

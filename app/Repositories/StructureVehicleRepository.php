@@ -14,6 +14,7 @@ final class StructureVehicleRepository
         ?string $search = null,
         ?int $structureId = null,
         ?int $installationId = null,
+        ?array $allowedInstallationIds = null,
         int $perPage = 20,
     ): LengthAwarePaginator {
         $query = Vehicle::query()
@@ -34,6 +35,8 @@ final class StructureVehicleRepository
             $query->where('structure_id', $structureId);
         } elseif ($installationId) {
             $query->whereHas('structure', fn ($q) => $q->where('installation_id', $installationId));
+        } elseif ($allowedInstallationIds !== null) {
+            $query->whereHas('structure', fn ($q) => $q->whereIn('installation_id', $allowedInstallationIds));
         }
 
         return $query->paginate($perPage)->withQueryString();

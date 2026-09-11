@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h3 class="text-sm font-semibold text-white">Administradores del cliente</h3>
-                <p class="text-xs text-slate-500 mt-1">Quienes operan el panel de este cliente (estructura, personas, accesos del censo). Los vigilantes se crean en la empresa y solo si la instalación tiene puertas.</p>
+                <p class="text-xs text-slate-500 mt-1">Externos de este cliente: admin cliente o admin instalaciones. Los internos (empleados) se asignan desde la empresa, a uno o varios clientes.</p>
             </div>
             <x-ui.button :href="route('client.users.create')" size="sm">+ Nuevo administrador</x-ui.button>
         </div>

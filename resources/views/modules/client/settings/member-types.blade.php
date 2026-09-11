@@ -17,15 +17,20 @@
                                 <span class="text-xs text-slate-500">{{ $type->members_count }} persona{{ $type->members_count === 1 ? '' : 's' }}</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button type="button" @click="editing = true" class="text-xs text-teal-300 hover:text-teal-200">Editar</button>
-                                <form method="POST" action="{{ route('client.settings.member-types.destroy', $type) }}" onsubmit="return confirm('¿Eliminar este tipo?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-xs text-rose-400 hover:text-rose-300">Eliminar</button>
-                                </form>
+                                @can('update', $type)
+                                    <button type="button" @click="editing = true" class="text-xs text-teal-300 hover:text-teal-200">Editar</button>
+                                @endcan
+                                @can('delete', $type)
+                                    <form method="POST" action="{{ route('client.settings.member-types.destroy', $type) }}" onsubmit="return confirm('¿Eliminar este tipo?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-xs text-rose-400 hover:text-rose-300">Eliminar</button>
+                                    </form>
+                                @endcan
                             </div>
                         </div>
 
+                        @can('update', $type)
                         <form x-show="editing" x-cloak method="POST" action="{{ route('client.settings.member-types.update', $type) }}" class="space-y-3">
                             @csrf
                             @method('PUT')
@@ -43,6 +48,7 @@
                                 <button type="button" @click="editing = false" class="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700">Cancelar</button>
                             </div>
                         </form>
+                        @endcan
                     </div>
                 @empty
                     <p class="px-4 py-8 text-sm text-slate-500 text-center">Sin tipos. Crea el primero (ej. Funcionario, Estudiante, Propietario).</p>
@@ -50,6 +56,7 @@
             </div>
         </div>
 
+        @can('create', App\Models\MemberType::class)
         <div class="rounded-xl border border-slate-800 bg-slate-900 p-4 h-fit">
             <h3 class="text-sm font-semibold text-white mb-3">Nuevo tipo</h3>
             <form method="POST" action="{{ route('client.settings.member-types.store') }}" class="space-y-3">
@@ -69,5 +76,11 @@
                 </button>
             </form>
         </div>
+        @else
+        <div class="rounded-xl border border-slate-800 bg-slate-900 p-4 h-fit">
+            <h3 class="text-sm font-semibold text-white mb-2">Ajustes</h3>
+            <p class="text-xs text-slate-500">Solo consulta. Los tipos de persona los administra el administrador del cliente.</p>
+        </div>
+        @endcan
     </div>
 </x-client-layout>

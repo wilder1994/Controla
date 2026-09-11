@@ -19,9 +19,19 @@ final class StoreAppUserRequest extends FormRequest
     public function rules(): array
     {
         $clientId = app(TenantContext::class)->clientId();
+        $allowedIds = app(TenantContext::class)->installationIds();
+
+        $memberRule = Rule::exists('structure_members', 'id')->where(function ($query) use ($clientId, $allowedIds): void {
+            $query->where('client_id', $clientId);
+            if ($allowedIds !== null) {
+                $query->whereIn('structure_id', function ($sub) use ($allowedIds): void {
+                    $sub->select('id')->from('structures')->whereIn('installation_id', $allowedIds);
+                });
+            }
+        });
 
         return [
-            'member_id' => ['required', 'integer', Rule::exists('structure_members', 'id')->where('client_id', $clientId)],
+            'member_id' => ['required', 'integer', $memberRule],
             'username' => ['required', 'string', 'max:80', 'alpha_dash'],
             'email' => ['nullable', 'email', 'max:150'],
             'password' => ['required', 'string', 'min:8'],

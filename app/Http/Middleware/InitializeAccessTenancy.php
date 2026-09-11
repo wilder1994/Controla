@@ -35,6 +35,10 @@ final class InitializeAccessTenancy
 
         $this->tenantContext->hydrateForUser($user, $requestedClientId);
 
+        if ($this->tenantContext->installationIds() === null) {
+            $this->tenantContext->setInstallationIds($user->assignedInstallationIds());
+        }
+
         if ($this->tenantContext->clientId() === null) {
             $allowedIds = $user->assignedClientIds();
 

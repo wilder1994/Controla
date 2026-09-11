@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Company;
 
+use App\Domain\User\CreateUserData;
 use App\Domain\User\UpdateUserData;
+use App\Enums\ClientAdminOrigin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\StoreUserRequest;
 use App\Http\Requests\Company\UpdateUserRequest;
 use App\Models\Client;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
+use App\Models\Installation;
 use App\Models\User;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\UserRepository;
+use App\Services\Auth\AllocateLoginUsername;
 use App\Services\Company\GrantEmployeeAccessService;
 use App\Services\User\ManageScopedUserService;
 use App\Support\Auth\AssignableRoles;
@@ -32,6 +36,7 @@ final class UserController extends Controller
         private readonly EmployeeRepository $employeeRepository,
         private readonly ManageScopedUserService $manageUserService,
         private readonly GrantEmployeeAccessService $grantEmployeeAccessService,
+        private readonly AllocateLoginUsername $usernames,
     ) {}
 
     public function index(Request $request): View
@@ -92,25 +97,66 @@ final class UserController extends Controller
     {
         $this->authorize('create', User::class);
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
-        $employee = Employee::query()->findOrFail((int) $request->input('employee_id'));
-        abort_unless((int) $employee->security_company_id === $companyId, 404);
 
-        return response()->json($this->grantEmployeeAccessService->previewCredentials($employee));
+        if ($request->filled('employee_id')) {
+            $employee = Employee::query()->findOrFail((int) $request->input('employee_id'));
+            abort_unless((int) $employee->security_company_id === $companyId, 404);
+
+            return response()->json($this->grantEmployeeAccessService->previewCredentials($employee));
+        }
+
+        $name = $request->string('name')->trim()->toString();
+        abort_unless($name !== '', 422, 'Indica el nombre para generar el usuario.');
+
+        return response()->json([
+            'username' => $this->usernames->forFullName($name),
+            'password' => $this->usernames->randomPassword(),
+        ]);
+    }
+
+    public function installations(Request $request): JsonResponse
+    {
+        $this->authorize('create', User::class);
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
+        $clientId = $request->integer('client_id');
+        $client = Client::query()
+            ->where('security_company_id', $companyId)
+            ->whereKey($clientId)
+            ->firstOrFail();
+
+        $rows = Installation::query()
+            ->where('client_id', $client->id)
+            ->where('is_active', true)
+            ->orderByDesc('is_client_site')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'installations' => $rows->map(fn (Installation $row) => [
+                'id' => (int) $row->id,
+                'name' => $row->name,
+            ])->all(),
+        ]);
     }
 
     public function store(StoreUserRequest $request): RedirectResponse
     {
         $password = $request->validated('password');
-        $employee = Employee::query()->findOrFail((int) $request->validated('employee_id'));
-        $user = $this->grantEmployeeAccessService->execute(
-            $employee,
-            $request->user(),
-            $request->validated('role'),
-            $password,
-            array_map('intval', $request->input('client_ids', [])),
-            $request->validated('username'),
-            $request->validated('job_title'),
-        );
+
+        if ($request->isExternalPayload()) {
+            $user = $this->createExternal($request, $password);
+        } else {
+            $employee = Employee::query()->findOrFail((int) $request->validated('employee_id'));
+            $user = $this->grantEmployeeAccessService->execute(
+                $employee,
+                $request->user(),
+                $request->validated('role'),
+                $password,
+                array_map('intval', $request->input('client_ids', [])),
+                $request->validated('username'),
+                $request->validated('job_title'),
+            );
+        }
 
         if ($request->hasFile('avatar')) {
             $path = UserAvatarUploader::store($request->file('avatar'));
@@ -137,7 +183,7 @@ final class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $user->load(['roles', 'clients', 'employee.jobTitle']);
+        $user->load(['roles', 'clients', 'employee.jobTitle', 'assignedInstallations']);
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $clients = Client::query()
             ->where('security_company_id', $companyId)
@@ -158,11 +204,15 @@ final class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $external = $user->admin_origin === 'external' || $user->hasRole('client-installation-admin');
+
         $this->manageUserService->update(
             $user,
             new UpdateUserData(
-                name: $user->employee?->fullName() ?: $request->validated('name'),
-                email: $user->email,
+                name: $external
+                    ? (string) $request->validated('name')
+                    : ($user->employee?->fullName() ?: $request->validated('name') ?: $user->name),
+                email: $external ? $request->validated('email') : $user->email,
                 password: $request->validated('password'),
                 role: $request->validated('role'),
                 clientIds: array_map('intval', $request->input('client_ids', [])),
@@ -170,6 +220,8 @@ final class UserController extends Controller
                 jobTitle: $request->validated('job_title'),
                 avatarPath: UserAvatarUploader::store($request->file('avatar')),
                 regenerateSupervisorCode: $request->boolean('regenerate_supervisor_code'),
+                documentNumber: $external ? $request->validated('document_number') : $user->document_number,
+                installationIds: array_map('intval', $request->input('installation_ids', [])),
             ),
             $request->user(),
             UserManagementContext::Company,
@@ -198,5 +250,35 @@ final class UserController extends Controller
         return redirect()
             ->route('company.users.index', ['status' => 'active'])
             ->with('success', 'Usuario reactivado.');
+    }
+
+    private function createExternal(StoreUserRequest $request, string $password): User
+    {
+        $origin = ClientAdminOrigin::External;
+        $role = $request->validated('role');
+        if (AssignableRoles::isInstallationAdmin($role)) {
+            $origin = ClientAdminOrigin::External;
+        }
+
+        return $this->manageUserService->create(
+            new CreateUserData(
+                name: $request->validated('name'),
+                username: $request->validated('username'),
+                email: $request->validated('email'),
+                password: $password,
+                role: $role,
+                securityCompanyId: null,
+                clientIds: array_map('intval', $request->input('client_ids', [])),
+                isActive: $request->boolean('is_active', true),
+                jobTitle: $request->validated('job_title'),
+                avatarPath: UserAvatarUploader::store($request->file('avatar')),
+                mustChangePassword: true,
+                adminOrigin: $origin,
+                documentNumber: $request->validated('document_number'),
+                installationIds: array_map('intval', $request->input('installation_ids', [])),
+            ),
+            $request->user(),
+            UserManagementContext::Company,
+        );
     }
 }

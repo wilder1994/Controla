@@ -46,6 +46,8 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
 
         Route::middleware('permission:client.members.manage')->prefix('settings')->name('settings.')->group(function () {
             Route::get('/member-types', [MemberTypeController::class, 'index'])->name('member-types.index');
+        });
+        Route::middleware('permission:client.settings.manage')->prefix('settings')->name('settings.')->group(function () {
             Route::post('/member-types', [MemberTypeController::class, 'store'])->name('member-types.store');
             Route::put('/member-types/{memberType}', [MemberTypeController::class, 'update'])->name('member-types.update');
             Route::delete('/member-types/{memberType}', [MemberTypeController::class, 'destroy'])->name('member-types.destroy');

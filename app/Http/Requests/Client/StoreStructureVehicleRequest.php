@@ -19,9 +19,14 @@ final class StoreStructureVehicleRequest extends FormRequest
     public function rules(): array
     {
         $clientId = app(TenantContext::class)->clientId();
+        $allowedIds = app(TenantContext::class)->installationIds();
+        $structureRule = Rule::exists('structures', 'id')->where('client_id', $clientId);
+        if ($allowedIds !== null) {
+            $structureRule->whereIn('installation_id', $allowedIds);
+        }
 
         return [
-            'structure_id' => ['required', 'integer', Rule::exists('structures', 'id')->where('client_id', $clientId)],
+            'structure_id' => ['required', 'integer', $structureRule],
             'plate' => ['required', 'string', 'max:20'],
             'brand' => ['nullable', 'string', 'max:50'],
             'model' => ['nullable', 'string', 'max:50'],

@@ -30,14 +30,23 @@ final class UpdateUserRequest extends FormRequest
 
         return array_merge(
             $this->baseUserRules(false),
-            $this->roleRule(AssignableRoles::forClient()),
             [
+                'name' => ['required', 'string', 'max:120'],
+                'document_number' => ['required', 'string', 'max:30'],
+                'job_title' => ['required', 'string', 'max:80'],
                 'email' => [
                     'required',
                     'email',
                     'max:255',
                     Rule::unique('users', 'email')->ignore($user->id),
                 ],
+                'role' => ['required', 'string', Rule::in(AssignableRoles::forClient())],
+                'installation_ids' => [
+                    Rule::requiredIf(fn () => AssignableRoles::isInstallationAdmin((string) $this->input('role'))),
+                    'nullable',
+                    'array',
+                ],
+                'installation_ids.*' => ['integer', 'exists:installations,id'],
             ],
         );
     }

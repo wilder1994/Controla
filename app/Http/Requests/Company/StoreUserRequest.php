@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Company;
 
+use App\Enums\ClientAdminOrigin;
 use App\Http\Requests\Concerns\ValidatesManagedUser;
 use App\Models\Employee;
 use App\Models\User;
@@ -11,6 +12,7 @@ use App\Support\Auth\AssignableRoles;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 
 final class StoreUserRequest extends FormRequest
@@ -26,18 +28,13 @@ final class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         $companyId = app(ActingCompanyResolver::class)->requireId($this->user());
+        $external = $this->isExternalPayload();
 
-        return array_merge(
+        $rules = array_merge(
             $this->roleRule(AssignableRoles::forCompany()),
             $this->clientIdsRule(),
             [
-                'employee_id' => ['required', 'integer', 'exists:employees,id'],
-                'job_title' => [
-                    'required',
-                    'string',
-                    'max:80',
-                    Rule::exists('company_job_titles', 'name')->where('security_company_id', $companyId),
-                ],
+                'origin' => ['nullable', 'string', Rule::enum(ClientAdminOrigin::class)],
                 'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
                 'username' => [
                     'required',
@@ -46,37 +43,54 @@ final class StoreUserRequest extends FormRequest
                     'regex:/^[a-z]+\.[a-z]+\.\d{4}$/',
                     Rule::unique('users', 'username'),
                 ],
-                'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+                'password' => ['required', 'confirmed', Password::defaults()],
                 'is_active' => ['sometimes', 'boolean'],
+                'installation_ids' => ['nullable', 'array'],
+                'installation_ids.*' => ['integer', 'exists:installations,id'],
             ],
         );
+
+        if ($external) {
+            $rules['name'] = ['required', 'string', 'max:120'];
+            $rules['document_number'] = ['required', 'string', 'max:30'];
+            $rules['email'] = ['required', 'email', 'max:255', Rule::unique('users', 'email')];
+            $rules['job_title'] = ['required', 'string', 'max:80'];
+            $rules['employee_id'] = ['nullable'];
+        } else {
+            $rules['employee_id'] = ['required', 'integer', 'exists:employees,id'];
+            $rules['job_title'] = [
+                'required',
+                'string',
+                'max:80',
+                Rule::exists('company_job_titles', 'name')->where('security_company_id', $companyId),
+            ];
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $employeeId = (int) $this->input('employee_id');
-            if ($employeeId === 0) {
-                return;
+            $role = (string) $this->input('role');
+            $origin = $this->input('origin');
+
+            if (AssignableRoles::isClientFacingAdmin($role) && ! AssignableRoles::isInstallationAdmin($role) && ! filled($origin)) {
+                $validator->errors()->add('origin', 'Indica si el administrador es interno o externo.');
             }
 
-            $companyId = app(ActingCompanyResolver::class)->requireId($this->user());
-            $employee = Employee::query()->find($employeeId);
-
-            if ($employee === null || (int) $employee->security_company_id !== $companyId) {
-                $validator->errors()->add('employee_id', 'Seleccione un empleado de esta empresa.');
-
-                return;
-            }
-
-            if (! $employee->is_active || $employee->ceased_at !== null) {
-                $validator->errors()->add('employee_id', 'El empleado no está activo.');
-            }
-
-            if ($employee->user()->exists()) {
-                $validator->errors()->add('employee_id', 'Este empleado ya tiene un usuario de acceso.');
+            if (! $this->isExternalPayload()) {
+                $this->assertEmployee($validator);
             }
         });
+    }
+
+    public function isExternalPayload(): bool
+    {
+        return AssignableRoles::isExternalClientAdmin(
+            (string) $this->input('role'),
+            $this->input('origin') !== null ? (string) $this->input('origin') : null,
+        );
     }
 
     /** @return array<string, string> */
@@ -88,6 +102,34 @@ final class StoreUserRequest extends FormRequest
             'job_title' => 'cargo',
             'role' => 'rol',
             'client_ids' => 'cliente',
+            'origin' => 'origen',
+            'document_number' => 'cédula',
+            'installation_ids' => 'instalaciones',
         ];
+    }
+
+    private function assertEmployee(Validator $validator): void
+    {
+        $employeeId = (int) $this->input('employee_id');
+        if ($employeeId === 0) {
+            return;
+        }
+
+        $companyId = app(ActingCompanyResolver::class)->requireId($this->user());
+        $employee = Employee::query()->find($employeeId);
+
+        if ($employee === null || (int) $employee->security_company_id !== $companyId) {
+            $validator->errors()->add('employee_id', 'Seleccione un empleado de esta empresa.');
+
+            return;
+        }
+
+        if (! $employee->is_active || $employee->ceased_at !== null) {
+            $validator->errors()->add('employee_id', 'El empleado no está activo.');
+        }
+
+        if ($employee->user()->exists()) {
+            $validator->errors()->add('employee_id', 'Este empleado ya tiene un usuario de acceso.');
+        }
     }
 }

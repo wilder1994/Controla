@@ -62,16 +62,22 @@ final class StructureRepository
     }
 
     /**
+     * @param  list<int>|null  $installationIds
      * @return array{installations: Collection<int, Installation>, nodeOptions: array<string, list<array{id: int, name: string, depth: int}>>}
      */
-    public function censusPickerData(int $clientId): array
+    public function censusPickerData(int $clientId, ?array $installationIds = null): array
     {
-        $installations = Installation::query()
+        $query = Installation::query()
             ->where('client_id', $clientId)
             ->where('is_active', true)
             ->orderByDesc('is_client_site')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if ($installationIds !== null) {
+            $query->whereIn('id', $installationIds);
+        }
+
+        $installations = $query->get();
 
         $nodeOptions = [];
         foreach ($installations as $installation) {

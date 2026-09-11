@@ -21,9 +21,14 @@ final class StorePetRequest extends FormRequest
     public function rules(): array
     {
         $clientId = app(TenantContext::class)->clientId();
+        $allowedIds = app(TenantContext::class)->installationIds();
+        $structureRule = Rule::exists('structures', 'id')->where('client_id', $clientId);
+        if ($allowedIds !== null) {
+            $structureRule->whereIn('installation_id', $allowedIds);
+        }
 
         return [
-            'structure_id' => ['required', 'integer', Rule::exists('structures', 'id')->where('client_id', $clientId)],
+            'structure_id' => ['required', 'integer', $structureRule],
             'name' => ['required', 'string', 'max:50'],
             'species' => ['required', Rule::enum(PetSpecies::class)],
             'breed' => ['nullable', 'string', 'max:50'],

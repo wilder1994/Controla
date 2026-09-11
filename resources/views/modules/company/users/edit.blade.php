@@ -1,5 +1,5 @@
 <x-company-layout :title="'Editar: '.($managedUser->employee?->fullName() ?: $managedUser->name)">
-    <div class="max-w-2xl">
+    <div class="max-w-3xl">
         <a href="{{ route('company.users.index') }}" class="text-sm text-slate-400 hover:text-white">&larr; Usuarios</a>
 
         @if (session('issued_login'))

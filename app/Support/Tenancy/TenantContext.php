@@ -14,6 +14,9 @@ final class TenantContext
 
     private ?int $clientId = null;
 
+    /** @var list<int>|null */
+    private ?array $installationIds = null;
+
     private bool $scopingEnabled = true;
 
     public function setCompany(?SecurityCompany $company): void
@@ -47,6 +50,25 @@ final class TenantContext
         return $this->clientId;
     }
 
+    /** @return list<int>|null */
+    public function installationIds(): ?array
+    {
+        return $this->installationIds;
+    }
+
+    /** @param list<int>|null $installationIds */
+    public function setInstallationIds(?array $installationIds): void
+    {
+        $this->installationIds = $installationIds === null
+            ? null
+            : array_values(array_unique(array_map('intval', $installationIds)));
+    }
+
+    public function allowsInstallation(int $installationId): bool
+    {
+        return $this->installationIds === null || in_array($installationId, $this->installationIds, true);
+    }
+
     public function disableScoping(): void
     {
         $this->scopingEnabled = false;
@@ -66,6 +88,7 @@ final class TenantContext
     {
         $this->companyId = null;
         $this->clientId = null;
+        $this->installationIds = null;
         $this->scopingEnabled = true;
     }
 
@@ -100,6 +123,7 @@ final class TenantContext
         }
 
         $allowedClientIds = $user->assignedClientIds();
+        $this->setInstallationIds($user->assignedInstallationIds());
 
         if ($requestedClientId !== null) {
             if (! in_array($requestedClientId, $allowedClientIds, true)) {

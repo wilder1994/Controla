@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\User;
 
+use App\Enums\ClientAdminOrigin;
+
 final readonly class CreateUserData
 {
-    /** @param list<int> $clientIds */
+    /**
+     * @param  list<int>  $clientIds
+     * @param  list<int>  $installationIds
+     */
     public function __construct(
         public string $name,
         public string $username,
@@ -20,5 +25,8 @@ final readonly class CreateUserData
         public ?string $avatarPath = null,
         public ?int $employeeId = null,
         public bool $mustChangePassword = false,
+        public ?ClientAdminOrigin $adminOrigin = null,
+        public ?string $documentNumber = null,
+        public array $installationIds = [],
     ) {}
 }

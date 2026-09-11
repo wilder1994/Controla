@@ -203,6 +203,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::post('/users/credentials-preview', [UserController::class, 'previewCredentials'])
             ->middleware('permission:company.users.assign')
             ->name('users.credentials-preview');
+        Route::get('/users/installations', [UserController::class, 'installations'])
+            ->middleware('permission:company.users.assign')
+            ->name('users.installations');
         Route::post('/users', [UserController::class, 'store'])
             ->middleware('permission:company.users.assign')
             ->name('users.store');

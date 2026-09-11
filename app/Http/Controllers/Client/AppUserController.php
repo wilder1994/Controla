@@ -37,13 +37,18 @@ final class AppUserController extends Controller
     {
         abort_unless(auth()->user()?->can('client.app_users.manage'), 403);
 
-        $members = StructureMember::query()
+        $clientId = (int) $this->tenantContext->clientId();
+        $membersQuery = StructureMember::query()
             ->with(['structure.installation', 'structure.parent'])
             ->whereDoesntHave('appUser')
             ->where('is_active', true)
             ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->get();
+            ->orderBy('first_name');
+        $allowed = $this->tenantContext->installationIds();
+        if ($allowed !== null) {
+            $membersQuery->whereHas('structure', fn ($q) => $q->whereIn('installation_id', $allowed));
+        }
+        $members = $membersQuery->get();
         $client = Client::query()->find((int) $this->tenantContext->clientId());
         $selectedMemberId = $request->integer('member_id') ?: null;
 

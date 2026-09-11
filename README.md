@@ -48,7 +48,7 @@ Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFOR
 |-------|---------|---------|-------------|
 | **Plataforma** | `/admin` | `super-admin` | Dashboard, **Descargas**, precios, empresas, documentos, **Ajustes** (tipos de documento) |
 | **Empresa** | `/company` | `company-admin` | Command Center (**Mi empresa**), cartera, **Empleados**, **Documentos**, **Mis datos**, **Ajustes** (cargos/tipos + zonas/turnos/preoperacional), usuarios, billing, Supervisión, **Descargas** |
-| **Cliente** | `/client` | `client-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones |
+| **Cliente** | `/client` | `client-admin`, `client-installation-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones. Admin instalaciones: solo sus sedes; Ajustes solo ver |
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
@@ -56,7 +56,7 @@ Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFOR
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
-**Roles Spatie (`config/access.php`):** `super-admin`, `company-admin`, `client-admin`, `guardia`, **`supervisor`**, `resident`, más alias legacy (`admin-accesos`, `anfitrion`). El seeder **elimina** roles que no estén en ese archivo; mantener siempre `supervisor` (demo + revistas empresa).
+**Roles Spatie (`config/access.php`):** `super-admin`, `company-admin`, `client-admin`, **`client-installation-admin`**, `guardia`, **`supervisor`**, `resident`, más alias legacy (`admin-accesos`, `anfitrion`). El seeder **elimina** roles que no estén en ese archivo; mantener siempre `supervisor` (demo + revistas empresa). Tras cambios de roles en producción: `php artisan db:seed --class=RoleAndPermissionSeeder` (sync; no vacía tablas).
 
 ---
 
@@ -265,7 +265,7 @@ Documentación: [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md). En
 |-------|-------------|
 | Plataforma | `/admin/users`, `/admin/companies/{id}/profile` |
 | Empresa | `/company/users`, `/company/settings` (Mis datos), `/company/employees` |
-| Cliente | `/client/users` (admins del cliente); acceso de personas en `/client/app-users` |
+| Cliente | `/client/users` (admins externos); acceso de personas en `/client/app-users` |
 
 Tras desplegar permisos nuevos: `php artisan db:seed --class=RoleAndPermissionSeeder`
 
@@ -420,8 +420,8 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST /company/billing/membership/cancel` | Cancelar membresía (acceso hasta corte) |
 | `POST /company/billing/membership/undo-cancel` | Deshacer cancelación sin pago |
 | `POST /company/billing/package/schedule` | Programar cambio de plan (cobra online, aplica al corte) |
-| `GET /company/users` | Usuarios de la empresa y clientes asignados |
-| `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped |
+| `GET /company/users` | Usuarios (`status=active` \| `inactive`; pestañas en header; internos y externos) |
+| `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped (foto `avatar`, cliente + instalaciones) |
 | `GET /company/settings` | **Mis datos**: perfil, ubicación, logo y encabezado de fichas (sin pestañas) |
 | `PUT /company/settings` | Guardar perfil, logo y texto de encabezado |
 | `GET /company/employees` | **Empleados**: listado (Ficha), Formato Excel, carga masiva (preview → alta o actualización por documento) |
@@ -607,7 +607,7 @@ Tablas relacionadas:
 | `/client/authorizations` | Pre-autorizaciones |
 | `/client/authorizations/import` | Import Excel (`maatwebsite/excel`) |
 | `/client/app-users` | Acceso de personas (`structure_app_users`) |
-| `/client/users` | Administradores del cliente (`client-admin`) |
+| `/client/users` | Administradores del cliente (externos: `client-admin` o `client-installation-admin`) |
 
 ### Mascotas (`/client/pets`) — CRUD completo
 

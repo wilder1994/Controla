@@ -6,8 +6,11 @@ namespace App\Services\User;
 
 use App\Domain\User\CreateUserData;
 use App\Domain\User\UpdateUserData;
+use App\Enums\ClientAdminOrigin;
 use App\Models\Client;
 use App\Models\ClientUserAssignment;
+use App\Models\ClientUserInstallationAssignment;
+use App\Models\Installation;
 use App\Models\User;
 use App\Services\Auth\UserScopeResolver;
 use App\Support\Auth\AssignableRoles;
@@ -40,7 +43,10 @@ final class ManageScopedUserService
         }
 
         $companyId = $this->resolveCompanyId($data, $context, $actor);
-        $clientIds = $this->normalizeClientIds($data->clientIds, $data->role, $companyId, $context, $actor);
+        $origin = $this->resolveOrigin($data->role, $data->adminOrigin, $data->employeeId);
+        $this->assertOriginRules($data->role, $origin, $data->employeeId, $context);
+        $clientIds = $this->normalizeClientIds($data->clientIds, $data->role, $origin, $companyId, $context, $actor);
+        $installationIds = $this->normalizeInstallationIds($data->installationIds, $data->role, $clientIds);
 
         if ($data->role === 'guardia') {
             foreach ($clientIds as $clientId) {
@@ -48,7 +54,7 @@ final class ManageScopedUserService
             }
         }
 
-        return DB::transaction(function () use ($data, $companyId, $clientIds): User {
+        return DB::transaction(function () use ($data, $companyId, $clientIds, $origin, $installationIds): User {
             $attributes = [
                 'name' => $data->name,
                 'username' => $data->username,
@@ -60,6 +66,8 @@ final class ManageScopedUserService
                 'employee_id' => $data->employeeId,
                 'job_title' => $data->jobTitle,
                 'avatar_path' => $data->avatarPath,
+                'admin_origin' => $origin?->value,
+                'document_number' => $data->documentNumber,
                 'email_verified_at' => now(),
             ];
 
@@ -70,8 +78,9 @@ final class ManageScopedUserService
             $user = User::query()->create($attributes);
             $user->syncRoles([$data->role]);
             $this->syncClientAssignments($user, $clientIds, $data->role);
+            $this->syncInstallationAssignments($user, $installationIds, $data->role);
 
-            return $user->fresh(['roles', 'clients']);
+            return $user->fresh(['roles', 'clients', 'assignedInstallations']);
         });
     }
 
@@ -89,8 +98,15 @@ final class ManageScopedUserService
 
         $companyId = (int) ($target->security_company_id ?? $this->scopeCompanyId($actor) ?? 0) ?: null;
         $role = $data->role ?? $target->getRoleNames()->first() ?? '';
+        $origin = $this->originFromUser($target, $role);
+        $this->assertOriginRules($role, $origin, $target->employee_id !== null ? (int) $target->employee_id : null, $context);
         $clientIds = $data->clientIds ?? $target->clients()->pluck('clients.id')->map(fn ($id) => (int) $id)->all();
-        $clientIds = $this->normalizeClientIds($clientIds, $role, $companyId, $context, $actor);
+        $clientIds = $this->normalizeClientIds($clientIds, $role, $origin, $companyId, $context, $actor);
+        $installationIds = $this->normalizeInstallationIds(
+            $data->installationIds ?? $target->assignedInstallations()->pluck('installations.id')->map(fn ($id) => (int) $id)->all(),
+            $role,
+            $clientIds,
+        );
 
         if ($role === 'guardia') {
             foreach ($clientIds as $clientId) {
@@ -112,13 +128,17 @@ final class ManageScopedUserService
             ]);
         }
 
-        return DB::transaction(function () use ($target, $data, $role, $clientIds, $companyId, $clientChanged): User {
+        return DB::transaction(function () use ($target, $data, $role, $clientIds, $companyId, $clientChanged, $installationIds): User {
             $attributes = [
                 'name' => $data->name,
                 'email' => filled($data->email) ? $data->email : null,
                 'is_active' => $data->isActive,
                 'job_title' => $data->jobTitle,
             ];
+
+            if ($data->documentNumber !== null) {
+                $attributes['document_number'] = $data->documentNumber;
+            }
 
             if ($data->avatarPath !== null) {
                 $attributes['avatar_path'] = $data->avatarPath;
@@ -149,8 +169,9 @@ final class ManageScopedUserService
             }
 
             $this->syncClientAssignments($target, $clientIds, $role);
+            $this->syncInstallationAssignments($target, $installationIds, $role);
 
-            return $target->fresh(['roles', 'clients']);
+            return $target->fresh(['roles', 'clients', 'assignedInstallations']);
         });
     }
 
@@ -260,6 +281,7 @@ final class ManageScopedUserService
     private function normalizeClientIds(
         array $clientIds,
         string $role,
+        ?ClientAdminOrigin $origin,
         ?int $companyId,
         UserManagementContext $context,
         User $actor,
@@ -288,9 +310,13 @@ final class ManageScopedUserService
             ]);
         }
 
-        if (in_array($role, AssignableRoles::requiringSingleClientAssignment(), true) && count($clientIds) !== 1) {
+        if (AssignableRoles::forcesSingleClient($role, $origin?->value) && count($clientIds) !== 1) {
+            $message = $role === 'guardia'
+                ? 'El vigilante debe quedar asignado a un solo cliente.'
+                : 'El administrador externo queda amarrado a un solo cliente.';
+
             throw ValidationException::withMessages([
-                'client_ids' => 'El vigilante debe quedar asignado a un solo cliente.',
+                'client_ids' => $message,
             ]);
         }
 
@@ -308,6 +334,133 @@ final class ManageScopedUserService
         }
 
         return $clientIds;
+    }
+
+    /**
+     * @param  list<int>  $installationIds
+     * @param  list<int>  $clientIds
+     * @return list<int>
+     */
+    private function normalizeInstallationIds(array $installationIds, string $role, array $clientIds): array
+    {
+        if (! AssignableRoles::isInstallationAdmin($role)) {
+            return [];
+        }
+
+        $installationIds = array_values(array_unique(array_map('intval', $installationIds)));
+
+        if ($installationIds === []) {
+            throw ValidationException::withMessages([
+                'installation_ids' => 'Selecciona al menos una instalación.',
+            ]);
+        }
+
+        $clientId = $clientIds[0] ?? null;
+        if ($clientId === null) {
+            throw ValidationException::withMessages([
+                'client_ids' => 'El admin de instalaciones requiere un cliente.',
+            ]);
+        }
+
+        $validCount = Installation::query()
+            ->where('client_id', $clientId)
+            ->whereIn('id', $installationIds)
+            ->count();
+
+        if ($validCount !== count($installationIds)) {
+            throw ValidationException::withMessages([
+                'installation_ids' => 'Una o más instalaciones no pertenecen a ese cliente.',
+            ]);
+        }
+
+        return $installationIds;
+    }
+
+    private function resolveOrigin(string $role, ?ClientAdminOrigin $origin, ?int $employeeId): ?ClientAdminOrigin
+    {
+        if (! AssignableRoles::isClientFacingAdmin($role)) {
+            return null;
+        }
+
+        if (AssignableRoles::isInstallationAdmin($role)) {
+            return ClientAdminOrigin::External;
+        }
+
+        if ($origin !== null) {
+            return $origin;
+        }
+
+        return $employeeId !== null ? ClientAdminOrigin::Internal : ClientAdminOrigin::External;
+    }
+
+    private function originFromUser(User $user, string $role): ?ClientAdminOrigin
+    {
+        if (! AssignableRoles::isClientFacingAdmin($role)) {
+            return null;
+        }
+
+        if (AssignableRoles::isInstallationAdmin($role)) {
+            return ClientAdminOrigin::External;
+        }
+
+        $raw = $user->admin_origin;
+        if (is_string($raw) && $raw !== '') {
+            return ClientAdminOrigin::from($raw);
+        }
+
+        return $user->employee_id !== null ? ClientAdminOrigin::Internal : ClientAdminOrigin::External;
+    }
+
+    private function assertOriginRules(
+        string $role,
+        ?ClientAdminOrigin $origin,
+        ?int $employeeId,
+        UserManagementContext $context,
+    ): void {
+        if (! AssignableRoles::isClientFacingAdmin($role)) {
+            return;
+        }
+
+        if (AssignableRoles::isInstallationAdmin($role) && $origin !== ClientAdminOrigin::External) {
+            throw ValidationException::withMessages([
+                'origin' => 'El admin de instalaciones es siempre externo.',
+            ]);
+        }
+
+        if ($origin === ClientAdminOrigin::Internal && $employeeId === null) {
+            throw ValidationException::withMessages([
+                'employee_id' => 'El administrador interno debe ser un empleado de la empresa.',
+            ]);
+        }
+
+        if ($origin === ClientAdminOrigin::External && $employeeId !== null) {
+            throw ValidationException::withMessages([
+                'employee_id' => 'El administrador externo no se crea sobre un empleado.',
+            ]);
+        }
+
+        if ($context === UserManagementContext::Client && $origin === ClientAdminOrigin::Internal) {
+            throw ValidationException::withMessages([
+                'origin' => 'Desde el panel del cliente solo se dan de alta administradores externos.',
+            ]);
+        }
+    }
+
+    /** @param list<int> $installationIds */
+    private function syncInstallationAssignments(User $user, array $installationIds, string $role): void
+    {
+        ClientUserInstallationAssignment::query()->where('user_id', $user->id)->delete();
+
+        if (! AssignableRoles::isInstallationAdmin($role)) {
+            return;
+        }
+
+        foreach ($installationIds as $installationId) {
+            ClientUserInstallationAssignment::query()->create([
+                'user_id' => $user->id,
+                'installation_id' => $installationId,
+            ]);
+        }
     }
 
     /** @param list<int> $clientIds */

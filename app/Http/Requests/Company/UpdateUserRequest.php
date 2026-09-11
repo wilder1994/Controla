@@ -8,6 +8,7 @@ use App\Http\Requests\Concerns\ValidatesManagedUser;
 use App\Models\User;
 use App\Support\Auth\AssignableRoles;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class UpdateUserRequest extends FormRequest
 {
@@ -24,14 +25,35 @@ final class UpdateUserRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return array_merge(
+        /** @var User $user */
+        $user = $this->route('user');
+        $external = $user->admin_origin === 'external'
+            || $user->hasRole('client-installation-admin');
+
+        $rules = array_merge(
             $this->baseUserRules(false),
             $this->roleRule(AssignableRoles::forCompany()),
             $this->clientIdsRule(),
             [
-                'name' => ['nullable', 'string', 'max:120'],
                 'job_title' => ['required', 'string', 'max:80'],
+                'installation_ids' => ['nullable', 'array'],
+                'installation_ids.*' => ['integer', 'exists:installations,id'],
             ],
         );
+
+        if ($external) {
+            $rules['name'] = ['required', 'string', 'max:120'];
+            $rules['document_number'] = ['required', 'string', 'max:30'];
+            $rules['email'] = [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ];
+        } else {
+            $rules['name'] = ['nullable', 'string', 'max:120'];
+        }
+
+        return $rules;
     }
 }

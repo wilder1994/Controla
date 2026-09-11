@@ -292,4 +292,5 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-10 | Documentos de personal (indexador SJ-SIG) en empresa. Cliente: flag Accesos + solo empleados de sus puestos, solo lectura. Distinto de Normoteca. |
 | 2026-09-11 | Censo bajo instalación (`structures.installation_id`). Panel cliente: elige instalación → nodos → personas → acceso. Usuarios del cliente = `client-admin`. Vigilante portería solo con puertas. Supervisor firma revista en minuta. Término de producto: **cliente**, no conjunto. |
 | 2026-09-11 | Alta de nodo sin código visible: `code` interno (slug, `-2` si choca, prefijo del padre). Panel ancho: árbol + **Crear dentro de** indentado; **+** en el nodo. |
-| 2026-09-11 | Tipos de persona por cliente (Ajustes). Personas/vehículos/mascotas por instalación + nodo. Banner: panel del cliente. Foto circular en el alta; barra de personas en una línea. |
+| 2026-09-11 | Administradores del cliente interno (empleado, 1+ clientes) o externo (ficha propia, 1 cliente). Línea **Admin instalaciones**: varias sedes del mismo cliente; Ajustes solo ver; no crea usuarios. |
+| 2026-09-11 | `/company/users`: pestañas Activos/Desactivados en el header; foto circular; Cliente + Instalaciones en una fila con filtro. |

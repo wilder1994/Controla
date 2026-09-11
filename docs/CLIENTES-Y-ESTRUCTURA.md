@@ -176,7 +176,7 @@ Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** 
 - Puertas: `locations` de esas instalaciones.
 - Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.
 
-El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. `/client/users` son **administradores del cliente**. `/client/app-users` es **acceso de personas** del censo. `/client/settings/member-types` es **Ajustes** (tipos de persona). Banner al operar: **panel del cliente**.
+El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. `/client/users` son **administradores del cliente** (externos: admin cliente o admin instalaciones). Internos (empleados) se asignan en `/company/users` a uno o varios clientes. `/client/app-users` es **acceso de personas** del censo. `/client/settings/member-types` es **Ajustes** (tipos de persona; admin instalaciones solo ve). Banner al operar: **panel del cliente**.
 
 ---
 

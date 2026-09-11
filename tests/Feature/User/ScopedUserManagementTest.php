@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
+use App\Models\Installation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -173,6 +174,8 @@ final class ScopedUserManagementTest extends TestCase
 
         $response = $this->actingAs($clientAdmin)->post(route('client.users.store'), [
             'name' => 'Admin Extra Palmas',
+            'document_number' => '1098123456',
+            'job_title' => 'Administrador',
             'email' => 'admin.extra@palmas.test',
             'password' => 'Cliente123!',
             'password_confirmation' => 'Cliente123!',
@@ -183,6 +186,8 @@ final class ScopedUserManagementTest extends TestCase
         $response->assertRedirect();
         $created = User::query()->where('email', 'admin.extra@palmas.test')->firstOrFail();
         $this->assertTrue($created->hasRole('client-admin'));
+        $this->assertSame('external', $created->admin_origin);
+        $this->assertSame('1098123456', $created->document_number);
         $this->assertTrue($created->must_change_password);
         $this->assertTrue($created->clients()->where('clients.id', $clientAdmin->primary_client_id)->exists());
     }
@@ -205,6 +210,110 @@ final class ScopedUserManagementTest extends TestCase
             ]);
 
         $response->assertSessionHasErrors('role');
+    }
+
+    public function test_company_can_assign_internal_client_admin_to_several_clients(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $torres = Client::query()->where('slug', 'torres-loma')->firstOrFail();
+        $employee = Employee::query()->create([
+            'security_company_id' => $admin->security_company_id,
+            'job_title_id' => CompanyJobTitle::query()->firstOrCreate(
+                ['security_company_id' => $admin->security_company_id, 'name' => 'Coordinador cliente'],
+                ['is_active' => true, 'sort_order' => 40],
+            )->id,
+            'collaborator_type_id' => CompanyCollaboratorType::query()->firstOrCreate(
+                ['security_company_id' => $admin->security_company_id, 'name' => 'ADMINISTRATIVO'],
+                ['is_active' => true, 'sort_order' => 5],
+            )->id,
+            'document_type' => 'CC',
+            'document_number' => '1098000099',
+            'last_name_paternal' => 'Interno',
+            'last_name_maternal' => 'Admin',
+            'first_names' => 'Carlos',
+            'sex' => 'hombre',
+            'birth_date' => '1988-01-01',
+            'email' => 'carlos.interno@sj-seguridad.test',
+            'nationality' => 'COLOMBIANA',
+            'blood_group' => 'O+',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('company.users.store'), [
+            'role' => 'client-admin',
+            'origin' => 'internal',
+            'employee_id' => $employee->id,
+            'job_title' => 'Coordinador cliente',
+            'username' => 'carlos.interno.1099',
+            'password' => 'Cliente123!',
+            'password_confirmation' => 'Cliente123!',
+            'client_ids' => [$palmas->id, $torres->id],
+            'is_active' => '1',
+        ]);
+
+        $response->assertRedirect();
+        $created = User::query()->where('employee_id', $employee->id)->firstOrFail();
+        $this->assertTrue($created->hasRole('client-admin'));
+        $this->assertSame('internal', $created->admin_origin);
+        $this->assertEqualsCanonicalizing([$palmas->id, $torres->id], $created->clients()->pluck('clients.id')->all());
+    }
+
+    public function test_company_can_create_external_installation_admin(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $site = Installation::query()->where('client_id', $palmas->id)->firstOrFail();
+        $extra = Installation::query()->create([
+            'client_id' => $palmas->id,
+            'name' => 'Sede norte',
+            'is_client_site' => false,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('company.users.store'), [
+            'role' => 'client-installation-admin',
+            'origin' => 'external',
+            'name' => 'Laura Sede',
+            'document_number' => '1098000088',
+            'job_title' => 'Administradora de sede',
+            'email' => 'laura.sede@palmas.test',
+            'username' => 'laura.sede.8800',
+            'password' => 'Cliente123!',
+            'password_confirmation' => 'Cliente123!',
+            'client_ids' => [$palmas->id],
+            'installation_ids' => [$site->id, $extra->id],
+            'is_active' => '1',
+        ]);
+
+        $response->assertRedirect();
+        $created = User::query()->where('email', 'laura.sede@palmas.test')->firstOrFail();
+        $this->assertTrue($created->hasRole('client-installation-admin'));
+        $this->assertSame('external', $created->admin_origin);
+        $this->assertEqualsCanonicalizing([$site->id, $extra->id], $created->assignedInstallations()->pluck('installations.id')->all());
+        $this->assertFalse($created->can('client.users.manage'));
+        $this->assertFalse($created->can('client.settings.manage'));
+
+        $created->update(['must_change_password' => false]);
+
+        $this->actingAs($created)
+            ->withSession(['tenancy.active_client_id' => $palmas->id])
+            ->get(route('client.users.index'))
+            ->assertForbidden();
+
+        $this->actingAs($created)
+            ->withSession(['tenancy.active_client_id' => $palmas->id])
+            ->get(route('client.settings.member-types.index'))
+            ->assertOk();
+
+        $this->actingAs($created)
+            ->withSession(['tenancy.active_client_id' => $palmas->id])
+            ->post(route('client.settings.member-types.store'), ['name' => 'No debe', 'is_active' => true])
+            ->assertForbidden();
     }
 
     public function test_company_settings_updates_geo_fields(): void

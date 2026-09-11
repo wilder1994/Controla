@@ -18,7 +18,7 @@ final class ResolveUserHomeRoute
             return route('company.dashboard');
         }
 
-        if ($user->hasRole('client-admin')) {
+        if ($user->hasAnyRole(['client-admin', 'client-installation-admin'])) {
             return route('client.dashboard');
         }
 

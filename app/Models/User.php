@@ -31,6 +31,8 @@ class User extends Authenticatable
         'area_key',
         'security_company_id',
         'employee_id',
+        'admin_origin',
+        'document_number',
         'primary_client_id',
         'supervisor_code',
     ];
@@ -85,6 +87,17 @@ class User extends Authenticatable
         return $this->hasMany(ClientUserAssignment::class);
     }
 
+    public function installationAssignments(): HasMany
+    {
+        return $this->hasMany(ClientUserInstallationAssignment::class);
+    }
+
+    public function assignedInstallations(): BelongsToMany
+    {
+        return $this->belongsToMany(Installation::class, 'client_user_installation_assignments')
+            ->withTimestamps();
+    }
+
     public function clients(): BelongsToMany
     {
         return $this->belongsToMany(Client::class, 'client_user_assignments')
@@ -116,6 +129,31 @@ class User extends Authenticatable
     public function canAccessClient(int $clientId): bool
     {
         return in_array($clientId, $this->assignedClientIds(), true);
+    }
+
+    /**
+     * null = todas las instalaciones del cliente activo.
+     *
+     * @return list<int>|null
+     */
+    public function assignedInstallationIds(): ?array
+    {
+        if (! $this->hasRole('client-installation-admin')) {
+            return null;
+        }
+
+        return $this->assignedInstallations()
+            ->pluck('installations.id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    public function canAccessInstallation(int $installationId): bool
+    {
+        $ids = $this->assignedInstallationIds();
+
+        return $ids === null || in_array($installationId, $ids, true);
     }
 
     public function isSupervisionManager(): bool

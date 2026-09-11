@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 10 septiembre 2026
+**Última actualización:** 11 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
@@ -14,7 +14,9 @@ Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 | PHP | 8.3 |
 | Repo | `https://github.com/wilder1994/Controla.git` rama `main` |
 
-Flujo: push local a `wilder-fork` (`wilder1994/Controla`). El VPS solo hace `git pull` + composer/npm/migrate. No FTP ni ZIP. No `migrate:fresh` ni seed en producción salvo petición explícita.
+Flujo: push local a `wilder-fork` (`wilder1994/Controla`). El VPS solo hace `git pull` + composer/npm/migrate. No FTP ni ZIP. No `migrate:fresh` ni `db:wipe` en producción.
+
+Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud
@@ -23,6 +25,7 @@ sudo -u wcodex-controla git pull --ff-only origin main
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && npm ci && npm run build"
 php8.3 artisan migrate --force --no-interaction
+php8.3 artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction
 php8.3 artisan config:cache
 php8.3 artisan route:cache
 php8.3 artisan view:cache

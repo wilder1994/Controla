@@ -59,6 +59,8 @@ final class GrantEmployeeAccessService
                 jobTitle: $jobTitle ?: $employee->jobTitle?->name,
                 employeeId: $employee->id,
                 mustChangePassword: true,
+                adminOrigin: $role === 'client-admin' ? \App\Enums\ClientAdminOrigin::Internal : null,
+                documentNumber: $employee->document_number,
             ),
             $actor,
             UserManagementContext::Company,

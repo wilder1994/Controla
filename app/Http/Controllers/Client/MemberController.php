@@ -35,7 +35,8 @@ final class MemberController extends Controller
         $this->authorize('viewAny', StructureMember::class);
 
         $clientId = (int) $this->tenantContext->clientId();
-        $picker = $this->structureRepository->censusPickerData($clientId);
+        $allowed = $this->tenantContext->installationIds();
+        $picker = $this->structureRepository->censusPickerData($clientId, $allowed);
         $installationId = $request->integer('installation_id') ?: null;
         $structureId = $request->integer('structure_id') ?: null;
 
@@ -44,6 +45,7 @@ final class MemberController extends Controller
             $request->string('q')->toString() ?: null,
             $structureId,
             $installationId,
+            $allowed,
         );
 
         return view('modules.client.members.index', [
@@ -60,7 +62,7 @@ final class MemberController extends Controller
         $this->authorize('create', StructureMember::class);
 
         $clientId = (int) $this->tenantContext->clientId();
-        $picker = $this->structureRepository->censusPickerData($clientId);
+        $picker = $this->structureRepository->censusPickerData($clientId, $this->tenantContext->installationIds());
         $memberTypes = MemberType::query()->active()->get();
         $structureId = old('structure_id');
         $installationId = $this->installationIdForStructure($picker, $structureId !== null ? (int) $structureId : null);
@@ -117,7 +119,7 @@ final class MemberController extends Controller
         $this->authorize('update', $member);
 
         $clientId = (int) $this->tenantContext->clientId();
-        $picker = $this->structureRepository->censusPickerData($clientId);
+        $picker = $this->structureRepository->censusPickerData($clientId, $this->tenantContext->installationIds());
         $memberTypes = MemberType::query()
             ->where(function ($q) use ($member): void {
                 $q->where('is_active', true)->orWhereKey($member->member_type_id);

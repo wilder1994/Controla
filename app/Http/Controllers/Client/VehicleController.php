@@ -27,7 +27,8 @@ final class VehicleController extends Controller
         abort_unless($request->user()?->can('client.vehicles.manage'), 403);
 
         $clientId = (int) $this->tenantContext->clientId();
-        $picker = $this->structureRepository->censusPickerData($clientId);
+        $allowed = $this->tenantContext->installationIds();
+        $picker = $this->structureRepository->censusPickerData($clientId, $allowed);
         $installationId = $request->integer('installation_id') ?: null;
         $structureId = $request->integer('structure_id') ?: null;
 
@@ -36,6 +37,7 @@ final class VehicleController extends Controller
             $request->string('q')->toString() ?: null,
             $structureId,
             $installationId,
+            $allowed,
         );
 
         return view('modules.client.vehicles.index', [
@@ -51,7 +53,7 @@ final class VehicleController extends Controller
     {
         abort_unless(auth()->user()?->can('client.vehicles.manage'), 403);
 
-        $picker = $this->structureRepository->censusPickerData((int) $this->tenantContext->clientId());
+        $picker = $this->structureRepository->censusPickerData((int) $this->tenantContext->clientId(), $this->tenantContext->installationIds());
 
         return view('modules.client.vehicles.create', [
             'installations' => $picker['installations'],

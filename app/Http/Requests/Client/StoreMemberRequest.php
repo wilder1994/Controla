@@ -20,6 +20,12 @@ final class StoreMemberRequest extends FormRequest
     public function rules(): array
     {
         $clientId = app(TenantContext::class)->clientId();
+        $allowedIds = app(TenantContext::class)->installationIds();
+        $structureRule = Rule::exists('structures', 'id')->where('client_id', $clientId);
+        if ($allowedIds !== null) {
+            $structureRule->whereIn('installation_id', $allowedIds);
+        }
+
         $current = $this->route('member');
         $currentTypeId = $current instanceof StructureMember ? (int) $current->member_type_id : null;
 
@@ -34,7 +40,7 @@ final class StoreMemberRequest extends FormRequest
         });
 
         return [
-            'structure_id' => ['required', 'integer', Rule::exists('structures', 'id')->where('client_id', $clientId)],
+            'structure_id' => ['required', 'integer', $structureRule],
             'member_type_id' => ['required', 'integer', $typeRule],
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],

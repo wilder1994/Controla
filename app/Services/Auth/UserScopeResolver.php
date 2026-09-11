@@ -47,7 +47,7 @@ final class UserScopeResolver
                 });
         }
 
-        if ($actor->hasAnyRole(['client-admin', 'admin-accesos'])) {
+        if ($actor->hasAnyRole(['client-admin', 'client-installation-admin', 'admin-accesos'])) {
             $clientId = $this->resolveClientTenantId($actor);
 
             if ($clientId === null) {
@@ -60,7 +60,7 @@ final class UserScopeResolver
                         $scoped->whereHas('clients', function (Builder $clientQuery) use ($clientId): void {
                             $clientQuery->where('clients.id', $clientId);
                         })->whereHas('roles', function (Builder $roleQuery): void {
-                            $roleQuery->where('name', 'client-admin');
+                            $roleQuery->whereIn('name', ['client-admin', 'client-installation-admin']);
                         });
                     });
             });

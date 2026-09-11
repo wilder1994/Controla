@@ -6,7 +6,10 @@ namespace App\Domain\User;
 
 final readonly class UpdateUserData
 {
-    /** @param list<int>|null $clientIds */
+    /**
+     * @param  list<int>|null  $clientIds
+     * @param  list<int>|null  $installationIds
+     */
     public function __construct(
         public string $name,
         public ?string $email,
@@ -17,5 +20,7 @@ final readonly class UpdateUserData
         public ?string $jobTitle = null,
         public ?string $avatarPath = null,
         public bool $regenerateSupervisorCode = false,
+        public ?string $documentNumber = null,
+        public ?array $installationIds = null,
     ) {}
 }

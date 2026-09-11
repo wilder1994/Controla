@@ -42,6 +42,15 @@ final class AllocateLoginUsername
         throw new RuntimeException('No se pudo generar un usuario único.');
     }
 
+    public function forFullName(string $fullName): string
+    {
+        $parts = preg_split('/\s+/u', trim($fullName)) ?: [];
+        $first = (string) ($parts[0] ?? '');
+        $last = count($parts) > 1 ? (string) $parts[array_key_last($parts)] : '';
+
+        return $this->forNames($first, $last);
+    }
+
     public function fromEmail(string $email): string
     {
         $local = strtolower((string) strstr($email, '@', true));
