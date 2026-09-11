@@ -195,7 +195,7 @@
 
 .index-workspace {
     display: grid;
-    grid-template-columns: minmax(280px, 360px) 1fr;
+    grid-template-columns: minmax(24rem, 32rem) minmax(0, 1fr);
     gap: 1rem;
     min-height: calc(100vh - 12rem);
 }
@@ -213,7 +213,7 @@
 
 .page-thumbs {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 0.75rem;
 }
 
@@ -233,7 +233,7 @@
     position: relative;
     display: block;
     width: 100%;
-    min-height: 10rem;
+    min-height: 16rem;
     background: #020617;
 }
 

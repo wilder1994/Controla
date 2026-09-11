@@ -619,7 +619,7 @@ function initHistoryIndexer() {
                     continue;
                 }
                 const page = await doc.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 0.28 });
+                const viewport = page.getViewport({ scale: 0.48 });
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
                 const ctx = canvas.getContext('2d', { alpha: false });

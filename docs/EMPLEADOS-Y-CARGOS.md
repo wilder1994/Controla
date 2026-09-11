@@ -122,7 +122,7 @@ No está en el Excel. En la ficha: `is_active = false` + `ceased_at`. Si tenía 
 
 `/company/documents`: mismas 6 carpetas de SJ-SIG (Historia laboral, Contratación, Certificados, Cursos, Afiliaciones, Otros). Carga por lote PDF + indexador (FPDI + pdf.js). Permiso `company.settings.manage`. Distinto de la Normoteca (`/admin/documents`).
 
-Miniaturas del lote: el worker de pdf.js es un `.mjs`. CloudPanel lo sirve como `application/octet-stream` y Chrome lo bloquea. El indexador lo vuelve a servir como blob `application/javascript`. El PDF se pide de una vez (`disableRange`), no por rangos. **Ampliar** sigue siendo el iframe nativo.
+Miniaturas del lote: el worker de pdf.js es un `.mjs`. CloudPanel lo sirve como `application/octet-stream` y Chrome lo bloquea. El indexador lo vuelve a servir como blob `application/javascript`. El PDF se pide de una vez (`disableRange`), no por rangos. **Ampliar** sigue siendo el iframe nativo. El formulario (izq.) usa `minmax(24rem, 32rem)`; las miniaturas van a ~220px (`scale` 0.48).
 
 Tablas: `employee_documents`, `employee_document_batches`. Disco: `storage/app/companies/{id}/employees/{id}/{carpeta}/`. Borrar PDF solo durante 12 h.
 

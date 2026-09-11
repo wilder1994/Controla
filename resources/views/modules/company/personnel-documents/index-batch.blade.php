@@ -55,7 +55,7 @@
                     @for ($page = 1; $page <= $batch->page_count; $page++)
                         <div class="page-thumb" data-page="{{ $page }}">
                             <button type="button" class="page-thumb-hit" data-page="{{ $page }}" aria-pressed="false" title="Página {{ $page }}">
-                                <canvas width="140" height="180" aria-hidden="true"></canvas>
+                                <canvas width="220" height="286" aria-hidden="true"></canvas>
                                 <span class="page-thumb-fallback">{{ $page }}</span>
                             </button>
                             <div class="page-thumb-bar">

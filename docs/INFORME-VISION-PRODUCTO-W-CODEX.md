@@ -366,3 +366,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Factor 1 (directorio): módulo `/company/installations` (tabla, búsqueda, ficha con código, comuna, rector = admin de instalaciones, mapa). |
 | 2026-09-11 | Instalaciones unificadas: alta en módulo y en ficha cliente; admin de sede = rol + cargo; ficha empresa con puestos; sidebar cliente **Instalaciones** (estructura dentro de la ficha). |
 | 2026-09-11 | Ficha de sede: mapa a la izquierda, datos a la derecha. Árbol: sin vehículos/mascotas si el módulo está apagado. Miniaturas del indexador: worker pdf.js como blob (MIME `.mjs` en CloudPanel). |
+| 2026-09-11 | Indexador: columna izquierda `minmax(24rem, 32rem)`; miniaturas ~220px (`scale` 0.48). |
