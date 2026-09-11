@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\ClientLifecycle;
 use App\Enums\ClientPlanTier;
 use App\Enums\PartyType;
+use App\Support\Client\ClientPanelModules;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -44,6 +45,7 @@ class Client extends Model
         'has_access',
         'has_supervision',
         'show_personnel_folders',
+        'panel_modules',
         'service_started_at',
         'service_hours',
         'revista_target_per_day',
@@ -65,6 +67,7 @@ class Client extends Model
             'has_access' => 'boolean',
             'has_supervision' => 'boolean',
             'show_personnel_folders' => 'boolean',
+            'panel_modules' => 'array',
             'service_started_at' => 'date',
             'service_hours' => 'integer',
             'revista_target_per_day' => 'integer',
@@ -135,5 +138,32 @@ class Client extends Model
     public function memberTypes(): HasMany
     {
         return $this->hasMany(MemberType::class);
+    }
+
+    public function hasDoors(): bool
+    {
+        return Location::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $this->id)
+            ->where('is_active', true)
+            ->where('type', 'access_point')
+            ->exists();
+    }
+
+    /** @return array<string, bool> */
+    public function panelModules(): array
+    {
+        return ClientPanelModules::normalized($this->panel_modules);
+    }
+
+    public function panelModuleEnabled(string $key): bool
+    {
+        $enabled = $this->panelModules()[$key] ?? false;
+
+        if ($key === ClientPanelModules::DOORS) {
+            return $enabled && $this->hasDoors();
+        }
+
+        return $enabled;
     }
 }

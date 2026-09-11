@@ -34,8 +34,7 @@ final class UserPolicy
     public function create(User $actor): bool
     {
         return $actor->can('platform.users.manage')
-            || $actor->can('company.users.assign')
-            || $actor->can('client.users.manage');
+            || $actor->can('company.users.assign');
     }
 
     public function update(User $actor, User $target): bool

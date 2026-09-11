@@ -39,6 +39,7 @@ final class AppUserController extends Controller
 
         $clientId = (int) $this->tenantContext->clientId();
         $membersQuery = StructureMember::query()
+            ->shareable()
             ->with(['structure.installation', 'structure.parent'])
             ->whereDoesntHave('appUser')
             ->where('is_active', true)

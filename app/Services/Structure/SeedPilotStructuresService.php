@@ -97,6 +97,9 @@ final class SeedPilotStructuresService
                             'structure_id' => $apartment->id,
                             'first_name' => "Persona{$memberIndex}",
                             'last_name' => 'Piloto',
+                            'document_type' => 'CC',
+                            'document_number' => $doc,
+                            'birth_date' => '1990-01-15',
                             'phone_primary' => '+57300'.str_pad((string) $memberIndex, 7, '0', STR_PAD_LEFT),
                             'email' => "persona{$memberIndex}@piloto.test",
                             'member_type_id' => $memberTypeIds[$j % 3],
@@ -132,6 +135,24 @@ final class SeedPilotStructuresService
             }
 
             $host = StructureMember::query()->where('client_id', $client->id)->first();
+            $apartment = $apartments[0] ?? null;
+            if ($apartment) {
+                StructureMember::query()->firstOrCreate(
+                    ['client_id' => $client->id, 'document_number' => '1099000001'],
+                    [
+                        'structure_id' => $apartment->id,
+                        'first_name' => 'Menor',
+                        'last_name' => 'Piloto',
+                        'document_type' => 'TI',
+                        'birth_date' => now()->subYears(12)->toDateString(),
+                        'minor_treatment_accepted_at' => now(),
+                        'member_type_id' => $memberTypeIds[2],
+                        'has_app_access' => false,
+                        'access_code' => strtoupper(Str::random(12)),
+                        'is_active' => true,
+                    ]
+                );
+            }
             if ($host) {
                 for ($k = 1; $k <= 5; $k++) {
                     VisitorPreAuthorization::query()->firstOrCreate(

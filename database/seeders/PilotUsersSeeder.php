@@ -66,6 +66,7 @@ final class PilotUsersSeeder extends Seeder
                 'is_active' => true,
                 'security_company_id' => $company?->id,
                 'primary_client_id' => $palmas->id,
+                'admin_origin' => 'external',
             ]
         );
         $clientAdmin->syncRoles(['client-admin']);

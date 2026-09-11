@@ -27,11 +27,9 @@ class OperationsController extends Controller
                 $log->hours_inside = $hoursInside;
                 $log->alert_long_stay = $hoursInside >= (int) config('access.alerts.long_stay_hours');
                 $log->person_name = $log->visitor?->full_name ?? $log->resident?->full_name ?? $log->user?->name ?? '-';
-                $log->person_doc = $log->visitor && $log->visitor->document_type
-                    ? $log->visitor->document_type.' '.$log->visitor->document_number
-                    : ($log->resident && $log->resident->document_type
-                        ? $log->resident->document_type.' '.$log->resident->document_number
-                        : '-');
+                $log->person_doc = $log->visitor
+                    ? $log->visitor->displayedDocument()
+                    : ($log->resident ? $log->resident->displayedDocument() : '-');
                 $log->person_type = $log->access_type === 'visitor_vehicle' ? 'Visitante Vehicular'
                     : ($log->access_type === 'resident_vehicle' ? 'Residente Vehicular'
                     : ($log->access_type === 'resident' ? 'Residente' : 'Visitante'));

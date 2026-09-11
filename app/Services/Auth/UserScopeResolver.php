@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
+use App\Enums\ClientAdminOrigin;
 use App\Models\Client;
 use App\Models\User;
+use App\Support\Auth\AssignableRoles;
 use App\Support\Platform\ActingCompanyResolver;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
 
 final class UserScopeResolver
@@ -54,19 +57,29 @@ final class UserScopeResolver
                 return User::query()->whereKey($actor->id);
             }
 
-            return User::query()->where(function (Builder $query) use ($actor, $clientId): void {
-                $query->whereKey($actor->id)
-                    ->orWhere(function (Builder $scoped) use ($clientId): void {
-                        $scoped->whereHas('clients', function (Builder $clientQuery) use ($clientId): void {
-                            $clientQuery->where('clients.id', $clientId);
-                        })->whereHas('roles', function (Builder $roleQuery): void {
-                            $roleQuery->whereIn('name', ['client-admin', 'client-installation-admin']);
-                        });
-                    });
-            });
+            return $this->clientPanelQuery($clientId);
         }
 
         return User::query()->whereKey($actor->id);
+    }
+
+    /** Admins externos de un cliente. No incluye personal de la empresa. */
+    public function clientPanelQuery(int $clientId): Builder
+    {
+        return User::query()
+            ->whereHas('clients', function (Builder $clientQuery) use ($clientId): void {
+                $clientQuery->where('clients.id', $clientId);
+            })
+            ->whereHas('roles', function (Builder $roleQuery): void {
+                $roleQuery->whereIn('name', AssignableRoles::clientFacingAdmins());
+            })
+            ->where(function (Builder $originQuery): void {
+                $originQuery
+                    ->where('admin_origin', ClientAdminOrigin::External->value)
+                    ->orWhere(function (Builder $legacy): void {
+                        $legacy->whereNull('admin_origin')->whereNull('employee_id');
+                    });
+            });
     }
 
     public function canManage(User $actor, User $target): bool
@@ -80,6 +93,11 @@ final class UserScopeResolver
 
     public function resolveClientTenantId(User $actor): ?int
     {
+        $tenantId = app(TenantContext::class)->clientId();
+        if ($tenantId !== null && $tenantId > 0) {
+            return $tenantId;
+        }
+
         if ($actor->primary_client_id) {
             return (int) $actor->primary_client_id;
         }

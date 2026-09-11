@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToClient;
+use App\Models\Concerns\ProtectsMinorIdentity;
+use App\Support\Privacy\MinorPersonalData;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class StructureMember extends Model
 {
-    use BelongsToClient, SoftDeletes;
+    use BelongsToClient, ProtectsMinorIdentity, SoftDeletes;
 
     protected $fillable = [
         'client_id',
@@ -21,7 +24,10 @@ final class StructureMember extends Model
         'member_type_id',
         'first_name',
         'last_name',
+        'document_type',
         'document_number',
+        'birth_date',
+        'minor_treatment_accepted_at',
         'phone_primary',
         'phone_secondary',
         'email',
@@ -35,10 +41,21 @@ final class StructureMember extends Model
     protected function casts(): array
     {
         return [
+            'birth_date' => 'date',
+            'minor_treatment_accepted_at' => 'datetime',
             'has_app_access' => 'boolean',
             'is_active' => 'boolean',
             'metadata' => 'array',
         ];
+    }
+
+    /** @param Builder<self> $query */
+    public function scopeShareable(Builder $query): Builder
+    {
+        return $query->where(function (Builder $inner): void {
+            $inner->whereNull('birth_date')
+                ->orWhereDate('birth_date', '<=', now()->subYears(MinorPersonalData::AGE_OF_MAJORITY)->toDateString());
+        });
     }
 
     public function structure(): BelongsTo

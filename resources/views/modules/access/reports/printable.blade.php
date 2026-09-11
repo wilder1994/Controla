@@ -130,7 +130,7 @@
                 <tr>
                     <td>{{ $i + 1 }}</td>
                     <td>{{ $log->visitor?->full_name ?? $log->resident?->full_name ?? $log->user?->name ?? '-' }}</td>
-                    <td>{{ $log->visitor?->document_number ?? $log->resident?->document_number ?? '-' }}</td>
+                    <td>{{ $log->visitor?->displayedDocument() ?? $log->resident?->displayedDocument() ?? '-' }}</td>
                     <td>{{ str_replace('_', ' ', $log->access_type) }}</td>
                     <td>{{ $log->housingUnit?->full_label ?? $log->location?->name ?? '-' }}</td>
                     <td>{{ $log->vehicle?->plate ?? '-' }}</td>

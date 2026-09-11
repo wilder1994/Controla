@@ -18,7 +18,7 @@
                     </div>
                     <div>
                         <p class="text-sm font-medium text-white">{{ $preAuthorization->visitor->full_name }}</p>
-                        <p class="text-xs text-slate-500">{{ $preAuthorization->visitor->document_type }} {{ $preAuthorization->visitor->document_number }}</p>
+                        <p class="text-xs text-slate-500">{{ $preAuthorization->visitor->displayedDocument() }}</p>
                     </div>
                     <span class="ml-auto inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ring-1
                         @if($preAuthorization->status == 'pending') bg-amber-900/30 text-amber-300 ring-amber-700

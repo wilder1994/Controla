@@ -72,44 +72,26 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
             ->middleware('permission:client.members.manage')
             ->name('members.update');
 
-        Route::get('/vehicles', [VehicleController::class, 'index'])
-            ->middleware('permission:client.vehicles.manage')
-            ->name('vehicles.index');
-        Route::get('/vehicles/create', [VehicleController::class, 'create'])
-            ->middleware('permission:client.vehicles.manage')
-            ->name('vehicles.create');
-        Route::post('/vehicles', [VehicleController::class, 'store'])
-            ->middleware('permission:client.vehicles.manage')
-            ->name('vehicles.store');
+        Route::middleware(['permission:client.vehicles.manage', 'client.module:vehicles'])->group(function () {
+            Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
+            Route::get('/vehicles/create', [VehicleController::class, 'create'])->name('vehicles.create');
+            Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
+        });
 
-        Route::get('/authorizations', [AuthorizationController::class, 'index'])
-            ->middleware('permission:client.authorizations.manage')
-            ->name('authorizations.index');
-        Route::get('/authorizations/create', [AuthorizationController::class, 'create'])
-            ->middleware('permission:client.authorizations.manage')
-            ->name('authorizations.create');
-        Route::post('/authorizations', [AuthorizationController::class, 'store'])
-            ->middleware('permission:client.authorizations.manage')
-            ->name('authorizations.store');
-        Route::get('/authorizations/import', [AuthorizationController::class, 'importForm'])
-            ->middleware('permission:client.authorizations.manage')
-            ->name('authorizations.import');
-        Route::post('/authorizations/import', [AuthorizationController::class, 'import'])
-            ->middleware('permission:client.authorizations.manage')
-            ->name('authorizations.import.store');
+        Route::middleware(['permission:client.authorizations.manage', 'client.module:authorizations'])->group(function () {
+            Route::get('/authorizations', [AuthorizationController::class, 'index'])->name('authorizations.index');
+            Route::get('/authorizations/create', [AuthorizationController::class, 'create'])->name('authorizations.create');
+            Route::post('/authorizations', [AuthorizationController::class, 'store'])->name('authorizations.store');
+            Route::get('/authorizations/import', [AuthorizationController::class, 'importForm'])->name('authorizations.import');
+            Route::post('/authorizations/import', [AuthorizationController::class, 'import'])->name('authorizations.import.store');
+        });
 
-        Route::get('/pets', [PetController::class, 'index'])
-            ->middleware('permission:client.pets.manage')
-            ->name('pets.index');
-        Route::get('/pets/create', [PetController::class, 'create'])
-            ->middleware('permission:client.pets.manage')
-            ->name('pets.create');
-        Route::post('/pets', [PetController::class, 'store'])
-            ->middleware('permission:client.pets.manage')
-            ->name('pets.store');
-        Route::get('/pets/{pet}', [PetController::class, 'show'])
-            ->middleware('permission:client.pets.manage')
-            ->name('pets.show');
+        Route::middleware(['permission:client.pets.manage', 'client.module:pets'])->group(function () {
+            Route::get('/pets', [PetController::class, 'index'])->name('pets.index');
+            Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
+            Route::post('/pets', [PetController::class, 'store'])->name('pets.store');
+            Route::get('/pets/{pet}', [PetController::class, 'show'])->name('pets.show');
+        });
 
         Route::get('/app-users', [AppUserController::class, 'index'])
             ->middleware('permission:client.app_users.manage')

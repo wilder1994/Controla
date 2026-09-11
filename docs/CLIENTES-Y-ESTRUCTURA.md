@@ -19,7 +19,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 | **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad 8/12/24 h y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
 | **Nodo / subnodo** | Censo (`structures`, `parent_id` + `installation_id`). Torre, salón, apto. Distinto de puesto/acceso. | Panel `/client/structures` (elige instalación) |
-| **Persona (censo)** | `structure_members` en un nodo. | Panel cliente |
+| **Persona (censo)** | `structure_members` en un nodo. Tipo de documento + fecha de nacimiento. Menores: dato reservado salvo 4 admins; portería solo nombre. | Panel cliente |
 | **Acceso de persona** | `structure_app_users` de esa persona. Login `usuario@login_suffix` para app o panel. | `/client/app-users` |
 
 La ficha corta por **objeto**, no por línea comercial. **Instalación y puesto** se editan una sola vez. Las **puertas** son otra tarjeta, solo si hay Accesos. Operar portería / operar cliente también exigen Accesos. Supervisión de campo se opera en la app y en `/company/supervision`, no en un segundo árbol.
@@ -155,13 +155,16 @@ Tipos de persona: tabla `member_types` (`client_id`, nombre, slug, activo). `str
 | `address`, `city`, `department` | Ubicación (ciudad ≠ instalación) |
 | `has_access`, `has_supervision` | Líneas de servicio (cupo) |
 | `show_personnel_folders` | Si Accesos: el cliente ve carpetas de empleados asignados a un puesto. Solo lectura. |
+| `panel_modules` | JSON opcional: `vehicles`, `pets`, `authorizations`, `doors`. Null = todos on. `doors` exige `locations` activas. |
 | `slug`, `login_suffix` | Internos; auto |
 
 Migraciones de ficha:  
 `2026_08_16_180000_add_commercial_fields_to_clients_table` ·  
 `2026_08_16_190000_add_structure_type_id_to_clients_table` ·  
 `2026_08_16_170000_create_identity_document_types_table` ·  
-`2026_09_03_144000_add_security_company_id_to_structure_types` (catálogo de tipos por empresa)
+`2026_09_03_144000_add_security_company_id_to_structure_types` (catálogo de tipos por empresa) ·  
+`2026_09_11_180000_add_panel_modules_to_clients` ·  
+`2026_09_11_200000_add_identity_and_birth_to_structure_members` (tipo de documento + fecha de nacimiento + TI/RC)
 
 ---
 
@@ -171,12 +174,28 @@ Listado `/company/clients` vacío: **«Aún no tienes clientes creados en la car
 
 Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** (si `has_access`).
 
-- Cliente: ficha + **Operar portería** / **Operar cliente** (solo Accesos), **Editar**, **Instalaciones y puestos**, **Puertas** (solo Accesos). En líneas de servicio (si Accesos): **Mostrar indexación de carpetas**.
+- Cliente: ficha + **Operar portería** / **Operar cliente** (solo Accesos), **Editar**, **Instalaciones y puestos**, **Puertas** (solo Accesos), **Gestión de módulos** (qué ve el panel del cliente).
 - Sitio: instalaciones + puestos (modalidad y vigilantes). Sin revistas aquí.
 - Puertas: `locations` de esas instalaciones.
 - Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.
 
-El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. `/client/users` son **administradores del cliente** (externos: admin cliente o admin instalaciones). Internos (empleados) se asignan en `/company/users` a uno o varios clientes. `/client/app-users` es **acceso de personas** del censo. `/client/settings/member-types` es **Ajustes** (tipos de persona; admin instalaciones solo ve). Banner al operar: **panel del cliente**.
+Sidebar del panel cliente:
+
+- **Fijos:** Resumen, Estructura, Personas, Usuarios, Accesos, Ajustes.
+- **Opcionales** (check en Gestión de módulos): Vehículos, Mascotas, Autorizaciones, **Puertas** (antes Consola portería). Puertas solo se puede activar si ya hay `locations` activas. Nav oculto y ruta 403 si está apagado. Portería de empresa (`Operar portería` / vigilante) no usa este corte.
+
+El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. Personas: tipo de documento (catálogo + TI/RC) y fecha de nacimiento; si es menor de 18, aviso Ley 1581 art. 7 / Decreto 1377 / Ley 1098, autorización del representante, sin export ni acceso de persona; en portería solo el nombre. `/client/users` lista administradores **externos** de ese cliente; **no crea** (alta en empresa o plataforma). `/client/app-users` es **Accesos** (personas del censo). `/client/settings/member-types` es **Ajustes** (tipos de persona; admin instalaciones solo ve). Banner al operar: **panel del cliente**.
+
+---
+
+## Personas del censo (menores)
+
+`structure_members` pide **tipo de documento** (`identity_document_types`: RC, TI, CC, CE, NIT, PA) y **fecha de nacimiento**. Edad &lt; 18 = menor (Ley 1098 art. 3).
+
+- Aviso en el formulario: Ley 1581 de 2012 art. 7, Decreto 1377 de 2013, Ley 1098 de 2006. Hay que marcar autorización del representante (`minor_treatment_accepted_at`).
+- Ficha completa: súper admin, admin empresa, admin cliente, admin instalaciones.
+- Portería (`/access/*`): solo el **nombre**.
+- No van al Excel de asamblea ni tienen acceso de persona (`structure_app_users`).
 
 ---
 
@@ -187,6 +206,7 @@ El panel `/client/structures` se llama **Estructura** en el nav (sin título dup
 | POST/PUT/DELETE | `/company/clients/{id}/installations` | Instalaciones (compartidas) |
 | POST/PUT/DELETE | `/company/clients/{id}/locations` | Puertas de una instalación (solo Accesos) |
 | POST/PUT/DELETE | `/company/clients/{id}/posts` | Puestos compartidos (Accesos y Supervisión) |
+| PUT | `/company/clients/{id}/modules` | Gestión de módulos del panel cliente |
 
 Permiso: `company.clients.manage`. Portería (`/access/locations`) también crea accesos, exigiendo `installation_id` del cliente activo.
 
@@ -207,6 +227,9 @@ Permiso: `company.clients.manage`. Portería (`/access/locations`) también crea
 php artisan test --filter=StructureModuleTest
 php artisan test --filter=ClientMemberTypeTest
 php artisan test --filter=ClientCensusDirectoryTest
+php artisan test --filter=ClientMemberMinorProtectionTest
+php artisan test --filter=CompanyClientExpedienteTest
+php artisan test --filter=ScopedUserManagementTest
 php artisan test --filter=PorteriaRevistaTest
 ```
 

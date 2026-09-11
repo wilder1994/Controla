@@ -37,7 +37,7 @@
                         <tr class="hover:bg-slate-800/40">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
-                                    @if($member->photo_path)
+                                    @if($member->revealsPii() && $member->photo_path)
                                         <img src="{{ Storage::url($member->photo_path) }}" alt="" class="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700">
                                     @else
                                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-700">
@@ -46,13 +46,13 @@
                                     @endif
                                     <div>
                                         <a href="{{ route('client.members.show', $member) }}" class="font-medium text-white hover:text-teal-300">{{ $member->full_name }}</a>
-                                        <p class="text-xs text-slate-500">{{ $member->document_number }}</p>
+                                        <p class="text-xs text-slate-500">{{ $member->displayedDocument() }}</p>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-4 py-3"><x-client.census-node :structure="$member->structure" /></td>
                             <td class="px-4 py-3"><span class="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-slate-700">{{ $member->memberType?->name ?? '—' }}</span></td>
-                            <td class="px-4 py-3 font-mono text-xs text-indigo-300">{{ $member->access_code }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-indigo-300">{{ $member->revealsPii() ? $member->access_code : '—' }}</td>
                             <td class="px-4 py-3">
                                 <a href="{{ route('client.members.edit', $member) }}" class="text-xs text-slate-500 hover:text-teal-400 transition-colors">Editar</a>
                             </td>

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Client;
 
+use App\Models\StructureMember;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 final class StoreAppUserRequest extends FormRequest
 {
@@ -37,5 +39,20 @@ final class StoreAppUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:8'],
             'is_active' => ['boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $id = (int) $this->input('member_id');
+            if ($id < 1) {
+                return;
+            }
+
+            $member = StructureMember::query()->find($id);
+            if ($member?->isMinor()) {
+                $validator->errors()->add('member_id', 'No se crea acceso de persona para menores de edad.');
+            }
+        });
     }
 }

@@ -12,6 +12,8 @@ final class IdentityDocumentTypeSeeder extends Seeder
     public function run(): void
     {
         $types = [
+            ['code' => 'RC', 'name' => 'Registro civil', 'sort_order' => 5],
+            ['code' => 'TI', 'name' => 'Tarjeta de identidad', 'sort_order' => 8],
             ['code' => 'CC', 'name' => 'Cédula de ciudadanía', 'sort_order' => 10],
             ['code' => 'CE', 'name' => 'Cédula de extranjería', 'sort_order' => 20],
             ['code' => 'NIT', 'name' => 'NIT', 'sort_order' => 30],

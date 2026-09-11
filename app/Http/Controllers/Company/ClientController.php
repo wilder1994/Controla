@@ -11,6 +11,7 @@ use App\Exports\ClientImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\PreviewClientImportRequest;
 use App\Http\Requests\Company\StoreClientRequest;
+use App\Http\Requests\Company\UpdateClientModulesRequest;
 use App\Http\Requests\Company\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\IdentityDocumentType;
@@ -385,6 +386,17 @@ final class ClientController extends Controller
         return redirect()
             ->route('company.clients.show', $client)
             ->with('success', 'Volviste al expediente del cliente.');
+    }
+
+    public function updateModules(UpdateClientModulesRequest $request, Client $client): RedirectResponse
+    {
+        $this->assertCompanyOwnership($request, $client);
+
+        $client->update(['panel_modules' => $request->modules()]);
+
+        return redirect()
+            ->route('company.clients.show', $client)
+            ->with('success', 'Módulos del panel cliente actualizados.');
     }
 
     private function resolveClientVista(Request $request, Client $client): string

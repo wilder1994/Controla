@@ -13,10 +13,7 @@
                     <input type="text" name="last_name" value="{{ old('last_name') }}" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
                 </div>
             </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1">Documento</label>
-                <input type="text" name="document_number" value="{{ old('document_number') }}" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-            </div>
+            @include('modules.client.members.partials.identity-fields', ['documentTypes' => $documentTypes])
             <x-client.census-node-picker
                 :installations="$installations"
                 :node-options="$nodeOptions"
@@ -47,10 +44,6 @@
                     <input type="email" name="email" value="{{ old('email') }}" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
                 </div>
             </div>
-            <label class="flex items-center gap-2 text-sm text-slate-300">
-                <input type="checkbox" name="has_app_access" value="1" class="rounded border-slate-600 bg-slate-950 text-teal-600">
-                Acceso de persona (app / panel)
-            </label>
             <button type="submit" @disabled($memberTypes->isEmpty()) class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50">Guardar y generar código de acceso</button>
         </form>
     </div>

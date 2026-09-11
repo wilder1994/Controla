@@ -265,7 +265,7 @@ Documentación: [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md). En
 |-------|-------------|
 | Plataforma | `/admin/users`, `/admin/companies/{id}/profile` |
 | Empresa | `/company/users`, `/company/settings` (Mis datos), `/company/employees` |
-| Cliente | `/client/users` (admins externos); acceso de personas en `/client/app-users` |
+| Cliente | `/client/users` (lista; no crea). Accesos (personas del censo) en `/client/app-users` |
 
 Tras desplegar permisos nuevos: `php artisan db:seed --class=RoleAndPermissionSeeder`
 
@@ -589,7 +589,7 @@ Detalle de dominio y glosario: [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y
 
 Tablas relacionadas:
 
-- `structure_members` — personas del censo + `access_code` (QR); **requieren** `structure_id`
+- `structure_members` — censo: tipo de documento, fecha de nacimiento, `access_code` (QR de adultos); **requieren** `structure_id`
 - `structure_pets` — mascotas
 - `visitor_pre_authorizations` — pre-autorizaciones con `qr_auth_token`
 - `structure_app_users` — acceso de personas del censo (`usuario@login_suffix`)
@@ -601,13 +601,13 @@ Tablas relacionadas:
 |------|--------|
 | `/client/dashboard` | Resumen |
 | `/client/structures` | Árbol de nodos por **instalación** (**Estructura**) |
-| `/client/members` | Directorio personas + QR + **Exportar listado asamblea** |
+| `/client/members` | Personas: tipo de documento + fecha de nacimiento; menores (Ley 1581) sin export; QR solo adultos |
 | `/client/pets` | Directorio de mascotas por unidad |
 | `/client/vehicles` | Directorio vehicular |
 | `/client/authorizations` | Pre-autorizaciones |
 | `/client/authorizations/import` | Import Excel (`maatwebsite/excel`) |
-| `/client/app-users` | Acceso de personas (`structure_app_users`) |
-| `/client/users` | Administradores del cliente (externos: `client-admin` o `client-installation-admin`) |
+| `/client/app-users` | Accesos — personas del censo (`structure_app_users`) |
+| `/client/users` | Lista admins externos. **No crea** (alta en `/company/users` o `/admin/users`) |
 
 ### Mascotas (`/client/pets`) — CRUD completo
 
@@ -619,12 +619,12 @@ Tablas relacionadas:
 
 ### Exportar listado asamblea (`/client/members/export`)
 
-Descarga un archivo Excel con el censo completo de personas para juntas de propietarios:
+Descarga un Excel del censo para juntas. **Excluye menores de 18 años** (Ley 1581 art. 7).
 
 - **Clase**: `MembersAssemblyExport` (maatwebsite/excel)
-- **Columnas**: Nombre completo, Documento, Tipo (propietario/inquilino), Unidad, Teléfono, Email, Acceso APP
+- **Columnas**: Nombre completo, Documento, Tipo, Nodo, Teléfono, Email, Acceso APP
 - **Ordenado**: por apellido y nombre
-- Botón `Exportar` en la vista de directorio de personas
+- Botón `Exportar` en Personas
 
 ### Servicios clave
 

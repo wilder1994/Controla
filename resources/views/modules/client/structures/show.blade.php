@@ -41,7 +41,7 @@
                                 <a href="{{ route('client.members.show', $member) }}" class="text-teal-300 hover:text-teal-200">{{ $member->full_name }}</a>
                             </td>
                             <td class="px-4 py-3 text-slate-400">{{ $member->memberType?->name }}</td>
-                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $member->document_number }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $member->displayedDocument() }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="3" class="px-4 py-6 text-slate-500">Sin personas registradas.</td></tr>

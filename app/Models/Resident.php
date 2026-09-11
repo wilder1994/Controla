@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToClient;
+use App\Models\Concerns\ProtectsMinorIdentity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Resident extends Model
 {
-    use BelongsToClient, HasFactory, SoftDeletes;
+    use BelongsToClient, HasFactory, ProtectsMinorIdentity, SoftDeletes;
 
     protected $fillable = [
         'client_id', 'user_id', 'document_type', 'document_number', 'first_name', 'last_name',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\AccessLog;
+use App\Support\Privacy\MinorPersonalData;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -43,13 +44,11 @@ final class AccessLogsExport implements FromQuery, ShouldAutoSize, WithHeadings,
     /** @param AccessLog $row */
     public function map($row): array
     {
+        $person = $row->visitor ?? $row->resident;
+
         return [
-            $row->visitor?->full_name ?? $row->resident?->full_name ?? '-',
-            $row->visitor?->document_type && $row->visitor?->document_number
-                ? $row->visitor->document_type.' '.$row->visitor->document_number
-                : ($row->resident?->document_type && $row->resident?->document_number
-                    ? $row->resident->document_type.' '.$row->resident->document_number
-                    : '-'),
+            $person?->full_name ?? '-',
+            $person?->isMinor() ? MinorPersonalData::RESERVED : ($person?->displayedDocument() ?? '-'),
             $row->access_type,
             $row->host?->name ?? '-',
             $row->location?->name ?? '-',

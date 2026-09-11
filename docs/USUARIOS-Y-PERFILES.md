@@ -32,6 +32,14 @@ Panel `/company/users`. **Crear y editar usan el mismo formulario** (`modules/co
 
 Cuentas antiguas pueden seguir entrando con `users.email` si lo tienen. Plataforma (`/admin/users`) no usa este flujo.
 
+**Quién crea usuarios**
+
+| Quién | Dónde |
+|--------|--------|
+| Súper administrador | `/admin/users` (`platform.users.manage`) |
+| Administrador empresa | `/company/users` (`company.users.assign`) |
+| Admin del cliente / admin instalaciones | **No crean.** `/client/users` solo lista y edita externos de ese cliente. |
+
 ---
 
 ## Administradores del cliente (interno / externo)
@@ -52,7 +60,7 @@ Dos líneas de externo:
 | **Administrador del cliente** | `client-admin` | Todo el panel de ese cliente |
 | **Admin instalaciones** | `client-installation-admin` | Varias instalaciones **del mismo cliente**. Censo y operación de esas sedes. **Ajustes** (tipos de persona): solo ver. **No** crea usuarios |
 
-El panel `/client/users` solo da de alta **externos** de ese cliente. Los internos se asignan en `/company/users`.
+El panel `/client/users` **lista** administradores externos de ese cliente. **No crea usuarios**: el alta queda en `/company/users` o `/admin/users`. Los internos se asignan en `/company/users`.
 
 Asignación de sedes: `client_user_installation_assignments`. El censo (estructura, personas, vehículos, mascotas, accesos de persona) se filtra a esas instalaciones.
 
@@ -66,7 +74,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 |--------------------|----------------------|-------------|---------|
 | **Vigilante** | `guardia` | Empresa | Opera **portería** de una instalación **con puertas**. Debe estar asignado a un puesto de esa instalación. Sin puertas no hay usuario de portería. |
 | **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre **puestos de Supervisión** (`supervisor_posts`). Login PWA: `users.username`. **No** se le pega zona. Firma revista en la **minuta de portería** con código **6 dígitos** (`supervisor_code`). Con Supervisión, la ronda de campo sigue en la app. API: `/api/supervision/login`. |
-| **Administrador del cliente** | `client-admin` | Cliente | Interno (empleado, 1+ clientes) o externo (1 cliente). Panel completo. |
+| **Administrador del cliente** | `client-admin` | Cliente | Interno (empleado, 1+ clientes) o externo (1 cliente). Panel del cliente; **no crea usuarios**. |
 | **Admin instalaciones** | `client-installation-admin` | Cliente | Siempre externo. Varias instalaciones del mismo cliente. Sin crear usuarios; Ajustes solo lectura. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
@@ -113,9 +121,9 @@ Slug técnico: `supervisor`. Label UI: **Supervisor de vigilancia**.
 |-------|-------|------------------------|
 | **Plataforma** | `/admin/users` | Todos los `users` y roles |
 | **Empresa** | `/company/users` | Usuarios de `security_company_id` + usuarios asignados a clientes de esa empresa |
-| **Cliente** | `/client/users` | Administradores del cliente (`client-admin`, `client-installation-admin` externos) |
+| **Cliente** | `/client/users` | Lista administradores **externos** de ese cliente. **No crea**. Alta: empresa o plataforma. |
 
-**No mezclar** con `structure_app_users` (acceso de personas del censo, `usuario@login_suffix`) — gestionados en `/client/app-users`.
+**No mezclar** con `structure_app_users` (Accesos: personas del censo, `usuario@login_suffix`) — gestionados en `/client/app-users`.
 
 ### Roles asignables
 
@@ -165,7 +173,7 @@ Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `clien
 | `platform.users.view` / `platform.users.manage` | Listado y CRUD global |
 | `company.users.assign` | CRUD usuarios en panel empresa |
 | `company.settings.manage` | Perfil legal/geo de la empresa |
-| `client.users.manage` | Administradores del cliente |
+| `client.users.manage` | Ver/editar administradores del cliente. **No** crear. |
 | `client.settings.manage` | Crear/editar tipos de persona. El admin de instalaciones no lo tiene (Ajustes solo ver) |
 
 Tras cambios en permisos:
@@ -208,10 +216,10 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 
 | Ruta | Función |
 |------|---------|
-| `GET /client/users` | Administradores del cliente |
-| `GET/POST /client/users/create` | Crear admin del cliente |
+| `GET /client/users` | Administradores del cliente (listado) |
+| `GET/POST /client/users/create` | Crear: solo empresa o plataforma (`company.users.assign` / `platform.users.manage`) |
 | `GET/PUT /client/users/{user}/edit` | Editar |
-| `GET /client/app-users` | Acceso de personas del censo |
+| `GET /client/app-users` | Accesos (personas del censo) |
 
 ---
 

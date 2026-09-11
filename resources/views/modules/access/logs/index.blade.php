@@ -85,7 +85,7 @@
                         @foreach($activeLogs as $log)
                         @php
                             $personName = $log->visitor?->full_name ?? $log->resident?->full_name ?? '-';
-                            $personDoc = $log->visitor ? $log->visitor->document_type . ' ' . $log->visitor->document_number : ($log->resident ? $log->resident->document_type . ' ' . $log->resident->document_number : '-');
+                            $personDoc = $log->visitor?->displayedDocument() ?? $log->resident?->displayedDocument() ?? '-';
                             $personType = $log->access_type == 'visitor_vehicle' ? 'Visit. Vehicular' : 'Visitante';
                             $hoursInside = $log->entry_time->diffInHours(now());
                             $destination = $log->housingUnit?->full_label ?? $log->host?->name ?? '-';

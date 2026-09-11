@@ -133,6 +133,8 @@ final class StructureModuleTest extends TestCase
             'first_name' => 'Otro',
             'last_name' => 'Cliente',
             'document_number' => '999999999',
+            'document_type' => 'CC',
+            'birth_date' => '1980-01-01',
             'member_type_id' => $type->id,
             'access_code' => 'SECRETB999',
             'is_active' => true,

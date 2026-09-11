@@ -154,7 +154,8 @@ class ResidentController extends Controller
             })
             ->where('is_active', true)
             ->take(10)
-            ->get();
+            ->get()
+            ->map(fn (Resident $resident) => $resident->porteriaIdentity());
 
         return response()->json($residents);
     }

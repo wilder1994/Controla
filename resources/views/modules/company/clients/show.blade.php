@@ -84,6 +84,9 @@
                     @endif
                 </section>
             @endif
+            @if (($canUpdate ?? false) && $client->has_access)
+                @include('modules.company.clients.partials.modules-card', ['client' => $client])
+            @endif
             <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-2">
                 <h3 class="text-sm font-semibold text-white">Líneas de servicio</h3>
                 <p class="text-sm text-slate-400">

@@ -233,6 +233,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
 
         Route::post('/clients/{client}/operate-client', [ClientController::class, 'operateClient'])
             ->name('clients.operate-client');
+        Route::put('/clients/{client}/modules', [ClientController::class, 'updateModules'])
+            ->middleware('permission:company.clients.manage')
+            ->name('clients.modules.update');
 
         Route::post('/operate/exit', [ClientController::class, 'exitOperate'])
             ->name('operate.exit');

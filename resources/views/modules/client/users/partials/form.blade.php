@@ -8,6 +8,15 @@
 @endphp
 
 <div class="space-y-4" x-data="{ role: @js($selectedRole) }">
+    @if ($errors->any())
+        <div class="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-200">
+            <ul class="list-disc pl-4 space-y-0.5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <p class="text-xs text-slate-500">Solo se dan de alta administradores <strong class="text-slate-300">externos</strong> de este cliente. Los internos (empleados) se crean en el panel empresa.</p>
 
     <div>

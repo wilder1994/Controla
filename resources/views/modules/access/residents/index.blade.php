@@ -30,7 +30,7 @@
             <tbody class="divide-y divide-slate-800">
                 @foreach($residents as $resident)
                 <tr class="hover:bg-slate-800/40">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ $resident->document_type }} {{ $resident->document_number }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ $resident->displayedDocument() }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $resident->full_name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                         @foreach($resident->housingUnits as $hu)
@@ -38,7 +38,7 @@
                         @endforeach
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ ucfirst($resident->resident_type) }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $resident->phone ?? '-' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $resident->displayedContact($resident->phone) }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         @if($resident->is_active)
                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-900/30 text-emerald-300 ring-1 ring-emerald-700">

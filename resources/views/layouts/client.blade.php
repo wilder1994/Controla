@@ -21,12 +21,18 @@
             </div>
             <nav class="flex-1 px-4 py-6 space-y-1">
                 @foreach (config('access.navigation.client.items', []) as $item)
+                    @php
+                        $module = $item['module'] ?? null;
+                        $moduleOk = $module === null || (isset($activeClient) && $activeClient->panelModuleEnabled($module));
+                    @endphp
+                    @if ($moduleOk)
                     @can($item['permission'])
                     <a href="{{ route($item['route']) }}"
                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs(str_replace('.index', '.*', $item['route'])) || request()->routeIs($item['route']) ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                         <span>{{ $item['label'] }}</span>
                     </a>
                     @endcan
+                    @endif
                 @endforeach
                 @if (isset($activeClient) && $activeClient->has_access && $activeClient->show_personnel_folders)
                 <a href="{{ route('client.personnel-documents.index') }}"
@@ -34,12 +40,6 @@
                     <span>Documentos</span>
                 </a>
                 @endif
-                @can('access.dashboard')
-                <a href="{{ route('access.dashboard') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 mt-4">
-                    <span>Consola portería</span>
-                </a>
-                @endcan
             </nav>
             <div class="px-4 py-4 border-t border-slate-800 text-xs text-slate-500 shrink-0">
                 {{ Auth::user()->name }}
@@ -67,6 +67,11 @@
                         <button type="submit" class="text-sm text-slate-400 hover:text-white">Cerrar sesión</button>
                     </form>
                 </div>
+                @isset($headerTabs)
+                    <div class="{{ $rail }} flex flex-wrap items-start gap-1.5 -mt-px pt-0 pb-3">
+                        {{ $headerTabs }}
+                    </div>
+                @endisset
             </header>
 
             <x-ui.flash-toasts :rail="$rail" />

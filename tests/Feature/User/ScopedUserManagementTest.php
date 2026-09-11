@@ -166,13 +166,15 @@ final class ScopedUserManagementTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_client_admin_can_create_another_client_admin(): void
+    public function test_client_admin_cannot_create_users(): void
     {
         $this->seedWithPilot();
 
         $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
 
-        $response = $this->actingAs($clientAdmin)->post(route('client.users.store'), [
+        $this->actingAs($clientAdmin)->get(route('client.users.create'))->assertForbidden();
+
+        $this->actingAs($clientAdmin)->post(route('client.users.store'), [
             'name' => 'Admin Extra Palmas',
             'document_number' => '1098123456',
             'job_title' => 'Administrador',
@@ -181,15 +183,9 @@ final class ScopedUserManagementTest extends TestCase
             'password_confirmation' => 'Cliente123!',
             'role' => 'client-admin',
             'is_active' => '1',
-        ]);
+        ])->assertForbidden();
 
-        $response->assertRedirect();
-        $created = User::query()->where('email', 'admin.extra@palmas.test')->firstOrFail();
-        $this->assertTrue($created->hasRole('client-admin'));
-        $this->assertSame('external', $created->admin_origin);
-        $this->assertSame('1098123456', $created->document_number);
-        $this->assertTrue($created->must_change_password);
-        $this->assertTrue($created->clients()->where('clients.id', $clientAdmin->primary_client_id)->exists());
+        $this->assertDatabaseMissing('users', ['email' => 'admin.extra@palmas.test']);
     }
 
     public function test_client_admin_cannot_create_vigilante(): void
@@ -199,7 +195,7 @@ final class ScopedUserManagementTest extends TestCase
         $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
 
         $response = $this->actingAs($clientAdmin)
-            ->from(route('client.users.create'))
+            ->from(route('client.users.index'))
             ->post(route('client.users.store'), [
                 'name' => 'Vigilante Intruso',
                 'email' => 'vigilante.intruso@palmas.test',
@@ -209,7 +205,62 @@ final class ScopedUserManagementTest extends TestCase
                 'is_active' => '1',
             ]);
 
-        $response->assertSessionHasErrors('role');
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('users', ['email' => 'vigilante.intruso@palmas.test']);
+    }
+
+    public function test_client_users_index_lists_only_external_admins_of_that_client(): void
+    {
+        $this->seedWithPilot();
+
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $companyAdmin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+        $session = [config('tenancy.session.active_client_key') => $palmas->id];
+
+        $asCompany = $this->actingAs($companyAdmin)->withSession($session)->get(route('client.users.index'));
+        $asCompany->assertOk()
+            ->assertSee('Admin Cliente Palmas', false)
+            ->assertSee('Administrador del cliente', false)
+            ->assertDontSee('Administrador empresa', false)
+            ->assertDontSee('empresa@sj-seguridad.test', false)
+            ->assertDontSee('guardia@control-acceso.test', false);
+
+        $this->actingAs($companyAdmin)->withSession($session)
+            ->get(route('client.users.edit', $companyAdmin))
+            ->assertForbidden();
+
+        $asClient = $this->actingAs($clientAdmin)->withSession($session)->get(route('client.users.index'));
+        $asClient->assertOk()
+            ->assertSee('Admin Cliente Palmas', false)
+            ->assertDontSee('Administrador empresa', false);
+    }
+
+    public function test_company_admin_operating_client_can_create_external_admin(): void
+    {
+        $this->seedWithPilot();
+
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $companyAdmin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $response = $this->actingAs($companyAdmin)
+            ->withSession([config('tenancy.session.active_client_key') => $palmas->id])
+            ->post(route('client.users.store'), [
+                'name' => 'Admin Prueba Palmas',
+                'document_number' => '1098000777',
+                'job_title' => 'Administrador',
+                'email' => 'admin.prueba@palmas.test',
+                'password' => 'Cliente123!',
+                'password_confirmation' => 'Cliente123!',
+                'role' => 'client-admin',
+                'is_active' => '1',
+            ]);
+
+        $created = User::query()->where('email', 'admin.prueba@palmas.test')->firstOrFail();
+        $response->assertRedirect(route('client.users.edit', $created));
+        $this->assertTrue($created->hasRole('client-admin'));
+        $this->assertSame('external', $created->admin_origin);
+        $this->assertTrue($created->clients()->where('clients.id', $palmas->id)->exists());
     }
 
     public function test_company_can_assign_internal_client_admin_to_several_clients(): void
@@ -259,6 +310,13 @@ final class ScopedUserManagementTest extends TestCase
         $this->assertTrue($created->hasRole('client-admin'));
         $this->assertSame('internal', $created->admin_origin);
         $this->assertEqualsCanonicalizing([$palmas->id, $torres->id], $created->clients()->pluck('clients.id')->all());
+
+        $this->actingAs($admin)
+            ->withSession([config('tenancy.session.active_client_key') => $palmas->id])
+            ->get(route('client.users.index'))
+            ->assertOk()
+            ->assertDontSee('carlos.interno.1099', false)
+            ->assertDontSee('carlos.interno@sj-seguridad.test', false);
     }
 
     public function test_company_can_create_external_installation_admin(): void
@@ -299,6 +357,13 @@ final class ScopedUserManagementTest extends TestCase
         $this->assertFalse($created->can('client.settings.manage'));
 
         $created->update(['must_change_password' => false]);
+
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $palmas->id])
+            ->get(route('client.users.index'))
+            ->assertOk()
+            ->assertSee('Laura Sede', false)
+            ->assertSee('Admin instalaciones', false);
 
         $this->actingAs($created)
             ->withSession(['tenancy.active_client_id' => $palmas->id])

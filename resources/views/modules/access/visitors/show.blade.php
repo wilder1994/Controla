@@ -10,7 +10,7 @@
 
     <div class="bg-slate-900 rounded-xl border border-slate-800 p-6">
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><dt class="text-sm font-medium text-slate-500">Documento</dt><dd class="mt-1 text-sm text-white">{{ $visitor->document_type }} {{ $visitor->document_number }}</dd></div>
+            <div><dt class="text-sm font-medium text-slate-500">Documento</dt><dd class="mt-1 text-sm text-white">{{ $visitor->displayedDocument() }}</dd></div>
             <div><dt class="text-sm font-medium text-slate-500">Teléfono</dt><dd class="mt-1 text-sm text-white">{{ $visitor->phone ?? '-' }}</dd></div>
             <div><dt class="text-sm font-medium text-slate-500">Email</dt><dd class="mt-1 text-sm text-white">{{ $visitor->email ?? '-' }}</dd></div>
             <div><dt class="text-sm font-medium text-slate-500">Empresa</dt><dd class="mt-1 text-sm text-white">{{ $visitor->company ?? '-' }}</dd></div>

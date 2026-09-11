@@ -22,7 +22,7 @@ use App\Http\Controllers\Access\AuditController;
 use App\Http\Controllers\Access\ZoneController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access'])->prefix('access')->name('access.')->group(function () {
+Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'client.module:doors'])->prefix('access')->name('access.')->group(function () {
     // Operations Hub
     Route::get('/operations', [OperationsController::class, 'index'])->name('operations');
 

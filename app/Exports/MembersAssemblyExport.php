@@ -19,6 +19,7 @@ final class MembersAssemblyExport implements FromQuery, ShouldAutoSize, WithHead
     public function query()
     {
         return StructureMember::query()
+            ->shareable()
             ->with(['structure.installation', 'memberType'])
             ->where('client_id', $this->clientId)
             ->orderBy('last_name')

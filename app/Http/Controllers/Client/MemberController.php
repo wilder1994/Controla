@@ -8,6 +8,7 @@ use App\Domain\Structure\Data\CreateMemberData;
 use App\Exports\MembersAssemblyExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreMemberRequest;
+use App\Models\IdentityDocumentType;
 use App\Models\MemberType;
 use App\Models\Structure;
 use App\Models\StructureMember;
@@ -71,6 +72,7 @@ final class MemberController extends Controller
             'installations' => $picker['installations'],
             'nodeOptions' => $picker['nodeOptions'],
             'memberTypes' => $memberTypes,
+            'documentTypes' => IdentityDocumentType::optionsForSelect(),
             'installationId' => $installationId,
             'structureId' => $structureId,
         ]);
@@ -91,13 +93,16 @@ final class MemberController extends Controller
             memberTypeId: (int) $request->validated('member_type_id'),
             firstName: $request->validated('first_name'),
             lastName: $request->validated('last_name'),
+            documentType: $request->validated('document_type'),
             documentNumber: $request->validated('document_number'),
+            birthDate: $request->validated('birth_date'),
             phonePrimary: $request->validated('phone_primary'),
             phoneSecondary: $request->validated('phone_secondary'),
             email: $request->validated('email'),
-            hasAppAccess: $request->boolean('has_app_access'),
+            hasAppAccess: $request->isMinor() ? false : $request->boolean('has_app_access'),
             isActive: $request->boolean('is_active', true),
             photoPath: $photoPath,
+            minorTreatmentAcceptedAt: $request->minorAcceptedAt(),
         ));
 
         return redirect()
@@ -139,6 +144,7 @@ final class MemberController extends Controller
             'installations' => $picker['installations'],
             'nodeOptions' => $picker['nodeOptions'],
             'memberTypes' => $memberTypes,
+            'documentTypes' => IdentityDocumentType::optionsForSelect(),
             'installationId' => $installationId,
             'structureId' => $structureId,
         ]);
@@ -153,11 +159,14 @@ final class MemberController extends Controller
             'member_type_id' => (int) $request->validated('member_type_id'),
             'first_name' => $request->validated('first_name'),
             'last_name' => $request->validated('last_name'),
+            'document_type' => $request->validated('document_type'),
             'document_number' => $request->validated('document_number'),
+            'birth_date' => $request->validated('birth_date'),
+            'minor_treatment_accepted_at' => $request->isMinor() ? $request->minorAcceptedAt() : null,
             'phone_primary' => $request->validated('phone_primary'),
             'phone_secondary' => $request->validated('phone_secondary'),
             'email' => $request->validated('email'),
-            'has_app_access' => $request->boolean('has_app_access'),
+            'has_app_access' => $request->isMinor() ? false : $request->boolean('has_app_access'),
             'is_active' => $request->boolean('is_active', true),
         ];
 

@@ -103,7 +103,7 @@
                     @php
                         $person = $log->visitor ?? $log->resident;
                         $personName = $person?->full_name ?? '-';
-                        $personDoc = $person && $person->document_type ? $person->document_type . ' ' . $person->document_number : '-';
+                        $personDoc = $person?->displayedDocument() ?? '-';
                     @endphp
                     <tr class="hover:bg-slate-800/40 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ $personName }}</td>

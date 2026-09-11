@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\DisableTenantScoping;
 use App\Http\Middleware\EnsureClientAdmin;
+use App\Http\Middleware\EnsureClientPanelModule;
 use App\Http\Middleware\EnsureCompanyUser;
 use App\Http\Middleware\EnsureOpenShift;
 use App\Http\Middleware\EnsurePasswordIsChanged;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.unscoped' => DisableTenantScoping::class,
             'company' => EnsureCompanyUser::class,
             'client.admin' => EnsureClientAdmin::class,
+            'client.module' => EnsureClientPanelModule::class,
             'platform.admin' => EnsurePlatformAdmin::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,

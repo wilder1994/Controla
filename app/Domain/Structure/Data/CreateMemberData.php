@@ -12,12 +12,15 @@ final readonly class CreateMemberData
         public int $memberTypeId,
         public string $firstName,
         public string $lastName,
+        public string $documentType,
         public string $documentNumber,
+        public string $birthDate,
         public ?string $phonePrimary = null,
         public ?string $phoneSecondary = null,
         public ?string $email = null,
         public bool $hasAppAccess = false,
         public bool $isActive = true,
         public ?string $photoPath = null,
+        public ?string $minorTreatmentAcceptedAt = null,
     ) {}
 }

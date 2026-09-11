@@ -38,13 +38,19 @@ final class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         $search = $request->string('q')->trim()->toString();
-        $users = $this->userRepository->paginateScoped(
-            $request->user(),
+        $status = $request->string('status')->toString();
+        if (! in_array($status, ['active', 'inactive'], true)) {
+            $status = 'active';
+        }
+
+        $users = $this->userRepository->paginateClientPanel(
+            $this->requireClientId(),
             15,
             $search !== '' ? $search : null,
+            $status,
         );
 
-        return view('modules.client.users.index', compact('users', 'search'));
+        return view('modules.client.users.index', compact('users', 'search', 'status'));
     }
 
     public function create(): View
@@ -67,7 +73,7 @@ final class UserController extends Controller
                 password: $request->validated('password'),
                 role: $request->validated('role'),
                 securityCompanyId: null,
-                clientIds: [],
+                clientIds: [$this->requireClientId()],
                 isActive: $request->boolean('is_active', true),
                 jobTitle: $request->validated('job_title'),
                 avatarPath: UserAvatarUploader::store($request->file('avatar')),
@@ -88,6 +94,7 @@ final class UserController extends Controller
     public function edit(User $user): View
     {
         $this->authorize('update', $user);
+        $this->assertClientPanelUser($user);
 
         $user->load(['roles', 'clients', 'assignedInstallations']);
 
@@ -100,6 +107,8 @@ final class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $this->assertClientPanelUser($user);
+
         $this->manageUserService->update(
             $user,
             new UpdateUserData(
@@ -121,6 +130,19 @@ final class UserController extends Controller
         return redirect()
             ->route('client.users.edit', $user)
             ->with('success', 'Usuario actualizado.');
+    }
+
+    private function requireClientId(): int
+    {
+        $clientId = (int) $this->tenantContext->clientId();
+        abort_unless($clientId > 0, 403);
+
+        return $clientId;
+    }
+
+    private function assertClientPanelUser(User $user): void
+    {
+        abort_unless($this->userRepository->isClientPanelUser($user, $this->requireClientId()), 403);
     }
 
     /** @return Collection<int, Installation> */

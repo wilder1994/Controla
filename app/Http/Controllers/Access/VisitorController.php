@@ -117,7 +117,8 @@ class VisitorController extends Controller
             ->orWhere('first_name', 'like', "%{$query}%")
             ->orWhere('last_name', 'like', "%{$query}%")
             ->take(10)
-            ->get(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']);
+            ->get(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company', 'birth_date'])
+            ->map(fn (Visitor $visitor) => $visitor->porteriaIdentity());
 
         return response()->json($visitors);
     }
@@ -142,7 +143,7 @@ class VisitorController extends Controller
                 'blocked' => true,
                 'reason' => $entry->reason,
                 'message' => '🚫 Acceso denegado por lista de bloqueo.',
-                'visitor' => $visitor->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
+                'visitor' => $visitor->porteriaIdentity(),
             ];
         };
 
@@ -159,7 +160,7 @@ class VisitorController extends Controller
 
             return response()->json([
                 'found' => true,
-                'visitor' => $visitor->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
+                'visitor' => $visitor->porteriaIdentity(),
             ]);
         }
 
@@ -204,7 +205,7 @@ class VisitorController extends Controller
 
         return response()->json([
             'found' => false,
-            'visitor' => $visitor->only(['id', 'document_type', 'document_number', 'first_name', 'last_name', 'company']),
+            'visitor' => $visitor->porteriaIdentity(),
         ]);
     }
 }

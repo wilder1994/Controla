@@ -17,7 +17,7 @@
                 <dl class="space-y-3">
                     <div>
                         <dt class="text-xs text-slate-500 uppercase">Documento</dt>
-                        <dd class="text-sm font-medium text-white">{{ $resident->document_type }} {{ $resident->document_number }}</dd>
+                        <dd class="text-sm font-medium text-white">{{ $resident->displayedDocument() }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs text-slate-500 uppercase">Nombre</dt>
@@ -25,11 +25,11 @@
                     </div>
                     <div>
                         <dt class="text-xs text-slate-500 uppercase">Teléfono</dt>
-                        <dd class="text-sm text-slate-400">{{ $resident->phone ?? '-' }}</dd>
+                        <dd class="text-sm text-slate-400">{{ $resident->displayedContact($resident->phone) }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs text-slate-500 uppercase">Email</dt>
-                        <dd class="text-sm text-slate-400">{{ $resident->email ?? '-' }}</dd>
+                        <dd class="text-sm text-slate-400">{{ $resident->displayedContact($resident->email) }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs text-slate-500 uppercase">Tipo</dt>

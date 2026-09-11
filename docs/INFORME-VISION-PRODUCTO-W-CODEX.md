@@ -294,3 +294,5 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Alta de nodo sin código visible: `code` interno (slug, `-2` si choca, prefijo del padre). Panel ancho: árbol + **Crear dentro de** indentado; **+** en el nodo. |
 | 2026-09-11 | Administradores del cliente interno (empleado, 1+ clientes) o externo (ficha propia, 1 cliente). Línea **Admin instalaciones**: varias sedes del mismo cliente; Ajustes solo ver; no crea usuarios. |
 | 2026-09-11 | `/company/users`: pestañas Activos/Desactivados en el header; foto circular; Cliente + Instalaciones en una fila con filtro. |
+| 2026-09-11 | Ficha cliente: tarjeta **Gestión de módulos**. Sidebar fijo (Resumen, Estructura, Personas, Usuarios, Accesos, Ajustes) y opcional (Vehículos, Mascotas, Autorizaciones, Puertas). |
+| 2026-09-11 | Alta de usuarios solo súper admin y admin empresa. Personas: tipo de documento (TI/RC) + fecha de nacimiento. Menores: Ley 1581 art. 7; portería solo nombre; sin export. |

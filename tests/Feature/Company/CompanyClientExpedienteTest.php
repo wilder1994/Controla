@@ -48,6 +48,7 @@ final class CompanyClientExpedienteTest extends TestCase
         $response->assertSee('Instalaciones y puestos');
         $response->assertSee('Puertas');
         $response->assertSee('Ficha comercial');
+        $response->assertSee('Gestión de módulos');
         $response->assertSee('← Cartera');
 
         $resumen = $this->actingAs($user)->get(route('company.clients.show', [$client, 'vista' => 'resumen']));
@@ -160,5 +161,103 @@ final class CompanyClientExpedienteTest extends TestCase
 
         $exit->assertRedirect(route('company.clients.show', $client));
         $this->assertNull(CompanyOperateContext::clientId());
+    }
+
+    public function test_company_can_turn_off_optional_client_modules(): void
+    {
+        $this->seedWithPilot();
+
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $session = [
+            config('tenancy.session.active_client_key') => $client->id,
+            CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+            CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_CLIENTE,
+        ];
+
+        $this->actingAs($user)->put(route('company.clients.modules.update', $client), [
+            'modules' => [
+                'vehicles' => '0',
+                'pets' => '1',
+                'authorizations' => '0',
+                'doors' => '1',
+            ],
+        ])->assertRedirect(route('company.clients.show', $client));
+
+        $client->refresh();
+        $this->assertFalse($client->panelModuleEnabled('vehicles'));
+        $this->assertTrue($client->panelModuleEnabled('pets'));
+        $this->assertFalse($client->panelModuleEnabled('authorizations'));
+        $this->assertTrue($client->panelModuleEnabled('doors'));
+
+        $this->actingAs($user)->withSession($session)->get(route('client.vehicles.index'))->assertForbidden();
+        $this->actingAs($user)->withSession($session)->get(route('client.authorizations.index'))->assertForbidden();
+        $this->actingAs($user)->withSession($session)->get(route('client.pets.index'))->assertOk();
+
+        $this->actingAs($user)->withSession($session)->get(route('client.dashboard'))
+            ->assertOk()
+            ->assertDontSee('>Vehículos</', false)
+            ->assertDontSee('Autorizaciones')
+            ->assertSee('Personas')
+            ->assertSee('Usuarios')
+            ->assertSee('Accesos')
+            ->assertSee('Puertas')
+            ->assertDontSee('Consola portería');
+    }
+
+    public function test_doors_module_stays_off_when_client_has_no_doors(): void
+    {
+        $this->seedWithPilot();
+
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $client->locations()->update(['is_active' => false]);
+
+        $this->actingAs($user)->put(route('company.clients.modules.update', $client), [
+            'modules' => [
+                'vehicles' => '1',
+                'pets' => '1',
+                'authorizations' => '1',
+                'doors' => '1',
+            ],
+        ])->assertRedirect();
+
+        $this->assertFalse($client->fresh()->panelModuleEnabled('doors'));
+        $this->assertFalse($client->fresh()->panel_modules['doors']);
+    }
+
+    public function test_doors_module_blocks_client_admin_but_not_vigilante(): void
+    {
+        $this->seedWithPilot();
+
+        $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+        $vigilante = User::query()->where('email', 'guardia@control-acceso.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $tenancy = [config('tenancy.session.active_client_key') => $client->id];
+
+        $this->actingAs($company)->put(route('company.clients.modules.update', $client), [
+            'modules' => [
+                'vehicles' => '1',
+                'pets' => '1',
+                'authorizations' => '1',
+                'doors' => '0',
+            ],
+        ])->assertRedirect();
+
+        $this->assertFalse($client->fresh()->panelModuleEnabled('doors'));
+
+        $this->actingAs($clientAdmin)->withSession($tenancy)->get(route('access.dashboard'))->assertForbidden();
+        $this->actingAs($vigilante)->withSession($tenancy)->get(route('access.dashboard'))->assertOk();
+
+        $this->actingAs($company)->withSession($tenancy + [
+            CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+            CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_PORTERIA,
+        ])->get(route('access.dashboard'))->assertOk();
+
+        $this->actingAs($company)->withSession($tenancy + [
+            CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+            CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_CLIENTE,
+        ])->get(route('access.dashboard'))->assertForbidden();
     }
 }
