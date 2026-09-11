@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ColombianAreaKind;
 use App\Models\Concerns\BelongsToClient;
+use App\Support\Geo\ColombianArea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -21,6 +23,7 @@ final class Installation extends Model
         'name',
         'code',
         'commune',
+        'area_kind',
         'rector_user_id',
         'is_client_site',
         'is_active',
@@ -91,6 +94,17 @@ final class Installation extends Model
     public function siteAdminLabel(): string
     {
         return \App\Support\Company\InstallationSiteAdmins::label($this->rector);
+    }
+
+    public function areaKind(): ColombianAreaKind
+    {
+        return ColombianAreaKind::tryFrom((string) $this->area_kind)
+            ?? ColombianArea::classify($this->commune, $this->city);
+    }
+
+    public function areaKindLabel(): string
+    {
+        return $this->areaKind()->label();
     }
 
     public function assignedAdmins(): BelongsToMany

@@ -55,7 +55,7 @@ final class StoreClientInstallationRequest extends FormRequest
         return [
             'name' => 'nombre',
             'code' => 'código',
-            'commune' => 'comuna',
+            'commune' => 'área',
             'rector_user_id' => 'admin de sede',
             'is_client_site' => 'la instalación es el mismo cliente',
             'address' => 'dirección',

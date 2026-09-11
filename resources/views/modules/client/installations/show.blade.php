@@ -27,7 +27,7 @@
                         <dd class="font-mono text-teal-300">{{ $installation->code ?: '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-slate-500">Comuna</dt>
+                        <dt class="text-xs text-slate-500">{{ $installation->areaKindLabel() }}</dt>
                         <dd class="text-slate-200">{{ $installation->commune ?: '—' }}</dd>
                     </div>
                     <div>

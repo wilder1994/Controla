@@ -14,7 +14,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 |---------|-------------|--------|
 | **Cliente** | Ficha comercial (`clients`). PH, oficinas, bodegas, etc. | Alta / Excel de **clientes** / pestaña Cliente |
 | **Ciudad** | Ubicación del cliente (`clients.city` + `department`). **No es un nodo del árbol.** Lo que en el Excel viejo de empleados decía «Sector» era ciudad. | Ficha y Excel de clientes |
-| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Código, comuna y **admin de sede** (rol admin instalaciones + cargo: rector, auxiliar…). Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Módulo `/company/installations` · `/client/installations` · ficha del cliente |
+| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Código, **área** (comuna, localidad, vereda o corregimiento, si aplica) y **admin de sede**. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Módulo `/company/installations` · `/client/installations` · ficha del cliente |
 | **Puerta** | Punto de portería (peatonal, vehicular, principal). Tabla `locations` (`type = access_point`). Solo Accesos. **No** es un puesto. | Tarjeta **Puertas** |
 | **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad 8/12/24 h y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
@@ -47,7 +47,7 @@ Instalaciones las crea **solo la empresa**, en `/company/installations` (con cli
 
 ## Directorio de instalaciones
 
-`/company/installations`: tabla, buscador y **Crear** (siempre con cliente). La ficha: mapa a la izquierda, datos (código, comuna, **admin de sede**) a la derecha. También puestos (modalidad + empleados). El alta también se puede hacer en la ficha del cliente. El admin de sede es un `client-installation-admin`; al asignarlo queda amarrado a esa sede. El código se genera si no se escribe. El panel cliente tiene el mismo directorio (sin crear) y el árbol de nodos en la ficha.
+`/company/installations`: tabla, buscador y **Crear** (siempre con cliente). La ficha: mapa a la izquierda, datos (código, área, **admin de sede**) a la derecha. El área sale de Places/geocoder: comuna (Cali, Medellín…), localidad (Bogotá), vereda o corregimiento si el nombre lo dice. En un pueblo sin subdivisión no se guarda. El campo se puede corregir a mano (`installations.commune` + `area_kind`). También puestos (modalidad + empleados). El alta también se puede hacer en la ficha del cliente. El admin de sede es un `client-installation-admin`; al asignarlo queda amarrado a esa sede. El código se genera si no se escribe. El panel cliente tiene el mismo directorio (sin crear) y el árbol de nodos en la ficha.
 
 ## Árbol del sitio (tarjeta Instalaciones y puestos)
 
@@ -208,7 +208,7 @@ El panel `/client/installations` es el directorio de sedes (tabla + ficha). En l
 | Método | Ruta | Uso |
 |--------|------|-----|
 | GET | `/company/installations` | Directorio: tabla, búsqueda, crear, ficha |
-| GET/PUT | `/company/installations/{id}` | Ficha / editar (código, comuna, admin de sede, mapa, puestos) |
+| GET/PUT | `/company/installations/{id}` | Ficha / editar (código, área, admin de sede, mapa, puestos) |
 | GET | `/client/installations` | Directorio del cliente (admin cliente: todas; admin sede: las suyas) |
 | GET | `/client/installations/{id}` | Ficha + estructura (nodos). Sin alta de sede ni puestos |
 | POST/PUT/DELETE | `/company/clients/{id}/installations` | Alta rápida en el árbol del cliente |

@@ -10,6 +10,7 @@ use App\Models\ClientUserInstallationAssignment;
 use App\Models\Installation;
 use App\Models\User;
 use App\Support\Auth\AssignableRoles;
+use App\Support\Geo\ColombianArea;
 use Illuminate\Validation\ValidationException;
 
 final class ManageClientInstallationService
@@ -27,14 +28,16 @@ final class ManageClientInstallationService
             $this->clearClientSiteFlag($client);
         }
 
+        $geo = $this->geoAttributes($client, $isClientSite, $data['geo'] ?? null);
+        $area = $this->areaAttributes($data['commune'] ?? null, $geo['city'] ?? $client->city);
+
         $installation = Installation::query()->create(array_merge([
             'client_id' => $client->id,
             'name' => $name,
             'code' => $this->resolveCode($client, $data['code'] ?? null),
-            'commune' => $this->nullableString($data['commune'] ?? null),
             'is_client_site' => $isClientSite,
             'is_active' => (bool) ($data['is_active'] ?? true),
-        ], $this->geoAttributes($client, $isClientSite, $data['geo'] ?? null)));
+        ], $geo, $area));
 
         $this->syncRector($installation, isset($data['rector_user_id']) ? (int) $data['rector_user_id'] ?: null : null);
 
@@ -73,11 +76,12 @@ final class ManageClientInstallationService
             $installation->code = $this->resolveCode($client, $data['code'] ?? null, $installation->id);
         }
 
+        $installation->fill($this->geoAttributes($client, $isClientSite, $data['geo'] ?? null));
+
         if (array_key_exists('commune', $data)) {
-            $installation->commune = $this->nullableString($data['commune'] ?? null);
+            $installation->fill($this->areaAttributes($data['commune'] ?? null, $installation->city));
         }
 
-        $installation->fill($this->geoAttributes($client, $isClientSite, $data['geo'] ?? null));
         $installation->save();
 
         if (array_key_exists('rector_user_id', $data)) {
@@ -204,6 +208,16 @@ final class ManageClientInstallationService
         ]);
 
         $installation->save();
+    }
+
+    private function areaAttributes(mixed $commune, mixed $city): array
+    {
+        $kind = ColombianArea::classify(is_string($commune) ? $commune : null, is_string($city) ? $city : null);
+
+        return [
+            'commune' => ColombianArea::persistableValue(is_string($commune) ? $commune : null, is_string($city) ? $city : null),
+            'area_kind' => $kind->value,
+        ];
     }
 
     private function nullableString(mixed $value): ?string

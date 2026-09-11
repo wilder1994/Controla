@@ -64,6 +64,7 @@ final class CompanyInstallationDirectoryTest extends TestCase
         $installation = Installation::query()->where('name', 'INEM Jorge Isaacs')->firstOrFail();
         $this->assertSame('INE-01', $installation->code);
         $this->assertSame('Comuna 17', $installation->commune);
+        $this->assertSame('comuna', $installation->area_kind);
         $this->assertSame((int) $rector->id, (int) $installation->rector_user_id);
         $this->assertTrue($rector->assignedInstallations()->where('installations.id', $installation->id)->exists());
 
@@ -76,6 +77,28 @@ final class CompanyInstallationDirectoryTest extends TestCase
             ->assertSee($rector->name, false)
             ->assertSee('Admin de sede', false)
             ->assertSee('Puestos', false);
+    }
+
+    public function test_company_drops_barrio_when_area_does_not_apply(): void
+    {
+        [$admin, $client] = $this->palmas();
+
+        $this->actingAs($admin)
+            ->post(route('company.installations.store'), [
+                'client_id' => $client->id,
+                'name' => 'Sede Jamundí',
+                'commune' => 'Centro',
+                'address' => 'Calle 10 # 1-20',
+                'city' => 'Jamundí',
+                'department' => 'Valle del Cauca',
+                'latitude' => '3.2600000',
+                'longitude' => '-76.5400000',
+            ])
+            ->assertRedirect();
+
+        $installation = Installation::query()->where('name', 'Sede Jamundí')->firstOrFail();
+        $this->assertNull($installation->commune);
+        $this->assertSame('none', $installation->area_kind);
     }
 
     public function test_guard_cannot_open_directory(): void

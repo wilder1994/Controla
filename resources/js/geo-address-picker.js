@@ -1,3 +1,5 @@
+import { pickArea, classifyArea } from './colombian-area';
+
 window.__geoMapsLoader = window.__geoMapsLoader || null;
 
 function loadGoogleMapsPlaces(apiKey) {
@@ -30,10 +32,13 @@ function parsePlaceComponents(components) {
     const route = get('route');
     const number = get('street_number');
     const address = [route, number].filter(Boolean).join(' ') || '';
-    const city = get('locality') || get('administrative_area_level_2') || get('sublocality') || '';
+    const locality = get('locality') || get('administrative_area_level_2') || '';
+    const sublocality = get('sublocality') || '';
+    const city = locality || (classifyArea(sublocality, '') === 'none' ? sublocality : '') || '';
     const department = get('administrative_area_level_1') || '';
+    const area = pickArea(components, city);
 
-    return { address, city, department };
+    return { address, city, department, area: area.name, areaKind: area.kind };
 }
 
 window.geoAddressPicker = function geoAddressPicker(config) {
@@ -53,6 +58,8 @@ window.geoAddressPicker = function geoAddressPicker(config) {
         draftAddress: '',
         draftCity: '',
         draftDepartment: '',
+        draftArea: '',
+        draftAreaKind: 'none',
         draftLabel: '',
 
         async openMap() {
@@ -62,6 +69,8 @@ window.geoAddressPicker = function geoAddressPicker(config) {
             this.draftAddress = this.address || '';
             this.draftCity = this.city || '';
             this.draftDepartment = this.department || '';
+            this.draftArea = '';
+            this.draftAreaKind = 'none';
             this.draftLabel = this.address || '';
             await this.$nextTick();
             if (!this.maps.apiKey) {
@@ -136,6 +145,8 @@ window.geoAddressPicker = function geoAddressPicker(config) {
                     this.draftAddress = parsed.address || place.formatted_address || place.name || '';
                     this.draftCity = parsed.city;
                     this.draftDepartment = parsed.department;
+                    this.draftArea = parsed.area;
+                    this.draftAreaKind = parsed.areaKind;
                     this.draftLabel = place.formatted_address || place.name || this.draftAddress;
                 });
             }
@@ -158,6 +169,8 @@ window.geoAddressPicker = function geoAddressPicker(config) {
                 this.draftAddress = parsed.address || results[0].formatted_address || this.draftAddress;
                 this.draftCity = parsed.city || this.draftCity;
                 this.draftDepartment = parsed.department || this.draftDepartment;
+                this.draftArea = parsed.area;
+                this.draftAreaKind = parsed.areaKind;
                 this.draftLabel = results[0].formatted_address || this.draftLabel;
             });
         },
@@ -177,6 +190,13 @@ window.geoAddressPicker = function geoAddressPicker(config) {
             if (this.draftDepartment) {
                 this.department = this.draftDepartment;
             }
+            this.$dispatch('geo-place', {
+                city: this.city,
+                department: this.department,
+                address: this.address,
+                area: this.draftArea,
+                areaKind: this.draftAreaKind,
+            });
             this.closeMap();
         },
     };

@@ -85,9 +85,16 @@
             <x-ui.input id="code" name="code" :value="old('code', $installation?->code)" placeholder="Se genera si lo dejas vacío" />
             <x-ui.field-error :messages="$errors->get('code')" />
         </div>
-        <div>
-            <x-ui.label for="commune">Comuna</x-ui.label>
-            <x-ui.input id="commune" name="commune" :value="old('commune', $installation?->commune)" />
+        <div
+            x-data="installationAreaFields({
+                commune: @js(old('commune', $installation?->commune ?? '')),
+                city: @js(old('city', $installation?->city ?? '')),
+            })"
+            @geo-place.window="applyPlace($event.detail)"
+        >
+            <x-ui.label for="commune" x-text="areaLabel">Comuna</x-ui.label>
+            <x-ui.input id="commune" name="commune" x-model="commune" @input="refreshKind()" placeholder="Se llena con el mapa" />
+            <p class="mt-1 text-[11px] text-slate-500" x-text="areaHint"></p>
             <x-ui.field-error :messages="$errors->get('commune')" />
         </div>
     </div>
