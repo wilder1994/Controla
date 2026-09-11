@@ -6,6 +6,7 @@
         </div>
         <form action="{{ route('client.members.update', $member) }}" method="POST" enctype="multipart/form-data" class="space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-6">
             @csrf @method('PUT')
+            <x-client.member-photo-picker :preview-url="$member->photo_path ? Storage::url($member->photo_path) : null" />
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Nombres</label>
@@ -20,21 +21,20 @@
                 <label class="block text-xs text-slate-400 mb-1">Documento</label>
                 <input type="text" name="document_number" value="{{ old('document_number', $member->document_number) }}" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
             </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1">Nodo de estructura</label>
-                <select name="structure_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                    @foreach ($structures as $structure)
-                        <option value="{{ $structure->id }}" @selected(old('structure_id', $member->structure_id) == $structure->id)>{{ $structure->full_path }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <x-client.census-node-picker
+                :installations="$installations"
+                :node-options="$nodeOptions"
+                :installation-id="$installationId"
+                :structure-id="$structureId"
+            />
             <div>
                 <label class="block text-xs text-slate-400 mb-1">Tipo</label>
-                <select name="member_type" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                    @foreach ($memberTypes as $value => $label)
-                        <option value="{{ $value }}" @selected(old('member_type', $member->member_type->value) == $value)>{{ $label }}</option>
+                <select name="member_type_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+                    @foreach ($memberTypes as $type)
+                        <option value="{{ $type->id }}" @selected((string) old('member_type_id', $member->member_type_id) === (string) $type->id)>{{ $type->name }}</option>
                     @endforeach
                 </select>
+                @error('member_type_id')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
             </div>
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -44,15 +44,6 @@
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Email</label>
                     <input type="email" name="email" value="{{ old('email', $member->email) }}" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1">Foto</label>
-                <div class="flex items-center gap-4">
-                    @if($member->photo_path)
-                        <img src="{{ Storage::url($member->photo_path) }}" alt="" class="w-16 h-16 rounded-lg object-cover border border-slate-700">
-                    @endif
-                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="flex-1 rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white file:mr-3 file:rounded file:border-0 file:bg-teal-600 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white hover:file:bg-teal-500">
                 </div>
             </div>
             <label class="flex items-center gap-2 text-sm text-slate-300">

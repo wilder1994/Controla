@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Structure;
 
 use App\Enums\AuthorizationStatus;
-use App\Enums\MemberType;
 use App\Enums\PetSpecies;
 use App\Enums\VisitorCategory;
 use App\Models\Client;
 use App\Models\Installation;
+use App\Models\MemberType;
 use App\Models\Structure;
 use App\Models\StructureAppUser;
 use App\Models\StructureMember;
@@ -70,7 +70,20 @@ final class SeedPilotStructuresService
                 );
             }
 
-            $memberTypes = [MemberType::Owner, MemberType::Tenant, MemberType::FamilyMember];
+            $typeNames = ['Propietario', 'Arrendatario', 'Familiar', 'Invitado permanente', 'Empleado', 'Administrador'];
+            $typeIds = [];
+            foreach ($typeNames as $i => $name) {
+                $type = MemberType::query()->firstOrCreate(
+                    ['client_id' => $client->id, 'name' => $name],
+                    [
+                        'slug' => Str::slug($name),
+                        'is_active' => true,
+                        'sort_order' => ($i + 1) * 10,
+                    ],
+                );
+                $typeIds[] = $type->id;
+            }
+            $memberTypeIds = [$typeIds[0], $typeIds[1], $typeIds[2]];
             $memberIndex = 0;
 
             foreach ($apartments as $apartment) {
@@ -86,7 +99,7 @@ final class SeedPilotStructuresService
                             'last_name' => 'Piloto',
                             'phone_primary' => '+57300'.str_pad((string) $memberIndex, 7, '0', STR_PAD_LEFT),
                             'email' => "persona{$memberIndex}@piloto.test",
-                            'member_type' => $memberTypes[$j % 3],
+                            'member_type_id' => $memberTypeIds[$j % 3],
                             'has_app_access' => $j === 0,
                             'access_code' => strtoupper(Str::random(12)),
                             'is_active' => true,

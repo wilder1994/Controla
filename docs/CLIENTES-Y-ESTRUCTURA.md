@@ -114,8 +114,9 @@ No se clonan tablas de Patrulla (`review_posts`, etc.). Flota de Supervisión si
 2. Empresa: alta de cliente (ficha) e **instalaciones**.
 3. Panel cliente (`/client/structures`): **Instalación** (barra corta) → árbol a todo el ancho restante → **Nuevo nodo** a la derecha. El tipo se **hereda** del cliente (nota bajo el nombre; no hay campo Tipo ni Código).
 4. **Crear dentro de:** primera opción = esta instalación (raíz); el resto indentado en orden de árbol. El **+** de cada nodo lo deja como padre y enfoca el nombre.
-5. Personas en **un** nodo de esa instalación.
-6. Acceso de persona (`/client/app-users`) para app o panel.
+5. **Tipos de persona** en `/client/settings/member-types` (Ajustes). Catálogo **por cliente**.
+6. Personas en **un** nodo de esa instalación (elige instalación → nodo).
+7. Acceso de persona (`/client/app-users`) para app o panel.
 
 ```
 Cliente (tipo fijo, ej. Propiedad horizontal)
@@ -132,6 +133,12 @@ También válido: nodo hoja directo (casa o salón sin torre) → persona en ese
 Tabla `structures`: `installation_id` (FK). `code` interno, **automático e inmutable**: slug del nombre, único por instalación; si choca, sufijo `-2`; si el padre ya tiene código, se antepone (`torre-a-apto-101`). Unique `(installation_id, code)`. El POST `code` se ignora. Migración `2026_09_11_120000_add_installation_id_to_structures`.
 
 El layout del panel usa `ClientLayout` con `wide` (sin `max-w-7xl`) para que el árbol no quede estrecho.
+
+Personas, vehículos y mascotas filtran por **instalación** y luego **nodo** (indentado). Columna **Nodo**, no unidad. El código de la tabla de personas es el de **acceso** (`access_code` / QR), no el interno del nodo.
+
+Listado de personas: una sola barra (buscar, instalación, filtrar + **Exportar** / **Nueva persona**). Alta y edición: foto circular centrada con icono de cámara y preview.
+
+Tipos de persona: tabla `member_types` (`client_id`, nombre, slug, activo). `structure_members.member_type_id`. Sin tipos activos no se registra persona. No se borra un tipo en uso. Migración `2026_09_11_140000_create_member_types_and_fk`.
 
 ---
 
@@ -169,7 +176,7 @@ Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** 
 - Puertas: `locations` de esas instalaciones.
 - Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.
 
-El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. `/client/users` son **administradores del cliente**. `/client/app-users` es **acceso de personas** del censo.
+El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. `/client/users` son **administradores del cliente**. `/client/app-users` es **acceso de personas** del censo. `/client/settings/member-types` es **Ajustes** (tipos de persona). Banner al operar: **panel del cliente**.
 
 ---
 
@@ -198,6 +205,8 @@ Permiso: `company.clients.manage`. Portería (`/access/locations`) también crea
 
 ```bash
 php artisan test --filter=StructureModuleTest
+php artisan test --filter=ClientMemberTypeTest
+php artisan test --filter=ClientCensusDirectoryTest
 php artisan test --filter=PorteriaRevistaTest
 ```
 

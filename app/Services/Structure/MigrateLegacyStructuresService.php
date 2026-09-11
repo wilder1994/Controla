@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Structure;
 
-use App\Enums\MemberType;
 use App\Models\Building;
 use App\Models\Client;
 use App\Models\Installation;
+use App\Models\MemberType;
 use App\Models\Structure;
 use App\Models\StructureMember;
 use App\Models\StructureType;
@@ -61,6 +61,15 @@ final class MigrateLegacyStructuresService
 
             $buildings = Building::query()->where('client_id', $client->id)->get();
 
+            $ownerType = MemberType::query()->firstOrCreate(
+                ['client_id' => $client->id, 'name' => 'Propietario'],
+                [
+                    'slug' => 'propietario',
+                    'is_active' => true,
+                    'sort_order' => 10,
+                ],
+            );
+
             foreach ($buildings as $building) {
                 $block = Structure::query()->create([
                     'client_id' => $client->id,
@@ -104,7 +113,7 @@ final class MigrateLegacyStructuresService
                             'document_number' => $resident->document_number,
                             'phone_primary' => $resident->phone,
                             'email' => $resident->email,
-                            'member_type' => MemberType::Owner,
+                            'member_type_id' => $ownerType->id,
                             'has_app_access' => $resident->user_id !== null,
                             'access_code' => strtoupper(Str::random(12)),
                             'is_active' => $resident->is_active,

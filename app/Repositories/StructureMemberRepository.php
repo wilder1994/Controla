@@ -13,10 +13,11 @@ final class StructureMemberRepository
         int $clientId,
         ?string $search = null,
         ?int $structureId = null,
+        ?int $installationId = null,
         int $perPage = 20,
     ): LengthAwarePaginator {
         $query = StructureMember::query()
-            ->with(['structure.installation', 'structure.parent'])
+            ->with(['structure.installation', 'memberType'])
             ->where('client_id', $clientId)
             ->orderBy('last_name')
             ->orderBy('first_name');
@@ -32,6 +33,8 @@ final class StructureMemberRepository
 
         if ($structureId) {
             $query->where('structure_id', $structureId);
+        } elseif ($installationId) {
+            $query->whereHas('structure', fn ($q) => $q->where('installation_id', $installationId));
         }
 
         return $query->paginate($perPage)->withQueryString();

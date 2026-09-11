@@ -1,8 +1,8 @@
 <x-client-layout title="Nueva persona">
     <div class="max-w-2xl">
-        <h2 class="text-2xl font-bold text-white mb-6">Registrar persona — paso 1</h2>
         <form action="{{ route('client.members.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 rounded-xl border border-slate-800 bg-slate-900 p-6">
             @csrf
+            <x-client.member-photo-picker />
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Nombres</label>
@@ -17,22 +17,25 @@
                 <label class="block text-xs text-slate-400 mb-1">Documento</label>
                 <input type="text" name="document_number" value="{{ old('document_number') }}" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
             </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1">Nodo de estructura</label>
-                <select name="structure_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                    <option value="">Seleccione salón, apartamento u otro nodo</option>
-                    @foreach ($structures as $structure)
-                        <option value="{{ $structure->id }}" @selected(old('structure_id') == $structure->id)>{{ $structure->full_path }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <x-client.census-node-picker
+                :installations="$installations"
+                :node-options="$nodeOptions"
+                :installation-id="$installationId"
+                :structure-id="$structureId"
+            />
             <div>
                 <label class="block text-xs text-slate-400 mb-1">Tipo</label>
-                <select name="member_type" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                    @foreach ($memberTypes as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+                @if ($memberTypes->isEmpty())
+                    <p class="text-sm text-amber-300">Crea un tipo de persona en <a href="{{ route('client.settings.member-types.index') }}" class="underline hover:text-amber-200">Ajustes</a> antes de registrar.</p>
+                @else
+                    <select name="member_type_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+                        <option value="">Seleccione tipo</option>
+                        @foreach ($memberTypes as $type)
+                            <option value="{{ $type->id }}" @selected((string) old('member_type_id') === (string) $type->id)>{{ $type->name }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                @error('member_type_id')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
             </div>
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -44,15 +47,11 @@
                     <input type="email" name="email" value="{{ old('email') }}" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
                 </div>
             </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1">Foto</label>
-                <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white file:mr-3 file:rounded file:border-0 file:bg-teal-600 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white hover:file:bg-teal-500">
-            </div>
             <label class="flex items-center gap-2 text-sm text-slate-300">
                 <input type="checkbox" name="has_app_access" value="1" class="rounded border-slate-600 bg-slate-950 text-teal-600">
                 Acceso de persona (app / panel)
             </label>
-            <button type="submit" class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500">Guardar y generar código</button>
+            <button type="submit" @disabled($memberTypes->isEmpty()) class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50">Guardar y generar código de acceso</button>
         </form>
     </div>
 </x-client-layout>

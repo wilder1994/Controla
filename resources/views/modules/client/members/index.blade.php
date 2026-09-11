@@ -1,40 +1,34 @@
-<x-client-layout title="Personas">
-    <div class="space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<x-client-layout title="Personas" :wide="true">
+    <div class="space-y-4">
+        <x-client.census-filters
+            :installations="$installations"
+            :node-options="$nodeOptions"
+            :installation-id="$installationId"
+            :structure-id="$structureId"
+        >
             <div>
-                <h2 class="text-2xl font-bold text-white">Directorio de personas</h2>
-                <p class="text-sm text-slate-400 mt-1">Personas asignadas a un nodo de la estructura (salón, apartamento, etc.).</p>
+                <label for="q" class="block text-xs uppercase tracking-wide text-slate-500 mb-1">Buscar</label>
+                <input id="q" type="search" name="q" value="{{ request('q') }}" placeholder="Nombre o documento"
+                       class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white">
             </div>
-            <div class="flex gap-2">
+            <x-slot:actions>
                 <a href="{{ route('client.members.export') }}" class="inline-flex rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">
                     Exportar
                 </a>
                 <a href="{{ route('client.members.create') }}" class="inline-flex rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500">
                     Nueva persona
                 </a>
-            </div>
-        </div>
-
-        <form method="GET" class="flex flex-wrap gap-3">
-            <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar nombre o documento"
-                   class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white">
-            <select name="structure_id" class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white">
-                <option value="">Todas las unidades</option>
-                @foreach ($structures as $structure)
-                    <option value="{{ $structure->id }}" @selected(request('structure_id') == $structure->id)>{{ $structure->name }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700">Filtrar</button>
-        </form>
+            </x-slot:actions>
+        </x-client.census-filters>
 
         <div class="rounded-xl border border-slate-800 overflow-hidden bg-slate-900">
             <table class="min-w-full divide-y divide-slate-800 text-sm">
                 <thead class="bg-slate-950/60">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Persona</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Unidad</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Nodo</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Tipo</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Código</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Código de acceso</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Acción</th>
                     </tr>
                 </thead>
@@ -56,8 +50,8 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-slate-300">{{ $member->structure?->full_path }}</td>
-                            <td class="px-4 py-3"><span class="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-slate-700">{{ $member->member_type->label() }}</span></td>
+                            <td class="px-4 py-3"><x-client.census-node :structure="$member->structure" /></td>
+                            <td class="px-4 py-3"><span class="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-slate-700">{{ $member->memberType?->name ?? '—' }}</span></td>
                             <td class="px-4 py-3 font-mono text-xs text-indigo-300">{{ $member->access_code }}</td>
                             <td class="px-4 py-3">
                                 <a href="{{ route('client.members.edit', $member) }}" class="text-xs text-slate-500 hover:text-teal-400 transition-colors">Editar</a>

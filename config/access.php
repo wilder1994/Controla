@@ -290,6 +290,7 @@ return [
                 ['label' => 'Autorizaciones', 'route' => 'client.authorizations.index', 'permission' => 'client.authorizations.manage'],
                 ['label' => 'Usuarios del cliente', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
                 ['label' => 'Acceso de personas', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],
+                ['label' => 'Ajustes', 'route' => 'client.settings.member-types.index', 'permission' => 'client.members.manage'],
                 ['label' => 'Zonas comunes', 'route' => 'client.zones.index', 'permission' => 'client.zones.book'],
             ],
         ],

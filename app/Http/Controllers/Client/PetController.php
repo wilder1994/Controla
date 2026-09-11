@@ -8,9 +8,9 @@ use App\Domain\Structure\Data\CreatePetData;
 use App\Enums\PetSpecies;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StorePetRequest;
-use App\Models\Structure;
 use App\Models\StructurePet;
 use App\Repositories\StructurePetRepository;
+use App\Repositories\StructureRepository;
 use App\Services\Structure\CreatePetService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +21,7 @@ final class PetController extends Controller
 {
     public function __construct(
         private readonly StructurePetRepository $petRepository,
+        private readonly StructureRepository $structureRepository,
         private readonly CreatePetService $createPetService,
         private readonly TenantContext $tenantContext,
     ) {}
@@ -30,25 +31,40 @@ final class PetController extends Controller
         $this->authorize('viewAny', StructurePet::class);
 
         $clientId = (int) $this->tenantContext->clientId();
+        $picker = $this->structureRepository->censusPickerData($clientId);
+        $installationId = $request->integer('installation_id') ?: null;
+        $structureId = $request->integer('structure_id') ?: null;
+
         $pets = $this->petRepository->paginateForClient(
             $clientId,
             $request->string('q')->toString() ?: null,
-            $request->integer('structure_id') ?: null,
+            $structureId,
+            $installationId,
         );
-        $structures = Structure::query()->orderBy('name')->get();
-        $species = PetSpecies::options();
 
-        return view('modules.client.pets.index', compact('pets', 'structures', 'species'));
+        return view('modules.client.pets.index', [
+            'pets' => $pets,
+            'installations' => $picker['installations'],
+            'nodeOptions' => $picker['nodeOptions'],
+            'installationId' => $installationId,
+            'structureId' => $structureId,
+        ]);
     }
 
     public function create(): View
     {
         $this->authorize('create', StructurePet::class);
 
-        $structures = Structure::query()->orderBy('name')->get();
+        $picker = $this->structureRepository->censusPickerData((int) $this->tenantContext->clientId());
         $species = PetSpecies::options();
 
-        return view('modules.client.pets.create', compact('structures', 'species'));
+        return view('modules.client.pets.create', [
+            'installations' => $picker['installations'],
+            'nodeOptions' => $picker['nodeOptions'],
+            'species' => $species,
+            'installationId' => old('installation_id'),
+            'structureId' => old('structure_id'),
+        ]);
     }
 
     public function store(StorePetRequest $request): RedirectResponse
@@ -73,7 +89,7 @@ final class PetController extends Controller
     {
         $this->authorize('view', $pet);
 
-        $pet->load('structure');
+        $pet->load('structure.installation');
 
         return view('modules.client.pets.show', compact('pet'));
     }

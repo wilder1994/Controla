@@ -19,7 +19,7 @@ final class MembersAssemblyExport implements FromQuery, ShouldAutoSize, WithHead
     public function query()
     {
         return StructureMember::query()
-            ->with('structure')
+            ->with(['structure.installation', 'memberType'])
             ->where('client_id', $this->clientId)
             ->orderBy('last_name')
             ->orderBy('first_name');
@@ -31,8 +31,8 @@ final class MembersAssemblyExport implements FromQuery, ShouldAutoSize, WithHead
         return [
             $row->last_name.' '.$row->first_name,
             $row->document_number,
-            $row->member_type->label(),
-            $row->structure?->full_path ?? '—',
+            $row->memberType?->name ?? '—',
+            trim(($row->structure?->name ?? '').' '.($row->structure?->installation?->name ? '('.$row->structure->installation->name.')' : '')) ?: '—',
             $row->phone_primary ?? '—',
             $row->email ?? '—',
             $row->has_app_access ? 'Sí' : 'No',
@@ -45,7 +45,7 @@ final class MembersAssemblyExport implements FromQuery, ShouldAutoSize, WithHead
             'Nombre completo',
             'Documento',
             'Tipo',
-            'Unidad',
+            'Nodo',
             'Teléfono',
             'Email',
             'Acceso APP',

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Client;
 
 use App\Domain\Structure\Data\CreateMemberData;
-use App\Enums\MemberType;
 use App\Exports\MembersAssemblyExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreMemberRequest;
+use App\Models\MemberType;
 use App\Models\Structure;
 use App\Models\StructureMember;
 use App\Repositories\StructureMemberRepository;
+use App\Repositories\StructureRepository;
 use App\Services\Structure\CreateMemberService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,7 @@ final class MemberController extends Controller
 {
     public function __construct(
         private readonly StructureMemberRepository $memberRepository,
+        private readonly StructureRepository $structureRepository,
         private readonly CreateMemberService $createMemberService,
         private readonly TenantContext $tenantContext,
     ) {}
@@ -33,25 +35,43 @@ final class MemberController extends Controller
         $this->authorize('viewAny', StructureMember::class);
 
         $clientId = (int) $this->tenantContext->clientId();
+        $picker = $this->structureRepository->censusPickerData($clientId);
+        $installationId = $request->integer('installation_id') ?: null;
+        $structureId = $request->integer('structure_id') ?: null;
+
         $members = $this->memberRepository->paginateForClient(
             $clientId,
             $request->string('q')->toString() ?: null,
-            $request->integer('structure_id') ?: null,
+            $structureId,
+            $installationId,
         );
-        $structures = Structure::query()->with(['installation', 'parent'])->orderBy('name')->get();
-        $memberTypes = MemberType::options();
 
-        return view('modules.client.members.index', compact('members', 'structures', 'memberTypes'));
+        return view('modules.client.members.index', [
+            'members' => $members,
+            'installations' => $picker['installations'],
+            'nodeOptions' => $picker['nodeOptions'],
+            'installationId' => $installationId,
+            'structureId' => $structureId,
+        ]);
     }
 
     public function create(): View
     {
         $this->authorize('create', StructureMember::class);
 
-        $structures = Structure::query()->with(['installation', 'parent'])->orderBy('name')->get();
-        $memberTypes = MemberType::options();
+        $clientId = (int) $this->tenantContext->clientId();
+        $picker = $this->structureRepository->censusPickerData($clientId);
+        $memberTypes = MemberType::query()->active()->get();
+        $structureId = old('structure_id');
+        $installationId = $this->installationIdForStructure($picker, $structureId !== null ? (int) $structureId : null);
 
-        return view('modules.client.members.create', compact('structures', 'memberTypes'));
+        return view('modules.client.members.create', [
+            'installations' => $picker['installations'],
+            'nodeOptions' => $picker['nodeOptions'],
+            'memberTypes' => $memberTypes,
+            'installationId' => $installationId,
+            'structureId' => $structureId,
+        ]);
     }
 
     public function store(StoreMemberRequest $request): RedirectResponse
@@ -66,10 +86,10 @@ final class MemberController extends Controller
         $member = $this->createMemberService->execute(new CreateMemberData(
             clientId: $clientId,
             structureId: (int) $request->validated('structure_id'),
+            memberTypeId: (int) $request->validated('member_type_id'),
             firstName: $request->validated('first_name'),
             lastName: $request->validated('last_name'),
             documentNumber: $request->validated('document_number'),
-            memberType: MemberType::from($request->validated('member_type')),
             phonePrimary: $request->validated('phone_primary'),
             phoneSecondary: $request->validated('phone_secondary'),
             email: $request->validated('email'),
@@ -87,7 +107,7 @@ final class MemberController extends Controller
     {
         $this->authorize('view', $member);
 
-        $member->load(['structure.installation', 'structure.parent', 'appUser']);
+        $member->load(['structure.installation', 'memberType', 'appUser']);
 
         return view('modules.client.members.show', compact('member'));
     }
@@ -96,10 +116,30 @@ final class MemberController extends Controller
     {
         $this->authorize('update', $member);
 
-        $structures = Structure::query()->with(['installation', 'parent'])->orderBy('name')->get();
-        $memberTypes = MemberType::options();
+        $clientId = (int) $this->tenantContext->clientId();
+        $picker = $this->structureRepository->censusPickerData($clientId);
+        $memberTypes = MemberType::query()
+            ->where(function ($q) use ($member): void {
+                $q->where('is_active', true)->orWhereKey($member->member_type_id);
+            })
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
-        return view('modules.client.members.edit', compact('member', 'structures', 'memberTypes'));
+        $structureId = old('structure_id', $member->structure_id);
+        $installationId = $this->installationIdForStructure(
+            $picker,
+            $structureId !== null ? (int) $structureId : null,
+        );
+
+        return view('modules.client.members.edit', [
+            'member' => $member,
+            'installations' => $picker['installations'],
+            'nodeOptions' => $picker['nodeOptions'],
+            'memberTypes' => $memberTypes,
+            'installationId' => $installationId,
+            'structureId' => $structureId,
+        ]);
     }
 
     public function update(StoreMemberRequest $request, StructureMember $member): RedirectResponse
@@ -108,10 +148,10 @@ final class MemberController extends Controller
 
         $data = [
             'structure_id' => (int) $request->validated('structure_id'),
+            'member_type_id' => (int) $request->validated('member_type_id'),
             'first_name' => $request->validated('first_name'),
             'last_name' => $request->validated('last_name'),
             'document_number' => $request->validated('document_number'),
-            'member_type' => MemberType::from($request->validated('member_type')),
             'phone_primary' => $request->validated('phone_primary'),
             'phone_secondary' => $request->validated('phone_secondary'),
             'email' => $request->validated('email'),
@@ -140,5 +180,25 @@ final class MemberController extends Controller
             new MembersAssemblyExport($clientId),
             'listado-miembros-asamblea.xlsx',
         );
+    }
+
+    /** @param array{installations: mixed, nodeOptions: array<string, list<array{id: int, name: string, depth: int}>>} $picker */
+    private function installationIdForStructure(array $picker, ?int $structureId): ?int
+    {
+        if ($structureId === null) {
+            return null;
+        }
+
+        foreach ($picker['nodeOptions'] as $installationId => $nodes) {
+            foreach ($nodes as $node) {
+                if ($node['id'] === $structureId) {
+                    return (int) $installationId;
+                }
+            }
+        }
+
+        $structure = Structure::query()->find($structureId);
+
+        return $structure?->installation_id !== null ? (int) $structure->installation_id : null;
     }
 }

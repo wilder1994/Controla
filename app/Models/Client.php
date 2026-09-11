@@ -131,4 +131,9 @@ class Client extends Model
     {
         return $this->hasMany(Location::class);
     }
+
+    public function memberTypes(): HasMany
+    {
+        return $this->hasMany(MemberType::class);
+    }
 }

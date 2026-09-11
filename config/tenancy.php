@@ -86,6 +86,7 @@ return [
         'guard_logs',
         'structures',
         'structure_members',
+        'member_types',
         'structure_pets',
         'visitor_pre_authorizations',
         'structure_app_users',

@@ -3,7 +3,13 @@
         <div>
             <a href="{{ route('client.pets.index') }}" class="text-sm text-teal-400 hover:text-teal-300">← Mascotas</a>
             <h2 class="text-2xl font-bold text-white mt-2">{{ $pet->name }}</h2>
-            <p class="text-sm text-slate-400">{{ $pet->structure?->full_path }} · {{ $pet->species->label() }}</p>
+            <p class="text-sm text-slate-400">
+                {{ $pet->structure?->name ?? '—' }}
+                @if ($pet->structure?->installation)
+                    · {{ $pet->structure->installation->name }}
+                @endif
+                · {{ $pet->species->label() }}
+            </p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">

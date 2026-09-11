@@ -20,7 +20,7 @@ final class CreateMemberService
                 'first_name' => $data->firstName,
                 'last_name' => $data->lastName,
                 'document_number' => $data->documentNumber,
-                'member_type' => $data->memberType,
+                'member_type_id' => $data->memberTypeId,
                 'phone_primary' => $data->phonePrimary,
                 'phone_secondary' => $data->phoneSecondary,
                 'email' => $data->email,

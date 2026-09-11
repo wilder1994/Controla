@@ -84,7 +84,7 @@ final class StructureController extends Controller
     {
         $this->authorize('view', $structure);
 
-        $structure->load(['members', 'pets', 'vehicles', 'parent', 'structureType', 'installation']);
+        $structure->load(['members.memberType', 'pets', 'vehicles', 'parent', 'structureType', 'installation']);
 
         return view('modules.client.structures.show', compact('structure'));
     }

@@ -31,7 +31,7 @@
 
         <div class="rounded-xl border border-slate-800 overflow-hidden">
             <div class="px-4 py-3 bg-slate-950/60 border-b border-slate-800">
-                <h3 class="text-sm font-semibold text-white">Personas en esta unidad</h3>
+                <h3 class="text-sm font-semibold text-white">Personas en este nodo</h3>
             </div>
             <table class="min-w-full text-sm">
                 <tbody class="divide-y divide-slate-800">
@@ -40,7 +40,7 @@
                             <td class="px-4 py-3">
                                 <a href="{{ route('client.members.show', $member) }}" class="text-teal-300 hover:text-teal-200">{{ $member->full_name }}</a>
                             </td>
-                            <td class="px-4 py-3 text-slate-400">{{ $member->member_type->label() }}</td>
+                            <td class="px-4 py-3 text-slate-400">{{ $member->memberType?->name }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $member->document_number }}</td>
                         </tr>
                     @empty

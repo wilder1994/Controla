@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Structure;
 
-use App\Enums\MemberType;
 use App\Models\Client;
 use App\Models\Installation;
+use App\Models\MemberType;
 use App\Models\Structure;
 use App\Models\StructureMember;
 use App\Models\StructureType;
@@ -119,13 +119,21 @@ final class StructureModuleTest extends TestCase
             'is_active' => true,
         ]);
 
+        $type = MemberType::withoutGlobalScopes()->create([
+            'client_id' => $clientB->id,
+            'name' => 'Propietario',
+            'slug' => 'propietario-b',
+            'is_active' => true,
+            'sort_order' => 10,
+        ]);
+
         StructureMember::withoutGlobalScopes()->create([
             'client_id' => $clientB->id,
             'structure_id' => $structureB->id,
             'first_name' => 'Otro',
             'last_name' => 'Cliente',
             'document_number' => '999999999',
-            'member_type' => MemberType::Owner,
+            'member_type_id' => $type->id,
             'access_code' => 'SECRETB999',
             'is_active' => true,
         ]);

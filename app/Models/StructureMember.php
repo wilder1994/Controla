@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\MemberType;
 use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,13 +18,13 @@ final class StructureMember extends Model
     protected $fillable = [
         'client_id',
         'structure_id',
+        'member_type_id',
         'first_name',
         'last_name',
         'document_number',
         'phone_primary',
         'phone_secondary',
         'email',
-        'member_type',
         'has_app_access',
         'access_code',
         'photo_path',
@@ -36,7 +35,6 @@ final class StructureMember extends Model
     protected function casts(): array
     {
         return [
-            'member_type' => MemberType::class,
             'has_app_access' => 'boolean',
             'is_active' => 'boolean',
             'metadata' => 'array',
@@ -46,6 +44,11 @@ final class StructureMember extends Model
     public function structure(): BelongsTo
     {
         return $this->belongsTo(Structure::class);
+    }
+
+    public function memberType(): BelongsTo
+    {
+        return $this->belongsTo(MemberType::class);
     }
 
     public function authorizations(): HasMany

@@ -26,6 +26,6 @@ final class EnsureClientAdmin
             return $next($request);
         }
 
-        abort(403, 'Acceso restringido al panel de conjunto.');
+        abort(403, 'Acceso restringido al panel del cliente.');
     }
 }

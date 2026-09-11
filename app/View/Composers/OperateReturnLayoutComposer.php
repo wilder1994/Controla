@@ -38,7 +38,7 @@ final class OperateReturnLayoutComposer
                     'client_name' => $client->name,
                     'mode' => $mode,
                     'mode_label' => $mode === CompanyOperateContext::MODE_CLIENTE
-                        ? 'panel del conjunto'
+                        ? 'panel del cliente'
                         : 'portería',
                 ];
             }

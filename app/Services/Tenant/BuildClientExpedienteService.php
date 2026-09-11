@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant;
 
-use App\Enums\MemberType;
 use App\Models\AccessLog;
 use App\Models\Blocklist;
 use App\Models\Client;
 use App\Models\Installation;
 use App\Models\Location;
+use App\Models\MemberType;
 use App\Models\Structure;
 use App\Models\StructureAppUser;
 use App\Models\StructureMember;
@@ -52,15 +52,19 @@ final class BuildClientExpedienteService
 
         $memberByType = StructureMember::query()
             ->where('client_id', $clientId)
-            ->selectRaw('member_type, COUNT(*) as aggregate')
-            ->groupBy('member_type')
-            ->pluck('aggregate', 'member_type');
+            ->selectRaw('member_type_id, COUNT(*) as aggregate')
+            ->groupBy('member_type_id')
+            ->pluck('aggregate', 'member_type_id');
 
-        $membersBreakdown = collect(MemberType::cases())
+        $membersBreakdown = MemberType::withoutGlobalScopes()
+            ->where('client_id', $clientId)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
             ->map(fn (MemberType $type) => [
-                'type' => $type->value,
-                'label' => $type->label(),
-                'count' => (int) ($memberByType[$type->value] ?? 0),
+                'type' => $type->slug,
+                'label' => $type->name,
+                'count' => (int) ($memberByType[$type->id] ?? 0),
             ])
             ->filter(fn (array $row) => $row['count'] > 0)
             ->values()

@@ -6,6 +6,7 @@ use App\Http\Controllers\Client\AppUserController;
 use App\Http\Controllers\Client\AuthorizationController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\MemberController;
+use App\Http\Controllers\Client\MemberTypeController;
 use App\Http\Controllers\Client\PersonnelDocumentController;
 use App\Http\Controllers\Client\PetController;
 use App\Http\Controllers\Client\StructureController;
@@ -38,6 +39,17 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::get('/structures/{structure}', [StructureController::class, 'show'])
             ->middleware('permission:client.structures.manage')
             ->name('structures.show');
+
+        Route::get('/members/export', [MemberController::class, 'export'])
+            ->middleware('permission:client.members.manage')
+            ->name('members.export');
+
+        Route::middleware('permission:client.members.manage')->prefix('settings')->name('settings.')->group(function () {
+            Route::get('/member-types', [MemberTypeController::class, 'index'])->name('member-types.index');
+            Route::post('/member-types', [MemberTypeController::class, 'store'])->name('member-types.store');
+            Route::put('/member-types/{memberType}', [MemberTypeController::class, 'update'])->name('member-types.update');
+            Route::delete('/member-types/{memberType}', [MemberTypeController::class, 'destroy'])->name('member-types.destroy');
+        });
 
         Route::get('/members', [MemberController::class, 'index'])
             ->middleware('permission:client.members.manage')
@@ -96,10 +108,6 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::get('/pets/{pet}', [PetController::class, 'show'])
             ->middleware('permission:client.pets.manage')
             ->name('pets.show');
-
-        Route::get('/members/export', [MemberController::class, 'export'])
-            ->middleware('permission:client.members.manage')
-            ->name('members.export');
 
         Route::get('/app-users', [AppUserController::class, 'index'])
             ->middleware('permission:client.app_users.manage')

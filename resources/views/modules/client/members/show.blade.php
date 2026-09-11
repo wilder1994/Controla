@@ -3,7 +3,13 @@
         <div>
             <a href="{{ route('client.members.index') }}" class="text-sm text-teal-400 hover:text-teal-300">← Directorio</a>
             <h2 class="text-2xl font-bold text-white mt-2">{{ $member->full_name }}</h2>
-            <p class="text-sm text-slate-400">{{ $member->structure?->full_path }} · {{ $member->member_type->label() }}</p>
+            <p class="text-sm text-slate-400">
+                {{ $member->structure?->name ?? '—' }}
+                @if ($member->structure?->installation)
+                    · {{ $member->structure->installation->name }}
+                @endif
+                · {{ $member->memberType?->name }}
+            </p>
         </div>
 
         <div class="flex gap-2 mb-2">

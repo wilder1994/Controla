@@ -1,6 +1,6 @@
 @if (! empty($operateReturn['active']))
     <div class="shrink-0 border-b border-amber-800/60 bg-amber-950/50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
                 <p class="text-sm font-semibold text-amber-100 truncate">
                     Operando {{ $operateReturn['mode_label'] }} · {{ $operateReturn['client_name'] }}

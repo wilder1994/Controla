@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreStructureVehicleRequest;
-use App\Models\Structure;
 use App\Models\Vehicle;
+use App\Repositories\StructureRepository;
 use App\Repositories\StructureVehicleRepository;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +18,7 @@ final class VehicleController extends Controller
 {
     public function __construct(
         private readonly StructureVehicleRepository $vehicleRepository,
+        private readonly StructureRepository $structureRepository,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -26,23 +27,38 @@ final class VehicleController extends Controller
         abort_unless($request->user()?->can('client.vehicles.manage'), 403);
 
         $clientId = (int) $this->tenantContext->clientId();
+        $picker = $this->structureRepository->censusPickerData($clientId);
+        $installationId = $request->integer('installation_id') ?: null;
+        $structureId = $request->integer('structure_id') ?: null;
+
         $vehicles = $this->vehicleRepository->paginateForClient(
             $clientId,
             $request->string('q')->toString() ?: null,
-            $request->integer('structure_id') ?: null,
+            $structureId,
+            $installationId,
         );
-        $structures = Structure::query()->orderBy('name')->get();
 
-        return view('modules.client.vehicles.index', compact('vehicles', 'structures'));
+        return view('modules.client.vehicles.index', [
+            'vehicles' => $vehicles,
+            'installations' => $picker['installations'],
+            'nodeOptions' => $picker['nodeOptions'],
+            'installationId' => $installationId,
+            'structureId' => $structureId,
+        ]);
     }
 
     public function create(): View
     {
         abort_unless(auth()->user()?->can('client.vehicles.manage'), 403);
 
-        $structures = Structure::query()->orderBy('name')->get();
+        $picker = $this->structureRepository->censusPickerData((int) $this->tenantContext->clientId());
 
-        return view('modules.client.vehicles.create', compact('structures'));
+        return view('modules.client.vehicles.create', [
+            'installations' => $picker['installations'],
+            'nodeOptions' => $picker['nodeOptions'],
+            'installationId' => old('installation_id'),
+            'structureId' => old('structure_id'),
+        ]);
     }
 
     public function store(StoreStructureVehicleRequest $request): RedirectResponse

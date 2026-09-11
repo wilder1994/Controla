@@ -31,6 +31,7 @@ return [
         'structure_app_users',
         'structure_pets',
         'structure_members',
+        'member_types',
         'vehicles',
         'structures',
         'visitors',

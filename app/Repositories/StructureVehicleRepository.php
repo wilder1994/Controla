@@ -13,10 +13,11 @@ final class StructureVehicleRepository
         int $clientId,
         ?string $search = null,
         ?int $structureId = null,
+        ?int $installationId = null,
         int $perPage = 20,
     ): LengthAwarePaginator {
         $query = Vehicle::query()
-            ->with('structure')
+            ->with('structure.installation')
             ->where('client_id', $clientId)
             ->whereNotNull('structure_id')
             ->orderBy('plate');
@@ -31,6 +32,8 @@ final class StructureVehicleRepository
 
         if ($structureId) {
             $query->where('structure_id', $structureId);
+        } elseif ($installationId) {
+            $query->whereHas('structure', fn ($q) => $q->where('installation_id', $installationId));
         }
 
         return $query->paginate($perPage)->withQueryString();

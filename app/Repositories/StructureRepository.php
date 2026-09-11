@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Structure;
 use App\Models\StructureType;
 use Illuminate\Database\Eloquent\Collection;
@@ -58,6 +59,32 @@ final class StructureRepository
         $walk(0, 0);
 
         return $rows;
+    }
+
+    /**
+     * @return array{installations: Collection<int, Installation>, nodeOptions: array<string, list<array{id: int, name: string, depth: int}>>}
+     */
+    public function censusPickerData(int $clientId): array
+    {
+        $installations = Installation::query()
+            ->where('client_id', $clientId)
+            ->where('is_active', true)
+            ->orderByDesc('is_client_site')
+            ->orderBy('name')
+            ->get();
+
+        $nodeOptions = [];
+        foreach ($installations as $installation) {
+            $nodeOptions[(string) $installation->id] = $this->parentOptionsForInstallation(
+                $clientId,
+                (int) $installation->id,
+            );
+        }
+
+        return [
+            'installations' => $installations,
+            'nodeOptions' => $nodeOptions,
+        ];
     }
 
     /** @return Collection<int, Structure> */
