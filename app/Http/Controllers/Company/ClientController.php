@@ -14,6 +14,7 @@ use App\Http\Requests\Company\StoreClientRequest;
 use App\Http\Requests\Company\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\IdentityDocumentType;
+use App\Models\Location;
 use App\Models\StructureType;
 use App\Repositories\ClientRepository;
 use App\Services\Company\CommitClientImportService;
@@ -336,6 +337,19 @@ final class ClientController extends Controller
         $this->authorize('operate', $client);
         abort_unless($client->has_access, 403);
 
+        $hasDoors = Location::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->where('is_active', true)
+            ->whereNotNull('installation_id')
+            ->exists();
+
+        if (! $hasDoors) {
+            return redirect()
+                ->route('company.clients.show', $client)
+                ->with('error', 'Este cliente no tiene puertas. Sin puertas no hay portería que operar.');
+        }
+
         $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
         CompanyOperateContext::enter((int) $client->id, CompanyOperateContext::MODE_PORTERIA);
 
@@ -355,7 +369,7 @@ final class ClientController extends Controller
 
         return redirect()
             ->route('client.dashboard')
-            ->with('success', "Operando panel del conjunto: {$client->name}");
+            ->with('success', "Operando panel del cliente: {$client->name}");
     }
 
     public function exitOperate(Request $request): RedirectResponse
@@ -370,7 +384,7 @@ final class ClientController extends Controller
 
         return redirect()
             ->route('company.clients.show', $client)
-            ->with('success', 'Volviste al expediente del conjunto.');
+            ->with('success', 'Volviste al expediente del cliente.');
     }
 
     private function resolveClientVista(Request $request, Client $client): string

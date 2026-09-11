@@ -16,6 +16,7 @@ final class Structure extends Model
 
     protected $fillable = [
         'client_id',
+        'installation_id',
         'parent_id',
         'structure_type_id',
         'name',
@@ -32,6 +33,11 @@ final class Structure extends Model
             'is_active' => 'boolean',
             'max_occupancy' => 'integer',
         ];
+    }
+
+    public function installation(): BelongsTo
+    {
+        return $this->belongsTo(Installation::class);
     }
 
     public function structureType(): BelongsTo
@@ -77,6 +83,11 @@ final class Structure extends Model
         while ($node !== null) {
             array_unshift($parts, $node->name);
             $node = $node->parent;
+        }
+
+        $installationName = $this->installation?->name;
+        if (filled($installationName)) {
+            array_unshift($parts, $installationName);
         }
 
         return implode(' › ', $parts);

@@ -207,7 +207,7 @@
     @endif
 
     <div x-show="needsClients">
-        <x-ui.label>Conjunto</x-ui.label>
+        <x-ui.label>Cliente</x-ui.label>
         <div class="mt-2 space-y-2 rounded-lg border border-slate-800 bg-slate-950/50 p-3 max-h-48 overflow-auto">
             @foreach ($clients as $client)
                 <label class="flex items-center gap-2 text-sm text-slate-300">
@@ -224,6 +224,7 @@
                 </label>
             @endforeach
         </div>
+        <p x-show="singleClient" class="mt-2 text-[11px] text-slate-500">El vigilante opera portería solo si está asignado a un puesto de una instalación con puertas. Sin puertas no se crea ese acceso.</p>
         <x-ui.field-error :messages="$errors->get('client_ids')" />
     </div>
 

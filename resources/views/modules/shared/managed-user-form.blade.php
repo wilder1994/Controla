@@ -124,7 +124,7 @@
                 @endforeach
             </div>
             <p data-reassign-hint class="mt-1 text-[11px] text-amber-400/90 {{ $singleClient && $isEdit ? '' : 'hidden' }}">
-                Si cambias el conjunto del vigilante, debes indicar una nueva contraseña.
+                Si cambias el cliente del vigilante, debes indicar una nueva contraseña.
             </p>
             <x-ui.field-error :messages="$errors->get('client_ids')" />
         </div>

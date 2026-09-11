@@ -65,6 +65,7 @@ final class UserController extends Controller
                 isActive: $request->boolean('is_active', true),
                 jobTitle: $request->validated('job_title'),
                 avatarPath: UserAvatarUploader::store($request->file('avatar')),
+                mustChangePassword: true,
             ),
             $request->user(),
             UserManagementContext::Client,

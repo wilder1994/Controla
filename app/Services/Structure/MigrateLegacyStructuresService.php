@@ -7,6 +7,7 @@ namespace App\Services\Structure;
 use App\Enums\MemberType;
 use App\Models\Building;
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Structure;
 use App\Models\StructureMember;
 use App\Models\StructureType;
@@ -27,14 +28,27 @@ final class MigrateLegacyStructuresService
             return ['skipped' => true, 'structures' => 0, 'members' => 0];
         }
 
+        $buildings = Building::query()->where('client_id', $client->id)->get();
+
+        if ($buildings->isEmpty()) {
+            return ['skipped' => true, 'structures' => 0, 'members' => 0];
+        }
+
         $companyId = (int) $client->security_company_id;
         $generalAreaId = StructureType::idByCode($companyId, 'general_area');
         $blockId = StructureType::idByCode($companyId, 'block');
         $apartmentId = StructureType::idByCode($companyId, 'apartment');
 
         return DB::transaction(function () use ($client, $generalAreaId, $blockId, $apartmentId): array {
+            $installationId = Installation::query()
+                ->where('client_id', $client->id)
+                ->orderByDesc('is_client_site')
+                ->orderBy('id')
+                ->value('id');
+
             $root = Structure::query()->create([
                 'client_id' => $client->id,
+                'installation_id' => $installationId,
                 'parent_id' => null,
                 'name' => $client->name,
                 'code' => $client->slug,
@@ -50,6 +64,7 @@ final class MigrateLegacyStructuresService
             foreach ($buildings as $building) {
                 $block = Structure::query()->create([
                     'client_id' => $client->id,
+                    'installation_id' => $installationId,
                     'parent_id' => $root->id,
                     'name' => $building->name,
                     'code' => $building->code,
@@ -62,6 +77,7 @@ final class MigrateLegacyStructuresService
                 foreach ($building->housingUnits as $unit) {
                     $apartment = Structure::query()->create([
                         'client_id' => $client->id,
+                        'installation_id' => $installationId,
                         'parent_id' => $block->id,
                         'name' => "Apto {$unit->unit_number}",
                         'code' => "{$building->code}-{$unit->unit_number}",

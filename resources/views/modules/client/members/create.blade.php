@@ -18,8 +18,9 @@
                 <input type="text" name="document_number" value="{{ old('document_number') }}" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1">Unidad</label>
+                <label class="block text-xs text-slate-400 mb-1">Nodo de estructura</label>
                 <select name="structure_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+                    <option value="">Seleccione salón, apartamento u otro nodo</option>
                     @foreach ($structures as $structure)
                         <option value="{{ $structure->id }}" @selected(old('structure_id') == $structure->id)>{{ $structure->full_path }}</option>
                     @endforeach
@@ -49,7 +50,7 @@
             </div>
             <label class="flex items-center gap-2 text-sm text-slate-300">
                 <input type="checkbox" name="has_app_access" value="1" class="rounded border-slate-600 bg-slate-950 text-teal-600">
-                Acceso APP móvil
+                Acceso de persona (app / panel)
             </label>
             <button type="submit" class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500">Guardar y generar código</button>
         </form>

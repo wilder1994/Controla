@@ -13,6 +13,22 @@ use Illuminate\Support\Facades\DB;
 final class StructureRepository
 {
     /** @return Collection<int, Structure> */
+    public function treeForInstallation(int $clientId, int $installationId): Collection
+    {
+        return Structure::query()
+            ->where('client_id', $clientId)
+            ->where('installation_id', $installationId)
+            ->whereNull('parent_id')
+            ->with([
+                'structureType',
+                'installation',
+                'children' => fn ($q) => $q->with(['structureType', 'installation', 'children.structureType'])->orderBy('name'),
+            ])
+            ->orderBy('name')
+            ->get();
+    }
+
+    /** @return Collection<int, Structure> */
     public function treeForClient(int $clientId): Collection
     {
         return Structure::query()
@@ -20,7 +36,8 @@ final class StructureRepository
             ->whereNull('parent_id')
             ->with([
                 'structureType',
-                'children' => fn ($q) => $q->with(['structureType', 'children.structureType'])->orderBy('name'),
+                'installation',
+                'children' => fn ($q) => $q->with(['structureType', 'installation', 'children.structureType'])->orderBy('name'),
             ])
             ->orderBy('name')
             ->get();

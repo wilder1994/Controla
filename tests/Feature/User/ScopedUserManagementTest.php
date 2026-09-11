@@ -45,6 +45,8 @@ final class ScopedUserManagementTest extends TestCase
             'is_active' => true,
         ]);
 
+        $this->assignEmployeeToClientPost($employee, $client);
+
         $response = $this->actingAs($admin)->post(route('company.users.store'), [
             'role' => 'guardia',
             'employee_id' => $employee->id,
@@ -163,23 +165,46 @@ final class ScopedUserManagementTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_client_admin_can_create_resident_for_conjunto(): void
+    public function test_client_admin_can_create_another_client_admin(): void
     {
         $this->seedWithPilot();
 
         $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
 
         $response = $this->actingAs($clientAdmin)->post(route('client.users.store'), [
-            'name' => 'Residente Nuevo',
-            'email' => 'residente.nuevo@palmas.test',
-            'password' => 'Residente123!',
-            'password_confirmation' => 'Residente123!',
-            'role' => 'resident',
+            'name' => 'Admin Extra Palmas',
+            'email' => 'admin.extra@palmas.test',
+            'password' => 'Cliente123!',
+            'password_confirmation' => 'Cliente123!',
+            'role' => 'client-admin',
             'is_active' => '1',
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('users', ['email' => 'residente.nuevo@palmas.test']);
+        $created = User::query()->where('email', 'admin.extra@palmas.test')->firstOrFail();
+        $this->assertTrue($created->hasRole('client-admin'));
+        $this->assertTrue($created->must_change_password);
+        $this->assertTrue($created->clients()->where('clients.id', $clientAdmin->primary_client_id)->exists());
+    }
+
+    public function test_client_admin_cannot_create_vigilante(): void
+    {
+        $this->seedWithPilot();
+
+        $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+
+        $response = $this->actingAs($clientAdmin)
+            ->from(route('client.users.create'))
+            ->post(route('client.users.store'), [
+                'name' => 'Vigilante Intruso',
+                'email' => 'vigilante.intruso@palmas.test',
+                'password' => 'Guardia123!',
+                'password_confirmation' => 'Guardia123!',
+                'role' => 'guardia',
+                'is_active' => '1',
+            ]);
+
+        $response->assertSessionHasErrors('role');
     }
 
     public function test_company_settings_updates_geo_fields(): void

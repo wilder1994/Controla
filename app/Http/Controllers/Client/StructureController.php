@@ -8,11 +8,13 @@ use App\Domain\Structure\Data\CreateStructureData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreStructureRequest;
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Structure;
 use App\Repositories\StructureRepository;
 use App\Services\Structure\CreateStructureService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class StructureController extends Controller
@@ -23,25 +25,52 @@ final class StructureController extends Controller
         private readonly TenantContext $tenantContext,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Structure::class);
 
         $clientId = (int) $this->tenantContext->clientId();
         $client = Client::query()->with('structureType')->findOrFail($clientId);
-        $tree = $this->structureRepository->treeForClient($clientId);
-        $census = $this->structureRepository->censusCounts($clientId);
-        $parents = Structure::query()->with('structureType')->orderBy('name')->get();
+        $installations = Installation::query()
+            ->where('client_id', $clientId)
+            ->where('is_active', true)
+            ->orderByDesc('is_client_site')
+            ->orderBy('name')
+            ->get();
 
-        return view('modules.client.structures.index', compact('client', 'tree', 'census', 'parents'));
+        $selectedId = $request->integer('installation_id') ?: (int) $installations->first()?->id;
+        $installation = $installations->firstWhere('id', $selectedId);
+
+        $tree = $installation !== null
+            ? $this->structureRepository->treeForInstallation($clientId, (int) $installation->id)
+            : collect();
+        $census = $this->structureRepository->censusCounts($clientId);
+        $parents = $installation !== null
+            ? Structure::query()
+                ->with(['structureType', 'installation', 'parent'])
+                ->where('installation_id', $installation->id)
+                ->orderBy('name')
+                ->get()
+            : collect();
+
+        return view('modules.client.structures.index', compact(
+            'client',
+            'installations',
+            'installation',
+            'tree',
+            'census',
+            'parents',
+        ));
     }
 
     public function store(StoreStructureRequest $request): RedirectResponse
     {
         $clientId = (int) $this->tenantContext->clientId();
+        $installationId = (int) $request->validated('installation_id');
 
         $this->createStructureService->execute(new CreateStructureData(
             clientId: $clientId,
+            installationId: $installationId,
             parentId: $request->validated('parent_id') !== null
                 ? (int) $request->validated('parent_id')
                 : null,
@@ -52,7 +81,7 @@ final class StructureController extends Controller
         ));
 
         return redirect()
-            ->route('client.structures.index')
+            ->route('client.structures.index', ['installation_id' => $installationId])
             ->with('success', 'Estructura creada correctamente.');
     }
 
@@ -60,7 +89,7 @@ final class StructureController extends Controller
     {
         $this->authorize('view', $structure);
 
-        $structure->load(['members', 'pets', 'vehicles', 'parent', 'structureType']);
+        $structure->load(['members', 'pets', 'vehicles', 'parent', 'structureType', 'installation']);
 
         return view('modules.client.structures.show', compact('structure'));
     }

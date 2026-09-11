@@ -20,6 +20,7 @@ final class ManageScopedUserService
 {
     public function __construct(
         private readonly UserScopeResolver $scopeResolver,
+        private readonly AssertVigilantePorteriaService $assertVigilantePorteria,
     ) {}
 
     public function create(CreateUserData $data, User $actor, UserManagementContext $context): User
@@ -40,6 +41,12 @@ final class ManageScopedUserService
 
         $companyId = $this->resolveCompanyId($data, $context, $actor);
         $clientIds = $this->normalizeClientIds($data->clientIds, $data->role, $companyId, $context, $actor);
+
+        if ($data->role === 'guardia') {
+            foreach ($clientIds as $clientId) {
+                $this->assertVigilantePorteria->assert($data->employeeId, $clientId);
+            }
+        }
 
         return DB::transaction(function () use ($data, $companyId, $clientIds): User {
             $attributes = [
@@ -85,13 +92,23 @@ final class ManageScopedUserService
         $clientIds = $data->clientIds ?? $target->clients()->pluck('clients.id')->map(fn ($id) => (int) $id)->all();
         $clientIds = $this->normalizeClientIds($clientIds, $role, $companyId, $context, $actor);
 
+        if ($role === 'guardia') {
+            foreach ($clientIds as $clientId) {
+                $this->assertVigilantePorteria->assert(
+                    $target->employee_id !== null ? (int) $target->employee_id : null,
+                    $clientId,
+                    $target,
+                );
+            }
+        }
+
         $previousPrimary = $target->primary_client_id !== null ? (int) $target->primary_client_id : null;
         $newPrimary = $clientIds[0] ?? null;
         $clientChanged = $role === 'guardia' && $previousPrimary !== null && $newPrimary !== null && $previousPrimary !== $newPrimary;
 
         if ($clientChanged && ($data->password === null || $data->password === '')) {
             throw ValidationException::withMessages([
-                'password' => 'Al reasignar el vigilante a otro conjunto debes definir una nueva contraseña.',
+                'password' => 'Al reasignar el vigilante a otro cliente debes definir una nueva contraseña.',
             ]);
         }
 
@@ -221,7 +238,7 @@ final class ManageScopedUserService
 
             if ($clientId === null) {
                 throw ValidationException::withMessages([
-                    'client_ids' => 'No hay conjunto activo para asignar usuarios.',
+                    'client_ids' => 'No hay cliente activo para asignar usuarios.',
                 ]);
             }
 
@@ -256,7 +273,7 @@ final class ManageScopedUserService
 
             if ($tenantId === null) {
                 throw ValidationException::withMessages([
-                    'client_ids' => 'Conjunto no disponible.',
+                    'client_ids' => 'Cliente no disponible.',
                 ]);
             }
 
@@ -267,13 +284,13 @@ final class ManageScopedUserService
 
         if ($clientIds === []) {
             throw ValidationException::withMessages([
-                'client_ids' => 'Selecciona al menos un conjunto para este rol.',
+                'client_ids' => 'Selecciona al menos un cliente para este rol.',
             ]);
         }
 
         if (in_array($role, AssignableRoles::requiringSingleClientAssignment(), true) && count($clientIds) !== 1) {
             throw ValidationException::withMessages([
-                'client_ids' => 'El vigilante debe quedar asignado a un solo conjunto.',
+                'client_ids' => 'El vigilante debe quedar asignado a un solo cliente.',
             ]);
         }
 
@@ -285,7 +302,7 @@ final class ManageScopedUserService
 
             if ($validCount !== count($clientIds)) {
                 throw ValidationException::withMessages([
-                    'client_ids' => 'Uno o más conjuntos no pertenecen a la empresa.',
+                    'client_ids' => 'Uno o más clientes no pertenecen a la empresa.',
                 ]);
             }
         }

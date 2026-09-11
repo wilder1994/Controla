@@ -279,7 +279,7 @@ return [
             ],
         ],
         'client' => [
-            'label' => 'Panel Conjunto',
+            'label' => 'Panel cliente',
             'permission' => 'client.structures.manage',
             'items' => [
                 ['label' => 'Resumen', 'route' => 'client.dashboard', 'permission' => 'client.structures.manage'],
@@ -288,8 +288,8 @@ return [
                 ['label' => 'Vehículos', 'route' => 'client.vehicles.index', 'permission' => 'client.vehicles.manage'],
                 ['label' => 'Mascotas', 'route' => 'client.pets.index', 'permission' => 'client.pets.manage'],
                 ['label' => 'Autorizaciones', 'route' => 'client.authorizations.index', 'permission' => 'client.authorizations.manage'],
-                ['label' => 'Usuarios portal', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
-                ['label' => 'Usuarios APP', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],
+                ['label' => 'Usuarios del cliente', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
+                ['label' => 'Acceso de personas', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],
                 ['label' => 'Zonas comunes', 'route' => 'client.zones.index', 'permission' => 'client.zones.book'],
             ],
         ],

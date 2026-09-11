@@ -8,6 +8,7 @@ final readonly class CreateStructureData
 {
     public function __construct(
         public int $clientId,
+        public int $installationId,
         public ?int $parentId,
         public string $name,
         public ?string $code,

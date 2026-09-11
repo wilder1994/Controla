@@ -21,8 +21,20 @@ final class StoreStructureRequest extends FormRequest
     {
         $clientId = app(TenantContext::class)->clientId();
 
+        $installationId = $this->integer('installation_id') ?: null;
+
+        $parentExists = Rule::exists('structures', 'id')->where('client_id', $clientId);
+        if ($installationId !== null) {
+            $parentExists->where('installation_id', $installationId);
+        }
+
         return [
-            'parent_id' => ['nullable', 'integer', Rule::exists('structures', 'id')->where('client_id', $clientId)],
+            'installation_id' => [
+                'required',
+                'integer',
+                Rule::exists('installations', 'id')->where('client_id', $clientId),
+            ],
+            'parent_id' => ['nullable', 'integer', $parentExists],
             'name' => ['required', 'string', 'max:100'],
             'code' => ['nullable', 'string', 'max:50'],
             'max_occupancy' => ['nullable', 'integer', 'min:0'],

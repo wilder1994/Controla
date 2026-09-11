@@ -3,8 +3,8 @@
 **Producto:** Controla  
 **Dueña:** W Codex Solution  
 **Estado:** decisión de producto (sin cambio de código en este corte)  
-**Fecha:** 2026-09-10  
-**Objeto:** dejar por escrito cómo se vende Controla, qué se toma de SJ-SIG, cómo se cubren licitaciones (vigilancia y colegios), hosting, dominio y app de campo.
+**Fecha:** 2026-09-11  
+**Objeto:** bitácora de cómo se vende Controla, qué se toma de SJ-SIG y cómo avanza la geometría (instalación, censo, usuarios).
 
 Este documento es bitácora. No se implementa nada aquí: primero se registra la decisión, después se abre fase de código.
 
@@ -42,7 +42,7 @@ SJ-SIG nació para un pliego. El avance útil (mapa, unidades, expediente, table
 
 ## 3. Geometría unificada (la que se va a completar)
 
-Hoy Controla ya tiene empresa → clientes → instalaciones, con dos hijos: puertas (`locations`, Accesos) y puestos (`supervisor_posts`, compartidos, modalidad 8/12/24 h + vigilantes). El censo (`structures`) cuelga del **cliente**, no de la instalación. Falta el cupo (unidades por cargo) y admins de sede.
+Hoy Controla ya tiene empresa → clientes → instalaciones, con tres hijos: puertas (`locations`, Accesos), puestos (`supervisor_posts`, compartidos) y **censo** (`structures.installation_id`). Falta el cupo (unidades por cargo) y admins de sede.
 
 **Modelo objetivo:**
 
@@ -52,12 +52,12 @@ W Codex / empresa de seguridad (tenant Controla)
         └── asignación → Puesto
 
 Cliente (PH, bodega, Secretaría, contrato…)
-  └── Instalación (conjunto, sede, colegio)
+  └── Instalación (sede, colegio, predio)
         ├── Administradores opcionales (rector, auxiliar, admin del sitio)
         ├── Accesos (puertas)                    ← mundo Accesos
         ├── Puestos (modalidad + unidades)       ← mundo Supervisión
         │     └── empleados asignados
-        └── Estructura (nodos)
+        └── Estructura (nodos)                   ← hecho 2026-09-11
               └── Personas del sitio
                     PH: torre → apto → residente
                     Colegio: salón 6A → estudiantes
@@ -69,7 +69,7 @@ Tres reglas fijas:
 |--------|---------|
 | Vigilante | Ficha en **Empleados** de la empresa. El Excel de empleados no elige cliente ni puesto (sigue [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md)). La asignación es un **segundo paso**. |
 | Puesto | Siempre de una instalación. Siempre con modalidad 8/12/24 h y unidades por cargo (de SJ-SIG: `GuardRole` + `post_staffings`; en Controla enriquecer `supervisor_posts`). |
-| Estructura | Pasa a colgar de la **instalación**, no del cliente suelto. Un PH de una sola sede no cambia de cara (instalación = el conjunto). Un colegio o un cliente con dos sedes sí lo necesita. |
+| Estructura | Cuelga de la **instalación**, no del cliente suelto (`structures.installation_id`). Un PH de una sola sede no cambia de cara (instalación = el mismo cliente). Un colegio o un cliente con dos sedes sí lo necesita. **Hecho 2026-09-11.** |
 
 Accesos y Supervisión siguen siendo dos mundos: un acceso no es un puesto. Las **instalaciones son compartidas**.
 
@@ -128,7 +128,7 @@ Hoy el alta de instalación en Controla es nombre + “sede = cliente” + mapa 
 
 El `client-admin` sigue viendo **todo el cliente**. El admin de instalación solo **esa sede**. Imprescindible si el cliente es una Secretaría con cientos de colegios: el rector de Santa Librada no puede ver los 400 planteles.
 
-Sirve igual al PH: admin del conjunto ≠ conserje de una torre.
+Sirve igual al PH: admin del cliente ≠ conserje de una torre.
 
 El contacto del directorio (rector, teléfono, código oficial, comuna) es la **misma** ficha de instalación + su admin, no una tabla suelta de “colegios”.
 
@@ -260,7 +260,7 @@ No se abre código en este corte. El orden acordado:
 2. Asignación empleado de empresa → puesto.
 3. Instalación: Places, mapa, código, kind.
 4. Administradores opcionales por instalación.
-5. Censo colgando de la instalación (salón / apto).
+5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos.
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
 8. Observatorio escolar (6 módulos) — producto/capa aparte, misma geometría de instalaciones.
@@ -290,3 +290,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-10 | Ficha del cliente: una tarjeta de sitio (instalaciones + puestos) y otra de puertas (solo Accesos). Sin segundo árbol de Supervisión. |
 | 2026-09-10 | Sitio sin bloque de revistas (van a `/company/supervision`). Varios vigilantes por puesto; un empleado = un puesto; Reasignar en la ficha del empleado. |
 | 2026-09-10 | Documentos de personal (indexador SJ-SIG) en empresa. Cliente: flag Accesos + solo empleados de sus puestos, solo lectura. Distinto de Normoteca. |
+| 2026-09-11 | Censo bajo instalación (`structures.installation_id`). Panel cliente: elige instalación → nodos → personas → acceso. Usuarios del cliente = `client-admin`. Vigilante portería solo con puertas. Supervisor firma revista en minuta. Término de producto: **cliente**, no conjunto. |

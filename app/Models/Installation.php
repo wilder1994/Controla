@@ -49,4 +49,18 @@ final class Installation extends Model
     {
         return $this->hasMany(SupervisorPost::class);
     }
+
+    public function structures(): HasMany
+    {
+        return $this->hasMany(Structure::class);
+    }
+
+    public function hasDoors(): bool
+    {
+        return Location::query()
+            ->withoutGlobalScopes()
+            ->where('installation_id', $this->id)
+            ->where('is_active', true)
+            ->exists();
+    }
 }

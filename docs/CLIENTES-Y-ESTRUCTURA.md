@@ -1,8 +1,8 @@
 # Clientes, instalaciones, Accesos y Supervisión
 
-**Última actualización:** 10 septiembre 2026
+**Última actualización:** 11 septiembre 2026
 
-Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) sigue más abajo; no se mezcla con instalaciones ni con puestos de Supervisión.
+Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) cuelga de la **instalación**, no del cliente suelto.
 
 Controla **no** cobra al cliente final por vigilancia; solo registra `service_started_at`.
 
@@ -18,8 +18,9 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 | **Puerta** | Punto de portería (peatonal, vehicular, principal). Tabla `locations` (`type = access_point`). Solo Accesos. **No** es un puesto. | Tarjeta **Puertas** |
 | **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad 8/12/24 h y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
-| **Nodo / subnodo** | Censo residencial (`structures`, `parent_id`). Torre, apto, casa. Distinto de instalación/puesto/acceso. | Panel `/client/structures` |
+| **Nodo / subnodo** | Censo (`structures`, `parent_id` + `installation_id`). Torre, salón, apto. Distinto de puesto/acceso. | Panel `/client/structures` (elige instalación) |
 | **Persona (censo)** | `structure_members` en un nodo. | Panel cliente |
+| **Acceso de persona** | `structure_app_users` de esa persona. Login `usuario@login_suffix` para app o panel. | `/client/app-users` |
 
 La ficha corta por **objeto**, no por línea comercial. **Instalación y puesto** se editan una sola vez. Las **puertas** son otra tarjeta, solo si hay Accesos. Operar portería / operar cliente también exigen Accesos. Supervisión de campo se opera en la app y en `/company/supervision`, no en un segundo árbol.
 
@@ -59,7 +60,7 @@ Cliente
         └── Puesto (8 / 12 / 24 h + empleados)         ← supervisor_posts
 ```
 
-El censo (torres, aptos, personas) no se define aquí; sigue en `/client/structures`.
+El censo (torres, salones, aptos, personas) se define en `/client/structures` **después de elegir la instalación**.
 
 La app de campo (`GET /api/supervision/posts`) lista **estos puestos**, nunca `locations`. Sin puestos no se guarda revista.
 
@@ -96,31 +97,38 @@ Create en la migración original de cada dominio; **sin ALTER sueltos**.
 | **Creada** | `supervisor_posts` | Puesto compartido. `client_id`, `installation_id`, nombre, `modality` (8/12/24), activo |
 | **Creada** | `supervisor_post_employee` | Vigilantes asignados al puesto |
 | **Ajustada** | `locations` | Puerta de portería. `installation_id` obligatorio. No es el puesto |
+| **Ajustada** | `structures` | Censo por instalación (`installation_id`) |
 | **Ajustada** | `supervisor_shift_reviews` | `supervisor_post_id` (ya no `location_id`) |
 
 No se clonan tablas de Patrulla (`review_posts`, etc.). Flota de Supervisión sigue en `supervisor_fleet_vehicles`, no en `vehicles` de Accesos.
 
-**Puente minuta (después):** revista y portería conviven en el mismo cliente. Copiar observaciones de revista a `guard_logs` es un puente explícito, no reutilizar `locations` como puesto.
+**Puente minuta:** el supervisor de la empresa (usuario + código de 6 dígitos) firma revista en la minuta de portería (`guard_logs` tipo `revista`). La PWA de campo sigue para la ronda de Supervisión. No se reutiliza `locations` como puesto.
 
 ---
 
 ## Censo (nodos) — Accesos / panel cliente
 
-Sigue siendo el árbol de **personas y unidades**, no el de portería ni el de Supervisión.
+Árbol de **personas y unidades** por instalación. No es el de portería ni el de Supervisión.
 
-1. Empresa: tipos de estructura en Ajustes → Estructuras. Plataforma: tipos de documento en `/admin/settings/document-types`.
-2. Empresa: alta de cliente (ficha o Excel de clientes).
-3. Panel cliente (`/client/structures`): nodos; el tipo se **hereda** del cliente.
-4. Personas en **un** nodo.
+1. Empresa: tipos de estructura en Ajustes → Estructuras.
+2. Empresa: alta de cliente (ficha) e **instalaciones**.
+3. Panel cliente (`/client/structures`): **seleccionar instalación** → crear nodos (Torre A, Salón B…). El tipo se **hereda** del cliente.
+4. Personas en **un** nodo de esa instalación.
+5. Acceso de persona (`/client/app-users`) para app o panel.
 
 ```
 Cliente (tipo fijo, ej. Propiedad horizontal)
-  └── Nodo (Torre A)           ← parent_id null
-        └── Subnodo (Apto 101) ← parent_id = Torre A
-              └── Persona
+  └── Instalación (sede, colegio…)
+        ├── Puestos / puertas
+        └── Estructura
+              Torre A
+                Apto 101 → Persona → acceso de persona
+              Salón A    → Persona → acceso de persona
 ```
 
-También válido: nodo hoja directo (casa sin torre) → persona en ese nodo.
+También válido: nodo hoja directo (casa o salón sin torre) → persona en ese nodo.
+
+Tabla `structures`: `installation_id` (FK). Unique `(installation_id, code)`. Migración `2026_09_11_120000_add_installation_id_to_structures`.
 
 ---
 
@@ -158,7 +166,7 @@ Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** 
 - Puertas: `locations` de esas instalaciones.
 - Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.
 
-El panel `/client/structures` se llama **Estructura** (censo).
+El panel `/client/structures` se llama **Estructura** (censo por instalación). `/client/users` son **administradores del cliente**. `/client/app-users` es **acceso de personas** del censo.
 
 ---
 
@@ -180,3 +188,13 @@ Permiso: `company.clients.manage`. Portería (`/access/locations`) también crea
 |------|---------|
 | `DatabaseSeeder` (mínimo) | Tipos de documento; **no** clientes ni instalaciones |
 | `PilotDemoSeeder` | Empresa, clientes (ficha + líneas), censo demo. Palmas: instalación sede + 4 puertas + 2 puestos. Torres: instalación sede + 1 puerta + 1 puesto (solo Accesos) |
+
+---
+
+## Tests
+
+```bash
+php artisan test --filter=StructureModuleTest
+php artisan test --filter=PorteriaRevistaTest
+```
+

@@ -1,11 +1,11 @@
-<x-client-layout title="Usuarios portal">
+<x-client-layout title="Usuarios del cliente">
     <div class="max-w-5xl space-y-4">
         <div class="flex items-center justify-between gap-3">
             <div>
-                <h3 class="text-sm font-semibold text-white">Usuarios del conjunto</h3>
-                <p class="text-xs text-slate-500 mt-1">Residentes y vigilantes asignados a este conjunto.</p>
+                <h3 class="text-sm font-semibold text-white">Administradores del cliente</h3>
+                <p class="text-xs text-slate-500 mt-1">Quienes operan el panel de este cliente (estructura, personas, accesos del censo). Los vigilantes se crean en la empresa y solo si la instalación tiene puertas.</p>
             </div>
-            <x-ui.button :href="route('client.users.create')" size="sm">+ Nuevo usuario</x-ui.button>
+            <x-ui.button :href="route('client.users.create')" size="sm">+ Nuevo administrador</x-ui.button>
         </div>
 
         <form method="GET" class="flex gap-2">
@@ -28,13 +28,13 @@
                         <tr class="hover:bg-slate-900/40">
                             <td class="px-4 py-3 text-white">{{ $user->name }}</td>
                             <td class="px-4 py-3 text-slate-300">{{ $user->email }}</td>
-                            <td class="px-4 py-3 text-slate-400">{{ $user->roles->first()?->name ?? '—' }}</td>
+                            <td class="px-4 py-3 text-slate-400">{{ \App\Support\Auth\AssignableRoles::label($user->roles->first()?->name ?? '') }}</td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('client.users.edit', $user) }}" class="text-teal-400 hover:text-teal-300">Editar</a>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">Sin usuarios.</td></tr>
+                        <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">Sin administradores.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -43,8 +43,8 @@
         {{ $users->links() }}
 
         <p class="text-xs text-slate-500">
-            Usuarios APP móvil del censo:
-            <a href="{{ route('client.app-users.index') }}" class="text-teal-400 hover:text-teal-300">Gestionar usuarios APP</a>
+            Acceso de las personas del censo:
+            <a href="{{ route('client.app-users.index') }}" class="text-teal-400 hover:text-teal-300">Gestionar accesos de persona</a>
         </p>
     </div>
 </x-client-layout>

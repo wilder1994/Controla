@@ -265,7 +265,7 @@ Documentación: [`docs/USUARIOS-Y-PERFILES.md`](docs/USUARIOS-Y-PERFILES.md). En
 |-------|-------------|
 | Plataforma | `/admin/users`, `/admin/companies/{id}/profile` |
 | Empresa | `/company/users`, `/company/settings` (Mis datos), `/company/employees` |
-| Conjunto | `/client/users` (portal web; APP en `/client/app-users`) |
+| Cliente | `/client/users` (admins del cliente); acceso de personas en `/client/app-users` |
 
 Tras desplegar permisos nuevos: `php artisan db:seed --class=RoleAndPermissionSeeder`
 
@@ -420,7 +420,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST /company/billing/membership/cancel` | Cancelar membresía (acceso hasta corte) |
 | `POST /company/billing/membership/undo-cancel` | Deshacer cancelación sin pago |
 | `POST /company/billing/package/schedule` | Programar cambio de plan (cobra online, aplica al corte) |
-| `GET /company/users` | Usuarios de la empresa y conjuntos asignados |
+| `GET /company/users` | Usuarios de la empresa y clientes asignados |
 | `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped |
 | `GET /company/settings` | **Mis datos**: perfil, ubicación, logo y encabezado de fichas (sin pestañas) |
 | `PUT /company/settings` | Guardar perfil, logo y texto de encabezado |
@@ -583,7 +583,7 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 
 ### Modelo unificado `structures`
 
-Árbol autoreferencial bajo el **cliente**: nodo raíz → hijos (subnodos). El **tipo** del cliente (`clients.structure_type_id`) se fija en el alta comercial; los nodos creados desde UI **heredan** ese tipo.
+Árbol autoreferencial bajo la **instalación** (`structures.installation_id`): elige instalación → nodos (Torre A, Salón B…) → subnodos. El **tipo** del cliente (`clients.structure_type_id`) se fija en el alta comercial; los nodos creados desde UI **heredan** ese tipo. Las personas se asignan a un nodo.
 
 Detalle de dominio y glosario: [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
 
@@ -592,7 +592,7 @@ Tablas relacionadas:
 - `structure_members` — personas del censo + `access_code` (QR); **requieren** `structure_id`
 - `structure_pets` — mascotas
 - `visitor_pre_authorizations` — pre-autorizaciones con `qr_auth_token`
-- `structure_app_users` — usuarios APP (`usuario@login_suffix`)
+- `structure_app_users` — acceso de personas del censo (`usuario@login_suffix`)
 - `vehicles.structure_id` — vehículos vinculados a unidad
 
 ### Panel Cliente (`/client`)
@@ -600,14 +600,14 @@ Tablas relacionadas:
 | Ruta | Módulo |
 |------|--------|
 | `/client/dashboard` | Resumen |
-| `/client/structures` | Árbol de nodos (**Estructura**) |
+| `/client/structures` | Árbol de nodos por **instalación** (**Estructura**) |
 | `/client/members` | Directorio personas + QR + **Exportar listado asamblea** |
 | `/client/pets` | Directorio de mascotas por unidad |
 | `/client/vehicles` | Directorio vehicular |
 | `/client/authorizations` | Pre-autorizaciones |
 | `/client/authorizations/import` | Import Excel (`maatwebsite/excel`) |
-| `/client/app-users` | Usuarios APP móvil (`structure_app_users`) |
-| `/client/users` | Usuarios portal web (residentes, vigilantes del cliente) |
+| `/client/app-users` | Acceso de personas (`structure_app_users`) |
+| `/client/users` | Administradores del cliente (`client-admin`) |
 
 ### Mascotas (`/client/pets`) — CRUD completo
 

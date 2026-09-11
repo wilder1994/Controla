@@ -60,12 +60,7 @@ final class UserScopeResolver
                         $scoped->whereHas('clients', function (Builder $clientQuery) use ($clientId): void {
                             $clientQuery->where('clients.id', $clientId);
                         })->whereHas('roles', function (Builder $roleQuery): void {
-                            $roleQuery->whereIn('name', [
-                                'resident',
-                                'anfitrion',
-                                'guardia',
-                                'supervisor',
-                            ]);
+                            $roleQuery->where('name', 'client-admin');
                         });
                     });
             });

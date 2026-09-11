@@ -48,7 +48,7 @@ final class InitializeAccessTenancy
             } else {
                 return redirect()
                     ->route('company.clients.index', ['modo' => 'operar'])
-                    ->with('warning', 'Selecciona el conjunto en el que vas a operar.');
+                    ->with('warning', 'Selecciona el cliente en el que vas a operar.');
             }
         }
 

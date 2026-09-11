@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\GuardLog;
 use App\Models\Location;
 use App\Models\SupervisionCode;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Notifications\AlertaOperativa;
 use App\Services\Access\AuditLogger;
 use App\Services\Access\GeoService;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 
 class GuardLogController extends Controller
@@ -175,6 +177,9 @@ class GuardLogController extends Controller
             ->where('supervisor_code', $raw)
             ->where('is_active', true)
             ->role('supervisor')
+            ->when($this->porteriaCompanyId(), function ($query, int $companyId): void {
+                $query->where('security_company_id', $companyId);
+            })
             ->first();
 
         if ($supervisor === null) {
@@ -182,5 +187,20 @@ class GuardLogController extends Controller
         }
 
         return ['code' => null, 'name' => $supervisor->name];
+    }
+
+    private function porteriaCompanyId(): ?int
+    {
+        $clientId = app(TenantContext::class)->clientId();
+
+        if ($clientId === null) {
+            $companyId = auth()->user()?->security_company_id;
+
+            return $companyId !== null ? (int) $companyId : null;
+        }
+
+        $companyId = Client::query()->whereKey($clientId)->value('security_company_id');
+
+        return $companyId !== null ? (int) $companyId : null;
     }
 }

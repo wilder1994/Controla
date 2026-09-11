@@ -16,7 +16,7 @@ final class StructureMemberRepository
         int $perPage = 20,
     ): LengthAwarePaginator {
         $query = StructureMember::query()
-            ->with('structure')
+            ->with(['structure.installation', 'structure.parent'])
             ->where('client_id', $clientId)
             ->orderBy('last_name')
             ->orderBy('first_name');

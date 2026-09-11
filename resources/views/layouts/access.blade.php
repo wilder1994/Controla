@@ -31,7 +31,7 @@
                 @can('client.structures.manage')
                 <a href="{{ route('client.dashboard') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 mt-4">
-                    <span>Panel Conjunto</span>
+                    <span>Panel cliente</span>
                 </a>
                 @endcan
             </nav>

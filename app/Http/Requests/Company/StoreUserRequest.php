@@ -87,7 +87,7 @@ final class StoreUserRequest extends FormRequest
             'username' => 'usuario de acceso',
             'job_title' => 'cargo',
             'role' => 'rol',
-            'client_ids' => 'conjunto',
+            'client_ids' => 'cliente',
         ];
     }
 }

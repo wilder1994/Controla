@@ -5,7 +5,7 @@
 
 <x-auth-layout
     title="Iniciar sesión"
-    subtitle="Ingresa con tu cuenta corporativa o de conjunto."
+    subtitle="Ingresa con tu cuenta corporativa o de cliente."
 >
     <x-auth-session-status class="mb-4 text-sm font-medium text-cyan-300" :status="session('status')" />
 

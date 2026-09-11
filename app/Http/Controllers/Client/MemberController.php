@@ -38,7 +38,7 @@ final class MemberController extends Controller
             $request->string('q')->toString() ?: null,
             $request->integer('structure_id') ?: null,
         );
-        $structures = Structure::query()->orderBy('name')->get();
+        $structures = Structure::query()->with(['installation', 'parent'])->orderBy('name')->get();
         $memberTypes = MemberType::options();
 
         return view('modules.client.members.index', compact('members', 'structures', 'memberTypes'));
@@ -48,7 +48,7 @@ final class MemberController extends Controller
     {
         $this->authorize('create', StructureMember::class);
 
-        $structures = Structure::query()->orderBy('name')->get();
+        $structures = Structure::query()->with(['installation', 'parent'])->orderBy('name')->get();
         $memberTypes = MemberType::options();
 
         return view('modules.client.members.create', compact('structures', 'memberTypes'));
@@ -87,7 +87,7 @@ final class MemberController extends Controller
     {
         $this->authorize('view', $member);
 
-        $member->load('structure');
+        $member->load(['structure.installation', 'structure.parent', 'appUser']);
 
         return view('modules.client.members.show', compact('member'));
     }
@@ -96,7 +96,7 @@ final class MemberController extends Controller
     {
         $this->authorize('update', $member);
 
-        $structures = Structure::query()->orderBy('name')->get();
+        $structures = Structure::query()->with(['installation', 'parent'])->orderBy('name')->get();
         $memberTypes = MemberType::options();
 
         return view('modules.client.members.edit', compact('member', 'structures', 'memberTypes'));

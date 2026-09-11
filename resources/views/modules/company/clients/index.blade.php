@@ -23,7 +23,7 @@
     <div class="space-y-4">
         @if ($operateMode)
             <div class="rounded-lg border border-emerald-800/50 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-200">
-                Abre un conjunto con <strong>Ver</strong> y elige <strong>Operar portería</strong> o <strong>Operar cliente</strong> desde su expediente.
+                Abre un cliente con <strong>Ver</strong> y elige <strong>Operar portería</strong> o <strong>Operar cliente</strong> desde su expediente.
             </div>
         @endif
 
@@ -33,7 +33,7 @@
                 <input type="hidden" name="modo" value="operar">
             @endif
             <div class="flex-1 min-w-0">
-                <label for="q" class="sr-only">Buscar conjuntos</label>
+                <label for="q" class="sr-only">Buscar clientes</label>
                 <input type="search" id="q" name="q" value="{{ $search }}"
                        placeholder="Buscar por nombre, slug o dirección…"
                        class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
@@ -58,13 +58,13 @@
             </div>
             @if ($metrics)
                 <p class="text-xs text-slate-500 sm:ml-auto sm:text-right whitespace-nowrap">
-                    {{ $clients->total() }} {{ $clients->total() === 1 ? 'conjunto' : 'conjuntos' }}
+                    {{ $clients->total() }} {{ $clients->total() === 1 ? 'cliente' : 'clientes' }}
                     · Accesos {{ $metrics['clients_remaining'] }}/{{ $metrics['max_clients'] }}
                     · Supervisión {{ ($metrics['supervision_unlimited'] ?? false) ? 'Ilimitada' : (($metrics['supervision_remaining'] ?? 0).'/'.($metrics['max_supervision_clients'] ?? 0)) }}
                 </p>
             @else
                 <p class="text-xs text-slate-500 sm:ml-auto sm:text-right whitespace-nowrap">
-                    {{ $clients->total() }} {{ $clients->total() === 1 ? 'conjunto' : 'conjuntos' }} operables
+                    {{ $clients->total() }} {{ $clients->total() === 1 ? 'cliente' : 'clientes' }} operables
                 </p>
             @endif
         </form>
@@ -184,14 +184,14 @@
                             <tr>
                                 <td colspan="{{ $operateMode ? (auth()->user()?->hasRole('super-admin') ? 5 : 4) : 6 }}" class="px-4 py-12 text-center">
                                     @if ($search !== '' || ($operateMode ? $status !== 'active' : $status !== 'all'))
-                                        <p class="text-sm text-slate-400">No hay conjuntos que coincidan con tu búsqueda.</p>
+                                        <p class="text-sm text-slate-400">No hay clientes que coincidan con tu búsqueda.</p>
                                         <a href="{{ route('company.clients.index', $operateMode ? ['modo' => 'operar'] : []) }}"
                                            class="inline-block mt-2 text-xs text-indigo-400 hover:text-indigo-300">
                                             Ver {{ $operateMode ? 'todos los operables' : 'toda la cartera' }}
                                         </a>
                                     @elseif ($operateMode)
-                                        <p class="text-sm font-medium text-slate-300">No hay conjuntos activos para operar</p>
-                                        <p class="text-sm text-slate-500 mt-1">Activa un conjunto en cartera o crea uno nuevo.</p>
+                                        <p class="text-sm font-medium text-slate-300">No hay clientes activos para operar</p>
+                                        <p class="text-sm text-slate-500 mt-1">Activa un cliente en cartera o crea uno nuevo.</p>
                                         @can('create', App\Models\Client::class)
                                             <div class="mt-4 flex flex-wrap justify-center gap-3">
                                                 @can('company.clients.view')

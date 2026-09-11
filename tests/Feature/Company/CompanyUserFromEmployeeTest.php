@@ -101,6 +101,18 @@ final class CompanyUserFromEmployeeTest extends TestCase
             'password_confirmation' => 'Clave123!',
         ])->assertSessionHasErrors('client_ids');
 
+        $this->actingAs($admin)->from(route('company.users.create'))->post(route('company.users.store'), [
+            'role' => 'guardia',
+            'employee_id' => $employee->id,
+            'job_title' => 'Portería',
+            'username' => 'ana.perez.2001',
+            'password' => 'Clave123!',
+            'password_confirmation' => 'Clave123!',
+            'client_ids' => [$client->id],
+        ])->assertSessionHasErrors('client_ids');
+
+        $this->assignEmployeeToClientPost($employee, $client);
+
         $this->actingAs($admin)->post(route('company.users.store'), [
             'role' => 'guardia',
             'employee_id' => $employee->id,

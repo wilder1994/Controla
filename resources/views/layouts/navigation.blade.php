@@ -23,7 +23,7 @@
                     @endcan
                     @can('client.structures.manage')
                     <x-nav-link :href="route('client.dashboard')" :active="request()->routeIs('client.*')">
-                        Panel Conjunto
+                        Panel cliente
                     </x-nav-link>
                     @endcan
                     @can('access.dashboard')
@@ -95,7 +95,7 @@
             @endcan
             @can('client.structures.manage')
             <x-responsive-nav-link :href="route('client.dashboard')" :active="request()->routeIs('client.*')">
-                Panel Conjunto
+                Panel cliente
             </x-responsive-nav-link>
             @endcan
             @can('access.dashboard')

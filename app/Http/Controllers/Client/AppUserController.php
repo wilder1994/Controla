@@ -12,6 +12,7 @@ use App\Models\StructureMember;
 use App\Repositories\StructureAppUserRepository;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class AppUserController extends Controller
@@ -32,14 +33,21 @@ final class AppUserController extends Controller
         return view('modules.client.app-users.index', compact('appUsers', 'client'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         abort_unless(auth()->user()?->can('client.app_users.manage'), 403);
 
-        $members = StructureMember::query()->where('has_app_access', true)->orderBy('last_name')->get();
+        $members = StructureMember::query()
+            ->with(['structure.installation', 'structure.parent'])
+            ->whereDoesntHave('appUser')
+            ->where('is_active', true)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
         $client = Client::query()->find((int) $this->tenantContext->clientId());
+        $selectedMemberId = $request->integer('member_id') ?: null;
 
-        return view('modules.client.app-users.create', compact('members', 'client'));
+        return view('modules.client.app-users.create', compact('members', 'client', 'selectedMemberId'));
     }
 
     public function store(StoreAppUserRequest $request): RedirectResponse
@@ -47,20 +55,24 @@ final class AppUserController extends Controller
         $clientId = (int) $this->tenantContext->clientId();
 
         if ($this->appUserRepository->usernameExists($clientId, $request->validated('username'))) {
-            return back()->withErrors(['username' => 'El usuario ya existe en este conjunto.'])->withInput();
+            return back()->withErrors(['username' => 'El usuario ya existe en este cliente.'])->withInput();
         }
+
+        $member = StructureMember::query()->findOrFail((int) $request->validated('member_id'));
 
         StructureAppUser::query()->create([
             'client_id' => $clientId,
-            'member_id' => $request->validated('member_id'),
+            'member_id' => $member->id,
             'username' => $request->validated('username'),
             'email' => $request->validated('email'),
             'password' => $request->validated('password'),
             'is_active' => $request->boolean('is_active', true),
         ]);
 
+        $member->update(['has_app_access' => true]);
+
         return redirect()
             ->route('client.app-users.index')
-            ->with('success', 'Usuario APP creado correctamente.');
+            ->with('success', 'Acceso de persona creado correctamente.');
     }
 }

@@ -51,7 +51,7 @@
                             @csrf
                             <button type="submit" class="{{ $actionCard }}">
                                 <p class="text-sm font-semibold text-white">Operar portería</p>
-                                <p class="mt-1 text-xs text-slate-400 leading-relaxed">Entra al módulo de accesos de este conjunto.</p>
+                                <p class="mt-1 text-xs text-slate-400 leading-relaxed">Entra al módulo de accesos de este cliente.</p>
                             </button>
                         </form>
                     @endif

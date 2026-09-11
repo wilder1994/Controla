@@ -3,7 +3,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h2 class="text-2xl font-bold text-white">Directorio de personas</h2>
-                <p class="text-sm text-slate-400 mt-1">Censo global con filtros por unidad — §1.2.2.</p>
+                <p class="text-sm text-slate-400 mt-1">Personas asignadas a un nodo de la estructura (salón, apartamento, etc.).</p>
             </div>
             <div class="flex gap-2">
                 <a href="{{ route('client.members.export') }}" class="inline-flex rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">
@@ -56,7 +56,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-slate-300">{{ $member->structure?->name }}</td>
+                            <td class="px-4 py-3 text-slate-300">{{ $member->structure?->full_path }}</td>
                             <td class="px-4 py-3"><span class="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-slate-700">{{ $member->member_type->label() }}</span></td>
                             <td class="px-4 py-3 font-mono text-xs text-indigo-300">{{ $member->access_code }}</td>
                             <td class="px-4 py-3">

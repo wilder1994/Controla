@@ -12,7 +12,7 @@ final class StructureAppUserRepository
     public function paginateForClient(int $clientId, int $perPage = 20): LengthAwarePaginator
     {
         return StructureAppUser::query()
-            ->with(['member', 'client'])
+            ->with(['member.structure.installation', 'client'])
             ->where('client_id', $clientId)
             ->orderBy('username')
             ->paginate($perPage);

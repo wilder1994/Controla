@@ -90,14 +90,14 @@
                             <input type="checkbox" x-model="requiresSupervisor" name="requires_supervisor" value="1" class="mt-0.5 rounded bg-slate-950 border-indigo-600 text-indigo-500 focus:ring-indigo-500">
                             <div>
                                 <p class="text-sm font-medium text-indigo-200">Requiere firma de supervisor</p>
-                                <p class="text-xs text-slate-400">Para revistas, novedades e incidentes el supervisor valida con su código (catálogo o código de 6 dígitos del usuario supervisor).</p>
+                                <p class="text-xs text-slate-400">Revista de puesto: el supervisor de la empresa firma con su código de 6 dígitos. También vale un código del catálogo de portería.</p>
                             </div>
                         </label>
 
                         <div x-show="requiresSupervisor" x-cloak class="mt-3 p-4 bg-indigo-950/40 rounded-lg border border-indigo-700/60">
                             <label class="block text-sm font-medium text-slate-300">Código del supervisor</label>
                             <input type="text" name="supervision_code" x-model="supervisorCode" autocomplete="off" placeholder="Ingrese el código único del supervisor..." class="mt-1 block w-full max-w-xs rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                            <p class="mt-2 text-xs text-slate-500">El sistema validará el código contra los códigos de supervisión activos y registrará quién firmó la minuta.</p>
+                            <p class="mt-2 text-xs text-slate-500">Código de 6 dígitos del usuario supervisor de la empresa, o un código activo del catálogo de portería.</p>
                         </div>
                     </div>
 

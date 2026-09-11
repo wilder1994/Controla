@@ -6,6 +6,7 @@ namespace App\Services\Structure;
 
 use App\Domain\Structure\Data\CreateStructureData;
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Structure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,8 +25,30 @@ final class CreateStructureService
                 ]);
             }
 
+            $installation = Installation::query()
+                ->whereKey($data->installationId)
+                ->where('client_id', $data->clientId)
+                ->first();
+
+            if ($installation === null) {
+                throw ValidationException::withMessages([
+                    'installation_id' => 'Selecciona una instalación de este cliente.',
+                ]);
+            }
+
+            if ($data->parentId !== null) {
+                $parent = Structure::query()->find($data->parentId);
+
+                if ($parent === null || (int) $parent->installation_id !== $data->installationId) {
+                    throw ValidationException::withMessages([
+                        'parent_id' => 'El nodo padre debe pertenecer a la misma instalación.',
+                    ]);
+                }
+            }
+
             return Structure::query()->create([
                 'client_id' => $data->clientId,
+                'installation_id' => $data->installationId,
                 'parent_id' => $data->parentId,
                 'name' => $data->name,
                 'code' => $data->code,

@@ -149,7 +149,7 @@ final class CompanyClientExpedienteTest extends TestCase
 
         $dashboard->assertOk();
         $dashboard->assertSee('Volver al expediente');
-        $dashboard->assertSee('panel del conjunto');
+        $dashboard->assertSee('panel del cliente');
 
         $exit = $this->actingAs($user)
             ->withSession([

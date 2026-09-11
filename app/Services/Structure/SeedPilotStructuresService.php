@@ -9,6 +9,7 @@ use App\Enums\MemberType;
 use App\Enums\PetSpecies;
 use App\Enums\VisitorCategory;
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Structure;
 use App\Models\StructureAppUser;
 use App\Models\StructureMember;
@@ -28,30 +29,30 @@ final class SeedPilotStructuresService
         }
 
         $companyId = (int) $client->security_company_id;
-        $generalAreaId = StructureType::idByCode($companyId, 'general_area');
         $blockId = StructureType::idByCode($companyId, 'block');
         $apartmentId = StructureType::idByCode($companyId, 'apartment');
 
-        DB::transaction(function () use ($client, $generalAreaId, $blockId, $apartmentId): void {
-            $root = Structure::query()->firstOrCreate(
-                ['client_id' => $client->id, 'code' => $client->slug],
-                [
-                    'parent_id' => null,
-                    'name' => $client->name,
-                    'structure_type_id' => $generalAreaId,
-                    'is_active' => true,
-                ]
-            );
+        DB::transaction(function () use ($client, $blockId, $apartmentId): void {
+            $installation = Installation::query()
+                ->where('client_id', $client->id)
+                ->orderByDesc('is_client_site')
+                ->orderBy('id')
+                ->first();
 
             $tower = Structure::query()->firstOrCreate(
                 ['client_id' => $client->id, 'code' => 'TORRE-A'],
                 [
-                    'parent_id' => $root->id,
+                    'installation_id' => $installation?->id,
+                    'parent_id' => null,
                     'name' => 'Torre A',
                     'structure_type_id' => $blockId,
                     'is_active' => true,
                 ]
             );
+
+            if ($installation !== null && $tower->installation_id === null) {
+                $tower->update(['installation_id' => $installation->id, 'parent_id' => null]);
+            }
 
             $apartments = [];
             for ($i = 1; $i <= 10; $i++) {
@@ -59,6 +60,7 @@ final class SeedPilotStructuresService
                 $apartments[] = Structure::query()->firstOrCreate(
                     ['client_id' => $client->id, 'code' => $code],
                     [
+                        'installation_id' => $installation?->id,
                         'parent_id' => $tower->id,
                         'name' => "Apto {$i}01",
                         'structure_type_id' => $apartmentId,

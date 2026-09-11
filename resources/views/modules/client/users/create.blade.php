@@ -1,6 +1,6 @@
-<x-client-layout title="Nuevo usuario portal">
+<x-client-layout title="Nuevo administrador del cliente">
     <div class="max-w-2xl">
-        <a href="{{ route('client.users.index') }}" class="text-sm text-slate-400 hover:text-white">&larr; Usuarios portal</a>
+        <a href="{{ route('client.users.index') }}" class="text-sm text-slate-400 hover:text-white">&larr; Administradores del cliente</a>
         <form method="POST" action="{{ route('client.users.store') }}" enctype="multipart/form-data" class="mt-4 space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             @csrf
             @include('modules.shared.managed-user-form', [

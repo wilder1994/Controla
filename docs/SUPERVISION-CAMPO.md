@@ -197,7 +197,7 @@ Al enviar se guarda un ticket scoped a la empresa (`security_company_id`, usuari
 
 Bandeja prevista: panel empresa (listado de los tickets de **esa** empresa). Plataforma (`/admin`): ver todos es un extra posterior, no el corte mínimo.
 
-Fuera de alcance de este corte: chatbot en la PWA de campo, app de residentes, WhatsApp, mail automático al cliente del conjunto.
+Fuera de alcance de este corte: chatbot en la PWA de campo, app de residentes, WhatsApp, mail automático al cliente.
 
 ---
 

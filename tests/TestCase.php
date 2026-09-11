@@ -189,6 +189,14 @@ abstract class TestCase extends BaseTestCase
         return $post;
     }
 
+    protected function assignEmployeeToClientPost(Employee $employee, Client $client): SupervisorPost
+    {
+        $post = $this->supervisionPostFor($client);
+        $employee->supervisorPosts()->syncWithoutDetaching([$post->id]);
+
+        return $post;
+    }
+
     /** @return array<string, mixed> */
     protected function supervisorReviewPayload(Client $client, array $overrides = []): array
     {

@@ -6,6 +6,7 @@ namespace Tests\Feature\Structure;
 
 use App\Enums\MemberType;
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\Structure;
 use App\Models\StructureMember;
 use App\Models\StructureType;
@@ -30,15 +31,22 @@ final class StructureModuleTest extends TestCase
         $this->assertNotNull($admin);
         $this->assertSame($expectedTypeId, (int) $client->structure_type_id);
 
+        $installation = Installation::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->orderByDesc('is_client_site')
+            ->firstOrFail();
+
         $response = $this->actingAs($admin)
             ->withSession(['tenancy.active_client_id' => $client->id])
             ->post(route('client.structures.store'), [
+                'installation_id' => $installation->id,
                 'name' => 'Torre Piloto Test',
                 'code' => 'TORRE-TEST',
                 'is_active' => true,
             ]);
 
-        $response->assertRedirect(route('client.structures.index'));
+        $response->assertRedirect(route('client.structures.index', ['installation_id' => $installation->id]));
 
         $structure = Structure::withoutGlobalScopes()
             ->where('code', 'TORRE-TEST')
@@ -46,6 +54,7 @@ final class StructureModuleTest extends TestCase
 
         $this->assertNotNull($structure);
         $this->assertSame($client->id, $structure->client_id);
+        $this->assertSame($installation->id, (int) $structure->installation_id);
         $this->assertSame($expectedTypeId, $structure->structure_type_id);
     }
 
@@ -57,8 +66,15 @@ final class StructureModuleTest extends TestCase
         $clientB = Client::query()->where('slug', 'torres-loma')->first();
         $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
 
+        $installationB = Installation::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $clientB->id)
+            ->orderByDesc('is_client_site')
+            ->first();
+
         $structureB = Structure::withoutGlobalScopes()->create([
             'client_id' => $clientB->id,
+            'installation_id' => $installationB?->id,
             'name' => 'Apto B1',
             'code' => 'B1-TEST',
             'structure_type_id' => StructureType::idByCode((int) $clientB->security_company_id, 'apartment'),
@@ -96,6 +112,26 @@ final class StructureModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Estructura');
+        $response->assertSee('Seleccione instalación');
+    }
+
+    public function test_structure_store_requires_installation(): void
+    {
+        $this->seedWithPilot();
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
+        $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
+
+        $response = $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->from(route('client.structures.index'))
+            ->post(route('client.structures.store'), [
+                'name' => 'Sin instalación',
+                'code' => 'SIN-INST',
+                'is_active' => true,
+            ]);
+
+        $response->assertSessionHasErrors('installation_id');
     }
 
     public function test_pilot_seed_creates_tower_and_members(): void
@@ -107,7 +143,7 @@ final class StructureModuleTest extends TestCase
         $structures = Structure::withoutGlobalScopes()->where('client_id', $client->id)->count();
         $members = StructureMember::withoutGlobalScopes()->where('client_id', $client->id)->count();
 
-        $this->assertGreaterThanOrEqual(12, $structures);
+        $this->assertGreaterThanOrEqual(11, $structures);
         $this->assertGreaterThanOrEqual(20, $members);
     }
 }

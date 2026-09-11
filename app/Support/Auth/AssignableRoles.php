@@ -53,13 +53,11 @@ final class AssignableRoles
     public static function forClient(): array
     {
         return [
-            'resident',
-            'anfitrion',
-            'guardia',
+            'client-admin',
         ];
     }
 
-    /** Roles que requieren al menos un conjunto asignado. */
+    /** Roles que requieren al menos un cliente asignado. */
     /** @return list<string> */
     public static function requiringClientAssignment(): array
     {
@@ -71,7 +69,7 @@ final class AssignableRoles
         ];
     }
 
-    /** Roles con exactamente un conjunto (vigilante). */
+    /** Roles con exactamente un cliente (vigilante). */
     /** @return list<string> */
     public static function requiringSingleClientAssignment(): array
     {
@@ -85,7 +83,7 @@ final class AssignableRoles
         return match ($role) {
             'super-admin' => 'Súper administrador',
             'company-admin' => 'Administrador empresa',
-            'client-admin' => 'Administrador conjunto',
+            'client-admin' => 'Administrador del cliente',
             'guardia' => 'Vigilante',
             'supervisor' => 'Supervisor de vigilancia',
             'resident' => 'Residente portal',

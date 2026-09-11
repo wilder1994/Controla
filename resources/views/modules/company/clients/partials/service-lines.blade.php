@@ -37,7 +37,7 @@
         <input type="checkbox" name="show_personnel_folders" value="1" class="mt-0.5 rounded border-slate-600 text-indigo-600" @checked($foldersOn && $accessOn)>
         <span>
             <span class="text-sm font-semibold text-white">Mostrar indexación de carpetas</span>
-            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">En Operar cliente, el conjunto ve las carpetas de empleados asignados a un puesto de este cliente. Solo lectura. Requiere Accesos.</p>
+            <p class="mt-1 text-[11px] text-slate-400 leading-relaxed">En Operar cliente, el cliente ve las carpetas de empleados asignados a un puesto. Solo lectura. Requiere Accesos.</p>
         </span>
     </label>
     <script>
