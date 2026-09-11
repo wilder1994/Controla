@@ -28,6 +28,38 @@ final class StructureRepository
             ->get();
     }
 
+    /**
+     * Nodos en orden de árbol (no alfabético plano), con profundidad para el select.
+     *
+     * @return list<array{id: int, name: string, depth: int}>
+     */
+    public function parentOptionsForInstallation(int $clientId, int $installationId): array
+    {
+        $nodes = Structure::query()
+            ->where('client_id', $clientId)
+            ->where('installation_id', $installationId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'parent_id']);
+
+        $byParent = $nodes->groupBy(fn (Structure $node): int => $node->parent_id === null ? 0 : (int) $node->parent_id);
+        $rows = [];
+
+        $walk = function (int $parentKey, int $depth) use (&$walk, &$rows, $byParent): void {
+            foreach ($byParent->get($parentKey, collect()) as $node) {
+                $rows[] = [
+                    'id' => (int) $node->id,
+                    'name' => (string) $node->name,
+                    'depth' => $depth,
+                ];
+                $walk((int) $node->id, $depth + 1);
+            }
+        };
+
+        $walk(0, 0);
+
+        return $rows;
+    }
+
     /** @return Collection<int, Structure> */
     public function treeForClient(int $clientId): Collection
     {
@@ -116,18 +148,5 @@ final class StructureRepository
             ->where('security_company_id', $companyId)
             ->where('is_unit', true)
             ->pluck('id');
-    }
-
-    public function codeExists(int $clientId, string $code, ?int $exceptId = null): bool
-    {
-        $query = Structure::query()
-            ->where('client_id', $clientId)
-            ->where('code', $code);
-
-        if ($exceptId !== null) {
-            $query->where('id', '!=', $exceptId);
-        }
-
-        return $query->exists();
     }
 }

@@ -45,13 +45,9 @@ final class StructureController extends Controller
             ? $this->structureRepository->treeForInstallation($clientId, (int) $installation->id)
             : collect();
         $census = $this->structureRepository->censusCounts($clientId);
-        $parents = $installation !== null
-            ? Structure::query()
-                ->with(['structureType', 'installation', 'parent'])
-                ->where('installation_id', $installation->id)
-                ->orderBy('name')
-                ->get()
-            : collect();
+        $parentOptions = $installation !== null
+            ? $this->structureRepository->parentOptionsForInstallation($clientId, (int) $installation->id)
+            : [];
 
         return view('modules.client.structures.index', compact(
             'client',
@@ -59,7 +55,7 @@ final class StructureController extends Controller
             'installation',
             'tree',
             'census',
-            'parents',
+            'parentOptions',
         ));
     }
 
@@ -75,7 +71,6 @@ final class StructureController extends Controller
                 ? (int) $request->validated('parent_id')
                 : null,
             name: $request->validated('name'),
-            code: $request->validated('code'),
             maxOccupancy: (int) $request->validated('max_occupancy', 0),
             isActive: $request->boolean('is_active', true),
         ));

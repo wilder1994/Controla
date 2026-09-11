@@ -260,7 +260,7 @@ No se abre código en este corte. El orden acordado:
 2. Asignación empleado de empresa → puesto.
 3. Instalación: Places, mapa, código, kind.
 4. Administradores opcionales por instalación.
-5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos.
+5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
 8. Observatorio escolar (6 módulos) — producto/capa aparte, misma geometría de instalaciones.
@@ -291,3 +291,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-10 | Sitio sin bloque de revistas (van a `/company/supervision`). Varios vigilantes por puesto; un empleado = un puesto; Reasignar en la ficha del empleado. |
 | 2026-09-10 | Documentos de personal (indexador SJ-SIG) en empresa. Cliente: flag Accesos + solo empleados de sus puestos, solo lectura. Distinto de Normoteca. |
 | 2026-09-11 | Censo bajo instalación (`structures.installation_id`). Panel cliente: elige instalación → nodos → personas → acceso. Usuarios del cliente = `client-admin`. Vigilante portería solo con puertas. Supervisor firma revista en minuta. Término de producto: **cliente**, no conjunto. |
+| 2026-09-11 | Alta de nodo sin código visible: `code` interno (slug, `-2` si choca, prefijo del padre). Panel ancho: árbol + **Crear dentro de** indentado; **+** en el nodo. |

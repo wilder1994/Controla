@@ -11,6 +11,7 @@ final class ClientLayout extends Component
 {
     public function __construct(
         public ?string $title = null,
+        public bool $wide = false,
     ) {}
 
     public function render(): View

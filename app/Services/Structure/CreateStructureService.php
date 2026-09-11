@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Installation;
 use App\Models\Structure;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class CreateStructureService
@@ -36,6 +37,7 @@ final class CreateStructureService
                 ]);
             }
 
+            $parent = null;
             if ($data->parentId !== null) {
                 $parent = Structure::query()->find($data->parentId);
 
@@ -51,12 +53,49 @@ final class CreateStructureService
                 'installation_id' => $data->installationId,
                 'parent_id' => $data->parentId,
                 'name' => $data->name,
-                'code' => $data->code,
+                'code' => $this->uniqueCode($data->installationId, $data->name, $parent),
                 'structure_type_id' => (int) $structureTypeId,
                 'max_occupancy' => $data->maxOccupancy,
                 'is_active' => $data->isActive,
                 'metadata' => $data->metadata,
             ]);
         });
+    }
+
+    private function uniqueCode(int $installationId, string $name, ?Structure $parent): string
+    {
+        $slug = Str::slug($name);
+        if ($slug === '') {
+            $slug = 'nodo';
+        }
+
+        $base = filled($parent?->code)
+            ? $parent->code.'-'.$slug
+            : $slug;
+        $base = Str::limit($base, 45, '');
+
+        $code = $base;
+        $suffix = 2;
+
+        while ($this->codeTaken($installationId, $code)) {
+            $code = Str::limit($base, 40, '').'-'.$suffix;
+            $suffix++;
+
+            if ($suffix > 500) {
+                throw ValidationException::withMessages([
+                    'name' => 'No se pudo generar un código interno único para este nodo.',
+                ]);
+            }
+        }
+
+        return $code;
+    }
+
+    private function codeTaken(int $installationId, string $code): bool
+    {
+        return Structure::query()
+            ->where('installation_id', $installationId)
+            ->where('code', $code)
+            ->exists();
     }
 }

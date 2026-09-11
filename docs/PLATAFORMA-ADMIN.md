@@ -282,7 +282,7 @@ Sidebar **Ajustes** de plataforma: tipos de documento de identidad (`/admin/sett
 
 Los **tipos de estructura** son catálogo **por empresa** (`/company/structure-types`). Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
-**Tipo fijo del cliente:** al crear/editar cliente en `/company/clients` se elige `structure_type_id` de esa empresa. Los nodos nuevos en `/client/structures` **heredan** ese tipo (ya no se elige por nodo).
+**Tipo fijo del cliente:** al crear/editar cliente en `/company/clients` se elige `structure_type_id` de esa empresa. Los nodos nuevos en `/client/structures` **heredan** ese tipo (ya no se elige por nodo). El `code` del nodo lo genera el backend (slug; no se pide ni se muestra en el alta).
 
 Dominio completo: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 

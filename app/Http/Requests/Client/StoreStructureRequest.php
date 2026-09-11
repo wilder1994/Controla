@@ -36,7 +36,6 @@ final class StoreStructureRequest extends FormRequest
             ],
             'parent_id' => ['nullable', 'integer', $parentExists],
             'name' => ['required', 'string', 'max:100'],
-            'code' => ['nullable', 'string', 'max:50'],
             'max_occupancy' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
         ];

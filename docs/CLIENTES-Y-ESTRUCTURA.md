@@ -112,9 +112,10 @@ No se clonan tablas de Patrulla (`review_posts`, etc.). Flota de Supervisión si
 
 1. Empresa: tipos de estructura en Ajustes → Estructuras.
 2. Empresa: alta de cliente (ficha) e **instalaciones**.
-3. Panel cliente (`/client/structures`): **seleccionar instalación** → crear nodos (Torre A, Salón B…). El tipo se **hereda** del cliente.
-4. Personas en **un** nodo de esa instalación.
-5. Acceso de persona (`/client/app-users`) para app o panel.
+3. Panel cliente (`/client/structures`): **Instalación** (barra corta) → árbol a todo el ancho restante → **Nuevo nodo** a la derecha. El tipo se **hereda** del cliente (nota bajo el nombre; no hay campo Tipo ni Código).
+4. **Crear dentro de:** primera opción = esta instalación (raíz); el resto indentado en orden de árbol. El **+** de cada nodo lo deja como padre y enfoca el nombre.
+5. Personas en **un** nodo de esa instalación.
+6. Acceso de persona (`/client/app-users`) para app o panel.
 
 ```
 Cliente (tipo fijo, ej. Propiedad horizontal)
@@ -128,7 +129,9 @@ Cliente (tipo fijo, ej. Propiedad horizontal)
 
 También válido: nodo hoja directo (casa o salón sin torre) → persona en ese nodo.
 
-Tabla `structures`: `installation_id` (FK). Unique `(installation_id, code)`. Migración `2026_09_11_120000_add_installation_id_to_structures`.
+Tabla `structures`: `installation_id` (FK). `code` interno, **automático e inmutable**: slug del nombre, único por instalación; si choca, sufijo `-2`; si el padre ya tiene código, se antepone (`torre-a-apto-101`). Unique `(installation_id, code)`. El POST `code` se ignora. Migración `2026_09_11_120000_add_installation_id_to_structures`.
+
+El layout del panel usa `ClientLayout` con `wide` (sin `max-w-7xl`) para que el árbol no quede estrecho.
 
 ---
 
@@ -166,7 +169,7 @@ Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** 
 - Puertas: `locations` de esas instalaciones.
 - Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.
 
-El panel `/client/structures` se llama **Estructura** (censo por instalación). `/client/users` son **administradores del cliente**. `/client/app-users` es **acceso de personas** del censo.
+El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. `/client/users` son **administradores del cliente**. `/client/app-users` es **acceso de personas** del censo.
 
 ---
 

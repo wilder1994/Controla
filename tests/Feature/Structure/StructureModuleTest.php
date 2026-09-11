@@ -42,20 +42,58 @@ final class StructureModuleTest extends TestCase
             ->post(route('client.structures.store'), [
                 'installation_id' => $installation->id,
                 'name' => 'Torre Piloto Test',
-                'code' => 'TORRE-TEST',
+                'code' => 'IGNORAR-ESTE-CODIGO',
                 'is_active' => true,
             ]);
 
         $response->assertRedirect(route('client.structures.index', ['installation_id' => $installation->id]));
 
         $structure = Structure::withoutGlobalScopes()
-            ->where('code', 'TORRE-TEST')
+            ->where('name', 'Torre Piloto Test')
+            ->where('installation_id', $installation->id)
             ->first();
 
         $this->assertNotNull($structure);
+        $this->assertSame('torre-piloto-test', $structure->code);
         $this->assertSame($client->id, $structure->client_id);
         $this->assertSame($installation->id, (int) $structure->installation_id);
         $this->assertSame($expectedTypeId, $structure->structure_type_id);
+    }
+
+    public function test_duplicate_structure_name_gets_unique_internal_code(): void
+    {
+        $this->seedWithPilot();
+
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
+        $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
+        $installation = Installation::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->orderByDesc('is_client_site')
+            ->firstOrFail();
+
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->post(route('client.structures.store'), [
+                'installation_id' => $installation->id,
+                'name' => 'Tesorería',
+            ]);
+
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->post(route('client.structures.store'), [
+                'installation_id' => $installation->id,
+                'name' => 'Tesorería',
+            ]);
+
+        $codes = Structure::withoutGlobalScopes()
+            ->where('installation_id', $installation->id)
+            ->where('name', 'Tesorería')
+            ->orderBy('id')
+            ->pluck('code')
+            ->all();
+
+        $this->assertSame(['tesoreria', 'tesoreria-2'], $codes);
     }
 
     public function test_member_and_vehicle_are_isolated_by_client(): void
@@ -112,7 +150,10 @@ final class StructureModuleTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Estructura');
-        $response->assertSee('Seleccione instalación');
+        $response->assertSee('Instalación');
+        $response->assertSee('Crear dentro de');
+        $response->assertDontSee('El censo se arma por instalación');
+        $response->assertDontSee('name="code"', false);
     }
 
     public function test_structure_store_requires_installation(): void
@@ -127,7 +168,6 @@ final class StructureModuleTest extends TestCase
             ->from(route('client.structures.index'))
             ->post(route('client.structures.store'), [
                 'name' => 'Sin instalación',
-                'code' => 'SIN-INST',
                 'is_active' => true,
             ]);
 
