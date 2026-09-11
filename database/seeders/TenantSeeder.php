@@ -148,11 +148,16 @@ final class TenantSeeder extends Seeder
      */
     private function seedClientSiteTree(Client $client, array $accessPoints, array $postNames): void
     {
-        $site = Installation::query()->firstOrCreate(
+        $site = Installation::query()->updateOrCreate(
             ['client_id' => $client->id, 'name' => $client->name],
             [
                 'is_client_site' => true,
                 'is_active' => true,
+                'address' => $client->address,
+                'city' => $client->city,
+                'department' => $client->department,
+                'latitude' => $client->latitude,
+                'longitude' => $client->longitude,
             ]
         );
 

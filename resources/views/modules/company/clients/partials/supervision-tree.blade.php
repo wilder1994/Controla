@@ -8,26 +8,12 @@
     <div>
         <h3 class="text-sm font-semibold text-white">Instalaciones y puestos</h3>
         <p class="mt-1 text-xs text-slate-500">
-            Las instalaciones son las mismas del mundo Accesos. Aquí se crean los puestos de Supervisión de campo. La app lista estos puestos, no las puertas de portería.
+            Las instalaciones son las mismas del mundo Accesos y todas llevan ubicación. Aquí se crean los puestos de Supervisión de campo.
         </p>
     </div>
 
     @if ($canManageTree)
-        <form method="POST" action="{{ route('company.clients.installations.store', $client) }}" class="grid sm:grid-cols-4 gap-3 items-end rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-            @csrf
-            <input type="hidden" name="vista" value="supervision">
-            <div class="sm:col-span-2">
-                <label class="block text-xs text-slate-400 mb-1">Nueva instalación</label>
-                <input type="text" name="name" value="{{ old('name') }}" required placeholder="{{ $client->name }}" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                <x-ui.field-error :messages="$errors->get('name')" />
-            </div>
-            <label class="inline-flex items-center gap-2 text-xs text-slate-300 pb-2">
-                <input type="hidden" name="is_client_site" value="0">
-                <input type="checkbox" name="is_client_site" value="1" class="rounded border-slate-700 text-amber-500">
-                Sede = este cliente
-            </label>
-            <button type="submit" class="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-500">Crear instalación</button>
-        </form>
+        @include('modules.company.clients.partials.installation-form', ['client' => $client, 'vista' => 'supervision', 'accent' => 'amber'])
     @endif
 
     <div class="space-y-3">
@@ -37,9 +23,12 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <p class="text-sm font-medium text-white">{{ $installation->name }}</p>
                         @if ($installation->is_client_site)
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300">Sede cliente</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300">Mismo cliente</span>
                         @endif
                         <span class="text-xs text-slate-500">{{ $installation->supervisorPosts->count() }} puesto{{ $installation->supervisorPosts->count() === 1 ? '' : 's' }}</span>
+                        @if ($installation->address || $installation->city)
+                            <span class="text-xs text-slate-500">{{ $installation->address }}{{ $installation->city ? ' · '.$installation->city : '' }}</span>
+                        @endif
                     </div>
                     @if ($canManageTree)
                         <div class="flex items-center gap-2">
@@ -55,27 +44,14 @@
                 </div>
 
                 @if ($canManageTree)
-                    <form x-show="editing" x-cloak method="POST" action="{{ route('company.clients.installations.update', [$client, $installation]) }}" class="grid sm:grid-cols-4 gap-3 items-end">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="vista" value="supervision">
-                        <div class="sm:col-span-2">
-                            <input type="text" name="name" value="{{ old('name', $installation->name) }}" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-                        </div>
-                        <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-                            <input type="hidden" name="is_client_site" value="0">
-                            <input type="checkbox" name="is_client_site" value="1" @checked($installation->is_client_site) class="rounded border-slate-700 text-amber-500">
-                            Sede = este cliente
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <label class="inline-flex items-center gap-2 text-xs text-slate-300">
-                                <input type="hidden" name="is_active" value="0">
-                                <input type="checkbox" name="is_active" value="1" @checked($installation->is_active) class="rounded border-slate-700 text-amber-500">
-                                Activa
-                            </label>
-                            <button type="submit" class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">Guardar</button>
-                        </div>
-                    </form>
+                    <div x-show="editing" x-cloak>
+                        @include('modules.company.clients.partials.installation-form', [
+                            'client' => $client,
+                            'installation' => $installation,
+                            'vista' => 'supervision',
+                            'accent' => 'amber',
+                        ])
+                    </div>
                 @endif
 
                 <ul class="space-y-2">

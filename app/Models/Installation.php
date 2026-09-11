@@ -18,6 +18,11 @@ final class Installation extends Model
         'name',
         'is_client_site',
         'is_active',
+        'address',
+        'city',
+        'department',
+        'latitude',
+        'longitude',
     ];
 
     protected function casts(): array
@@ -25,7 +30,14 @@ final class Installation extends Model
         return [
             'is_client_site' => 'boolean',
             'is_active' => 'boolean',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
         ];
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
     }
 
     public function locations(): HasMany

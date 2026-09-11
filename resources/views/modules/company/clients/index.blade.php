@@ -200,17 +200,17 @@
                                                     </x-ui.button>
                                                 @endcan
                                                 <x-ui.button :href="route('company.clients.create')" size="md">
-                                                    Crear conjunto
+                                                    Crear cliente
                                                 </x-ui.button>
                                             </div>
                                         @endcan
                                     @else
-                                        <p class="text-sm font-medium text-slate-300">Aún no tienes conjuntos en cartera</p>
+                                        <p class="text-sm font-medium text-slate-300">Aún no tienes clientes creados en la cartera</p>
                                         <p class="text-sm text-slate-500 mt-1">Crea el primero para operar portería y censo residencial.</p>
                                         @can('create', App\Models\Client::class)
                                             <div class="mt-4">
                                                 <x-ui.button :href="route('company.clients.create')" size="md">
-                                                    Crear conjunto
+                                                    Crear cliente
                                                 </x-ui.button>
                                             </div>
                                         @endcan

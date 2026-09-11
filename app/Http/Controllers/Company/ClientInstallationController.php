@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Company;
 
+use App\Domain\Geo\GeoAddressData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\StoreClientInstallationRequest;
 use App\Models\Client;
@@ -24,11 +25,23 @@ final class ClientInstallationController extends Controller
     {
         $this->assertCompany($request, $client);
 
-        $this->installations->create($client, [
-            'name' => $request->validated('name'),
-            'is_client_site' => $request->boolean('is_client_site'),
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        try {
+            $this->installations->create($client, [
+                'name' => $request->validated('name'),
+                'is_client_site' => $request->boolean('is_client_site'),
+                'is_active' => $request->boolean('is_active', true),
+                'geo' => $request->boolean('is_client_site')
+                    ? null
+                    : GeoAddressData::fromValidated($request->validated()),
+            ]);
+        } catch (ValidationException $e) {
+            return $this->backToClient(
+                $client,
+                $request,
+                $e->validator->errors()->first() ?: 'No se pudo crear.',
+                error: true,
+            );
+        }
 
         return $this->backToClient($client, $request, 'Instalación creada.');
     }
@@ -37,11 +50,23 @@ final class ClientInstallationController extends Controller
     {
         $this->assertTree($request, $client, $installation);
 
-        $this->installations->update($installation, [
-            'name' => $request->validated('name'),
-            'is_client_site' => $request->boolean('is_client_site'),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        try {
+            $this->installations->update($installation, [
+                'name' => $request->validated('name'),
+                'is_client_site' => $request->boolean('is_client_site'),
+                'is_active' => $request->boolean('is_active'),
+                'geo' => $request->boolean('is_client_site')
+                    ? null
+                    : GeoAddressData::fromValidated($request->validated()),
+            ]);
+        } catch (ValidationException $e) {
+            return $this->backToClient(
+                $client,
+                $request,
+                $e->validator->errors()->first() ?: 'No se pudo actualizar.',
+                error: true,
+            );
+        }
 
         return $this->backToClient($client, $request, 'Instalación actualizada.');
     }

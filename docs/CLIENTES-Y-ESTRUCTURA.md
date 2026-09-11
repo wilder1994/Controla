@@ -1,6 +1,6 @@
 # Clientes, instalaciones, Accesos y Supervisión
 
-**Última actualización:** 3 septiembre 2026
+**Última actualización:** 10 septiembre 2026
 
 Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) sigue más abajo; no se mezcla con instalaciones ni con puestos de Supervisión.
 
@@ -14,7 +14,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 |---------|-------------|--------|
 | **Cliente** | Ficha comercial (`clients`). PH, oficinas, bodegas, etc. | Alta / Excel de **clientes** / pestaña Cliente |
 | **Ciudad** | Ubicación del cliente (`clients.city` + `department`). **No es un nodo del árbol.** Lo que en el Excel viejo de empleados decía «Sector» era ciudad. | Ficha y Excel de clientes |
-| **Instalación** | Sitio físico del cliente. Puede ser **el mismo cliente** (sede única: una instalación con el nombre del cliente). | Tarjeta **Instalaciones y accesos** y/o **Supervisión** |
+| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Tarjeta **Instalaciones y accesos** y/o **Supervisión** |
 | **Acceso** | Punto de portería (puerta, vehicular, peatonal). Tabla `locations` (`type = access_point`). **No** es un puesto de Supervisión. | Tarjeta **Instalaciones y accesos** |
 | **Puesto** | Puesto de vigilancia de Supervisión de campo. Tabla nueva `supervisor_posts`. **Nunca** un `location`. | Tarjeta **Supervisión** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
@@ -48,7 +48,7 @@ Instalaciones, puestos y accesos los crea **a mano** el usuario de la empresa en
 
 Solo si `has_access`. En la pestaña **Cliente**, la tarjeta abre `/company/clients/{id}?vista=accesos` y:
 
-1. Crea **instalaciones** de ese cliente (o una sola «sede = cliente»).
+1. Crea **instalaciones** de ese cliente (compartidas con Supervisión; casilla «La instalación es el mismo cliente» o nombre + mapa). Toda instalación lleva georreferencia.
 2. Crea **accesos** de cada instalación (`locations`).
 
 ```
@@ -67,7 +67,7 @@ El censo (torres, aptos, personas) no se define aquí; sigue en `/client/structu
 
 Solo si `has_supervision`. En la pestaña **Cliente**, la tarjeta abre `/company/clients/{id}?vista=supervision` y:
 
-1. Crea **instalaciones** de ese cliente (pueden ser las **mismas** del mundo Accesos: un solo catálogo de instalaciones por cliente).
+1. Usa o crea **instalaciones** (el **mismo** catálogo que Accesos: una sola tabla `installations`). No se duplica la sede.
 2. Crea **puestos** de cada instalación (`supervisor_posts`).
 
 ```
@@ -86,7 +86,12 @@ La tarjeta Supervisión es el lugar de esos ajustes (no Ajustes globales de la e
 
 ## Instalación = el cliente
 
-Si el servicio es una sola sede, se crea **una** instalación con el nombre del cliente (marca `is_client_site` o equivalente). No se usa «sector» ni ciudad como nivel intermedio.
+Casilla **«La instalación es el mismo cliente»** (`is_client_site`):
+
+- **Chuleada:** el nombre y la ubicación (dirección, ciudad, depto, lat/lng) se copian de la ficha del cliente. Si el cliente no tiene pin, no se crea.
+- **Sin chulear:** se escribe el nombre y se fija el pin con el mismo mapa de la ficha (depto, ciudad, dirección). Sin coordenadas no se guarda.
+
+Toda instalación queda con georreferencia. No se usa «sector» ni ciudad como nivel intermedio del árbol.
 
 Las instalaciones son **compartidas** entre Accesos y Supervisión (mismo sitio físico). Lo que diverge son los hijos: accesos vs puestos.
 
@@ -98,7 +103,7 @@ Create en la migración original de cada dominio; **sin ALTER sueltos**.
 
 | Acción | Tabla | Rol |
 |--------|--------|-----|
-| **Creada** | `installations` | Sitio físico. `client_id`, nombre, flag sede-cliente, activo |
+| **Creada** | `installations` | Sitio físico. `client_id`, nombre, flag mismo-cliente, activo, dirección/ciudad/depto/lat/lng |
 | **Creada** | `supervisor_posts` | Puesto de Supervisión. `client_id`, `installation_id`, nombre, activo |
 | **Ajustada** | `locations` | Acceso de portería. `installation_id` obligatorio. No es el puesto de la app |
 | **Ajustada** | `supervisor_shift_reviews` | `supervisor_post_id` (ya no `location_id`) |
@@ -153,11 +158,14 @@ Migraciones de ficha:
 
 ## Copy de UI
 
+Listado `/company/clients` vacío: **«Aún no tienes clientes creados en la cartera»** + **Crear cliente** (no «conjunto»).
+
 Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Accesos** (si `has_access`) | **Supervisión** (si `has_supervision`).
 
 - Cliente: ficha comercial + tarjetas **Operar portería**, **Operar cliente** y **Editar** (mismos flujos de antes; Editar abre `/company/clients/{id}/edit` con ← Ficha).
-- Accesos: instalaciones + accesos de esas instalaciones.
-- Supervisión: instalaciones + puestos de esas instalaciones.
+- Accesos y Supervisión: **mismo** catálogo de instalaciones. Alta: casilla **La instalación es el mismo cliente** (copia nombre + pin) o nombre + mapa. Toda instalación lleva georreferencia.
+- Accesos: puertas de esas instalaciones.
+- Supervisión: puestos de esas instalaciones.
 
 El panel `/client/structures` se llama **Estructura** (censo).
 
