@@ -221,7 +221,7 @@
         <p class="text-[11px] text-slate-500">Interno puede operar varios clientes. Externo queda amarrado a uno.</p>
         <x-ui.field-error :messages="$errors->get('origin')" />
     </div>
-    <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias sedes del mismo cliente. En la ficha sale en Personal (nombre · cargo · Admin o Apoyo). No crea usuarios ni cambia Ajustes.</p>
+    <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias sedes del mismo cliente. En la ficha sale en Administrador o Apoyo (cargo · nombre). No crea usuarios ni cambia Ajustes.</p>
     @if ($showMinorsNotice ?? false)
         <div x-show="isClientFacing">
             @include('partials.minors-data-notice')

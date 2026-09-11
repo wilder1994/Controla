@@ -14,7 +14,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 |---------|-------------|--------|
 | **Cliente** | Ficha comercial (`clients`). PH, oficinas, bodegas, etc. | Alta / Excel de **clientes** / pestaña Cliente |
 | **Ciudad** | Ubicación del cliente (`clients.city` + `department`). **No es un nodo del árbol.** Lo que en el Excel viejo de empleados decía «Sector» era ciudad. | Ficha y Excel de clientes |
-| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Tipo, código interno, DANE si es colegio, **área** y **personal** (admin/apoyo). El nombre puede repetirse. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Módulo `/company/installations` · `/client/installations` · ficha del cliente |
+| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Tipo, código interno, DANE si es colegio, **área**, **Administrador** y **Apoyo**. El nombre puede repetirse. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Módulo `/company/installations` · `/client/installations` · ficha del cliente |
 | **Puerta** | Punto de portería (peatonal, vehicular, principal). Tabla `locations` (`type = access_point`). Solo Accesos. **No** es un puesto. | Tarjeta **Puertas** |
 | **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad 8/12/24 h y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
@@ -47,9 +47,9 @@ Instalaciones las crea **solo la empresa**, en `/company/installations` (con cli
 
 ## Directorio de instalaciones
 
-`/company/installations`: tabla, buscador y **Crear** (siempre con cliente). La ficha: mapa a la izquierda, datos (tipo, código interno, DANE si es colegio, área, **personal**) a la derecha. El **nombre puede repetirse** en el mismo cliente. `code` interno (INE-01) sigue único por cliente y se genera si no se escribe; **no** es DANE. `kind` opcional: colegio · conjunto · bodega · oficina · otro. `dane_code` es obligatorio y único **solo** si `kind=colegio`; no sale del mapa. Se escribe a mano (8 a 12 dígitos). **No** hay catálogo MEN ni typeahead: Controla no trae el directorio oficial de colegios. Un combo filtrable queda para cuando exista ese maestro (p. ej. listado de la Secretaría). El área sale de Places/geocoder: comuna (Cali, Medellín…), localidad (Bogotá), vereda o corregimiento si el nombre lo dice. En un pueblo sin subdivisión no se guarda (`installations.commune` + `area_kind`). También puestos (modalidad + empleados). El alta también se puede hacer en la ficha del cliente.
+`/company/installations`: tabla, buscador y **Crear** (siempre con cliente). La ficha: mapa a la izquierda, datos a la derecha. Debajo del nombre va la **dirección**. Luego tipo, código interno, DANE si es colegio, área, **Administrador** y **Apoyo** (cada uno `cargo · nombre`). El **nombre puede repetirse** en el mismo cliente. `code` interno (INE-01) sigue único por cliente y se genera si no se escribe; **no** es DANE. `kind` opcional: colegio · conjunto · bodega · oficina · otro. `dane_code` es obligatorio y único **solo** si `kind=colegio`; no sale del mapa. Se escribe a mano (8 a 12 dígitos). **No** hay catálogo MEN ni typeahead: Controla no trae el directorio oficial de colegios. Un combo filtrable queda para cuando exista ese maestro (p. ej. listado de la Secretaría). El área sale de Places/geocoder: comuna (Cali, Medellín…), localidad (Bogotá), vereda o corregimiento si el nombre lo dice. En un pueblo sin subdivisión no se guarda (`installations.commune` + `area_kind`). También puestos (modalidad + empleados). El alta también se puede hacer en la ficha del cliente.
 
-El **personal** son los `client-installation-admin` asignados (`client_user_installation_assignments`): todos aparecen (nombre · cargo · Admin|Apoyo). `rector_user_id` es solo el **contacto del directorio**, no el único admin. El permiso `site_permission` (admin|apoyo) es el mismo en todas las sedes de esa persona. Apoyo opera el censo y no borra nodos. El panel cliente tiene el mismo directorio (sin crear) y el árbol de nodos en la ficha.
+Los asignados (`client_user_installation_assignments`) se parten en dos bloques: **Administrador** (`site_permission=admin`) y **Apoyo** (`support`). Formato `cargo · nombre`. Si un bloque está vacío, se muestra — . `rector_user_id` es solo el **contacto del directorio**, no el único admin. El permiso es el mismo en todas las sedes de esa persona. Apoyo opera el censo y no borra nodos. El panel cliente tiene el mismo directorio (sin crear) y el árbol de nodos en la ficha.
 
 ## Árbol del sitio (tarjeta Instalaciones y puestos)
 
@@ -210,7 +210,7 @@ El panel `/client/installations` es el directorio de sedes (tabla + ficha). En l
 | Método | Ruta | Uso |
 |--------|------|-----|
 | GET | `/company/installations` | Directorio: tabla, búsqueda, crear, ficha |
-| GET/PUT | `/company/installations/{id}` | Ficha / editar (tipo, código, DANE, área, personal, mapa, puestos) |
+| GET/PUT | `/company/installations/{id}` | Ficha / editar (dirección, tipo, código, DANE, área, administrador, apoyo, mapa, puestos) |
 | GET | `/client/installations` | Directorio del cliente (admin cliente: todas; admin sede: las suyas) |
 | GET | `/client/installations/{id}` | Ficha + estructura (nodos). Sin alta de sede ni puestos |
 | POST/PUT/DELETE | `/company/clients/{id}/installations` | Alta rápida en el árbol del cliente |

@@ -58,7 +58,7 @@ Dos líneas de externo:
 | Rol UI | Spatie | Alcance |
 |--------|--------|---------|
 | **Administrador del cliente** | `client-admin` | Todo el panel de ese cliente |
-| **Admin instalaciones** | `client-installation-admin` | Varias instalaciones **del mismo cliente**. En la ficha de sede sale en **Personal** (nombre · cargo · Admin\|Apoyo). El cargo (rector, auxiliar…) es `job_title`. Permiso `site_permission`: **admin** (opera y puede borrar nodos) o **apoyo** (mismas sedes, no borra nodos). No se crea un tercer rol. **Ajustes**: solo ver. **No** crea usuarios. `client-admin` externo no lleva sede (p. ej. Secretario). |
+| **Admin instalaciones** | `client-installation-admin` | Varias instalaciones **del mismo cliente**. En la ficha de sede: bloque **Administrador** o **Apoyo** (`cargo · nombre`). El cargo (rector, auxiliar…) es `job_title`. Permiso `site_permission`: **admin** (opera y puede borrar nodos) o **apoyo** (mismas sedes, no borra nodos). No se crea un tercer rol. **Ajustes**: solo ver. **No** crea usuarios. `client-admin` externo no lleva sede (p. ej. Secretario). |
 
 El panel `/client/users` **lista** administradores externos de ese cliente. **No crea usuarios**: el alta queda en `/company/users` o `/admin/users`. Los internos se asignan en `/company/users`.
 

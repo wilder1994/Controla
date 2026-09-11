@@ -50,4 +50,15 @@ final class InstallationSiteAdmins
 
         return $job !== '' ? $user->name.' · '.$job : $user->name;
     }
+
+    public static function roleName(?User $user): string
+    {
+        if ($user === null) {
+            return '—';
+        }
+
+        $job = trim((string) $user->job_title);
+
+        return $job !== '' ? $job.' · '.$user->name : $user->name;
+    }
 }

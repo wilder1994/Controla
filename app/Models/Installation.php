@@ -103,26 +103,43 @@ final class Installation extends Model
         return \App\Enums\InstallationKind::tryFrom((string) $this->kind)?->requiresOfficialCode() ?? false;
     }
 
+    public function addressLine(): string
+    {
+        $city = trim(implode(', ', array_filter([
+            trim((string) $this->city),
+            trim((string) $this->department),
+        ])));
+        $parts = array_filter([
+            trim((string) $this->address),
+            $city,
+        ]);
+
+        return implode(' · ', $parts);
+    }
+
     /** @return \Illuminate\Support\Collection<int, string> */
-    public function staffLines(): \Illuminate\Support\Collection
+    public function staffRoleLines(string $permission): \Illuminate\Support\Collection
     {
         $people = $this->relationLoaded('assignedAdmins')
             ? $this->assignedAdmins
             : $this->assignedAdmins()->get();
 
-        if ($people->isEmpty()) {
-            $fallback = \App\Support\Company\InstallationSiteAdmins::label($this->rector);
-
-            return $fallback === '—' ? collect() : collect([$fallback]);
-        }
-
         return $people
-            ->map(static function (User $user): string {
-                $permission = ($user->pivot->site_permission ?? 'admin') === 'support' ? 'Apoyo' : 'Admin';
+            ->filter(static function (User $user) use ($permission): bool {
+                $value = $user->pivot->site_permission ?? 'admin';
 
-                return \App\Support\Company\InstallationSiteAdmins::label($user).' · '.$permission;
+                return $permission === 'support' ? $value === 'support' : $value !== 'support';
             })
+            ->map(static fn (User $user): string => \App\Support\Company\InstallationSiteAdmins::roleName($user))
             ->filter()
+            ->values();
+    }
+
+    /** @return \Illuminate\Support\Collection<int, string> */
+    public function staffLines(): \Illuminate\Support\Collection
+    {
+        return $this->staffRoleLines('admin')
+            ->merge($this->staffRoleLines('support'))
             ->values();
     }
 

@@ -369,3 +369,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Indexador: columna izquierda `minmax(24rem, 32rem)`; miniaturas ~220px (`scale` 0.48). |
 | 2026-09-11 | Área de la sede desde el mapa: comuna / localidad / vereda / corregimiento; si no aplica no se guarda. |
 | 2026-09-11 | Factor 1: `kind` + DANE de sede (único, solo colegio, texto 8–12 dígitos; sin catálogo MEN); nombre repetible; personal N con permiso admin/apoyo; `rector_user_id` = contacto del directorio. |
+| 2026-09-11 | Ficha de sede: dirección bajo el nombre; bloques Administrador y Apoyo (`cargo · nombre`). |

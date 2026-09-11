@@ -73,10 +73,12 @@ final class CompanyInstallationDirectoryTest extends TestCase
             ->get(route('company.installations.show', $installation))
             ->assertOk()
             ->assertSee('INEM Jorge Isaacs', false)
+            ->assertSee('Calle 5 # 50-00', false)
             ->assertSee('INE-01', false)
             ->assertSee('Comuna 17', false)
             ->assertSee($rector->name, false)
-            ->assertSee('Personal', false)
+            ->assertSee('Administrador', false)
+            ->assertSee('Apoyo', false)
             ->assertSee('Puestos', false);
     }
 

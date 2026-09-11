@@ -23,6 +23,9 @@
                 <div>
                     <p class="text-xs text-slate-500">Instalación</p>
                     <h3 class="text-lg font-semibold text-white">{{ $installation->name }}</h3>
+                    @if ($installation->addressLine() !== '')
+                        <p class="text-xs text-slate-400 mt-1">{{ $installation->addressLine() }}</p>
+                    @endif
                     <p class="text-xs text-slate-500 mt-0.5">
                         {{ $installation->client?->name }}
                         @if ($installation->is_client_site)
@@ -50,25 +53,8 @@
                         <dt class="text-xs text-slate-500">{{ $installation->areaKindLabel() }}</dt>
                         <dd class="text-slate-200">{{ $installation->commune ?: '—' }}</dd>
                     </div>
-                    <div>
-                        <dt class="text-xs text-slate-500">Personal</dt>
-                        <dd class="text-slate-200 space-y-1">
-                            @forelse ($installation->staffLines() as $line)
-                                <p>{{ $line }}</p>
-                            @empty
-                                —
-                            @endforelse
-                        </dd>
-                    </div>
+                    @include('modules.company.installations.partials.ficha-staff')
                 </dl>
-                @if ($installation->address || $installation->city)
-                    <p class="text-xs text-slate-500">
-                        {{ $installation->address }}
-                        @if ($installation->city)
-                            · {{ $installation->city }}{{ $installation->department ? ', '.$installation->department : '' }}
-                        @endif
-                    </p>
-                @endif
             </div>
         </div>
 
