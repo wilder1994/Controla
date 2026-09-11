@@ -38,6 +38,7 @@ final class UpdateUserRequest extends FormRequest
                 'job_title' => ['required', 'string', 'max:80'],
                 'installation_ids' => ['nullable', 'array'],
                 'installation_ids.*' => ['integer', 'exists:installations,id'],
+                'site_permission' => ['nullable', 'in:admin,support'],
             ],
         );
 

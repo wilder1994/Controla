@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\ClientUserInstallationAssignment;
 use App\Models\Installation;
 use App\Models\User;
+use App\Enums\InstallationKind;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Geo\ColombianArea;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +23,6 @@ final class ManageClientInstallationService
     {
         $isClientSite = (bool) ($data['is_client_site'] ?? false);
         $name = $isClientSite ? trim((string) $client->name) : trim($data['name']);
-        $this->assertUniqueName($client, $name);
 
         if ($isClientSite) {
             $this->clearClientSiteFlag($client);
@@ -31,10 +31,15 @@ final class ManageClientInstallationService
         $geo = $this->geoAttributes($client, $isClientSite, $data['geo'] ?? null);
         $area = $this->areaAttributes($data['commune'] ?? null, $geo['city'] ?? $client->city);
 
+        $kind = $this->resolveKind($data['kind'] ?? null);
+        $dane = $this->resolveDane($kind, $data['dane_code'] ?? null);
+
         $installation = Installation::query()->create(array_merge([
             'client_id' => $client->id,
             'name' => $name,
             'code' => $this->resolveCode($client, $data['code'] ?? null),
+            'kind' => $kind?->value,
+            'dane_code' => $dane,
             'is_client_site' => $isClientSite,
             'is_active' => (bool) ($data['is_active'] ?? true),
         ], $geo, $area));
@@ -60,7 +65,6 @@ final class ManageClientInstallationService
             ? trim((string) $client->name)
             : (isset($data['name']) ? trim((string) $data['name']) : $installation->name);
 
-        $this->assertUniqueName($client, $name, $installation->id);
         $installation->name = $name;
 
         if ($isClientSite) {
@@ -74,6 +78,12 @@ final class ManageClientInstallationService
 
         if (array_key_exists('code', $data)) {
             $installation->code = $this->resolveCode($client, $data['code'] ?? null, $installation->id);
+        }
+
+        if (array_key_exists('kind', $data) || array_key_exists('dane_code', $data)) {
+            $kind = $this->resolveKind($data['kind'] ?? $installation->kind);
+            $installation->kind = $kind?->value;
+            $installation->dane_code = $this->resolveDane($kind, $data['dane_code'] ?? $installation->dane_code, $installation->id);
         }
 
         $installation->fill($this->geoAttributes($client, $isClientSite, $data['geo'] ?? null));
@@ -135,20 +145,48 @@ final class ManageClientInstallationService
         return $geo->toModelAttributes();
     }
 
-    private function assertUniqueName(Client $client, string $name, ?int $ignoreId = null): void
+    private function resolveKind(mixed $value): ?InstallationKind
     {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return InstallationKind::tryFrom($value);
+    }
+
+    private function resolveDane(?InstallationKind $kind, mixed $value, ?int $ignoreId = null): ?string
+    {
+        $code = $this->nullableString($value);
+
+        if ($kind?->requiresOfficialCode() && $code === null) {
+            throw ValidationException::withMessages([
+                'dane_code' => 'El colegio debe tener código DANE de sede.',
+            ]);
+        }
+
+        if (! $kind?->requiresOfficialCode()) {
+            return null;
+        }
+
+        if (! preg_match('/^\d{8,12}$/', $code)) {
+            throw ValidationException::withMessages([
+                'dane_code' => 'El código DANE de sede debe tener entre 8 y 12 dígitos.',
+            ]);
+        }
+
         $exists = Installation::query()
             ->withoutGlobalScopes()
-            ->where('client_id', $client->id)
-            ->where('name', $name)
+            ->where('dane_code', $code)
             ->when($ignoreId !== null, fn ($q) => $q->whereKeyNot($ignoreId))
             ->exists();
 
         if ($exists) {
             throw ValidationException::withMessages([
-                'name' => 'Ya existe una instalación con ese nombre en este cliente.',
+                'dane_code' => 'Ya existe una sede con ese código DANE.',
             ]);
         }
+
+        return $code;
     }
 
     private function resolveCode(Client $client, ?string $code, ?int $ignoreId = null): string
@@ -192,20 +230,24 @@ final class ManageClientInstallationService
         $user = User::query()->find($rectorUserId);
         if ($user === null || ! $user->hasRole(AssignableRoles::CLIENT_INSTALLATION_ADMIN)) {
             throw ValidationException::withMessages([
-                'rector_user_id' => 'El rector debe ser un admin de instalaciones.',
+                'rector_user_id' => 'El contacto debe ser un admin de instalaciones.',
             ]);
         }
 
         if (! $user->canAccessClient((int) $installation->client_id)) {
             throw ValidationException::withMessages([
-                'rector_user_id' => 'El rector no pertenece a este cliente.',
+                'rector_user_id' => 'El contacto no pertenece a este cliente.',
             ]);
         }
 
-        ClientUserInstallationAssignment::query()->firstOrCreate([
-            'user_id' => $user->id,
-            'installation_id' => $installation->id,
-        ]);
+        $permission = $user->installationAssignments()->value('site_permission') ?? 'admin';
+        ClientUserInstallationAssignment::query()->firstOrCreate(
+            [
+                'user_id' => $user->id,
+                'installation_id' => $installation->id,
+            ],
+            ['site_permission' => $permission],
+        );
 
         $installation->save();
     }

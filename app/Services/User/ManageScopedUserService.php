@@ -78,7 +78,7 @@ final class ManageScopedUserService
             $user = User::query()->create($attributes);
             $user->syncRoles([$data->role]);
             $this->syncClientAssignments($user, $clientIds, $data->role);
-            $this->syncInstallationAssignments($user, $installationIds, $data->role);
+            $this->syncInstallationAssignments($user, $installationIds, $data->role, $data->sitePermission);
 
             return $user->fresh(['roles', 'clients', 'assignedInstallations']);
         });
@@ -169,7 +169,12 @@ final class ManageScopedUserService
             }
 
             $this->syncClientAssignments($target, $clientIds, $role);
-            $this->syncInstallationAssignments($target, $installationIds, $role);
+            $this->syncInstallationAssignments(
+                $target,
+                $installationIds,
+                $role,
+                $data->sitePermission ?? $target->installationAssignments()->value('site_permission') ?? 'admin',
+            );
 
             return $target->fresh(['roles', 'clients', 'assignedInstallations']);
         });
@@ -447,7 +452,7 @@ final class ManageScopedUserService
     }
 
     /** @param list<int> $installationIds */
-    private function syncInstallationAssignments(User $user, array $installationIds, string $role): void
+    private function syncInstallationAssignments(User $user, array $installationIds, string $role, string $sitePermission = 'admin'): void
     {
         ClientUserInstallationAssignment::query()->where('user_id', $user->id)->delete();
 
@@ -455,10 +460,13 @@ final class ManageScopedUserService
             return;
         }
 
+        $permission = $sitePermission === 'support' ? 'support' : 'admin';
+
         foreach ($installationIds as $installationId) {
             ClientUserInstallationAssignment::query()->create([
                 'user_id' => $user->id,
                 'installation_id' => $installationId,
+                'site_permission' => $permission,
             ]);
         }
     }

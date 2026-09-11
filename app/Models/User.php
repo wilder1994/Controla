@@ -95,6 +95,7 @@ class User extends Authenticatable
     public function assignedInstallations(): BelongsToMany
     {
         return $this->belongsToMany(Installation::class, 'client_user_installation_assignments')
+            ->withPivot('site_permission')
             ->withTimestamps();
     }
 
@@ -154,6 +155,21 @@ class User extends Authenticatable
         $ids = $this->assignedInstallationIds();
 
         return $ids === null || in_array($installationId, $ids, true);
+    }
+
+    public function sitePermissionOn(int $installationId): string
+    {
+        $row = $this->relationLoaded('installationAssignments')
+            ? $this->installationAssignments->firstWhere('installation_id', $installationId)
+            : $this->installationAssignments()->where('installation_id', $installationId)->first();
+
+        return $row?->site_permission ?? 'admin';
+    }
+
+    public function isSiteSupport(int $installationId): bool
+    {
+        return $this->hasRole('client-installation-admin')
+            && $this->sitePermissionOn($installationId) === 'support';
     }
 
     public function isSupervisionManager(): bool

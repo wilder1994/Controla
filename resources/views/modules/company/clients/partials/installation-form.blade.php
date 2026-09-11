@@ -88,15 +88,16 @@
             <p class="mt-1 text-[11px] text-slate-500" x-text="areaHint"></p>
         </div>
     </div>
+    @include('modules.company.installations.partials.kind-fields', ['installation' => $installation])
     <div>
-        <label class="block text-xs text-slate-400 mb-1">Admin de sede</label>
+        <label class="block text-xs text-slate-400 mb-1">Contacto en directorio</label>
         <select name="rector_user_id" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
             <option value="">Sin asignar</option>
             @foreach ($siteAdmins as $row)
                 <option value="{{ $row['id'] }}" @selected((int) old('rector_user_id', $installation?->rector_user_id) === (int) $row['id'])>{{ $row['label'] }}</option>
             @endforeach
         </select>
-        <p class="mt-1 text-[11px] text-slate-500">Cargo (rector, auxiliar…) viene de Usuarios.</p>
+        <p class="mt-1 text-[11px] text-slate-500">Opcional. El personal (admin o apoyo) se asigna en Usuarios.</p>
     </div>
 
     <div x-show="!sameClient" x-cloak>

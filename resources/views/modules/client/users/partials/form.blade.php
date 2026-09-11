@@ -5,6 +5,7 @@
     $selectedInstallations = collect(old('installation_ids', $managedUser?->assignedInstallations?->pluck('id')->all() ?? []))
         ->map(fn ($id) => (int) $id)
         ->all();
+    $selectedSitePermission = old('site_permission', $managedUser?->assignedInstallations?->first()?->pivot?->site_permission ?? 'admin');
 @endphp
 
 <div class="space-y-4" x-data="{ role: @js($selectedRole) }">
@@ -83,6 +84,18 @@
             <p class="text-xs text-slate-500">Este cliente no tiene instalaciones activas.</p>
         @endforelse
         <x-ui.field-error :messages="$errors->get('installation_ids')" />
+        <div class="pt-2 space-y-2">
+            <p class="text-xs font-medium text-slate-300">Permiso en esas sedes</p>
+            <label class="flex items-center gap-2 text-sm text-slate-300">
+                <input type="radio" name="site_permission" value="admin" @checked($selectedSitePermission === 'admin') class="border-slate-600 bg-slate-950 text-teal-600">
+                Admin · opera y puede borrar nodos
+            </label>
+            <label class="flex items-center gap-2 text-sm text-slate-300">
+                <input type="radio" name="site_permission" value="support" @checked($selectedSitePermission === 'support') class="border-slate-600 bg-slate-950 text-teal-600">
+                Apoyo · mismas sedes, no borra nodos
+            </label>
+            <x-ui.field-error :messages="$errors->get('site_permission')" />
+        </div>
     </div>
 
     <div>

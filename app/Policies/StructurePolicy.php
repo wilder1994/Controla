@@ -33,6 +33,10 @@ final class StructurePolicy
 
     public function delete(User $user, Structure $structure): bool
     {
+        if ($structure->installation_id && $user->isSiteSupport((int) $structure->installation_id)) {
+            return false;
+        }
+
         return $this->update($user, $structure);
     }
 }

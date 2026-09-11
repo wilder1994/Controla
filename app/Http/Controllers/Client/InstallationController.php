@@ -27,12 +27,15 @@ final class InstallationController extends Controller
         $search = $request->string('q')->trim()->toString();
 
         $rows = $this->scopedQuery($clientId)
-            ->with('rector')
+            ->with(['rector', 'assignedAdmins'])
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('name', 'like', '%'.$search.'%')
                         ->orWhere('code', 'like', '%'.$search.'%')
+                        ->orWhere('dane_code', 'like', '%'.$search.'%')
                         ->orWhere('commune', 'like', '%'.$search.'%')
+                        ->orWhereHas('assignedAdmins', fn ($u) => $u->where('users.name', 'like', '%'.$search.'%')
+                            ->orWhere('users.job_title', 'like', '%'.$search.'%'))
                         ->orWhereHas('rector', fn ($r) => $r->where('name', 'like', '%'.$search.'%')
                             ->orWhere('job_title', 'like', '%'.$search.'%'));
                 });
@@ -54,7 +57,7 @@ final class InstallationController extends Controller
 
         $clientId = (int) $this->tenantContext->clientId();
         $client = Client::query()->with('structureType')->findOrFail($clientId);
-        $installation->load('rector');
+        $installation->load(['rector', 'assignedAdmins']);
 
         $tree = $this->structureRepository->treeForInstallation($clientId, (int) $installation->id);
         $census = $this->structureRepository->censusCounts($clientId);

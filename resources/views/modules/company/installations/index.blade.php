@@ -11,7 +11,7 @@
             <div class="flex-1 min-w-0">
                 <label for="q" class="sr-only">Buscar instalaciones</label>
                 <input type="search" id="q" name="q" value="{{ $search }}"
-                       placeholder="Buscar por nombre, código, área, cliente o admin de sede…"
+                       placeholder="Buscar por nombre, código, DANE, área, cliente o personal…"
                        class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
             </div>
             <div class="flex items-center gap-2 shrink-0">
@@ -34,7 +34,7 @@
                             <th class="px-4 py-2.5 text-left font-medium">Código</th>
                             <th class="px-4 py-2.5 text-left font-medium hidden md:table-cell">Área</th>
                             <th class="px-4 py-2.5 text-left font-medium">Cliente</th>
-                            <th class="px-4 py-2.5 text-left font-medium hidden lg:table-cell">Admin de sede</th>
+                            <th class="px-4 py-2.5 text-left font-medium hidden lg:table-cell">Personal</th>
                             <th class="px-4 py-2.5 text-right font-medium">Acciones</th>
                         </tr>
                     </thead>
@@ -43,11 +43,19 @@
                             <tr class="hover:bg-slate-800/30">
                                 <td class="px-4 py-3">
                                     <p class="font-medium text-slate-200">{{ $installation->name }}</p>
-                                    @if ($installation->city)
-                                        <p class="text-xs text-slate-500">{{ $installation->city }}</p>
+                                    <p class="text-xs text-slate-500">
+                                        {{ $installation->kindLabel() }}
+                                        @if ($installation->city)
+                                            · {{ $installation->city }}
+                                        @endif
+                                    </p>
+                                </td>
+                                <td class="px-4 py-3 font-mono text-xs text-indigo-300/90">
+                                    {{ $installation->code ?: '—' }}
+                                    @if ($installation->dane_code)
+                                        <span class="block text-slate-500">DANE {{ $installation->dane_code }}</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 font-mono text-xs text-indigo-300/90">{{ $installation->code ?: '—' }}</td>
                                 <td class="px-4 py-3 hidden md:table-cell text-slate-400">{{ $installation->commune ?: '—' }}</td>
                                 <td class="px-4 py-3 text-slate-300">{{ $installation->client?->name ?? '—' }}</td>
                                 <td class="px-4 py-3 hidden lg:table-cell text-slate-400">{{ $installation->siteAdminLabel() }}</td>

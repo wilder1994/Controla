@@ -22,5 +22,6 @@ final readonly class UpdateUserData
         public bool $regenerateSupervisorCode = false,
         public ?string $documentNumber = null,
         public ?array $installationIds = null,
+        public ?string $sitePermission = null,
     ) {}
 }

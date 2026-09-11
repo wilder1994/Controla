@@ -32,14 +32,17 @@ final class CompanyInstallationController extends Controller
         $search = $request->string('q')->trim()->toString();
 
         $rows = Installation::query()
-            ->with(['client', 'rector'])
+            ->with(['client', 'rector', 'assignedAdmins'])
             ->whereHas('client', fn ($q) => $q->where('security_company_id', $companyId))
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('installations.name', 'like', '%'.$search.'%')
                         ->orWhere('installations.code', 'like', '%'.$search.'%')
+                        ->orWhere('installations.dane_code', 'like', '%'.$search.'%')
                         ->orWhere('installations.commune', 'like', '%'.$search.'%')
                         ->orWhereHas('client', fn ($c) => $c->where('name', 'like', '%'.$search.'%'))
+                        ->orWhereHas('assignedAdmins', fn ($u) => $u->where('users.name', 'like', '%'.$search.'%')
+                            ->orWhere('users.job_title', 'like', '%'.$search.'%'))
                         ->orWhereHas('rector', fn ($r) => $r->where('name', 'like', '%'.$search.'%')
                             ->orWhere('job_title', 'like', '%'.$search.'%'));
                 });
@@ -86,6 +89,7 @@ final class CompanyInstallationController extends Controller
         $installation->load([
             'client',
             'rector',
+            'assignedAdmins',
             'supervisorPosts' => fn ($q) => $q->with(['employees.jobTitle'])->orderBy('name'),
         ]);
 
@@ -135,6 +139,8 @@ final class CompanyInstallationController extends Controller
         return [
             'name' => $request->validated('name'),
             'code' => $request->validated('code'),
+            'kind' => $request->validated('kind'),
+            'dane_code' => $request->validated('dane_code'),
             'commune' => $request->validated('commune'),
             'rector_user_id' => $request->validated('rector_user_id'),
             'is_client_site' => $request->boolean('is_client_site'),

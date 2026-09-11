@@ -23,16 +23,32 @@
                 </div>
                 <dl class="space-y-3 text-sm">
                     <div>
+                        <dt class="text-xs text-slate-500">Tipo</dt>
+                        <dd class="text-slate-200">{{ $installation->kindLabel() }}</dd>
+                    </div>
+                    <div>
                         <dt class="text-xs text-slate-500">Código</dt>
                         <dd class="font-mono text-teal-300">{{ $installation->code ?: '—' }}</dd>
                     </div>
+                    @if ($installation->dane_code)
+                        <div>
+                            <dt class="text-xs text-slate-500">DANE de sede</dt>
+                            <dd class="font-mono text-teal-300">{{ $installation->dane_code }}</dd>
+                        </div>
+                    @endif
                     <div>
                         <dt class="text-xs text-slate-500">{{ $installation->areaKindLabel() }}</dt>
                         <dd class="text-slate-200">{{ $installation->commune ?: '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-slate-500">Admin de sede</dt>
-                        <dd class="text-slate-200">{{ $installation->siteAdminLabel() }}</dd>
+                        <dt class="text-xs text-slate-500">Personal</dt>
+                        <dd class="text-slate-200 space-y-1">
+                            @forelse ($installation->staffLines() as $line)
+                                <p>{{ $line }}</p>
+                            @empty
+                                —
+                            @endforelse
+                        </dd>
                     </div>
                 </dl>
                 @if ($installation->address || $installation->city)

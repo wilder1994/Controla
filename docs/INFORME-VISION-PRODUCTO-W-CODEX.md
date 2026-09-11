@@ -183,7 +183,7 @@ Controla es maduro en **accesos, censo y supervisión de campo**. No hay Observa
 
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
-| 1 Maestro + búsqueda | ~80 % | Directorio `/company/installations` + `/client/installations`; código, comuna, admin de sede + cargo, mapa, búsqueda | `kind=colegio` y DANE formal; N admins por sede |
+| 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
 | 2 Geográfico | ~60 % | Google Maps, pines, GPS PWA, cluster ~50 m, filtros de supervisión | Mapa **por instalación**; capas territoriales; heatmap / concentración |
 | 3 Multifuente | ~30 % | Portería (`guard_logs`) y campo (`supervisor_field_logs`) como silos | Catálogo de fuentes; normalizar; `source` en cada reporte |
 | 4 Comunidad | ~12 % | Privacidad de menores (Normoteca + censo). PQRS **no existe** | Intake web (anónimo o no); estados; vínculo sede/evento. No es el pánico de portería |
@@ -368,3 +368,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Ficha de sede: mapa a la izquierda, datos a la derecha. Árbol: sin vehículos/mascotas si el módulo está apagado. Miniaturas del indexador: worker pdf.js como blob (MIME `.mjs` en CloudPanel). |
 | 2026-09-11 | Indexador: columna izquierda `minmax(24rem, 32rem)`; miniaturas ~220px (`scale` 0.48). |
 | 2026-09-11 | Área de la sede desde el mapa: comuna / localidad / vereda / corregimiento; si no aplica no se guarda. |
+| 2026-09-11 | Factor 1: `kind` + DANE de sede (único, solo colegio, texto 8–12 dígitos; sin catálogo MEN); nombre repetible; personal N con permiso admin/apoyo; `rector_user_id` = contacto del directorio. |

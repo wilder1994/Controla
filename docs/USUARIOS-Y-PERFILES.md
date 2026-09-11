@@ -58,7 +58,7 @@ Dos líneas de externo:
 | Rol UI | Spatie | Alcance |
 |--------|--------|---------|
 | **Administrador del cliente** | `client-admin` | Todo el panel de ese cliente |
-| **Admin instalaciones** | `client-installation-admin` | Varias instalaciones **del mismo cliente**. En la ficha de sede es el **admin de sede**; el cargo (rector, auxiliar…) es `job_title`. Censo y operación de esas sedes. **Ajustes** (tipos de persona): solo ver. **No** crea usuarios |
+| **Admin instalaciones** | `client-installation-admin` | Varias instalaciones **del mismo cliente**. En la ficha de sede sale en **Personal** (nombre · cargo · Admin\|Apoyo). El cargo (rector, auxiliar…) es `job_title`. Permiso `site_permission`: **admin** (opera y puede borrar nodos) o **apoyo** (mismas sedes, no borra nodos). No se crea un tercer rol. **Ajustes**: solo ver. **No** crea usuarios. `client-admin` externo no lleva sede (p. ej. Secretario). |
 
 El panel `/client/users` **lista** administradores externos de ese cliente. **No crea usuarios**: el alta queda en `/company/users` o `/admin/users`. Los internos se asignan en `/company/users`.
 
@@ -75,7 +75,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 | **Vigilante** | `guardia` | Empresa | Opera **portería** de una instalación **con puertas**. Debe estar asignado a un puesto de esa instalación. Sin puertas no hay usuario de portería. |
 | **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre **puestos de Supervisión** (`supervisor_posts`). Login PWA: `users.username`. **No** se le pega zona. Firma revista en la **minuta de portería** con código **6 dígitos** (`supervisor_code`). Con Supervisión, la ronda de campo sigue en la app. API: `/api/supervision/login`. |
 | **Administrador del cliente** | `client-admin` | Cliente | Interno (empleado, 1+ clientes) o externo (1 cliente). Panel del cliente; **no crea usuarios**. |
-| **Admin instalaciones** | `client-installation-admin` | Cliente | Siempre externo. Varias instalaciones del mismo cliente. Sin crear usuarios; Ajustes solo lectura. |
+| **Admin instalaciones** | `client-installation-admin` | Cliente | Siempre externo. Varias instalaciones del mismo cliente. Admin o apoyo (`site_permission`). Sin crear usuarios; Ajustes solo lectura. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
 

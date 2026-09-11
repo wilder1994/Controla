@@ -99,8 +99,10 @@
         </div>
     </div>
 
+    @include('modules.company.installations.partials.kind-fields', ['installation' => $installation])
+
     <div>
-        <x-ui.label for="rector_user_id">Admin de sede</x-ui.label>
+        <x-ui.label for="rector_user_id">Contacto en directorio</x-ui.label>
         <select
             id="rector_user_id"
             name="rector_user_id"
@@ -113,8 +115,7 @@
             @endforeach
         </select>
         <p class="mt-1 text-[11px] text-slate-500">
-            Admin de instalaciones de ese cliente. El cargo (rector, auxiliar, administrador del sitio…) sale de su ficha de usuario.
-            Si no aparece, créalo en
+            Opcional. Quien figura como contacto del directorio. El personal (admin o apoyo) se asigna en
             <a href="{{ route('company.users.create') }}" class="text-indigo-400 hover:text-indigo-300">Usuarios</a>.
         </p>
         <x-ui.field-error :messages="$errors->get('rector_user_id')" />

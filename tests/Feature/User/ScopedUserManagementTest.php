@@ -9,6 +9,7 @@ use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
 use App\Models\Installation;
+use App\Models\Structure;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -379,6 +380,38 @@ final class ScopedUserManagementTest extends TestCase
             ->withSession(['tenancy.active_client_id' => $palmas->id])
             ->post(route('client.settings.member-types.store'), ['name' => 'No debe', 'is_active' => true])
             ->assertForbidden();
+    }
+
+    public function test_installation_support_cannot_delete_structure(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $site = Installation::query()->where('client_id', $palmas->id)->firstOrFail();
+        $structure = Structure::query()->where('installation_id', $site->id)->firstOrFail();
+
+        $this->actingAs($admin)->post(route('company.users.store'), [
+            'role' => 'client-installation-admin',
+            'origin' => 'external',
+            'name' => 'Apoyo Sede',
+            'document_number' => '1098000099',
+            'job_title' => 'Auxiliar',
+            'email' => 'apoyo.sede@palmas.test',
+            'username' => 'apoyo.sede.9900',
+            'password' => 'Cliente123!',
+            'password_confirmation' => 'Cliente123!',
+            'client_ids' => [$palmas->id],
+            'installation_ids' => [$site->id],
+            'site_permission' => 'support',
+            'is_active' => '1',
+        ])->assertRedirect();
+
+        $support = User::query()->where('email', 'apoyo.sede@palmas.test')->firstOrFail();
+        $this->assertTrue($support->isSiteSupport((int) $site->id));
+        $this->assertSame('support', $support->assignedInstallations()->first()?->pivot?->site_permission);
+        $this->assertFalse($support->can('delete', $structure));
+        $this->assertTrue($support->can('update', $structure));
     }
 
     public function test_company_settings_updates_geo_fields(): void

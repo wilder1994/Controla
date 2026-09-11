@@ -28,5 +28,6 @@ final readonly class CreateUserData
         public ?ClientAdminOrigin $adminOrigin = null,
         public ?string $documentNumber = null,
         public array $installationIds = [],
+        public string $sitePermission = 'admin',
     ) {}
 }

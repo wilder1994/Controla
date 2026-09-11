@@ -44,7 +44,8 @@ final class CompanyInstallationDirectoryTest extends TestCase
             ->assertOk()
             ->assertSee('Código', false)
             ->assertSee('Comuna', false)
-            ->assertSee('Admin de sede', false);
+            ->assertSee('Tipo de sede', false)
+            ->assertSee('Contacto en directorio', false);
 
         $this->actingAs($admin)
             ->post(route('company.installations.store'), [
@@ -75,7 +76,7 @@ final class CompanyInstallationDirectoryTest extends TestCase
             ->assertSee('INE-01', false)
             ->assertSee('Comuna 17', false)
             ->assertSee($rector->name, false)
-            ->assertSee('Admin de sede', false)
+            ->assertSee('Personal', false)
             ->assertSee('Puestos', false);
     }
 
@@ -99,6 +100,62 @@ final class CompanyInstallationDirectoryTest extends TestCase
         $installation = Installation::query()->where('name', 'Sede Jamundí')->firstOrFail();
         $this->assertNull($installation->commune);
         $this->assertSame('none', $installation->area_kind);
+    }
+
+    public function test_same_name_is_allowed_for_two_sites(): void
+    {
+        [$admin, $client] = $this->palmas();
+        $payload = [
+            'client_id' => $client->id,
+            'name' => 'Santa Librada',
+            'kind' => 'conjunto',
+            'address' => 'Calle 5 # 50-00',
+            'city' => 'Cali',
+            'department' => 'Valle del Cauca',
+            'latitude' => '3.4372200',
+            'longitude' => '-76.5225000',
+        ];
+
+        $this->actingAs($admin)->post(route('company.installations.store'), $payload)->assertRedirect();
+        $this->actingAs($admin)->post(route('company.installations.store'), array_merge($payload, [
+            'address' => 'Calle 6 # 10-20',
+        ]))->assertRedirect();
+
+        $this->assertSame(2, Installation::query()->where('client_id', $client->id)->where('name', 'Santa Librada')->count());
+    }
+
+    public function test_colegio_requires_unique_dane(): void
+    {
+        [$admin, $client] = $this->palmas();
+        $base = [
+            'client_id' => $client->id,
+            'name' => 'INEM Norte',
+            'kind' => 'colegio',
+            'address' => 'Calle 5 # 50-00',
+            'city' => 'Cali',
+            'department' => 'Valle del Cauca',
+            'latitude' => '3.4372200',
+            'longitude' => '-76.5225000',
+        ];
+
+        $this->actingAs($admin)
+            ->from(route('company.installations.create'))
+            ->post(route('company.installations.store'), $base)
+            ->assertRedirect(route('company.installations.create'))
+            ->assertSessionHasErrors('dane_code');
+
+        $this->actingAs($admin)
+            ->post(route('company.installations.store'), array_merge($base, ['dane_code' => '176001000001']))
+            ->assertRedirect();
+
+        $this->actingAs($admin)
+            ->from(route('company.installations.create'))
+            ->post(route('company.installations.store'), array_merge($base, [
+                'name' => 'INEM Sur',
+                'dane_code' => '176001000001',
+            ]))
+            ->assertRedirect(route('company.installations.create'))
+            ->assertSessionHasErrors('dane_code');
     }
 
     public function test_guard_cannot_open_directory(): void

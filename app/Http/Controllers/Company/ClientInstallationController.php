@@ -29,6 +29,8 @@ final class ClientInstallationController extends Controller
             $this->installations->create($client, [
                 'name' => $request->validated('name'),
                 'code' => $request->validated('code'),
+                'kind' => $request->validated('kind'),
+                'dane_code' => $request->validated('dane_code'),
                 'commune' => $request->validated('commune'),
                 'rector_user_id' => $request->validated('rector_user_id'),
                 'is_client_site' => $request->boolean('is_client_site'),
@@ -57,6 +59,8 @@ final class ClientInstallationController extends Controller
             $this->installations->update($installation, [
                 'name' => $request->validated('name'),
                 'code' => $request->validated('code'),
+                'kind' => $request->validated('kind'),
+                'dane_code' => $request->validated('dane_code'),
                 'commune' => $request->validated('commune'),
                 'rector_user_id' => $request->validated('rector_user_id'),
                 'is_client_site' => $request->boolean('is_client_site'),

@@ -47,6 +47,7 @@ final class StoreUserRequest extends FormRequest
                 'is_active' => ['sometimes', 'boolean'],
                 'installation_ids' => ['nullable', 'array'],
                 'installation_ids.*' => ['integer', 'exists:installations,id'],
+                'site_permission' => ['nullable', 'in:admin,support'],
             ],
         );
 

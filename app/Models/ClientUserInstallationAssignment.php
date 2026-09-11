@@ -12,7 +12,13 @@ final class ClientUserInstallationAssignment extends Model
     protected $fillable = [
         'user_id',
         'installation_id',
+        'site_permission',
     ];
+
+    public function isSupport(): bool
+    {
+        return $this->site_permission === 'support';
+    }
 
     public function user(): BelongsTo
     {

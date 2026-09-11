@@ -10,6 +10,7 @@
     $selectedInstallations = collect(old('installation_ids', $managedUser?->assignedInstallations?->pluck('id')->all() ?? []))
         ->map(fn ($id) => (int) $id)
         ->all();
+    $selectedSitePermission = old('site_permission', $managedUser?->assignedInstallations?->first()?->pivot?->site_permission ?? 'admin');
     $selectedOrigin = old('origin', $managedUser?->admin_origin ?? 'internal');
     $formConfig = [
         'isEdit' => $isEdit,
@@ -29,6 +30,7 @@
         'origin' => $selectedOrigin,
         'clientIds' => array_map('strval', $selectedClients),
         'installationIds' => array_map('strval', $selectedInstallations),
+        'sitePermission' => (string) $selectedSitePermission,
         'generated' => filled(old('username')),
         'clients' => $clients->map(fn ($client) => [
             'id' => (string) $client->id,
@@ -59,6 +61,7 @@
             documentResults: [],
             pickedClientIds: cfg.clientIds || [],
             selectedInstallationIds: cfg.installationIds || [],
+            sitePermission: cfg.sitePermission || 'admin',
             installations: [],
             clients: cfg.clients || [],
             clientQuery: '',
@@ -183,6 +186,7 @@
     <template x-for="id in selectedInstallationIds" :key="'i'+id">
         <input type="hidden" name="installation_ids[]" :value="id" :disabled="!isInstallationAdmin">
     </template>
+    <input type="hidden" name="site_permission" :value="sitePermission" :disabled="!isInstallationAdmin">
     @if ($isEdit && ! ($managedUser?->admin_origin === 'external' || $managedUser?->hasRole('client-installation-admin')))
         <input type="hidden" name="name" value="{{ $employee?->fullName() ?: $managedUser->name }}">
     @endif
@@ -217,7 +221,7 @@
         <p class="text-[11px] text-slate-500">Interno puede operar varios clientes. Externo queda amarrado a uno.</p>
         <x-ui.field-error :messages="$errors->get('origin')" />
     </div>
-    <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias instalaciones del mismo cliente. En la ficha de la sede aparece como admin de sede, con el cargo que le pongas (rector, auxiliar…). No crea usuarios ni cambia Ajustes.</p>
+    <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias sedes del mismo cliente. En la ficha sale en Personal (nombre · cargo · Admin o Apoyo). No crea usuarios ni cambia Ajustes.</p>
     @if ($showMinorsNotice ?? false)
         <div x-show="isClientFacing">
             @include('partials.minors-data-notice')
@@ -361,7 +365,19 @@
                 </div>
             </div>
             <p class="mt-2 text-[11px] text-slate-500">Puede operar varias del mismo cliente.</p>
+            <div class="mt-3 space-y-2">
+                <p class="text-xs font-medium text-slate-300">Permiso en esas sedes</p>
+                <label class="flex items-center gap-2 text-sm text-slate-300">
+                    <input type="radio" value="admin" x-model="sitePermission" class="border-slate-600 bg-slate-950 text-indigo-600">
+                    Admin · opera y puede borrar nodos
+                </label>
+                <label class="flex items-center gap-2 text-sm text-slate-300">
+                    <input type="radio" value="support" x-model="sitePermission" class="border-slate-600 bg-slate-950 text-indigo-600">
+                    Apoyo · mismas sedes, no borra nodos ni edita la ficha
+                </label>
+            </div>
             <x-ui.field-error :messages="$errors->get('installation_ids')" />
+            <x-ui.field-error :messages="$errors->get('site_permission')" />
         </div>
     </div>
 

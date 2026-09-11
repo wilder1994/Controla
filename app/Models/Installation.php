@@ -22,6 +22,8 @@ final class Installation extends Model
         'client_id',
         'name',
         'code',
+        'kind',
+        'dane_code',
         'commune',
         'area_kind',
         'rector_user_id',
@@ -91,9 +93,52 @@ final class Installation extends Model
         return $this->belongsTo(User::class, 'rector_user_id');
     }
 
+    public function kindLabel(): string
+    {
+        return \App\Enums\InstallationKind::tryFrom((string) $this->kind)?->label() ?? '—';
+    }
+
+    public function requiresOfficialCode(): bool
+    {
+        return \App\Enums\InstallationKind::tryFrom((string) $this->kind)?->requiresOfficialCode() ?? false;
+    }
+
+    /** @return \Illuminate\Support\Collection<int, string> */
+    public function staffLines(): \Illuminate\Support\Collection
+    {
+        $people = $this->relationLoaded('assignedAdmins')
+            ? $this->assignedAdmins
+            : $this->assignedAdmins()->get();
+
+        if ($people->isEmpty()) {
+            $fallback = \App\Support\Company\InstallationSiteAdmins::label($this->rector);
+
+            return $fallback === '—' ? collect() : collect([$fallback]);
+        }
+
+        return $people
+            ->map(static function (User $user): string {
+                $permission = ($user->pivot->site_permission ?? 'admin') === 'support' ? 'Apoyo' : 'Admin';
+
+                return \App\Support\Company\InstallationSiteAdmins::label($user).' · '.$permission;
+            })
+            ->filter()
+            ->values();
+    }
+
     public function siteAdminLabel(): string
     {
-        return \App\Support\Company\InstallationSiteAdmins::label($this->rector);
+        $lines = $this->staffLines();
+
+        if ($lines->isEmpty()) {
+            return '—';
+        }
+
+        if ($lines->count() <= 2) {
+            return $lines->implode(', ');
+        }
+
+        return $lines->first().' +'.($lines->count() - 1);
     }
 
     public function areaKind(): ColombianAreaKind
@@ -110,7 +155,9 @@ final class Installation extends Model
     public function assignedAdmins(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'client_user_installation_assignments')
-            ->withTimestamps();
+            ->withPivot('site_permission')
+            ->withTimestamps()
+            ->orderBy('users.name');
     }
 
     public function locations(): HasMany
