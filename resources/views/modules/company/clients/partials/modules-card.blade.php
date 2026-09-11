@@ -7,7 +7,7 @@
 <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
     <div>
         <h3 class="text-sm font-semibold text-white">Gestión de módulos</h3>
-        <p class="mt-1 text-xs text-slate-500">Qué ve el panel del cliente. Fijos: Resumen, Estructura, Personas, Usuarios, Accesos y Ajustes.</p>
+        <p class="mt-1 text-xs text-slate-500">Qué ve el panel del cliente. Fijos: Resumen, Instalaciones, Personas, Usuarios, Accesos y Ajustes.</p>
     </div>
     <form method="POST" action="{{ route('company.clients.modules.update', $client) }}" class="space-y-3">
         @csrf

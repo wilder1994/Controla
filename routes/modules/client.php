@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Client\AppUserController;
 use App\Http\Controllers\Client\AuthorizationController;
 use App\Http\Controllers\Client\DashboardController;
+use App\Http\Controllers\Client\InstallationController;
 use App\Http\Controllers\Client\MemberController;
 use App\Http\Controllers\Client\MemberTypeController;
 use App\Http\Controllers\Client\PersonnelDocumentController;
@@ -29,6 +30,13 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
             Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
             Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->name('personnel-documents.folder');
         });
+
+        Route::get('/installations', [InstallationController::class, 'index'])
+            ->middleware('permission:client.structures.manage')
+            ->name('installations.index');
+        Route::get('/installations/{installation}', [InstallationController::class, 'show'])
+            ->middleware('permission:client.structures.manage')
+            ->name('installations.show');
 
         Route::get('/structures', [StructureController::class, 'index'])
             ->middleware('permission:client.structures.manage')

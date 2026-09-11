@@ -28,6 +28,9 @@ final class ClientInstallationController extends Controller
         try {
             $this->installations->create($client, [
                 'name' => $request->validated('name'),
+                'code' => $request->validated('code'),
+                'commune' => $request->validated('commune'),
+                'rector_user_id' => $request->validated('rector_user_id'),
                 'is_client_site' => $request->boolean('is_client_site'),
                 'is_active' => $request->boolean('is_active', true),
                 'geo' => $request->boolean('is_client_site')
@@ -53,6 +56,9 @@ final class ClientInstallationController extends Controller
         try {
             $this->installations->update($installation, [
                 'name' => $request->validated('name'),
+                'code' => $request->validated('code'),
+                'commune' => $request->validated('commune'),
+                'rector_user_id' => $request->validated('rector_user_id'),
                 'is_client_site' => $request->boolean('is_client_site'),
                 'is_active' => $request->boolean('is_active'),
                 'geo' => $request->boolean('is_client_site')

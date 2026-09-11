@@ -14,11 +14,11 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 |---------|-------------|--------|
 | **Cliente** | Ficha comercial (`clients`). PH, oficinas, bodegas, etc. | Alta / Excel de **clientes** / pestaña Cliente |
 | **Ciudad** | Ubicación del cliente (`clients.city` + `department`). **No es un nodo del árbol.** Lo que en el Excel viejo de empleados decía «Sector» era ciudad. | Ficha y Excel de clientes |
-| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Tarjeta **Instalaciones y puestos** |
+| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Código, comuna y **admin de sede** (rol admin instalaciones + cargo: rector, auxiliar…). Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Módulo `/company/installations` · `/client/installations` · ficha del cliente |
 | **Puerta** | Punto de portería (peatonal, vehicular, principal). Tabla `locations` (`type = access_point`). Solo Accesos. **No** es un puesto. | Tarjeta **Puertas** |
 | **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad 8/12/24 h y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
-| **Nodo / subnodo** | Censo (`structures`, `parent_id` + `installation_id`). Torre, salón, apto. Distinto de puesto/acceso. | Panel `/client/structures` (elige instalación) |
+| **Nodo / subnodo** | Censo (`structures`, `parent_id` + `installation_id`). Torre, salón, apto. Distinto de puesto/acceso. | Ficha de instalación (`/client/installations/{id}`) |
 | **Persona (censo)** | `structure_members` en un nodo. Tipo de documento + fecha de nacimiento. Menores: dato reservado salvo 4 admins; portería solo nombre. | Panel cliente |
 | **Acceso de persona** | `structure_app_users` de esa persona. Login `usuario@login_suffix` para app o panel. | `/client/app-users` |
 
@@ -36,7 +36,7 @@ tipo de cliente, nombre comercial, razón social, tipo y número de documento, c
 
 **La carga masiva de clientes no crea instalaciones, ni puestos, ni accesos.** Tampoco nodos de censo.
 
-Instalaciones, puestos y accesos los crea **a mano** el usuario de la empresa en la ficha de ese cliente, después del alta.
+Instalaciones las crea **solo la empresa**, en `/company/installations` (con cliente) o en la ficha del cliente. Puestos (modalidad + empleados) en la ficha de la sede o en la tarjeta del cliente. Accesos (puertas) siguen en la ficha del cliente.
 
 | Excel | Qué crea | Qué no crea |
 |-------|----------|-------------|
@@ -44,6 +44,10 @@ Instalaciones, puestos y accesos los crea **a mano** el usuario de la empresa en
 | Empleados | Ficha de colaborador (alta o **actualización** si el documento ya existe; cargo incluido) | Cliente, instalación, puesto, acceso, usuario. **Sin** columnas razón social / instalaciones / sector / puesto |
 
 ---
+
+## Directorio de instalaciones
+
+`/company/installations`: tabla, buscador y **Crear** (siempre con cliente). La ficha muestra nombre, código, comuna, **admin de sede** (cargo del usuario: rector, auxiliar…) y el mapa. También puestos (modalidad + empleados). El alta también se puede hacer en la ficha del cliente. El admin de sede es un `client-installation-admin`; al asignarlo queda amarrado a esa sede. El código se genera si no se escribe. El panel cliente tiene el mismo directorio (sin crear) y el árbol de nodos en la ficha.
 
 ## Árbol del sitio (tarjeta Instalaciones y puestos)
 
@@ -60,7 +64,7 @@ Cliente
         └── Puesto (8 / 12 / 24 h + empleados)         ← supervisor_posts
 ```
 
-El censo (torres, salones, aptos, personas) se define en `/client/structures` **después de elegir la instalación**.
+El censo (torres, salones, aptos, personas) se define en la **ficha de la instalación** del panel cliente (`/client/installations/{id}`).
 
 La app de campo (`GET /api/supervision/posts`) lista **estos puestos**, nunca `locations`. Sin puestos no se guarda revista.
 
@@ -112,7 +116,7 @@ No se clonan tablas de Patrulla (`review_posts`, etc.). Flota de Supervisión si
 
 1. Empresa: tipos de estructura en Ajustes → Estructuras.
 2. Empresa: alta de cliente (ficha) e **instalaciones**.
-3. Panel cliente (`/client/structures`): **Instalación** (barra corta) → árbol a todo el ancho restante → **Nuevo nodo** a la derecha. El tipo se **hereda** del cliente (nota bajo el nombre; no hay campo Tipo ni Código).
+3. Panel cliente (`/client/installations`): directorio → ficha de la sede → árbol + **Nuevo nodo**. El tipo se **hereda** del cliente (nota bajo el nombre; no hay campo Tipo ni Código).
 4. **Crear dentro de:** primera opción = esta instalación (raíz); el resto indentado en orden de árbol. El **+** de cada nodo lo deja como padre y enfoca el nombre.
 5. **Tipos de persona** en `/client/settings/member-types` (Ajustes). Catálogo **por cliente**.
 6. Personas en **un** nodo de esa instalación (elige instalación → nodo).
@@ -181,10 +185,10 @@ Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** 
 
 Sidebar del panel cliente:
 
-- **Fijos:** Resumen, Estructura, Personas, Usuarios, Accesos, Ajustes.
+- **Fijos:** Resumen, Instalaciones, Personas, Usuarios, Accesos, Ajustes.
 - **Opcionales** (check en Gestión de módulos): Vehículos, Mascotas, Autorizaciones, **Puertas** (antes Consola portería). Puertas solo se puede activar si ya hay `locations` activas. Nav oculto y ruta 403 si está apagado. Portería de empresa (`Operar portería` / vigilante) no usa este corte.
 
-El panel `/client/structures` se llama **Estructura** en el nav (sin título duplicado ni texto de censo/tipo en el cuerpo). Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. Personas: tipo de documento (catálogo + TI/RC) y fecha de nacimiento; si es menor de 18, aviso Ley 1581 art. 7 / Decreto 1377 / Ley 1098, autorización del representante, sin export ni acceso de persona; en portería solo el nombre. `/client/users` lista administradores **externos** de ese cliente; **no crea** (alta en empresa o plataforma). `/client/app-users` es **Accesos** (personas del censo). `/client/settings/member-types` es **Ajustes** (tipos de persona; admin instalaciones solo ve). Banner al operar: **panel del cliente**.
+El panel `/client/installations` es el directorio de sedes (tabla + ficha). La **estructura** (nodos) vive dentro de la ficha. `/client/structures` redirige ahí. Censo por instalación. Personas / vehículos / mascotas: mismo filtro instalación → nodo. Personas: tipo de documento (catálogo + TI/RC) y fecha de nacimiento; si es menor de 18, aviso Ley 1581 art. 7 / Decreto 1377 / Ley 1098, autorización del representante, sin export ni acceso de persona; en portería solo el nombre. `/client/users` lista administradores **externos** de ese cliente; **no crea** (alta en empresa o plataforma). `/client/app-users` es **Accesos** (personas del censo). `/client/settings/member-types` es **Ajustes** (tipos de persona; admin instalaciones solo ve). Banner al operar: **panel del cliente**.
 
 ---
 
@@ -192,7 +196,7 @@ El panel `/client/structures` se llama **Estructura** en el nav (sin título dup
 
 `structure_members` pide **tipo de documento** (`identity_document_types`: RC, TI, CC, CE, NIT, PA) y **fecha de nacimiento**. Edad &lt; 18 = menor (Ley 1098 art. 3).
 
-- Aviso en el formulario: Ley 1581 de 2012 art. 7, Decreto 1377 de 2013, Ley 1098 de 2006. Hay que marcar autorización del representante (`minor_treatment_accepted_at`).
+- Texto vigente: Normoteca (`minors_data_policy`). El súper admin lo versiona. Sale en el clickwrap de contratar, como aviso al crear cliente o admin cliente/instalaciones, y en Personas si el registro es menor. Hay que marcar autorización del representante (`minor_treatment_accepted_at`).
 - Ficha completa: súper admin, admin empresa, admin cliente, admin instalaciones.
 - Portería (`/access/*`): solo el **nombre**.
 - No van al Excel de asamblea ni tienen acceso de persona (`structure_app_users`).
@@ -203,7 +207,11 @@ El panel `/client/structures` se llama **Estructura** en el nav (sin título dup
 
 | Método | Ruta | Uso |
 |--------|------|-----|
-| POST/PUT/DELETE | `/company/clients/{id}/installations` | Instalaciones (compartidas) |
+| GET | `/company/installations` | Directorio: tabla, búsqueda, crear, ficha |
+| GET/PUT | `/company/installations/{id}` | Ficha / editar (código, comuna, admin de sede, mapa, puestos) |
+| GET | `/client/installations` | Directorio del cliente (admin cliente: todas; admin sede: las suyas) |
+| GET | `/client/installations/{id}` | Ficha + estructura (nodos). Sin alta de sede ni puestos |
+| POST/PUT/DELETE | `/company/clients/{id}/installations` | Alta rápida en el árbol del cliente |
 | POST/PUT/DELETE | `/company/clients/{id}/locations` | Puertas de una instalación (solo Accesos) |
 | POST/PUT/DELETE | `/company/clients/{id}/posts` | Puestos compartidos (Accesos y Supervisión) |
 | PUT | `/company/clients/{id}/modules` | Gestión de módulos del panel cliente |

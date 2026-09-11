@@ -14,6 +14,7 @@
         : route('company.clients.installations.store', $client);
     $sameClient = (bool) old('is_client_site', $installation?->is_client_site ?? false);
     $clientHasGeo = $client->latitude !== null && $client->longitude !== null;
+    $siteAdmins = $siteAdmins ?? [];
     $formConfig = [
         'sameClient' => $sameClient,
         'name' => old('name', $installation?->name ?? ''),
@@ -69,6 +70,27 @@
         Este cliente no tiene pin. Complétalo en la ficha o crea la instalación con el mapa.
     </p>
     <x-ui.field-error :messages="$errors->get('is_client_site')" />
+
+    <div class="grid sm:grid-cols-2 gap-3">
+        <div>
+            <label class="block text-xs text-slate-400 mb-1">Código</label>
+            <input type="text" name="code" value="{{ old('code', $installation?->code) }}" placeholder="Se genera solo" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+        </div>
+        <div>
+            <label class="block text-xs text-slate-400 mb-1">Comuna</label>
+            <input type="text" name="commune" value="{{ old('commune', $installation?->commune) }}" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+        </div>
+    </div>
+    <div>
+        <label class="block text-xs text-slate-400 mb-1">Admin de sede</label>
+        <select name="rector_user_id" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+            <option value="">Sin asignar</option>
+            @foreach ($siteAdmins as $row)
+                <option value="{{ $row['id'] }}" @selected((int) old('rector_user_id', $installation?->rector_user_id) === (int) $row['id'])>{{ $row['label'] }}</option>
+            @endforeach
+        </select>
+        <p class="mt-1 text-[11px] text-slate-500">Cargo (rector, auxiliar…) viene de Usuarios.</p>
+    </div>
 
     <div x-show="!sameClient" x-cloak>
         <x-ui.geo-address-fields

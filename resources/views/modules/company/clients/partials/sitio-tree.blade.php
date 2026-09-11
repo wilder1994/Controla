@@ -2,6 +2,7 @@
     $canManageTree = $canManageTree ?? false;
     $installations = $installations ?? collect();
     $postModalities = $postModalities ?? [];
+    $siteAdmins = $siteAdmins ?? [];
 @endphp
 
 <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-4">
@@ -13,7 +14,7 @@
     </div>
 
     @if ($canManageTree)
-        @include('modules.company.clients.partials.installation-form', ['client' => $client, 'vista' => 'sitio', 'accent' => 'indigo'])
+        @include('modules.company.clients.partials.installation-form', ['client' => $client, 'vista' => 'sitio', 'accent' => 'indigo', 'siteAdmins' => $siteAdmins])
     @endif
 
     <div class="space-y-3">
@@ -22,6 +23,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <div class="flex flex-wrap items-center gap-2">
                         <p class="text-sm font-medium text-white">{{ $installation->name }}</p>
+                        <a href="{{ route('company.installations.show', $installation) }}" class="text-xs text-indigo-400 hover:text-indigo-300">Ver ficha</a>
                         @if ($installation->is_client_site)
                             <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-900/40 text-indigo-300">Mismo cliente</span>
                         @endif
@@ -53,6 +55,7 @@
                             'installation' => $installation,
                             'vista' => 'sitio',
                             'accent' => 'indigo',
+                            'siteAdmins' => $siteAdmins,
                         ])
                     </div>
                 @endif

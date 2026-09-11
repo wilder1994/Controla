@@ -6,8 +6,11 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 final class Installation extends Model
 {
@@ -16,6 +19,9 @@ final class Installation extends Model
     protected $fillable = [
         'client_id',
         'name',
+        'code',
+        'commune',
+        'rector_user_id',
         'is_client_site',
         'is_active',
         'address',
@@ -35,9 +41,62 @@ final class Installation extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (Installation $installation): void {
+            if (filled($installation->code) || ! $installation->client_id) {
+                return;
+            }
+
+            $client = $installation->relationLoaded('client')
+                ? $installation->client
+                : Client::query()->find($installation->client_id);
+
+            if ($client instanceof Client) {
+                $installation->code = self::nextAvailableCode($client);
+            }
+        });
+    }
+
+    public static function nextAvailableCode(Client $client, ?int $ignoreId = null): string
+    {
+        $raw = $client->slug ?: 'sed';
+        $prefix = Str::upper(Str::substr((string) preg_replace('/[^A-Za-z0-9]+/', '', $raw), 0, 8)) ?: 'SED';
+        $n = 1;
+
+        do {
+            $candidate = $prefix.'-'.str_pad((string) $n, 2, '0', STR_PAD_LEFT);
+            $taken = self::query()
+                ->withoutGlobalScopes()
+                ->where('client_id', $client->id)
+                ->where('code', $candidate)
+                ->when($ignoreId !== null, fn ($q) => $q->whereKeyNot($ignoreId))
+                ->exists();
+            $n++;
+        } while ($taken);
+
+        return $candidate;
+    }
+
     public function hasCoordinates(): bool
     {
         return $this->latitude !== null && $this->longitude !== null;
+    }
+
+    public function rector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rector_user_id');
+    }
+
+    public function siteAdminLabel(): string
+    {
+        return \App\Support\Company\InstallationSiteAdmins::label($this->rector);
+    }
+
+    public function assignedAdmins(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'client_user_installation_assignments')
+            ->withTimestamps();
     }
 
     public function locations(): HasMany

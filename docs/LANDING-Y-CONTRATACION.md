@@ -54,7 +54,7 @@ Requiere junction `public/images` → `resources/images` (ver README § Assets e
 | `GET /planes` | Matriz de precios (PriceCalculator) |
 | `GET /contratar?sku=&cycle=` | Crea `commercial_signup_intents` |
 | `GET/POST /contratar/datos/{token}` | Paso 1: datos empresa, contacto, dirección/ciudad/depto/geo, contraseña |
-| `GET/POST /contratar/legal/{token}` | Paso 2: contrato del SKU + T&C + privacidad (texto) + clickwrap |
+| `GET/POST /contratar/legal/{token}` | Paso 2: contrato del SKU + T&C + privacidad + menores + procedimiento (texto) + clickwrap |
 | `GET /contratar/resumen/{token}` | Resumen |
 | `POST /contratar/pagar/{token}` | Checkout simulado |
 | `GET /contratar/checkout/{token}` | Aprobar / Rechazar |

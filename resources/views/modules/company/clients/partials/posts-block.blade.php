@@ -3,6 +3,7 @@
     $accent = $accent ?? 'indigo';
     $editLink = $accent === 'indigo' ? 'text-indigo-300' : 'text-amber-300';
     $emptyHint = 'Sin puestos. Sin ellos la app no puede guardar revista.';
+    $returnTo = $returnTo ?? null;
 @endphp
 
 <ul class="space-y-2">
@@ -38,6 +39,7 @@
                         'accent' => $accent,
                         'installations' => $installations,
                         'postModalities' => $postModalities,
+                        'returnTo' => $returnTo,
                     ])
                 </div>
             @endif
@@ -54,5 +56,6 @@
         'vista' => $vista,
         'accent' => $accent,
         'postModalities' => $postModalities,
+        'returnTo' => $returnTo,
     ])
 @endif

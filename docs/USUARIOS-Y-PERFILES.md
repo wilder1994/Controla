@@ -6,7 +6,7 @@ Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalizac
 
 La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
-Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
 ---
 
@@ -19,7 +19,7 @@ Panel `/company/users`. **Crear y editar usan el mismo formulario** (`modules/co
 **Formulario:**
 
 1. Foto circular centrada (`x-client.member-photo-picker`, campo `avatar`). Muestra avatar o icono de cámara; clic para elegir.
-2. **Rol**. Si es administrador del cliente: origen interno/externo. Admin instalaciones es siempre externo.
+2. **Rol**. Si es administrador del cliente: origen interno/externo. Admin instalaciones es siempre externo. Al crear admin cliente o instalaciones se muestra el aviso vigente de protección de datos de menores (Normoteca).
 3. Primera fila de ficha: **Nombre** y **Cédula**. Interno: ambos buscan empleados activos **sin** usuario. Externo: se escriben a mano (más cargo y correo).
 4. **Usuario de acceso** (todos los roles de empresa: admin empresa, admin del cliente, supervisor, vigilante): primer nombre + primer apellido paterno, ASCII, minúsculas, más **4 dígitos aleatorios** que cambian en cada generación (`ana.perez.4821`). No es la cédula. Único en `users.username`. Ese es el **login**.
 5. **Cargo / función**: select del catálogo `company_job_titles` (interno) o texto libre (externo). Al elegir empleado se precarga el cargo de la ficha.
@@ -58,7 +58,7 @@ Dos líneas de externo:
 | Rol UI | Spatie | Alcance |
 |--------|--------|---------|
 | **Administrador del cliente** | `client-admin` | Todo el panel de ese cliente |
-| **Admin instalaciones** | `client-installation-admin` | Varias instalaciones **del mismo cliente**. Censo y operación de esas sedes. **Ajustes** (tipos de persona): solo ver. **No** crea usuarios |
+| **Admin instalaciones** | `client-installation-admin` | Varias instalaciones **del mismo cliente**. En la ficha de sede es el **admin de sede**; el cargo (rector, auxiliar…) es `job_title`. Censo y operación de esas sedes. **Ajustes** (tipos de persona): solo ver. **No** crea usuarios |
 
 El panel `/client/users` **lista** administradores externos de ese cliente. **No crea usuarios**: el alta queda en `/company/users` o `/admin/users`. Los internos se asignan en `/company/users`.
 
@@ -85,7 +85,7 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 
 Controla **no** factura ni muestra deuda del cliente hacia la empresa de seguridad. Ese cobro es externo (contrato de vigilancia).
 
-En el cliente se registran datos comerciales (`party_type`, documento, contactos, representante, ciudad) y **`service_started_at`**. El **tipo de estructura** se fija en el alta. Instalaciones, accesos y puestos **no** van en el Excel; se crean en las tarjetas de la ficha. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+En el cliente se registran datos comerciales (`party_type`, documento, contactos, representante, ciudad) y **`service_started_at`**. El **tipo de estructura** se fija en el alta. Instalaciones, accesos y puestos **no** van en el Excel; sedes en `/company/installations` o ficha del cliente; puestos en la ficha de la sede. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 ---
 

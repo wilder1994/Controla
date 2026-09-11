@@ -265,7 +265,7 @@ Servicios:
 | GET | `/admin/companies/{company}` | Detalle y cambio de paquete |
 | PUT | `/admin/companies/{company}/package` | Asignar SKU y ciclo |
 | GET | `/admin/documents` | Hub documental (KPIs) |
-| GET | `/admin/documents/normativa` | Normoteca (globales + contratos por SKU) |
+| GET | `/admin/documents/normativa` | Normoteca (globales incl. menores + contratos por SKU) |
 | GET/PUT | `/admin/documents/normativa/{corpus}` | Editar / publicar nueva versión |
 | GET | `/admin/documents/trd` | Tabla de retención documental |
 | POST | `/admin/documents/expedientes/{company}/acceptance` | Aceptación clickwrap |
@@ -282,7 +282,7 @@ Sidebar **Ajustes** de plataforma: tipos de documento de identidad (`/admin/sett
 
 Los **tipos de estructura** son catálogo **por empresa** (`/company/structure-types`). Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
-**Tipo fijo del cliente:** al crear/editar cliente en `/company/clients` se elige `structure_type_id` de esa empresa. Los nodos nuevos en `/client/structures` **heredan** ese tipo (ya no se elige por nodo). El `code` del nodo lo genera el backend (slug; no se pide ni se muestra en el alta).
+**Tipo fijo del cliente:** al crear/editar cliente en `/company/clients` se elige `structure_type_id` de esa empresa. Los nodos nuevos en la ficha `/client/installations/{id}` **heredan** ese tipo (ya no se elige por nodo). El `code` del nodo lo genera el backend (slug; no se pide ni se muestra en el alta).
 
 Dominio completo: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
@@ -291,7 +291,7 @@ Dominio completo: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 | Concepto | Tabla | Quién define |
 |----------|-------|--------------|
 | Tipo del sitio / cliente | `structure_types` → `clients.structure_type_id` | Empresa (Ajustes → Estructuras) + alta cliente |
-| Nodos del censo | `structures` (`parent_id`) | Panel cliente `/client/structures` |
+| Nodos del censo | `structures` (`parent_id`) | Ficha de instalación `/client/installations/{id}` |
 | Instalación | `installations` | Pestaña Accesos y/o Supervisión de la ficha empresa |
 | Puntos de acceso / puertas | `locations` (`access_point`) bajo instalación | Pestaña **Accesos** |
 | Puesto de Supervisión | `supervisor_posts` | Pestaña **Supervisión** |

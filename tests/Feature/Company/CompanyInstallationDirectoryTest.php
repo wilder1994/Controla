@@ -1,0 +1,123 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Company;
+
+use App\Models\Client;
+use App\Models\Installation;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+final class CompanyInstallationDirectoryTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_company_lists_and_searches_installations(): void
+    {
+        [$admin, $client, $site] = $this->palmas();
+
+        $this->actingAs($admin)
+            ->get(route('company.installations.index'))
+            ->assertOk()
+            ->assertSee('Instalaciones', false)
+            ->assertSee($site->name, false)
+            ->assertSee($client->name, false);
+
+        $this->actingAs($admin)
+            ->get(route('company.installations.index', ['q' => 'no-existe-xyz']))
+            ->assertOk()
+            ->assertDontSee($site->name, false);
+    }
+
+    public function test_company_creates_installation_with_context_and_rector(): void
+    {
+        [$admin, $client] = $this->palmas();
+        $rector = User::query()->where('email', 'laura.sede@palmas.test')->first();
+        if ($rector === null) {
+            $rector = $this->makeRector($admin, $client);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('company.installations.create'))
+            ->assertOk()
+            ->assertSee('Código', false)
+            ->assertSee('Comuna', false)
+            ->assertSee('Admin de sede', false);
+
+        $this->actingAs($admin)
+            ->post(route('company.installations.store'), [
+                'client_id' => $client->id,
+                'name' => 'INEM Jorge Isaacs',
+                'code' => 'INE-01',
+                'commune' => 'Comuna 17',
+                'rector_user_id' => $rector->id,
+                'address' => 'Calle 5 # 50-00',
+                'city' => 'Cali',
+                'department' => 'Valle del Cauca',
+                'latitude' => '3.4372200',
+                'longitude' => '-76.5225000',
+            ])
+            ->assertRedirect();
+
+        $installation = Installation::query()->where('name', 'INEM Jorge Isaacs')->firstOrFail();
+        $this->assertSame('INE-01', $installation->code);
+        $this->assertSame('Comuna 17', $installation->commune);
+        $this->assertSame((int) $rector->id, (int) $installation->rector_user_id);
+        $this->assertTrue($rector->assignedInstallations()->where('installations.id', $installation->id)->exists());
+
+        $this->actingAs($admin)
+            ->get(route('company.installations.show', $installation))
+            ->assertOk()
+            ->assertSee('INEM Jorge Isaacs', false)
+            ->assertSee('INE-01', false)
+            ->assertSee('Comuna 17', false)
+            ->assertSee($rector->name, false)
+            ->assertSee('Admin de sede', false)
+            ->assertSee('Puestos', false);
+    }
+
+    public function test_guard_cannot_open_directory(): void
+    {
+        $this->seedWithPilot();
+        $guard = User::query()->where('email', 'guardia@control-acceso.test')->firstOrFail();
+
+        $this->actingAs($guard)
+            ->get(route('company.installations.index'))
+            ->assertForbidden();
+    }
+
+    /** @return array{0: User, 1: Client, 2: Installation} */
+    private function palmas(): array
+    {
+        $this->seedWithPilot();
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $site = Installation::query()->where('client_id', $client->id)->firstOrFail();
+
+        return [$admin, $client, $site];
+    }
+
+    private function makeRector(User $admin, Client $client): User
+    {
+        $site = Installation::query()->where('client_id', $client->id)->firstOrFail();
+
+        $this->actingAs($admin)->post(route('company.users.store'), [
+            'role' => 'client-installation-admin',
+            'origin' => 'external',
+            'name' => 'Rector Palmas',
+            'document_number' => '1098000777',
+            'job_title' => 'Rector',
+            'email' => 'rector.palmas@palmas.test',
+            'username' => 'rector.palmas.7777',
+            'password' => 'Cliente123!',
+            'password_confirmation' => 'Cliente123!',
+            'client_ids' => [$client->id],
+            'installation_ids' => [$site->id],
+            'is_active' => '1',
+        ])->assertRedirect();
+
+        return User::query()->where('email', 'rector.palmas@palmas.test')->firstOrFail();
+    }
+}

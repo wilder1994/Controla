@@ -10,6 +10,7 @@ enum LegalCorpusType: string
     case Terms = 'terms';
     case PrivacyPolicy = 'privacy_policy';
     case ProcedureLifecycle = 'procedure_lifecycle';
+    case MinorsDataPolicy = 'minors_data_policy';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum LegalCorpusType: string
             self::Terms => 'Términos y condiciones',
             self::PrivacyPolicy => 'Política de tratamiento de datos',
             self::ProcedureLifecycle => 'Procedimiento suspensión y archivo',
+            self::MinorsDataPolicy => 'Protección de datos de menores',
         };
     }
 }

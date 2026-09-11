@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Privacy;
 
+use App\Enums\LegalCorpusType;
+use App\Models\LegalCorpusVersion;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -14,6 +16,13 @@ final class MinorPersonalData
     public const RESERVED = 'Dato reservado';
 
     public const NOTICE = 'Por la Ley 1581 de 2012 (art. 7), el Decreto 1377 de 2013 y el Código de Infancia y Adolescencia (Ley 1098 de 2006), los datos personales de niños, niñas y adolescentes tienen protección especial. El registro requiere autorización del representante legal. Se tratarán conforme a la política de datos del responsable. En portería solo se muestra el nombre. No se incluyen en descargas ni listados compartidos. El acceso a los demás datos queda reservado a los administradores autorizados.';
+
+    public static function notice(): string
+    {
+        $published = trim((string) (LegalCorpusVersion::currentGlobal(LegalCorpusType::MinorsDataPolicy)?->content ?? ''));
+
+        return $published !== '' ? $published : self::NOTICE;
+    }
 
     /** @var list<string> */
     public const CENSUS_ADMIN_ROLES = [

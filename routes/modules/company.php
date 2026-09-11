@@ -7,6 +7,7 @@ use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\Company\ClientAccessPointController;
 use App\Http\Controllers\Company\ClientController;
 use App\Http\Controllers\Company\ClientInstallationController;
+use App\Http\Controllers\Company\CompanyInstallationController;
 use App\Http\Controllers\Company\ClientSupervisorPostController;
 use App\Http\Controllers\Company\CollaboratorTypeController;
 use App\Http\Controllers\Company\DashboardController;
@@ -255,6 +256,25 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::post('/clients/import/cancel', [ClientController::class, 'cancelImport'])
             ->middleware('permission:company.clients.manage')
             ->name('clients.import.cancel');
+
+        Route::get('/installations', [CompanyInstallationController::class, 'index'])
+            ->middleware('permission:company.clients.view')
+            ->name('installations.index');
+        Route::get('/installations/create', [CompanyInstallationController::class, 'create'])
+            ->middleware('permission:company.clients.manage')
+            ->name('installations.create');
+        Route::post('/installations', [CompanyInstallationController::class, 'store'])
+            ->middleware('permission:company.clients.manage')
+            ->name('installations.store');
+        Route::get('/installations/{installation}', [CompanyInstallationController::class, 'show'])
+            ->middleware('permission:company.clients.view')
+            ->name('installations.show');
+        Route::get('/installations/{installation}/edit', [CompanyInstallationController::class, 'edit'])
+            ->middleware('permission:company.clients.manage')
+            ->name('installations.edit');
+        Route::put('/installations/{installation}', [CompanyInstallationController::class, 'update'])
+            ->middleware('permission:company.clients.manage')
+            ->name('installations.update');
 
         Route::post('/clients/{client}/installations', [ClientInstallationController::class, 'store'])
             ->middleware('permission:company.clients.manage')

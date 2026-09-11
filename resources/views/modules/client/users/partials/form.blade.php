@@ -30,6 +30,9 @@
         <p class="mt-1 text-[11px] text-slate-500" x-show="role === 'client-installation-admin'">Opera las instalaciones que elijas. Puede ver Ajustes, no modificarlos, y no crea usuarios.</p>
         <x-ui.field-error :messages="$errors->get('role')" />
     </div>
+    @if ($showMinorsNotice ?? false)
+        @include('partials.minors-data-notice')
+    @endif
 
     <div>
         <x-ui.label for="name">Nombre</x-ui.label>

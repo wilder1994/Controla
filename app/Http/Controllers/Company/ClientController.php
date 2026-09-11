@@ -24,6 +24,7 @@ use App\Services\Tenant\BuildClientExpedienteService;
 use App\Services\Tenant\CreateClientService;
 use App\Services\Tenant\UpdateClientService;
 use App\Support\Company\CompanyOperateContext;
+use App\Support\Company\InstallationSiteAdmins;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -298,6 +299,7 @@ final class ClientController extends Controller
             'canOperateClientPanel' => $client->has_access
                 && $request->user()->can('client.structures.manage')
                 && $request->user()->can('operate', $client),
+            'siteAdmins' => InstallationSiteAdmins::optionsForClients([$client->id]),
         ]);
     }
 

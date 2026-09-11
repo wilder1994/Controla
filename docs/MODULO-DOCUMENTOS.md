@@ -14,7 +14,7 @@ Documentación de diseño del módulo `/admin/documents`: gobierno documental, e
 
 **Documentos** no es un wiki estático. Es el sistema de:
 
-- **Normoteca** — T&C, políticas y procedimientos **globales**; **contrato de licencia por plan (SKU)**; versionado editable en admin.
+- **Normoteca** — T&C, políticas, **protección de datos de menores** y procedimientos **globales**; **contrato de licencia por plan (SKU)**; versionado editable en admin.
 - **TRD operativa** — series documentales, plazos, disposición final, base legal.
 - **Expediente por suscriptor** — aceptación con corpus congelado (contenido + hash), facturas, actas de ciclo.
 - **Evidencias** — registro inmutable de quién aceptó qué, cuándo, y qué ocurrió en cada transición del ciclo comercial.
@@ -145,7 +145,7 @@ Alta suscriptor (PJ o PN)
 | Hash aceptación | SHA-256 del JSON del snapshot + representante + documento |
 | Inmutabilidad | Editar Normoteca crea versión nueva; el `corpus_snapshot` del expediente **no** se reescribe |
 
-**Carga vigente para un plan:** `LegalCorpusVersion::currentForPackage($sku)` → globales (T&C, privacidad, procedimiento) + contrato del SKU.
+**Carga vigente para un plan:** `LegalCorpusVersion::currentForPackage($sku)` → globales (T&C, privacidad, menores, procedimiento) + contrato del SKU. El aviso operativo de menores (`MinorPersonalData::notice()`) lee la versión vigente de `minors_data_policy`.
 
 | Servicio | Rol |
 |----------|-----|

@@ -31,6 +31,7 @@ final class PlatformDocumentsSeeder extends Seeder
             [LegalCorpusType::Terms, LegalCorpusDraftContent::terms()],
             [LegalCorpusType::PrivacyPolicy, LegalCorpusDraftContent::privacy()],
             [LegalCorpusType::ProcedureLifecycle, LegalCorpusDraftContent::procedureLifecycle()],
+            [LegalCorpusType::MinorsDataPolicy, LegalCorpusDraftContent::minorsDataPolicy()],
         ];
 
         foreach ($globals as [$type, $content]) {

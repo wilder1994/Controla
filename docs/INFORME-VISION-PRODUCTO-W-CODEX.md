@@ -4,7 +4,7 @@
 **Dueña:** W Codex Solution  
 **Estado:** decisión de producto (sin cambio de código en este corte)  
 **Fecha:** 2026-09-11  
-**Objeto:** bitácora de cómo se vende Controla, qué se toma de SJ-SIG y cómo avanza la geometría (instalación, censo, usuarios).
+**Objeto:** bitácora de cómo se vende Controla, qué se toma de SJ-SIG, cómo avanza la geometría y cómo se cubre el factor *Herramienta de Seguridad Educativa* (Anexo 7.5).
 
 Este documento es bitácora. No se implementa nada aquí: primero se registra la decisión, después se abre fase de código.
 
@@ -158,22 +158,84 @@ Cliente: Secretaría de Educación
 - El salón no es un acceso. La puerta del colegio sí (`locations`).
 - El buscador “INEM Jorge Isaacs” busca **instalaciones**.
 
-### 7.1 Seis tareas de demostración (observatorio)
+### 7.1 Factor pliego — Herramienta de Seguridad Educativa (máx. 4 puntos)
 
-Capa que **lee** instalaciones/colegios. No vive en minuta ni en `locations`.
+Pliego de vigilancia / contratación pública. El puntaje se otorga a quien **suscriba el Anexo 7.5** (diligenciado y firmado por el representante legal) comprometiendo que, para prestar el servicio, pondrá a disposición del Departamento Administrativo de Contratación Pública un **módulo integrado de seguridad educativa**. La visita técnica verifica **funcionamiento y operación**, no solo el papel.
 
-| # | Tarea (lenguaje ciudadano) | Dónde |
-|---|----------------------------|--------|
-| 1 | Directorio de colegios (código, comuna, rector, contacto) | Instalación + admins |
-| 2 | Mapa de la ciudad: pines por tipo de alerta + mapa de calor | Observatorio (nuevo) |
-| 3 y 7 | Denuncias de padre, Policía, Línea 123 en la misma base | Observatorio + conectores (convenio, no solo JSON) |
-| 4 | Botón de pánico anónimo (ocultar nombre y teléfono) | Observatorio; no es el pánico de portería |
-| 5 | Enganchar reportes repetidos en un incidente | Observatorio |
-| 6 | Tablero, gráficas, ranking colegio más peligroso → más seguro | Observatorio |
+Eso es **Controla + Observatorio** sobre el cliente Secretaría. No es otra marca ni un segundo hosting.
 
-El pánico de Accesos (portería) **no** cumple el módulo 4 escolar.
+| # | Factor del Anexo 7.5 | Peso | Qué pide (desglose) |
+|---|----------------------|------|---------------------|
+| 1 | Gestión de seguridad de instituciones y contexto | 0,55 | Registro maestro y contexto institucional (0,30); consulta y búsqueda asociada (0,25) |
+| 2 | Componente geográfico | 0,95 | Mapa de instituciones (0,25); eventos o riesgos georreferenciados (0,25); filtros/capas territoriales (0,25); identificación de concentraciones (0,20) |
+| 3 | Gestión multifuente | 0,85 | Ingreso de fuentes autorizadas diversas (0,30); relación o normalización (0,30); trazabilidad del origen o fuente (0,25) |
+| 4 | Reportes de comunidad educativa | 0,55 | Recepción con controles de privacidad (0,25); flujo y estado de atención (0,20); asociación a institución o evento (0,10) |
+| 5 | Gestión de eventos | 0,75 | Ciclo de vida, estado y responsable (0,25); relación de reportes de distintas fuentes sobre la misma situación (0,25); histórico y evidencia (0,25) |
+| 6 | Analítica y priorización | 0,90 | Tendencias, recurrencias o concentraciones (0,30); priorización configurable de riesgo o exposición (0,30); tablero, filtros y salida de resultados (0,30) |
+| 7 | Interoperabilidad avanzada | 0,45 | Gestión de eventos/riesgos por API o formatos estructurados (0,25); documentación y control de la interfaz (0,20) |
+| | **Total** | **4,00** | |
 
-### 7.2 Stack de esa licitación
+El Anexo en prosa pide lo mismo sin puntajes: maestro + búsqueda; mapa + eventos geo + capas + concentraciones; fuentes + normalización + origen; reportes comunitarios con privacidad, flujo y vínculo; eventos con dueño, cruce de fuentes e histórico; analítica configurable y tablero; API o equivalente documentado.
+
+### 7.2 Qué hay hoy en Controla (brecha)
+
+Controla es maduro en **accesos, censo y supervisión de campo**. No hay Observatorio. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
+
+| Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
+|--------|---------------|--------------|------------------------|
+| 1 Maestro + búsqueda | ~80 % | Directorio `/company/installations` + `/client/installations`; código, comuna, admin de sede + cargo, mapa, búsqueda | `kind=colegio` y DANE formal; N admins por sede |
+| 2 Geográfico | ~60 % | Google Maps, pines, GPS PWA, cluster ~50 m, filtros de supervisión | Mapa **por instalación**; capas territoriales; heatmap / concentración |
+| 3 Multifuente | ~30 % | Portería (`guard_logs`) y campo (`supervisor_field_logs`) como silos | Catálogo de fuentes; normalizar; `source` en cada reporte |
+| 4 Comunidad | ~12 % | Privacidad de menores (Normoteca + censo). PQRS **no existe** | Intake web (anónimo o no); estados; vínculo sede/evento. No es el pánico de portería |
+| 5 Eventos | ~40 % | Fichas y minutas con evidencia, cada una en su mundo | Incidente único, dueño, estados, agrupar reportes, histórico |
+| 6 Analítica | ~55 % | Command Center, resumen supervisión, PPTX, filtros | Tendencias/ranking escolar; prioridad **configurable**; tablero + export del Observatorio |
+| 7 Interoperabilidad | ~25 % externo | API Sanctum de supervisión + catálogo de módulos (`docs/SUPERVISION-CAMPO.md`) | API de eventos/riesgos del Observatorio + OpenAPI / control de interfaz |
+
+**No cumple el Anexo, por sí solo:** pánico de portería, minuta, `locations`, clustering visual de pines, ni el tablero de la empresa de seguridad.
+
+### 7.3 Definición de producto (antes de código)
+
+Capa **Observatorio**. Lee instalaciones/colegios. **No** vive en minuta ni en `locations` (principio 5).
+
+| Pieza | Decisión |
+|--------|----------|
+| Institución | `Installation` con `kind = colegio` + contexto (código oficial, comuna, rector/contacto). Misma ficha del §6; no tabla suelta de colegios |
+| Reporte | Intake (web anónima o identificada) con **fuente**, privacidad y estado de atención |
+| Evento | Agrupa reportes de varias fuentes sobre **una** situación: ciclo, responsable, histórico, evidencia |
+| Mapa | Pines de colegios + eventos/riesgos georreferenciados; filtros/capas territoriales; concentraciones (calor o ranking) |
+| Tablero | Tendencias, recurrencia, ranking, prioridad configurable, filtros y export |
+| API | JSON de eventos/riesgos + documentación (OpenAPI) y control de la interfaz |
+
+**Fuentes v1 (visita técnica, sin convenio externo):** comunidad educativa, supervisión de campo, portería (como origen trazable, no como UI del Observatorio), carga manual autorizada.
+
+**Fuentes después (convenio, no solo JSON):** Policía, Línea 123. El día 1 se pueden **simular** conectores si el pliego no exige el tubo en vivo.
+
+**Privacidad:** el aviso de menores de Normoteca (`minors_data_policy`) aplica al censo y, cuando haya intake comunitario, al tratamiento de datos de NNA. El reporte anónimo oculta nombre y teléfono; no reutiliza el pánico de Accesos.
+
+**Quién ve qué**
+
+| Actor | Superficie |
+|--------|------------|
+| Comunidad (padre, docente, entorno) | Web móvil 3 pasos. **No** instala APK |
+| Rector / admin de sede | Solo su instalación |
+| Secretaría (client-admin / entidad) | Mapa ciudad, tablero, ranking, API de lectura |
+| Empresa de vigilancia | Sigue en Accesos / Supervisión / PWA. Alimenta fuentes; no es el panel del Observatorio |
+
+### 7.4 Seis tareas de demostración (lenguaje ciudadano)
+
+Las mismas del Anexo, en el orden en que se enseñan en visita. Encajan 1:1 con los factores 1–6; el factor 7 es la API de esa capa.
+
+| # | Tarea (lenguaje ciudadano) | Factor | Dónde |
+|---|----------------------------|--------|--------|
+| 1 | Directorio de colegios (código, comuna, rector, contacto) | 1 | Instalación + admins |
+| 2 | Mapa de la ciudad: pines por tipo de alerta + mapa de calor | 2 | Observatorio (nuevo) |
+| 3 | Denuncias de padre, Policía, Línea 123 en la misma base | 3 y 4 | Observatorio + conectores |
+| 4 | Botón de pánico anónimo (ocultar nombre y teléfono) | 4 | Observatorio; **no** pánico de portería |
+| 5 | Enganchar reportes repetidos en un incidente | 5 | Observatorio |
+| 6 | Tablero, gráficas, ranking colegio más peligroso → más seguro | 6 | Observatorio |
+| — | API / formatos estructurados + documentación | 7 | Observatorio (lectura/escritura controlada) |
+
+### 7.5 Stack de esa licitación
 
 El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta, no obligación de logo.
 
@@ -183,8 +245,11 @@ El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta
 | Producto / puntaje geo | PostgreSQL + PostGIS (límites, distancias, calor de verdad). El backend puede seguir en Laravel |
 | Portal ciudadano | Web móvil de 3 pasos. El padre **no** instala APK para denunciar |
 | Panel Secretaría | Mapa + tablas + gráficos, privado |
+| Interoperabilidad | OpenAPI del Observatorio; mismos formatos en la visita (crear evento, listar, filtrar) |
 
 PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. Línea 123 y Policía son **convenio**; el día 1 pueden simularse conectores si el pliego no exige el tubo en vivo.
+
+**Orden de código cuando se abra fase** (dentro del punto 8 del §11): primero ficha colegio + búsqueda (factor 1); en paralelo o justo después reporte → evento (factores 4 y 5), que es lo más visible en visita; luego mapa/calor (2), tablero (6), fuentes/API (3 y 7). No se escribe código en este corte.
 
 ---
 
@@ -263,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (6 módulos) — producto/capa aparte, misma geometría de instalaciones.
+8. Observatorio escolar (Anexo 7.5, 7 factores / 4 puntos) — capa aparte, misma geometría. Alcance y brecha en §7. Sin código hasta abrir esta fase.
 
 ---
 
@@ -296,3 +361,7 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | `/company/users`: pestañas Activos/Desactivados en el header; foto circular; Cliente + Instalaciones en una fila con filtro. |
 | 2026-09-11 | Ficha cliente: tarjeta **Gestión de módulos**. Sidebar fijo (Resumen, Estructura, Personas, Usuarios, Accesos, Ajustes) y opcional (Vehículos, Mascotas, Autorizaciones, Puertas). |
 | 2026-09-11 | Alta de usuarios solo súper admin y admin empresa. Personas: tipo de documento (TI/RC) + fecha de nacimiento. Menores: Ley 1581 art. 7; portería solo nombre; sin export. |
+| 2026-09-11 | Protección de menores en Normoteca (`minors_data_policy`): clickwrap de contrato; aviso al crear cliente y admin cliente/instalaciones; Personas lee el texto vigente. |
+| 2026-09-11 | Anexo 7.5 *Herramienta de Seguridad Educativa* (4 puntos, 7 factores): brecha vs Controla, definición del Observatorio (institución / reporte / evento / mapa / tablero / API). Sin código. |
+| 2026-09-11 | Factor 1 (directorio): módulo `/company/installations` (tabla, búsqueda, ficha con código, comuna, rector = admin de instalaciones, mapa). |
+| 2026-09-11 | Instalaciones unificadas: alta en módulo y en ficha cliente; admin de sede = rol + cargo; ficha empresa con puestos; sidebar cliente **Instalaciones** (estructura dentro de la ficha). |

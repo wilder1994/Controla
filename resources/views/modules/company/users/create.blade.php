@@ -13,6 +13,7 @@
                 'roleOptions' => $roleOptions,
                 'clients' => $clients,
                 'jobTitles' => $jobTitles,
+                'showMinorsNotice' => true,
             ])
             <x-ui.button type="submit" size="sm">Crear usuario</x-ui.button>
         </form>

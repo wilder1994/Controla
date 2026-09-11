@@ -5,6 +5,7 @@
     $postModalities = $postModalities ?? [];
     $installations = $installations ?? collect();
     $installation = $installation ?? null;
+    $returnTo = $returnTo ?? null;
     $btn = $accent === 'indigo' ? 'bg-indigo-600' : 'bg-amber-600';
     $check = $accent === 'indigo' ? 'text-indigo-600' : 'text-amber-500';
     $isEdit = $post !== null;
@@ -34,6 +35,9 @@
         @method('PUT')
     @endif
     <input type="hidden" name="vista" value="{{ $vista }}">
+    @if ($returnTo)
+        <input type="hidden" name="return_to" value="{{ $returnTo }}">
+    @endif
 
     @if ($isEdit)
         <div class="sm:col-span-2">

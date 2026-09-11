@@ -381,7 +381,7 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 
 **Membresía (v1):** en Resumen se gestionan intents `renew` / `anticipate` / `reactivate` / `plan_change`. Cancelación = `cancel_at_period_end` (sigue operativa hasta `package_ends_at`); al vencer, lifecycle suspende **sin gracia**. Historial es solo lectura (los pagos manuales del súper admin sí aparecen).
 
-**Módulo Documentos (v1.1):** normoteca con **contrato por plan (SKU)** y documentos globales (T&C, privacidad, procedimiento); versionado desde admin; al aceptar se congela contenido + hash en expediente (**inmutable** ante cambios posteriores de Normoteca); clickwrap, pago manual y factura demo (`BILLING_MODE=demo`). Sin export PDF/HTML en v1. Detalle: [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md).
+**Módulo Documentos (v1.1):** normoteca con **contrato por plan (SKU)** y documentos globales (T&C, privacidad, **protección de menores**, procedimiento); versionado desde admin; al aceptar se congela contenido + hash en expediente (**inmutable** ante cambios posteriores de Normoteca); clickwrap, pago manual y factura demo (`BILLING_MODE=demo`). El aviso de menores en Personas / alta de cliente y admins lee la versión vigente. Sin export PDF/HTML en v1. Detalle: [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md).
 
 **Ciclo comercial (acceso):** gracia 5 días → suspensión (bloqueo) → archivo por falta de pago tras N días (`SUBSCRIPTION_ARCHIVE_AFTER_SUSPENDED_DAYS`, default 90) → retención → purga. Job `subscriptions:process-lifecycle` (diario 02:00). Canceladas al fin de periodo: sin gracia al vencer.
 
@@ -395,12 +395,13 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
-Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
 
 | Ruta | Función |
 |------|---------|
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
+| `GET /company/installations` | Directorio de sedes: búsqueda, crear, ficha (código, comuna, admin de sede, mapa, puestos) |
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas). **No** crea instalaciones, accesos ni puestos |
 | `POST/PUT/DELETE /company/clients/{id}/installations` | CRUD instalaciones (catálogo compartido) |
@@ -556,7 +557,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 | Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
 | Analytics | `CompanyDashboardService` + `CompanyDashboardAnalytics` · expediente conjunto: `BuildClientExpedienteService` |
 | Contexto | `CompanyLayoutComposer` → `companyContext` + `supportMode`; `OperateReturnLayoutComposer` → banner en access/client |
-| Vistas | `company/dashboard` (Mi empresa), `company/clients/*`, `company/billing`, `company/downloads`, `company/users/*`, `company/settings` (Mis datos), `company/employees/*`, `company/job-titles`, `company/collaborator-types`, `company/structure-types` |
+| Vistas | `company/dashboard` (Mi empresa), `company/clients/*`, `company/installations/*`, `company/billing`, `company/downloads`, `company/users/*`, `company/settings` (Mis datos), `company/employees/*`, `company/job-titles`, `company/collaborator-types`, `company/structure-types` |
 
 Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `platform` (violet en `/admin`). Tamaños: `sm`, `md`.
 
@@ -600,7 +601,7 @@ Tablas relacionadas:
 | Ruta | Módulo |
 |------|--------|
 | `/client/dashboard` | Resumen |
-| `/client/structures` | Árbol de nodos por **instalación** (**Estructura**) |
+| `/client/installations` | Directorio de sedes; la ficha incluye estructura (nodos). `/client/structures` redirige |
 | `/client/members` | Personas: tipo de documento + fecha de nacimiento; menores (Ley 1581) sin export; QR solo adultos |
 | `/client/pets` | Directorio de mascotas por unidad |
 | `/client/vehicles` | Directorio vehicular |

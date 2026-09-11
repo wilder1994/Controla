@@ -16,6 +16,7 @@
 
         <form method="POST" action="{{ route('company.clients.store') }}" class="space-y-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
             @csrf
+            @include('partials.minors-data-notice')
             @if ($errors->any())
                 <div class="rounded-lg border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-200">
                     <ul class="list-disc pl-4 space-y-0.5">

@@ -114,6 +114,16 @@ final class ClientSupervisorPostController extends Controller
             $vista = 'cliente';
         }
 
+        if ($request->input('return_to') === 'installation') {
+            $installationId = (int) ($request->input('installation_id') ?: $request->route('post')?->installation_id);
+
+            if ($installationId > 0) {
+                return redirect()
+                    ->route('company.installations.show', $installationId)
+                    ->with($error ? 'error' : 'success', $message);
+            }
+        }
+
         return redirect()
             ->route('company.clients.show', [$client, 'vista' => $vista])
             ->with($error ? 'error' : 'success', $message);

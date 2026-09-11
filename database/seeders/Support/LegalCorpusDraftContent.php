@@ -41,6 +41,11 @@ Versión inicial para desarrollo y pruebas. Revisión legal pendiente antes del 
 TXT;
     }
 
+    public static function minorsDataPolicy(): string
+    {
+        return \App\Support\Privacy\MinorPersonalData::NOTICE;
+    }
+
     public static function privacy(): string
     {
         return <<<'TXT'
@@ -124,7 +129,7 @@ CLÁUSULA NOVENA — TERMINACIÓN Y CICLO DE VIDA. Mora, suspensión, archivo y 
 
 CLÁUSULA DÉCIMA — LEY APLICABLE. República de Colombia. Controversias ante jueces competentes del domicilio del prestador, salvo acuerdo distinto.
 
-Anexo. Este documento forma un solo corpus de aceptación junto con Términos y Condiciones, Política de Tratamiento de Datos y Procedimiento de ciclo de vida vigentes al momento del clickwrap.
+Anexo. Este documento forma un solo corpus de aceptación junto con Términos y Condiciones, Política de Tratamiento de Datos, Protección de datos de menores y Procedimiento de ciclo de vida vigentes al momento del clickwrap.
 
 Versión inicial para desarrollo y pruebas. Revisión legal pendiente antes del go-live comercial.
 TXT;

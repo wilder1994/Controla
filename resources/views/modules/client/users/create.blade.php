@@ -7,6 +7,7 @@
                 'roleOptions' => $roleOptions,
                 'managedUser' => null,
                 'installations' => $installations,
+                'showMinorsNotice' => true,
             ])
             <x-ui.button type="submit" class="!bg-teal-600 hover:!bg-teal-500">Crear usuario</x-ui.button>
         </form>

@@ -46,7 +46,7 @@ final class StructureModuleTest extends TestCase
                 'is_active' => true,
             ]);
 
-        $response->assertRedirect(route('client.structures.index', ['installation_id' => $installation->id]));
+        $response->assertRedirect(route('client.installations.show', $installation));
 
         $structure = Structure::withoutGlobalScopes()
             ->where('name', 'Torre Piloto Test')
@@ -154,16 +154,33 @@ final class StructureModuleTest extends TestCase
         $client = Client::query()->where('slug', 'palmas-del-ingenio')->first();
         $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->first();
 
-        $response = $this->actingAs($admin)
-            ->withSession(['tenancy.active_client_id' => $client->id])
-            ->get(route('client.structures.index'));
+        $installation = Installation::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->orderByDesc('is_client_site')
+            ->firstOrFail();
 
-        $response->assertOk();
-        $response->assertSee('Estructura');
-        $response->assertSee('Instalación');
-        $response->assertSee('Crear dentro de');
-        $response->assertDontSee('El censo se arma por instalación');
-        $response->assertDontSee('name="code"', false);
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->get(route('client.structures.index'))
+            ->assertRedirect(route('client.installations.index'));
+
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->get(route('client.installations.index'))
+            ->assertOk()
+            ->assertSee('Instalaciones')
+            ->assertSee($installation->name);
+
+        $this->actingAs($admin)
+            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->get(route('client.installations.show', $installation))
+            ->assertOk()
+            ->assertSee('Estructura')
+            ->assertSee('Crear dentro de')
+            ->assertSee('Admin de sede')
+            ->assertDontSee('El censo se arma por instalación')
+            ->assertDontSee('name="code"', false);
     }
 
     public function test_structure_store_requires_installation(): void

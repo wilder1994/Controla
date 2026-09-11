@@ -16,7 +16,7 @@
         </div>
 
         @if ($member->isMinor())
-            <p class="rounded-lg border border-amber-800/70 bg-amber-950/30 px-3 py-2 text-xs text-amber-200 leading-relaxed">{{ \App\Support\Privacy\MinorPersonalData::NOTICE }}</p>
+            <p class="rounded-lg border border-amber-800/70 bg-amber-950/30 px-3 py-2 text-xs text-amber-200 leading-relaxed whitespace-pre-line">{{ \App\Support\Privacy\MinorPersonalData::notice() }}</p>
         @endif
 
         <div class="flex gap-2 mb-2">

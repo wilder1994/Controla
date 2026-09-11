@@ -6,13 +6,16 @@ namespace App\Services\Company;
 
 use App\Domain\Geo\GeoAddressData;
 use App\Models\Client;
+use App\Models\ClientUserInstallationAssignment;
 use App\Models\Installation;
+use App\Models\User;
+use App\Support\Auth\AssignableRoles;
 use Illuminate\Validation\ValidationException;
 
 final class ManageClientInstallationService
 {
     /**
-     * @param  array{name: string, is_client_site?: bool, is_active?: bool, geo?: ?GeoAddressData}  $data
+     * @param  array{name: string, is_client_site?: bool, is_active?: bool, code?: ?string, commune?: ?string, rector_user_id?: ?int, geo?: ?GeoAddressData}  $data
      */
     public function create(Client $client, array $data): Installation
     {
@@ -24,16 +27,22 @@ final class ManageClientInstallationService
             $this->clearClientSiteFlag($client);
         }
 
-        return Installation::query()->create(array_merge([
+        $installation = Installation::query()->create(array_merge([
             'client_id' => $client->id,
             'name' => $name,
+            'code' => $this->resolveCode($client, $data['code'] ?? null),
+            'commune' => $this->nullableString($data['commune'] ?? null),
             'is_client_site' => $isClientSite,
             'is_active' => (bool) ($data['is_active'] ?? true),
         ], $this->geoAttributes($client, $isClientSite, $data['geo'] ?? null)));
+
+        $this->syncRector($installation, isset($data['rector_user_id']) ? (int) $data['rector_user_id'] ?: null : null);
+
+        return $installation->refresh();
     }
 
     /**
-     * @param  array{name?: string, is_client_site?: bool, is_active?: bool, geo?: ?GeoAddressData}  $data
+     * @param  array{name?: string, is_client_site?: bool, is_active?: bool, code?: ?string, commune?: ?string, rector_user_id?: ?int, geo?: ?GeoAddressData}  $data
      */
     public function update(Installation $installation, array $data): Installation
     {
@@ -60,8 +69,20 @@ final class ManageClientInstallationService
             $installation->is_active = (bool) $data['is_active'];
         }
 
+        if (array_key_exists('code', $data)) {
+            $installation->code = $this->resolveCode($client, $data['code'] ?? null, $installation->id);
+        }
+
+        if (array_key_exists('commune', $data)) {
+            $installation->commune = $this->nullableString($data['commune'] ?? null);
+        }
+
         $installation->fill($this->geoAttributes($client, $isClientSite, $data['geo'] ?? null));
         $installation->save();
+
+        if (array_key_exists('rector_user_id', $data)) {
+            $this->syncRector($installation, $data['rector_user_id'] !== null ? (int) $data['rector_user_id'] ?: null : null);
+        }
 
         return $installation->refresh();
     }
@@ -124,6 +145,72 @@ final class ManageClientInstallationService
                 'name' => 'Ya existe una instalación con ese nombre en este cliente.',
             ]);
         }
+    }
+
+    private function resolveCode(Client $client, ?string $code, ?int $ignoreId = null): string
+    {
+        $code = $this->nullableString($code);
+        if ($code === null) {
+            $code = $this->nextCode($client, $ignoreId);
+        }
+
+        $exists = Installation::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->where('code', $code)
+            ->when($ignoreId !== null, fn ($q) => $q->whereKeyNot($ignoreId))
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'code' => 'Ya existe una instalación con ese código en este cliente.',
+            ]);
+        }
+
+        return $code;
+    }
+
+    private function nextCode(Client $client, ?int $ignoreId = null): string
+    {
+        return Installation::nextAvailableCode($client, $ignoreId);
+    }
+
+    private function syncRector(Installation $installation, ?int $rectorUserId): void
+    {
+        $installation->rector_user_id = $rectorUserId;
+
+        if ($rectorUserId === null) {
+            $installation->save();
+
+            return;
+        }
+
+        $user = User::query()->find($rectorUserId);
+        if ($user === null || ! $user->hasRole(AssignableRoles::CLIENT_INSTALLATION_ADMIN)) {
+            throw ValidationException::withMessages([
+                'rector_user_id' => 'El rector debe ser un admin de instalaciones.',
+            ]);
+        }
+
+        if (! $user->canAccessClient((int) $installation->client_id)) {
+            throw ValidationException::withMessages([
+                'rector_user_id' => 'El rector no pertenece a este cliente.',
+            ]);
+        }
+
+        ClientUserInstallationAssignment::query()->firstOrCreate([
+            'user_id' => $user->id,
+            'installation_id' => $installation->id,
+        ]);
+
+        $installation->save();
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        $text = trim((string) ($value ?? ''));
+
+        return $text !== '' ? $text : null;
     }
 
     private function clearClientSiteFlag(Client $client, ?int $ignoreId = null): void

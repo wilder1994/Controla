@@ -45,7 +45,7 @@
         @error('birth_date')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
     </div>
     <div class="sm:col-span-2 rounded-lg border border-amber-800/70 bg-amber-950/30 p-3 space-y-2" x-show="minor" x-cloak>
-        <p class="text-xs text-amber-200 leading-relaxed">{{ MinorPersonalData::NOTICE }}</p>
+        <p class="text-xs text-amber-200 leading-relaxed whitespace-pre-line">{{ MinorPersonalData::notice() }}</p>
         <label class="flex items-start gap-2 text-xs text-amber-100">
             <input type="checkbox" name="minor_treatment_accepted" value="1" class="mt-0.5 rounded border-amber-600 bg-slate-950 text-teal-600" x-bind:required="minor && !accepted" @checked(old('minor_treatment_accepted', $alreadyAccepted))>
             <span>El representante legal autoriza el tratamiento de estos datos conforme a la norma citada.</span>

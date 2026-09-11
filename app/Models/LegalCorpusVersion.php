@@ -50,6 +50,15 @@ class LegalCorpusVersion extends Model
         return $this->package_sku === null;
     }
 
+    public static function currentGlobal(LegalCorpusType $type): ?self
+    {
+        return self::query()
+            ->where('type', $type->value)
+            ->whereNull('package_sku')
+            ->whereNull('superseded_at')
+            ->first();
+    }
+
     /** Documentos globales vigentes (sin contrato por SKU). */
     /** @return Collection<int, LegalCorpusVersion> */
     public static function currentGlobals(): Collection

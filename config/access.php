@@ -316,7 +316,7 @@ return [
             'permission' => 'client.structures.manage',
             'items' => [
                 ['label' => 'Resumen', 'route' => 'client.dashboard', 'permission' => 'client.structures.manage'],
-                ['label' => 'Estructura', 'route' => 'client.structures.index', 'permission' => 'client.structures.manage'],
+                ['label' => 'Instalaciones', 'route' => 'client.installations.index', 'permission' => 'client.structures.manage'],
                 ['label' => 'Personas', 'route' => 'client.members.index', 'permission' => 'client.members.manage'],
                 ['label' => 'Usuarios', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
                 ['label' => 'Accesos', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],

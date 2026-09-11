@@ -37,7 +37,7 @@
                 <option :value="String(node.id)" x-text="' '.repeat((node.depth + 1) * 2) + node.name"></option>
             </template>
         </select>
-        <p x-show="installationId && nodes.length === 0" x-cloak class="mt-1 text-xs text-slate-500">No hay nodos en esta instalación. Créalos en Estructura.</p>
+        <p x-show="installationId && nodes.length === 0" x-cloak class="mt-1 text-xs text-slate-500">No hay nodos en esta instalación. Créalos en Instalaciones.</p>
         @error('structure_id')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
     </div>
 </div>

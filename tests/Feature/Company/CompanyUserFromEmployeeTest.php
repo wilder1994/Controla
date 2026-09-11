@@ -31,7 +31,8 @@ final class CompanyUserFromEmployeeTest extends TestCase
             ->assertSee('Usuario de acceso', false)
             ->assertSee('Cargo / función', false)
             ->assertSee('Email personal', false)
-            ->assertSee('Generar usuario y contraseña', false);
+            ->assertSee('Generar usuario y contraseña', false)
+            ->assertSee('Protección de datos de menores', false);
     }
 
     public function test_edit_form_uses_the_same_fields(): void

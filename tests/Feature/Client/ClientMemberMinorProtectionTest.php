@@ -83,7 +83,7 @@ final class ClientMemberMinorProtectionTest extends TestCase
             ->get(route('client.members.show', $minor))
             ->assertOk()
             ->assertSee('1099000001')
-            ->assertSee(MinorPersonalData::NOTICE, false);
+            ->assertSee(MinorPersonalData::notice(), false);
 
         $vigilante = User::query()->where('email', 'guardia@control-acceso.test')->firstOrFail();
         Resident::query()->create([

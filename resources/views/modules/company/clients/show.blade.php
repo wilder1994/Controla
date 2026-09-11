@@ -114,6 +114,7 @@
                 'installations' => $installations ?? collect(),
                 'canManageTree' => $canManageTree ?? false,
                 'postModalities' => $postModalities ?? [],
+                'siteAdmins' => $siteAdmins ?? [],
             ])
         </div>
     @elseif (($vista ?? '') === 'puertas')

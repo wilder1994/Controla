@@ -25,6 +25,7 @@ final class CompanyClientCreateTest extends TestCase
         $response->assertOk();
         $response->assertSee('Nuevo cliente');
         $response->assertSee('Tipo de estructura');
+        $response->assertSee('Protección de datos de menores');
         $response->assertSee('Volver al listado');
         $response->assertDontSee('Sufijo login');
         $response->assertDontSee('+ Conjunto');

@@ -6,16 +6,15 @@ namespace App\Http\Requests\Company;
 
 use App\Models\Client;
 use App\Support\Geo\GeoAddressRules;
+use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-final class StoreClientInstallationRequest extends FormRequest
+final class StoreCompanyInstallationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $client = $this->route('client');
-
-        return $client instanceof Client
-            && ($this->user()?->can('update', $client) ?? false);
+        return $this->user()?->can('company.clients.manage') ?? false;
     }
 
     protected function prepareForValidation(): void
@@ -24,7 +23,7 @@ final class StoreClientInstallationRequest extends FormRequest
             return;
         }
 
-        $client = $this->route('client');
+        $client = $this->client();
         if ($client instanceof Client) {
             $this->merge(['name' => $client->name]);
         }
@@ -37,14 +36,20 @@ final class StoreClientInstallationRequest extends FormRequest
             ? GeoAddressRules::optional()
             : GeoAddressRules::required();
 
+        $companyId = app(ActingCompanyResolver::class)->requireId($this->user());
+
         return [
+            'client_id' => [
+                'required',
+                'integer',
+                Rule::exists('clients', 'id')->where(fn ($q) => $q->where('security_company_id', $companyId)),
+            ],
             'name' => ['required', 'string', 'max:120'],
             'code' => ['nullable', 'string', 'max:40'],
             'commune' => ['nullable', 'string', 'max:80'],
             'rector_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'is_client_site' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
-            'vista' => ['nullable', 'in:sitio,puertas,accesos,supervision'],
             ...$geo,
         ];
     }
@@ -53,6 +58,7 @@ final class StoreClientInstallationRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'client_id' => 'cliente',
             'name' => 'nombre',
             'code' => 'código',
             'commune' => 'comuna',
@@ -66,12 +72,10 @@ final class StoreClientInstallationRequest extends FormRequest
         ];
     }
 
-    /** @return array<string, string> */
-    public function messages(): array
+    public function client(): ?Client
     {
-        return [
-            'latitude.required' => 'Fija la ubicación de la instalación en el mapa.',
-            'longitude.required' => 'Fija la ubicación de la instalación en el mapa.',
-        ];
+        $id = (int) $this->input('client_id');
+
+        return $id > 0 ? Client::query()->find($id) : null;
     }
 }
