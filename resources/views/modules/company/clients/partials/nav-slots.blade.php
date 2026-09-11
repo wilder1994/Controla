@@ -38,7 +38,7 @@
 <x-slot:headerTabs>
     <a
         href="{{ route('company.clients.show', [$client, 'vista' => 'cliente']) }}"
-        @class(['admin-header-tab', 'is-active' => in_array($vista, ['cliente', 'accesos', 'supervision'], true)])
+        @class(['admin-header-tab', 'is-active' => in_array($vista, ['cliente', 'sitio', 'puertas', 'accesos', 'supervision'], true)])
     >
         Cliente
     </a>

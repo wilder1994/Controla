@@ -42,7 +42,7 @@ SJ-SIG nació para un pliego. El avance útil (mapa, unidades, expediente, table
 
 ## 3. Geometría unificada (la que se va a completar)
 
-Hoy Controla ya tiene empresa → clientes → instalaciones, con dos hijos: accesos (`locations`) y puestos (`supervisor_posts`). El censo (`structures`) cuelga del **cliente**, no de la instalación. Falta la asignación empleado ↔ puesto y la modalidad/cupo.
+Hoy Controla ya tiene empresa → clientes → instalaciones, con dos hijos: puertas (`locations`, Accesos) y puestos (`supervisor_posts`, compartidos, modalidad 8/12/24 h + vigilantes). El censo (`structures`) cuelga del **cliente**, no de la instalación. Falta el cupo (unidades por cargo) y admins de sede.
 
 **Modelo objetivo:**
 
@@ -104,19 +104,19 @@ Laravel 11 (Controla) vs 13 (SJ-SIG): no mezclar bases ni `composer.json`.
 | Pantalla | Listado + ficha en 4 bloques + foto (Personal SJ-SIG, estilos Controla) | `/personal` |
 | Excel | `Maestro Colaboradores WM` (A–Z) + columnas SJ-SIG opcionales | `ficha_empleados SJ-SIG` |
 | Campos | Identidad Controla (nombres partidos, DIVIPOLA, catálogos) + contacto, vinculación, seguridad social | Lo mismo en un `full_name` y cargo libre |
-| Puesto | Fuera del Excel. Asignar/reasignar: **pendiente** | Fuera del Excel |
+| Puesto | Fuera del Excel. Asignar/reasignar: ficha del cliente (Accesos/Supervisión) | Fuera del Excel |
 | Expediente PDF | No. Carpeta documental = otro corte | Documentos / indexador (pantalla aparte) |
 | Usuario | Se crea en **Usuarios** (`nombre.apellido.####`) | Login de entidad, no del vigilante |
 
 **Hecho (2026-09-10):** la ficha de Empleados de la empresa ya es la de SJ-SIG Personal. El maestro WM **se queda**; las columnas extras son opcionales. El indexador HV/cursos y que el cliente vea expediente siguen aparte.
 
-La **asignación empleado → puesto** sigue siendo el hueco. Se cierra en Controla y la usan el PH, SJ y el colegio.
+La **asignación empleado → puesto** ya está en la ficha del cliente (mismo puesto en Accesos y Supervisión). El Excel de empleados no elige puesto. Cupo por cargo y filtro de empleados por cliente siguen aparte.
 
 ---
 
 ## 6. Instalación enriquecida y administradores de sede
 
-Hoy el alta de instalación en Controla es nombre + “sede = cliente” + accesos o puestos. Sin mapa, sin dirección, sin código, sin modalidad, sin cupo, sin admin de sede.
+Hoy el alta de instalación en Controla es nombre + “sede = cliente” + mapa + puestos (modalidad y vigilantes) + puertas. Falta código de sede, cupo por cargo y admin de sede.
 
 **Objetivo de la ficha de instalación:**
 
@@ -286,3 +286,6 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-10 | Alta del informe. W Codex dueña; Controla producto; SJ-SIG cantera. Geometría instalación + puesto con modalidad + admins de sede + censo bajo instalación. APK para GPS de fondo. Hostinger 48 meses en Cloud/VPS. Observatorio escolar como capa, no como Accesos. |
 | 2026-09-10 | Empleados de empresa: ficha SJ-SIG Personal (4 bloques + foto). Excel WM ampliado, no sustituido. Sin indexador ni asignación a puesto. |
 | 2026-09-10 | Instalaciones con georreferencia. Casilla «La instalación es el mismo cliente» copia nombre + pin. Un catálogo para Accesos y Supervisión. Cartera vacía habla de clientes, no de conjuntos. |
+| 2026-09-10 | Puesto compartido Accesos/Supervisión: modalidad 8/12/24 h + vigilantes. Puertas solo en Accesos (`locations`). |
+| 2026-09-10 | Ficha del cliente: una tarjeta de sitio (instalaciones + puestos) y otra de puertas (solo Accesos). Sin segundo árbol de Supervisión. |
+| 2026-09-10 | Sitio sin bloque de revistas (van a `/company/supervision`). Varios vigilantes por puesto; un empleado = un puesto; Reasignar en la ficha del empleado. |

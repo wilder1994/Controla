@@ -5,56 +5,22 @@
 
 <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-4">
     <div>
-        <h3 class="text-sm font-semibold text-white">Instalaciones y accesos</h3>
+        <h3 class="text-sm font-semibold text-white">Puertas</h3>
         <p class="mt-1 text-xs text-slate-500">
-            El acceso (puerta, vehicular, peatonal) cuelga de una instalación. Toda instalación queda con ubicación. Si es la misma sede del cliente, chulea la casilla.
+            Quién entra y sale en cada instalación. La puerta no es un puesto: el sitio se arma en Instalaciones y puestos.
         </p>
     </div>
 
-    @if ($canManageTree)
-        @include('modules.company.clients.partials.installation-form', ['client' => $client, 'vista' => 'accesos', 'accent' => 'indigo'])
-    @endif
-
     <div class="space-y-3">
         @forelse ($installations as $installation)
-            <article class="rounded-lg border border-slate-800 bg-slate-950/40 p-3 space-y-3" x-data="{ editing: false }">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <p class="text-sm font-medium text-white">{{ $installation->name }}</p>
-                        @if ($installation->is_client_site)
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-900/40 text-indigo-300">Mismo cliente</span>
-                        @endif
-                        <span class="text-[10px] px-2 py-0.5 rounded-full {{ $installation->is_active ? 'bg-emerald-900/40 text-emerald-300' : 'bg-rose-900/40 text-rose-300' }}">
-                            {{ $installation->is_active ? 'Activa' : 'Inactiva' }}
-                        </span>
-                        <span class="text-xs text-slate-500">{{ $installation->locations->count() }} acceso{{ $installation->locations->count() === 1 ? '' : 's' }}</span>
-                        @if ($installation->address || $installation->city)
-                            <span class="text-xs text-slate-500">{{ $installation->address }}{{ $installation->city ? ' · '.$installation->city : '' }}</span>
-                        @endif
-                    </div>
-                    @if ($canManageTree)
-                        <div class="flex items-center gap-2">
-                            <button type="button" @click="editing = !editing" class="text-xs text-indigo-300 hover:text-indigo-200">Editar</button>
-                            <form method="POST" action="{{ route('company.clients.installations.destroy', [$client, $installation]) }}" onsubmit="return confirm('¿Eliminar esta instalación?')">
-                                @csrf
-                                @method('DELETE')
-                                <input type="hidden" name="vista" value="accesos">
-                                <button type="submit" class="text-xs text-rose-400 hover:text-rose-300">Eliminar</button>
-                            </form>
-                        </div>
+            <article class="rounded-lg border border-slate-800 bg-slate-950/40 p-3 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-sm font-medium text-white">{{ $installation->name }}</p>
+                    @if ($installation->is_client_site)
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-900/40 text-indigo-300">Mismo cliente</span>
                     @endif
+                    <span class="text-xs text-slate-500">{{ $installation->locations->count() }} puerta{{ $installation->locations->count() === 1 ? '' : 's' }}</span>
                 </div>
-
-                @if ($canManageTree)
-                    <div x-show="editing" x-cloak>
-                        @include('modules.company.clients.partials.installation-form', [
-                            'client' => $client,
-                            'installation' => $installation,
-                            'vista' => 'accesos',
-                            'accent' => 'indigo',
-                        ])
-                    </div>
-                @endif
 
                 <ul class="space-y-2">
                     @forelse ($installation->locations as $location)
@@ -68,7 +34,7 @@
                                 @if ($canManageTree)
                                     <div class="flex items-center gap-2">
                                         <button type="button" @click="editingPoint = !editingPoint" class="text-xs text-indigo-300">Editar</button>
-                                        <form method="POST" action="{{ route('company.clients.locations.destroy', [$client, $location]) }}" onsubmit="return confirm('¿Eliminar este acceso?')">
+                                        <form method="POST" action="{{ route('company.clients.locations.destroy', [$client, $location]) }}" onsubmit="return confirm('¿Eliminar esta puerta?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-xs text-rose-400">Eliminar</button>
@@ -99,7 +65,7 @@
                             @endif
                         </li>
                     @empty
-                        <li class="text-xs text-slate-500">Sin accesos en esta instalación.</li>
+                        <li class="text-xs text-slate-500">Sin puertas en esta instalación.</li>
                     @endforelse
                 </ul>
 
@@ -112,15 +78,19 @@
                             <input type="text" name="code" required placeholder="PA-01" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5 text-xs text-white">
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-[11px] text-slate-500 mb-1">Nuevo acceso</label>
+                            <label class="block text-[11px] text-slate-500 mb-1">Nueva puerta</label>
                             <input type="text" name="name" required placeholder="Puerta principal" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5 text-xs text-white">
                         </div>
-                        <button type="submit" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Agregar acceso</button>
+                        <button type="submit" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">Agregar puerta</button>
                     </form>
                 @endif
             </article>
         @empty
-            <p class="text-sm text-slate-500">Aún no hay instalaciones. Créela aquí; después agregue los accesos de portería.</p>
+            <p class="text-sm text-slate-500">
+                Aún no hay instalaciones.
+                <a href="{{ route('company.clients.show', [$client, 'vista' => 'sitio']) }}" class="text-indigo-300 hover:text-indigo-200">Créela en Instalaciones y puestos</a>
+                y vuelva a las puertas.
+            </p>
         @endforelse
     </div>
 </section>

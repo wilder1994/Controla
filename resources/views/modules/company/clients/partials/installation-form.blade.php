@@ -1,6 +1,6 @@
 @php
     $installation = $installation ?? null;
-    $vista = $vista ?? 'accesos';
+    $vista = $vista ?? 'sitio';
     $accent = $accent ?? 'indigo';
     $checkboxClass = $accent === 'amber'
         ? 'rounded border-slate-700 text-amber-500'

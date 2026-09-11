@@ -10,8 +10,10 @@ use App\Enums\Sex;
 use App\Exports\EmployeeImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\PreviewEmployeeImportRequest;
+use App\Http\Requests\Company\ReassignEmployeePostRequest;
 use App\Http\Requests\Company\StoreEmployeeRequest;
 use App\Http\Requests\Company\UpdateEmployeeRequest;
+use App\Models\Client;
 use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
@@ -19,8 +21,10 @@ use App\Models\IdentityDocumentType;
 use App\Repositories\EmployeeRepository;
 use App\Services\Company\CommitEmployeeImportService;
 use App\Services\Company\CreateEmployeeCatalogItemsService;
+use App\Services\Company\LookupEmployeeForPostService;
 use App\Services\Company\ManageEmployeeService;
 use App\Services\Company\PreviewEmployeeImportService;
+use App\Services\Company\ReassignEmployeePostService;
 use App\Services\Company\StoreEmployeePhotoService;
 use App\Support\Geo\ColombiaDivipola;
 use App\Support\Platform\ActingCompanyResolver;
@@ -42,6 +46,8 @@ final class EmployeeController extends Controller
         private readonly CommitEmployeeImportService $commitEmployeeImportService,
         private readonly CreateEmployeeCatalogItemsService $createEmployeeCatalogItemsService,
         private readonly StoreEmployeePhotoService $storeEmployeePhotoService,
+        private readonly LookupEmployeeForPostService $lookupEmployeeForPostService,
+        private readonly ReassignEmployeePostService $reassignEmployeePostService,
     ) {}
 
     public function index(Request $request): View
@@ -168,15 +174,54 @@ final class EmployeeController extends Controller
             ->with('success', 'Empleado creado.');
     }
 
+    public function lookup(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Employee::class);
+
+        $exceptPost = $request->filled('except_post') ? (int) $request->integer('except_post') : null;
+
+        return response()->json([
+            'employees' => $this->lookupEmployeeForPostService->search(
+                $this->companyId($request),
+                $request->string('q')->toString(),
+                $exceptPost,
+            ),
+        ]);
+    }
+
     public function show(Request $request, Employee $employee): View
     {
         $this->assertCompany($request, $employee);
         $this->authorize('view', $employee);
-        $employee->load(['jobTitle', 'collaboratorType']);
+        $employee->load(['jobTitle', 'collaboratorType', 'supervisorPosts.client', 'supervisorPosts.installation']);
 
         return view('modules.company.employees.show', [
             'employee' => $employee,
+            'currentPost' => $employee->supervisorPosts->first(),
+            'assignmentTree' => $this->assignmentTree($this->companyId($request)),
         ]);
+    }
+
+    public function reassign(ReassignEmployeePostRequest $request, Employee $employee): RedirectResponse
+    {
+        $this->assertCompany($request, $employee);
+
+        try {
+            $this->reassignEmployeePostService->execute(
+                $employee,
+                (int) $request->validated('client_id'),
+                (int) $request->validated('installation_id'),
+                (int) $request->validated('supervisor_post_id'),
+            );
+        } catch (ValidationException $e) {
+            return redirect()
+                ->route('company.employees.show', $employee)
+                ->with('error', $e->validator->errors()->first() ?: 'No se pudo reasignar.');
+        }
+
+        return redirect()
+            ->route('company.employees.show', $employee)
+            ->with('success', 'Puesto actualizado.');
     }
 
     public function edit(Request $request, Employee $employee): View
@@ -305,6 +350,31 @@ final class EmployeeController extends Controller
             ],
             'message' => 'Ya puedes seleccionar el tipo y el cargo.',
         ];
+    }
+
+    /** @return list<array{id: int, name: string, installations: list<array{id: int, name: string, posts: list<array{id: int, name: string}>}>}> */
+    private function assignmentTree(int $companyId): array
+    {
+        return Client::query()
+            ->where('security_company_id', $companyId)
+            ->where(fn ($q) => $q->where('has_access', true)->orWhere('has_supervision', true))
+            ->with(['installations' => fn ($q) => $q->orderBy('name')->with(['supervisorPosts' => fn ($p) => $p->orderBy('name')])])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Client $client) => [
+                'id' => (int) $client->id,
+                'name' => $client->name,
+                'installations' => $client->installations->map(fn ($installation) => [
+                    'id' => (int) $installation->id,
+                    'name' => $installation->name,
+                    'posts' => $installation->supervisorPosts->map(fn ($post) => [
+                        'id' => (int) $post->id,
+                        'name' => $post->name,
+                    ])->values()->all(),
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
     }
 
     private function companyId(Request $request): int

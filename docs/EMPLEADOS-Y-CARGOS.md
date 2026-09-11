@@ -35,7 +35,7 @@ El primer administrador de una empresa nueva usa **la misma ficha** (`admin.comp
 
 Tabla: identificación, nombre, estado (Activo / Retiro), cargo, ingreso, teléfono, EPS, enlace **Ficha**. Búsqueda por nombre, documento, correo o teléfono. Filtro activos / archivados / todos. Tamaño de página 10 / 25 / 50 / 100. Acciones: **Formato**, **Carga masiva**, **Nuevo empleado**.
 
-Filtro por cliente: cuando exista asignación empleado → puesto. No en este corte.
+Filtro por cliente: pendiente. Un puesto admite varios empleados; un empleado = un puesto. El alta en el sitio solo toma gente libre; **Reasignar** está en la ficha.
 
 ---
 
@@ -50,7 +50,9 @@ Cuatro bloques, como SJ-SIG Personal:
 
 Tipo o cargo vacíos: modal AJAX para crear el primero sin perder el formulario. Nacimiento y expedición: departamento → municipio (`resources/data/colombia-divipola.json`). Bogotá D.C. es departamento propio.
 
-**No en esta ficha:** carpeta documental (HV, cursos, PDFs) ni asignar/reasignar a cliente → instalación → puesto.
+**Reasignar** (si está activo): modal cliente → instalación → puesto. El Excel no elige puesto.
+
+**No en esta ficha:** carpeta documental (HV, cursos, PDFs).
 
 ---
 
@@ -84,7 +86,7 @@ Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 
 Tras V (gris, opcionales): teléfono, residencia, dirección, escolaridad, estado civil, hijos, vinculación, cotizante, tipo de contrato, ingreso, vencimiento, retiro, EPS/AFP (código y nombre), caja, ARL y nivel de riesgo. Un archivo WM solo A–Z sigue valiendo.
 
-**No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (tarjetas Instalaciones y accesos / Supervisión). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+**No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (Instalaciones y puestos / Puertas). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
 No se archiva desde el Excel. Documento que ya existe: **aviso** (se actualiza la ficha, incluido el cargo). Correo de **otro** empleado: error. No se crea usuario desde el Excel. La foto no viaja en el Excel.
 
@@ -117,7 +119,6 @@ No está en el Excel. En la ficha: `is_active = false` + `ceased_at`. Si tenía 
 
 ## Pendiente (otro corte)
 
-- Asignar / reasignar: cliente → instalación → puesto (8/12/24 h).
-- Filtrar empleados por cliente (cuando exista esa asignación).
+- Filtrar empleados por cliente (listado).
 - Carpeta documental / indexador (HV, cursos, PDFs).
 - Que el cliente vea el expediente (permiso aparte).

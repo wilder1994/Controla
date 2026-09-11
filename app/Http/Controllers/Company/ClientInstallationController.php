@@ -111,9 +111,9 @@ final class ClientInstallationController extends Controller
 
     private function backToClient(Client $client, Request $request, string $message, bool $error = false): RedirectResponse
     {
-        $vista = $request->string('vista')->toString();
-        if (! in_array($vista, ['accesos', 'supervision'], true)) {
-            $vista = $client->has_access ? 'accesos' : 'supervision';
+        $vista = 'sitio';
+        if (! $client->has_access && ! $client->has_supervision) {
+            $vista = 'cliente';
         }
 
         return redirect()

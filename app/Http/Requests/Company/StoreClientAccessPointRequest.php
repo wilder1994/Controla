@@ -26,7 +26,7 @@ final class StoreClientAccessPointRequest extends FormRequest
             'code' => ['required', 'string', 'max:20'],
             'name' => ['required', 'string', 'max:100'],
             'is_active' => ['sometimes', 'boolean'],
-            'vista' => ['nullable', 'in:accesos,supervision'],
+            'vista' => ['nullable', 'in:sitio,puertas,accesos,supervision'],
         ];
     }
 

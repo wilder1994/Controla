@@ -31,7 +31,7 @@ final class ClientAccessPointController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        return $this->backToClient($client, 'Acceso creado.');
+        return $this->backToClient($client, 'Puerta creada.');
     }
 
     public function update(StoreClientAccessPointRequest $request, Client $client, Location $location): RedirectResponse
@@ -45,7 +45,7 @@ final class ClientAccessPointController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        return $this->backToClient($client, 'Acceso actualizado.');
+        return $this->backToClient($client, 'Puerta actualizada.');
     }
 
     public function destroy(Request $request, Client $client, Location $location): RedirectResponse
@@ -55,7 +55,7 @@ final class ClientAccessPointController extends Controller
 
         $this->accessPoints->delete($location);
 
-        return $this->backToClient($client, 'Acceso eliminado.');
+        return $this->backToClient($client, 'Puerta eliminada.');
     }
 
     private function assertPoint(Request $request, Client $client, Location $location): void
@@ -81,7 +81,7 @@ final class ClientAccessPointController extends Controller
     private function backToClient(Client $client, string $message): RedirectResponse
     {
         return redirect()
-            ->route('company.clients.show', [$client, 'vista' => 'accesos'])
+            ->route('company.clients.show', [$client, 'vista' => 'puertas'])
             ->with('success', $message);
     }
 }

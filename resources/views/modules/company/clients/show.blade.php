@@ -70,16 +70,16 @@
                             <p class="mt-1 text-xs text-slate-400 leading-relaxed">Cambia la ficha comercial y las líneas de servicio.</p>
                         </a>
                     @endif
-                    @if ($client->has_access)
-                        <a href="{{ route('company.clients.show', [$client, 'vista' => 'accesos']) }}" class="{{ $actionCard }}">
-                            <p class="text-sm font-semibold text-white">Instalaciones y accesos</p>
-                            <p class="mt-1 text-xs text-slate-400 leading-relaxed">Crea instalaciones, códigos y puntos de portería.</p>
+                    @if ($client->has_access || $client->has_supervision)
+                        <a href="{{ route('company.clients.show', [$client, 'vista' => 'sitio']) }}" class="{{ $actionCard }}">
+                            <p class="text-sm font-semibold text-white">Instalaciones y puestos</p>
+                            <p class="mt-1 text-xs text-slate-400 leading-relaxed">Sitio, modalidad y vigilantes.</p>
                         </a>
                     @endif
-                    @if ($client->has_supervision)
-                        <a href="{{ route('company.clients.show', [$client, 'vista' => 'supervision']) }}" class="{{ $actionCard }}">
-                            <p class="text-sm font-semibold text-white">Supervisión</p>
-                            <p class="mt-1 text-xs text-slate-400 leading-relaxed">Instalaciones y puestos donde se firma la revista en campo.</p>
+                    @if ($client->has_access)
+                        <a href="{{ route('company.clients.show', [$client, 'vista' => 'puertas']) }}" class="{{ $actionCard }}">
+                            <p class="text-sm font-semibold text-white">Puertas</p>
+                            <p class="mt-1 text-xs text-slate-400 leading-relaxed">Quién entra y sale en cada instalación.</p>
                         </a>
                     @endif
                 </section>
@@ -103,20 +103,20 @@
                 @endif
             </section>
         </div>
-    @elseif (($vista ?? '') === 'supervision')
+    @elseif (($vista ?? '') === 'sitio')
         <div class="max-w-3xl space-y-4">
             <x-ui.button variant="secondary" :href="route('company.clients.show', [$client, 'vista' => 'cliente'])" size="sm">← Cliente</x-ui.button>
-            @include('modules.company.clients.partials.supervision-tree', [
+            @include('modules.company.clients.partials.sitio-tree', [
                 'client' => $client,
                 'installations' => $installations ?? collect(),
-                'proReviews' => $proReviews ?? collect(),
                 'canManageTree' => $canManageTree ?? false,
+                'postModalities' => $postModalities ?? [],
             ])
         </div>
-    @elseif (($vista ?? '') === 'accesos')
+    @elseif (($vista ?? '') === 'puertas')
         <div class="max-w-3xl space-y-4">
             <x-ui.button variant="secondary" :href="route('company.clients.show', [$client, 'vista' => 'cliente'])" size="sm">← Cliente</x-ui.button>
-            @include('modules.company.clients.partials.accesos-tree', [
+            @include('modules.company.clients.partials.puertas-tree', [
                 'client' => $client,
                 'installations' => $installations ?? collect(),
                 'canManageTree' => $canManageTree ?? false,

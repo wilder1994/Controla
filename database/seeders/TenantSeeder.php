@@ -8,6 +8,7 @@ use App\Enums\BillingCycle;
 use App\Enums\BloodGroup;
 use App\Enums\ClientPlanTier;
 use App\Enums\CompanyPackageSku;
+use App\Enums\PostModality;
 use App\Enums\Sex;
 use App\Enums\SupervisionPackageSku;
 use App\Models\AccessLog;
@@ -25,8 +26,8 @@ use App\Models\PreAuthorization;
 use App\Models\PricingSettings;
 use App\Models\Resident;
 use App\Models\SecurityCompany;
-use App\Models\SupervisorPost;
 use App\Models\StructureType;
+use App\Models\SupervisorPost;
 use App\Models\Vehicle;
 use App\Models\Visitor;
 use App\Services\Company\SeedSupervisorIntakeDefaultsService;
@@ -137,7 +138,7 @@ final class TenantSeeder extends Seeder
 
         $this->seedClientSiteTree($torres, [
             ['code' => 'TL-01', 'name' => 'Puerta principal', 'address' => 'Av 6N # 28-90'],
-        ], []);
+        ], ['Portería principal']);
 
         $this->backfillOperationalData($palmas->id);
     }
@@ -176,16 +177,15 @@ final class TenantSeeder extends Seeder
             }
         }
 
-        if ($client->has_supervision) {
-            foreach ($postNames as $name) {
-                SupervisorPost::query()->firstOrCreate(
-                    ['installation_id' => $site->id, 'name' => $name],
-                    [
-                        'client_id' => $client->id,
-                        'is_active' => true,
-                    ]
-                );
-            }
+        foreach ($postNames as $name) {
+            SupervisorPost::query()->firstOrCreate(
+                ['installation_id' => $site->id, 'name' => $name],
+                [
+                    'client_id' => $client->id,
+                    'modality' => PostModality::Hours12,
+                    'is_active' => true,
+                ]
+            );
         }
     }
 

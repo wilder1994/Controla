@@ -49,7 +49,29 @@
                         </p>
                     </div>
                 </div>
+                @if ($employee->is_active)
+                    <button type="button" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700" x-on:click="$dispatch('open-employee-reassign')">
+                        Reasignar
+                    </button>
+                @endif
             </div>
+            @php($currentPost = $currentPost ?? $employee->supervisorPosts->first())
+            <p class="text-sm text-slate-400">
+                @if ($currentPost)
+                    Puesto: {{ $currentPost->name }}
+                    @if ($currentPost->installation)
+                        · {{ $currentPost->installation->name }}
+                    @endif
+                    @if ($currentPost->client)
+                        · {{ $currentPost->client->name }}
+                    @endif
+                    @if ($currentPost->modality)
+                        · {{ $currentPost->modality->label() }}
+                    @endif
+                @else
+                    Sin puesto asignado.
+                @endif
+            </p>
 
             <section class="space-y-2">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Identidad</p>
@@ -202,4 +224,12 @@
             </form>
         @endif
     </div>
+
+    @if ($employee->is_active)
+        @include('modules.company.employees.partials.reassign-modal', [
+            'employee' => $employee,
+            'currentPost' => $currentPost ?? null,
+            'assignmentTree' => $assignmentTree ?? [],
+        ])
+    @endif
 </x-company-layout>

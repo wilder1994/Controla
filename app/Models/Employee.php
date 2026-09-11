@@ -8,6 +8,7 @@ use App\Enums\BloodGroup;
 use App\Enums\Sex;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -97,6 +98,12 @@ final class Employee extends Model
     public function user(): HasOne
     {
         return $this->hasOne(User::class);
+    }
+
+    public function supervisorPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(SupervisorPost::class, 'supervisor_post_employee')
+            ->withTimestamps();
     }
 
     public function fullName(): string

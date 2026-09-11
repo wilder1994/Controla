@@ -35,7 +35,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
 | **Empleados** | Ficha SJ-SIG (4 bloques + foto) + Excel WM ampliado (preview → alta o **actualización** por documento). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
 | **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos). Mapa En vivo/Historial, cierre automático, cola offline por usuario. Fuente de verdad: Controla | ✅ Implementada |
-| **Árbol del cliente** | Instalaciones compartidas + geo; Accesos = puertas (`locations`); Supervisión = puestos (`supervisor_posts`). Excel solo ficha | ✅ Implementada |
+| **Árbol del cliente** | Una tarjeta **Instalaciones y puestos**; otra **Puertas** (solo Accesos). Modalidad + vigilantes en el puesto | ✅ Implementada |
 
 Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFORME-VISION-PRODUCTO-W-CODEX.md) · [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
 
@@ -199,7 +199,7 @@ Orden en `DatabaseSeeder`:
 php artisan db:seed --class=PilotDemoSeeder
 ```
 
-Incluye: catálogo `structure_types`, empresa SJ Seguridad (`900123456-1`), clientes Palmas/Torres, árbol de sitio (instalación sede; Palmas: 4 accesos + 2 puestos de Supervisión; Torres: 1 acceso), censo Torre A, y usuarios:
+Incluye: catálogo `structure_types`, empresa SJ Seguridad (`900123456-1`), clientes Palmas/Torres, árbol de sitio (instalación sede; Palmas: 4 puertas + 2 puestos; Torres: 1 puerta + 1 puesto), censo Torre A, y usuarios:
 
 | Rol | Email | Contraseña |
 |-----|-------|------------|
@@ -403,8 +403,8 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas). **No** crea instalaciones, accesos ni puestos |
 | `POST/PUT/DELETE /company/clients/{id}/installations` | CRUD instalaciones (catálogo compartido) |
-| `POST/PUT/DELETE /company/clients/{id}/locations` | CRUD accesos de una instalación (tarjeta Instalaciones y accesos) |
-| `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos de Supervisión (tarjeta Supervisión) |
+| `POST/PUT/DELETE /company/clients/{id}/locations` | CRUD puertas de una instalación (tarjeta Accesos) |
+| `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos compartidos (Accesos y Supervisión) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
 | `GET /company/supervision` | En vivo: mapa + tabla (GPS, en línea/sin señal); Historial: mapa + lista (Roads si el turno está cerrado); Resumen; Fichas |
@@ -452,15 +452,15 @@ Acciones: anticipar/renovar/reactivar online · cancelar · deshacer cancelació
 
 #### Expediente de conjunto (`/company/clients/{id}`)
 
-Pestañas: **Cliente** (ficha + tarjetas Operar portería / Operar cliente / Editar + **Instalaciones y accesos** / **Supervisión**) · **Resumen** (si `has_access`: KPIs/charts de portería). Los árboles se abren desde las tarjetas (`?vista=accesos` y `?vista=supervision`), no como pestañas del header.
+Pestañas: **Cliente** (ficha + Operar portería / Operar cliente si Accesos, Editar, **Instalaciones y puestos**, **Puertas** si Accesos) · **Resumen** (si `has_access`: KPIs de portería). Árboles: `?vista=sitio` y `?vista=puertas`. El sitio no lista revistas (van a `/company/supervision`). Un puesto puede tener varios vigilantes; un empleado solo un puesto.
 
-El Excel de clientes **solo** carga la ficha. Instalaciones, accesos y puestos se crean a mano aquí. Detalle: [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
+El Excel de clientes **solo** carga la ficha. Instalaciones, puestos y puertas se crean a mano aquí. Detalle: [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
 
 | Concepto UI | Fuente |
 |-------------|--------|
 | Instalación | `installations` (compartida Accesos/Supervisión; geo obligatoria; `is_client_site` copia nombre + pin del cliente) |
-| Acceso / puerta | `locations` (`type = access_point`) de una instalación. **No** es puesto de la app |
-| Puesto de Supervisión | `supervisor_posts` de una instalación. La PWA lista solo estos |
+| Puerta | `locations` (`type = access_point`) de una instalación. Solo Accesos. **No** es el puesto |
+| Puesto | `supervisor_posts` de una instalación (catálogo único, 8/12/24 h + vigilantes). Visible en Accesos y Supervisión. La PWA lista solo estos |
 | Unidades | `structures` desglosadas por catálogo `structure_types` (apto, casa, torre, bodega…) |
 | Personas (censo) | `structure_members` por `MemberType` (propietario, familiar…) |
 | Usuarios app | `structure_app_users` activos (no confundir con `residents` legacy) |
@@ -487,8 +487,8 @@ Ver [`docs/CLIENTES-Y-ESTRUCTURA.md`](docs/CLIENTES-Y-ESTRUCTURA.md).
 | Tipos de documento | `/admin/settings/document-types` | CC/CE/NIT…; alta cliente + clickwrap legal |
 | Tipo fijo del cliente | Alta/edición `/company/clients` | Solo tipos de **esa** empresa. Los nodos nuevos heredan ese tipo |
 | Instalaciones | Tarjetas Accesos / Supervisión de la ficha | Catálogo compartido + mapa; «mismo cliente» copia nombre y ubicación |
-| Accesos (puertas) | Pestaña Accesos o `/access/locations` | `locations.installation_id` obligatorio |
-| Puestos de Supervisión | Pestaña Supervisión | `supervisor_posts`; la app de campo no usa puertas |
+| Accesos (puertas) | Tarjeta Puertas o `/access/locations` | `locations.installation_id` obligatorio |
+| Puestos | Tarjeta Instalaciones y puestos | `supervisor_posts`; modalidad 8/12/24 h + empleados; la app no usa puertas |
 | Seed mínimo | `IdentityDocumentTypeSeeder` | Documentos de identidad |
 | Seed opcional | `PilotDemoSeeder` | empresa/clientes + 4 tipos de estructura del piloto + árbol Palmas/Torres + censo |
 

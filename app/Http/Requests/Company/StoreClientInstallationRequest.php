@@ -41,7 +41,7 @@ final class StoreClientInstallationRequest extends FormRequest
             'name' => ['required', 'string', 'max:120'],
             'is_client_site' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
-            'vista' => ['nullable', 'in:accesos,supervision'],
+            'vista' => ['nullable', 'in:sitio,puertas,accesos,supervision'],
             ...$geo,
         ];
     }

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Domain\Tenant\Data\CreateClientData;
 use App\Enums\PartyType;
+use App\Enums\PostModality;
 use App\Exports\ClientImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\PreviewClientImportRequest;
@@ -270,22 +271,14 @@ final class ClientController extends Controller
             ? $this->buildClientExpedienteService->execute($client)
             : null;
 
-        $installations = in_array($vista, ['accesos', 'supervision'], true)
+        $installations = in_array($vista, ['sitio', 'puertas'], true)
             ? $client->installations()
                 ->with([
                     'locations' => fn ($q) => $q->orderBy('code'),
-                    'supervisorPosts' => fn ($q) => $q->orderBy('name'),
+                    'supervisorPosts' => fn ($q) => $q->with(['employees.jobTitle'])->orderBy('name'),
                 ])
                 ->orderByDesc('is_client_site')
                 ->orderBy('name')
-                ->get()
-            : collect();
-
-        $proReviews = $vista === 'supervision'
-            ? $client->supervisorShiftReviews()
-                ->with(['shift.user', 'supervisorPost.installation'])
-                ->latest('recorded_at')
-                ->limit(20)
                 ->get()
             : collect();
 
@@ -295,7 +288,7 @@ final class ClientController extends Controller
             'expediente' => $expediente,
             'installations' => $installations,
             'installationsCount' => $vista === 'resumen' ? $client->installations()->count() : $installations->count(),
-            'proReviews' => $proReviews,
+            'postModalities' => PostModality::options(),
             'canManageTree' => $request->user()->can('update', $client),
             'canOperate' => $client->has_access && $request->user()->can('operate', $client),
             'canUpdate' => $request->user()->can('update', $client),
@@ -381,21 +374,21 @@ final class ClientController extends Controller
 
     private function resolveClientVista(Request $request, Client $client): string
     {
+        $vista = $request->string('vista')->toString();
+        if (in_array($vista, ['accesos', 'supervision'], true)) {
+            $vista = 'sitio';
+        }
+
         $allowed = ['cliente'];
+        if ($client->has_access || $client->has_supervision) {
+            $allowed[] = 'sitio';
+        }
         if ($client->has_access) {
-            $allowed[] = 'accesos';
+            $allowed[] = 'puertas';
             $allowed[] = 'resumen';
         }
-        if ($client->has_supervision) {
-            $allowed[] = 'supervision';
-        }
 
-        $vista = $request->string('vista')->toString();
-        if (in_array($vista, $allowed, true)) {
-            return $vista;
-        }
-
-        return 'cliente';
+        return in_array($vista, $allowed, true) ? $vista : 'cliente';
     }
 
     private function companyId(Request $request): int

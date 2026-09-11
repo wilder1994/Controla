@@ -23,28 +23,49 @@ final class ClientSupervisorPostController extends Controller
     public function store(StoreClientSupervisorPostRequest $request, Client $client): RedirectResponse
     {
         $this->assertCompany($request, $client);
-        abort_unless($client->has_supervision, 403);
 
-        $this->posts->create($client, [
-            'installation_id' => (int) $request->validated('installation_id'),
-            'name' => $request->validated('name'),
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        try {
+            $this->posts->create($client, [
+                'installation_id' => (int) $request->validated('installation_id'),
+                'name' => $request->validated('name'),
+                'modality' => (int) $request->validated('modality'),
+                'is_active' => $request->boolean('is_active', true),
+                'employee_ids' => $request->validated('employee_ids') ?? [],
+            ]);
+        } catch (ValidationException $e) {
+            return $this->backToClient(
+                $client,
+                $request,
+                $e->validator->errors()->first() ?: 'No se pudo crear.',
+                error: true,
+            );
+        }
 
-        return $this->backToClient($client, 'Puesto creado.');
+        return $this->backToClient($client, $request, 'Puesto creado.');
     }
 
     public function update(StoreClientSupervisorPostRequest $request, Client $client, SupervisorPost $post): RedirectResponse
     {
         $this->assertPost($request, $client, $post);
 
-        $this->posts->update($post, [
-            'installation_id' => (int) $request->validated('installation_id'),
-            'name' => $request->validated('name'),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        try {
+            $this->posts->update($post, [
+                'installation_id' => (int) $request->validated('installation_id'),
+                'name' => $request->validated('name'),
+                'modality' => (int) $request->validated('modality'),
+                'is_active' => $request->boolean('is_active'),
+                'employee_ids' => $request->validated('employee_ids') ?? [],
+            ]);
+        } catch (ValidationException $e) {
+            return $this->backToClient(
+                $client,
+                $request,
+                $e->validator->errors()->first() ?: 'No se pudo actualizar.',
+                error: true,
+            );
+        }
 
-        return $this->backToClient($client, 'Puesto actualizado.');
+        return $this->backToClient($client, $request, 'Puesto actualizado.');
     }
 
     public function destroy(Request $request, Client $client, SupervisorPost $post): RedirectResponse
@@ -55,18 +76,21 @@ final class ClientSupervisorPostController extends Controller
         try {
             $this->posts->delete($post);
         } catch (ValidationException $e) {
-            return redirect()
-                ->route('company.clients.show', [$client, 'vista' => 'supervision'])
-                ->with('error', $e->validator->errors()->first() ?: 'No se pudo eliminar.');
+            return $this->backToClient(
+                $client,
+                $request,
+                $e->validator->errors()->first() ?: 'No se pudo eliminar.',
+                error: true,
+            );
         }
 
-        return $this->backToClient($client, 'Puesto eliminado.');
+        return $this->backToClient($client, $request, 'Puesto eliminado.');
     }
 
     private function assertPost(Request $request, Client $client, SupervisorPost $post): void
     {
         $this->assertCompany($request, $client);
-        abort_unless($client->has_supervision, 403);
+        abort_unless($client->has_access || $client->has_supervision, 403);
         abort_unless((int) $post->client_id === (int) $client->id, 404);
     }
 
@@ -83,10 +107,15 @@ final class ClientSupervisorPostController extends Controller
         );
     }
 
-    private function backToClient(Client $client, string $message): RedirectResponse
+    private function backToClient(Client $client, Request $request, string $message, bool $error = false): RedirectResponse
     {
+        $vista = 'sitio';
+        if (! $client->has_access && ! $client->has_supervision) {
+            $vista = 'cliente';
+        }
+
         return redirect()
-            ->route('company.clients.show', [$client, 'vista' => 'supervision'])
-            ->with('success', $message);
+            ->route('company.clients.show', [$client, 'vista' => $vista])
+            ->with($error ? 'error' : 'success', $message);
     }
 }

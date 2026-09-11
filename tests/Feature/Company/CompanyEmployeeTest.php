@@ -9,9 +9,12 @@ use App\Models\CompanyJobTitle;
 use App\Models\Employee;
 use App\Models\SecurityCompany;
 use App\Models\User;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 final class CompanyEmployeeTest extends TestCase
@@ -38,12 +41,12 @@ final class CompanyEmployeeTest extends TestCase
         $this->actingAs($admin);
         session()->setPreviousUrl(route('company.settings.edit'));
 
-        $request = \Illuminate\Http\Request::create(route('company.settings.update'), 'PUT');
+        $request = Request::create(route('company.settings.update'), 'PUT');
         $request->setLaravelSession($this->app['session']->driver());
         $request->setUserResolver(fn () => $admin);
 
-        $response = $this->app[\Illuminate\Contracts\Debug\ExceptionHandler::class]
-            ->render($request, new \Symfony\Component\HttpKernel\Exception\HttpException(419, 'CSRF token mismatch.'));
+        $response = $this->app[ExceptionHandler::class]
+            ->render($request, new HttpException(419, 'CSRF token mismatch.'));
 
         $this->assertTrue($response->isRedirect(route('company.settings.edit')));
         $this->assertSame('La página expiró. Recarga e intenta guardar de nuevo.', session('error'));
@@ -244,7 +247,9 @@ final class CompanyEmployeeTest extends TestCase
             ->assertSee('Vinculación laboral')
             ->assertSee('Seguridad social')
             ->assertSee('Sura')
-            ->assertSee('carpeta documental');
+            ->assertSee('carpeta documental')
+            ->assertSee('Reasignar')
+            ->assertSee('Sin puesto asignado');
     }
 
     public function test_employee_photo_can_be_uploaded(): void
