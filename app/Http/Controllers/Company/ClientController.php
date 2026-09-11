@@ -252,6 +252,7 @@ final class ClientController extends Controller
             isActive: $request->boolean('is_active', true),
             hasAccess: $request->boolean('has_access'),
             hasSupervision: $request->boolean('has_supervision'),
+            showPersonnelFolders: $request->boolean('has_access') && $request->boolean('show_personnel_folders'),
             serviceStartedAt: $request->validated('service_started_at'),
         ));
 

@@ -46,6 +46,7 @@ final class CreateClientService
             'is_active' => $data->isActive,
             'has_access' => $data->hasAccess,
             'has_supervision' => $data->hasSupervision,
+            'show_personnel_folders' => $data->hasAccess && $data->showPersonnelFolders,
             'service_started_at' => $data->serviceStartedAt ?? now()->toDateString(),
             'lifecycle' => ClientLifecycle::Active,
         ]);

@@ -6,9 +6,11 @@ namespace App\Models;
 
 use App\Enums\BloodGroup;
 use App\Enums\Sex;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -104,6 +106,26 @@ final class Employee extends Model
     {
         return $this->belongsToMany(SupervisorPost::class, 'supervisor_post_employee')
             ->withTimestamps();
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function documentBatches(): HasMany
+    {
+        return $this->hasMany(EmployeeDocumentBatch::class);
+    }
+
+    public function scopeAssignedToClient(Builder $query, int $clientId): void
+    {
+        $query->whereHas('supervisorPosts', fn (Builder $posts) => $posts->where('client_id', $clientId));
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return $this->fullName();
     }
 
     public function fullName(): string

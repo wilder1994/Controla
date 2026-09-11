@@ -136,6 +136,7 @@ También válido: nodo hoja directo (casa sin torre) → persona en ese nodo.
 | `structure_type_id` | Tipo de estructura fijado |
 | `address`, `city`, `department` | Ubicación (ciudad ≠ instalación) |
 | `has_access`, `has_supervision` | Líneas de servicio (cupo) |
+| `show_personnel_folders` | Si Accesos: el cliente ve carpetas de empleados asignados a un puesto. Solo lectura. |
 | `slug`, `login_suffix` | Internos; auto |
 
 Migraciones de ficha:  
@@ -152,9 +153,10 @@ Listado `/company/clients` vacío: **«Aún no tienes clientes creados en la car
 
 Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** (si `has_access`).
 
-- Cliente: ficha + **Operar portería** / **Operar cliente** (solo Accesos), **Editar**, **Instalaciones y puestos**, **Puertas** (solo Accesos).
+- Cliente: ficha + **Operar portería** / **Operar cliente** (solo Accesos), **Editar**, **Instalaciones y puestos**, **Puertas** (solo Accesos). En líneas de servicio (si Accesos): **Mostrar indexación de carpetas**.
 - Sitio: instalaciones + puestos (modalidad y vigilantes). Sin revistas aquí.
 - Puertas: `locations` de esas instalaciones.
+- Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.
 
 El panel `/client/structures` se llama **Estructura** (censo).
 

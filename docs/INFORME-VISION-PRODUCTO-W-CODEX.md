@@ -105,10 +105,10 @@ Laravel 11 (Controla) vs 13 (SJ-SIG): no mezclar bases ni `composer.json`.
 | Excel | `Maestro Colaboradores WM` (A–Z) + columnas SJ-SIG opcionales | `ficha_empleados SJ-SIG` |
 | Campos | Identidad Controla (nombres partidos, DIVIPOLA, catálogos) + contacto, vinculación, seguridad social | Lo mismo en un `full_name` y cargo libre |
 | Puesto | Fuera del Excel. Asignar/reasignar: ficha del cliente (Accesos/Supervisión) | Fuera del Excel |
-| Expediente PDF | No. Carpeta documental = otro corte | Documentos / indexador (pantalla aparte) |
+| Expediente PDF | Sidebar **Documentos** (indexador empresa). Cliente: flag + solo puestos del cliente | Documentos / indexador |
 | Usuario | Se crea en **Usuarios** (`nombre.apellido.####`) | Login de entidad, no del vigilante |
 
-**Hecho (2026-09-10):** la ficha de Empleados de la empresa ya es la de SJ-SIG Personal. El maestro WM **se queda**; las columnas extras son opcionales. El indexador HV/cursos y que el cliente vea expediente siguen aparte.
+**Hecho (2026-09-10):** la ficha de Empleados de la empresa ya es la de SJ-SIG Personal. El maestro WM **se queda**; las columnas extras son opcionales. **Hecho (2026-09-10):** indexador de carpetas en sidebar **Documentos** (empresa, todos los empleados). El cliente lo ve solo si Accesos + `show_personnel_folders`, y solo de vigilantes asignados a un puesto suyo.
 
 La **asignación empleado → puesto** ya está en la ficha del cliente (mismo puesto en Accesos y Supervisión). El Excel de empleados no elige puesto. Cupo por cargo y filtro de empleados por cliente siguen aparte.
 
@@ -289,3 +289,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-10 | Puesto compartido Accesos/Supervisión: modalidad 8/12/24 h + vigilantes. Puertas solo en Accesos (`locations`). |
 | 2026-09-10 | Ficha del cliente: una tarjeta de sitio (instalaciones + puestos) y otra de puertas (solo Accesos). Sin segundo árbol de Supervisión. |
 | 2026-09-10 | Sitio sin bloque de revistas (van a `/company/supervision`). Varios vigilantes por puesto; un empleado = un puesto; Reasignar en la ficha del empleado. |
+| 2026-09-10 | Documentos de personal (indexador SJ-SIG) en empresa. Cliente: flag Accesos + solo empleados de sus puestos, solo lectura. Distinto de Normoteca. |

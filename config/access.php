@@ -248,6 +248,7 @@ return [
                 ['label' => 'Supervisión', 'route' => 'company.supervision.index', 'permission' => 'company.supervision.view'],
                 ['label' => 'Descargas', 'route' => 'company.downloads.index', 'permission' => 'company.dashboard'],
                 ['label' => 'Empleados', 'route' => 'company.employees.index', 'permission' => 'company.settings.manage'],
+                ['label' => 'Documentos', 'route' => 'company.personnel-documents.index', 'permission' => 'company.settings.manage'],
                 ['label' => 'Usuarios', 'route' => 'company.users.index', 'permission' => 'company.users.assign'],
                 ['label' => 'Mis datos', 'route' => 'company.settings.edit', 'permission' => 'company.settings.manage'],
                 ['label' => 'Ajustes', 'route' => 'company.job-titles.index', 'permission' => 'company.settings.manage'],

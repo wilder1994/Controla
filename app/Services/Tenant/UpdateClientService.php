@@ -39,6 +39,11 @@ final class UpdateClientService
         if (array_key_exists('has_supervision', $attributes)) {
             $attributes['has_supervision'] = $hasSupervision;
         }
+        if (! $hasAccess) {
+            $attributes['show_personnel_folders'] = false;
+        } elseif (array_key_exists('show_personnel_folders', $attributes)) {
+            $attributes['show_personnel_folders'] = $this->toBool($attributes['show_personnel_folders']);
+        }
 
         $client->update($attributes);
 

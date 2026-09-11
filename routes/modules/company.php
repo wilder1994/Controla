@@ -12,6 +12,7 @@ use App\Http\Controllers\Company\CollaboratorTypeController;
 use App\Http\Controllers\Company\DashboardController;
 use App\Http\Controllers\Company\DownloadsController;
 use App\Http\Controllers\Company\EmployeeController;
+use App\Http\Controllers\Company\PersonnelDocumentController;
 use App\Http\Controllers\Company\JobTitleController;
 use App\Http\Controllers\Company\PorteriaController;
 use App\Http\Controllers\Company\SettingsController;
@@ -92,6 +93,17 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::post('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
             Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
             Route::post('/employees/{employee}/reassign', [EmployeeController::class, 'reassign'])->name('employees.reassign');
+
+            Route::get('/documents', [PersonnelDocumentController::class, 'index'])->name('personnel-documents.index');
+            Route::get('/documents/file/{document}/preview', [PersonnelDocumentController::class, 'preview'])->name('personnel-documents.preview');
+            Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
+            Route::delete('/documents/file/{document}', [PersonnelDocumentController::class, 'destroy'])->name('personnel-documents.destroy');
+            Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->name('personnel-documents.folder');
+            Route::post('/documents/{employee}/batches', [PersonnelDocumentController::class, 'storeBatch'])->name('personnel-documents.batch.create');
+            Route::get('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'batchIndex'])->name('personnel-documents.batch.index');
+            Route::post('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'storeBatchIndex'])->name('personnel-documents.batch.store');
+            Route::get('/documents/{employee}/batches/{batch}/preview', [PersonnelDocumentController::class, 'previewBatch'])->name('personnel-documents.batch.preview');
+            Route::post('/documents/{employee}/folders/{folder}/na', [PersonnelDocumentController::class, 'markNa'])->name('personnel-documents.na');
 
             Route::get('/job-titles', [JobTitleController::class, 'index'])->name('job-titles.index');
             Route::post('/job-titles', [JobTitleController::class, 'store'])->name('job-titles.store');

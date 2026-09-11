@@ -6,6 +6,7 @@ use App\Http\Controllers\Client\AppUserController;
 use App\Http\Controllers\Client\AuthorizationController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\MemberController;
+use App\Http\Controllers\Client\PersonnelDocumentController;
 use App\Http\Controllers\Client\PetController;
 use App\Http\Controllers\Client\StructureController;
 use App\Http\Controllers\Client\UserController;
@@ -20,6 +21,13 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->middleware('permission:client.structures.manage')
             ->name('dashboard');
+
+        Route::middleware('permission:client.structures.manage')->group(function () {
+            Route::get('/documents', [PersonnelDocumentController::class, 'index'])->name('personnel-documents.index');
+            Route::get('/documents/file/{document}/preview', [PersonnelDocumentController::class, 'preview'])->name('personnel-documents.preview');
+            Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
+            Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->name('personnel-documents.folder');
+        });
 
         Route::get('/structures', [StructureController::class, 'index'])
             ->middleware('permission:client.structures.manage')

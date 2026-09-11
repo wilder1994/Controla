@@ -22,6 +22,8 @@ Documentación de diseño del módulo `/admin/documents`: gobierno documental, e
 **Audiencia v1:** solo **súper admin** (`/admin`).  
 **Nav:** ítem **Documentos** en sidebar admin (después de Empresas).
 
+No confundir con el **Documentos de personal** de la empresa (`/company/documents`): carpetas HV/cursos indexadas. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md). Esta Normoteca es solo plataforma.
+
 ---
 
 ## 2. Estado legal y facturación (arranque)

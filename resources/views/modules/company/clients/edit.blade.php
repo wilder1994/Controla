@@ -23,6 +23,7 @@
                 'metrics' => $metrics,
                 'accessDefault' => $client->has_access,
                 'proDefault' => $client->has_supervision,
+                'foldersDefault' => $client->show_personnel_folders,
             ])
 
             <div>

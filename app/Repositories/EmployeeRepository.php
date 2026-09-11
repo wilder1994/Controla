@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Models\Employee;
+use App\Models\EmployeeDocument;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 final class EmployeeRepository
 {
@@ -81,5 +83,49 @@ final class EmployeeRepository
             ])
             ->values()
             ->all();
+    }
+
+    public function paginateForPersonnelDocuments(
+        int $companyId,
+        ?string $search = null,
+        int $perPage = 24,
+        ?int $assignedToClientId = null,
+    ): LengthAwarePaginator {
+        $query = Employee::query()
+            ->select('employees.*')
+            ->where('security_company_id', $companyId)
+            ->where('is_active', true)
+            ->withCount([
+                'documents as documents_count' => fn (Builder $q) => $q
+                    ->where('not_applicable', false)
+                    ->where('disk_path', '!=', ''),
+            ])
+            ->addSelect([
+                'folders_count' => EmployeeDocument::query()
+                    ->selectRaw('count(distinct folder)')
+                    ->whereColumn('employee_id', 'employees.id')
+                    ->where('not_applicable', false)
+                    ->where('disk_path', '!=', ''),
+            ]);
+
+        if ($assignedToClientId !== null) {
+            $query->assignedToClient($assignedToClientId);
+        }
+
+        if ($search !== null && $search !== '') {
+            $term = '%'.$search.'%';
+            $query->where(function (Builder $q) use ($term): void {
+                $q->where('first_names', 'like', $term)
+                    ->orWhere('last_name_paternal', 'like', $term)
+                    ->orWhere('last_name_maternal', 'like', $term)
+                    ->orWhere('document_number', 'like', $term);
+            });
+        }
+
+        return $query
+            ->orderBy('last_name_paternal')
+            ->orderBy('first_names')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 }

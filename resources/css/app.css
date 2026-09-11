@@ -1,3 +1,5 @@
+@import './personnel-documents.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

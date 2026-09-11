@@ -10,13 +10,14 @@ La pantalla copia Personal de SJ-SIG (listado, ficha, foto, bloques HR/SS) con e
 
 ## Dónde vive
 
-Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos** | **Estructuras** | **Zonas** | **Turnos** | **Preoperacional** | **Documentos** | **Libros** | **Tipos de arma** | **Marcas** | **Riesgos** | **Alarmas** | **Apoyos**. Las de Supervisión de campo: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+Sidebar **Empleados** (maestro) y **Documentos** (indexador de carpetas del personal). **Ajustes** → pestañas **Cargos** | **Tipos** | **Estructuras** | **Zonas** | **Turnos** | **Preoperacional** | **Documentos** | **Libros** | **Tipos de arma** | **Marcas** | **Riesgos** | **Alarmas** | **Apoyos**. Las de Supervisión de campo: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). El **Documentos** del sidebar no es la Normoteca de plataforma (`docs/MODULO-DOCUMENTOS.md`).
 
 | Pieza | Dónde |
 |-------|--------|
 | Dashboard | Sidebar **Mi empresa** (`/company/dashboard`) |
 | Perfil legal | Sidebar **Mis datos** (`/company/settings`), sin pestañas |
 | Listado / alta / ficha | Sidebar **Empleados** (`/company/employees`) |
+| Carpetas / indexador | Sidebar **Documentos** (`/company/documents`) |
 | Cargos | Ajustes → `/company/job-titles` |
 | Tipos de colaborador | Ajustes → `/company/collaborator-types` |
 | Tipos de estructura | Ajustes → `/company/structure-types` |
@@ -117,8 +118,14 @@ No está en el Excel. En la ficha: `is_active = false` + `ceased_at`. Si tenía 
 
 ---
 
+## Carpetas del personal
+
+`/company/documents`: mismas 6 carpetas de SJ-SIG (Historia laboral, Contratación, Certificados, Cursos, Afiliaciones, Otros). Carga por lote PDF + indexador (FPDI + pdf.js). Permiso `company.settings.manage`. Distinto de la Normoteca (`/admin/documents`).
+
+Tablas: `employee_documents`, `employee_document_batches`. Disco: `storage/app/companies/{id}/employees/{id}/{carpeta}/`. Borrar PDF solo durante 12 h.
+
+El cliente **solo** ve esas carpetas si tiene Accesos y `show_personnel_folders`. En Operar cliente: `/client/documents`, solo empleados con puesto en ese cliente, solo lectura. Reasignar puesto cambia la visibilidad; los PDF siguen en la empresa.
+
 ## Pendiente (otro corte)
 
 - Filtrar empleados por cliente (listado).
-- Carpeta documental / indexador (HV, cursos, PDFs).
-- Que el cliente vea el expediente (permiso aparte).

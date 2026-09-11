@@ -28,6 +28,7 @@ final readonly class CreateClientData
         public bool $isActive = true,
         public bool $hasAccess = false,
         public bool $hasSupervision = false,
+        public bool $showPersonnelFolders = false,
         public ?string $serviceStartedAt = null,
     ) {}
 }

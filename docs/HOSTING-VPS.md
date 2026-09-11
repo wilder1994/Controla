@@ -1,0 +1,32 @@
+# Hosting VPS (Controla)
+
+**Última actualización:** 10 septiembre 2026
+
+Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
+
+| Dato | Valor |
+|------|--------|
+| Proveedor | Hostinger VPS KVM 2, São Paulo, Ubuntu 24.04 + CloudPanel |
+| IP | `82.25.66.93` |
+| Usuario del sitio | `wcodex-controla` |
+| Código | `/home/wcodex-controla/htdocs/controla.wcodex.cloud` |
+| Document root | `…/public` |
+| PHP | 8.3 |
+| Repo | `https://github.com/wilder1994/Controla.git` rama `main` |
+
+Flujo: push local a `wilder-fork` (`wilder1994/Controla`). El VPS solo hace `git pull` + composer/npm/migrate. No FTP ni ZIP. No `migrate:fresh` ni seed en producción salvo petición explícita.
+
+```bash
+SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud
+cd "$SITE"
+sudo -u wcodex-controla git pull --ff-only origin main
+sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
+sudo -u wcodex-controla -H bash -lc "cd '$SITE' && npm ci && npm run build"
+php8.3 artisan migrate --force --no-interaction
+php8.3 artisan config:cache
+php8.3 artisan route:cache
+php8.3 artisan view:cache
+chown -R wcodex-controla:wcodex-controla "$SITE"
+```
+
+Cron del sitio: `* * * * * php8.3 artisan schedule:run`.

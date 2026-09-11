@@ -88,6 +88,10 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.employees.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Empleados</span>
                 </a>
+                <a href="{{ route('company.personnel-documents.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.personnel-documents.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Documentos</span>
+                </a>
                 @endcan
                 @can('company.users.assign')
                 <a href="{{ route('company.users.index') }}"

@@ -7,6 +7,7 @@ import { firstAdminAccess } from './first-admin-access';
 import { installationSiteForm } from './installation-site-form';
 import { postEmployeePicker } from './post-employee-picker';
 import { employeeReassignForm } from './employee-reassign-form';
+import './employee-document-indexer';
 
 import Alpine from 'alpinejs';
 
