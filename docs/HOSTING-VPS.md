@@ -18,6 +18,8 @@ Flujo: push local a `wilder-fork` (`wilder1994/Controla`). El VPS solo hace `git
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
+Observatorio v1: migrate `2026_09_11_260000` + ese seeder. Intake público `/o/{slug}`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe.
+
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud
 cd "$SITE"

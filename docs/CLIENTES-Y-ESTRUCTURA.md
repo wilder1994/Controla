@@ -14,7 +14,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 |---------|-------------|--------|
 | **Cliente** | Ficha comercial (`clients`). PH, oficinas, bodegas, etc. | Alta / Excel de **clientes** / pestaña Cliente |
 | **Ciudad** | Ubicación del cliente (`clients.city` + `department`). **No es un nodo del árbol.** Lo que en el Excel viejo de empleados decía «Sector» era ciudad. | Ficha y Excel de clientes |
-| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Tipo, código interno, DANE si es colegio, **área**, **Administrador** y **Apoyo**. El nombre puede repetirse. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). | Módulo `/company/installations` · `/client/installations` · ficha del cliente |
+| **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Tipo, código interno, DANE si es colegio, **área**, **Administrador** y **Apoyo**. El nombre puede repetirse. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). URL pública del Observatorio: `/o/{slug}` (solo colegios). | Módulo `/company/installations` · `/client/installations` · ficha del cliente · [`OBSERVATORIO.md`](OBSERVATORIO.md) |
 | **Puerta** | Punto de portería (peatonal, vehicular, principal). Tabla `locations` (`type = access_point`). Solo Accesos. **No** es un puesto. | Tarjeta **Puertas** |
 | **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad 8/12/24 h y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |

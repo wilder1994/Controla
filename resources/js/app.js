@@ -6,6 +6,7 @@ import { createCompanyForm } from './create-company-form';
 import { firstAdminAccess } from './first-admin-access';
 import { installationAreaFields } from './colombian-area';
 import { installationSiteForm } from './installation-site-form';
+import { observatoryIntake } from './observatory-intake';
 import { postEmployeePicker } from './post-employee-picker';
 import { employeeReassignForm } from './employee-reassign-form';
 import './employee-document-indexer';
@@ -19,6 +20,7 @@ Alpine.data('createCompanyForm', createCompanyForm);
 Alpine.data('firstAdminAccess', firstAdminAccess);
 Alpine.data('installationAreaFields', installationAreaFields);
 Alpine.data('installationSiteForm', installationSiteForm);
+Alpine.data('observatoryIntake', observatoryIntake);
 Alpine.data('postEmployeePicker', postEmployeePicker);
 Alpine.data('employeeReassignForm', employeeReassignForm);
 

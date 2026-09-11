@@ -12,6 +12,7 @@ use App\Http\Controllers\Company\ClientSupervisorPostController;
 use App\Http\Controllers\Company\CollaboratorTypeController;
 use App\Http\Controllers\Company\DashboardController;
 use App\Http\Controllers\Company\DownloadsController;
+use App\Http\Controllers\Company\ObservatoryEventController;
 use App\Http\Controllers\Company\EmployeeController;
 use App\Http\Controllers\Company\PersonnelDocumentController;
 use App\Http\Controllers\Company\JobTitleController;
@@ -37,6 +38,13 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
     ->prefix('company')
     ->name('company.')
     ->group(function () {
+        Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.events.index');
+        Route::get('/observatory/events/{event}', [ObservatoryEventController::class, 'show'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.events.show');
+
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->middleware('permission:company.dashboard')
             ->name('dashboard');

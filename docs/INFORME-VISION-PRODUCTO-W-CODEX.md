@@ -179,15 +179,15 @@ El Anexo en prosa pide lo mismo sin puntajes: maestro + búsqueda; mapa + evento
 
 ### 7.2 Qué hay hoy en Controla (brecha)
 
-Controla es maduro en **accesos, censo y supervisión de campo**. No hay Observatorio. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
+Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio v1 ya tiene intake y eventos; faltan mapa/calor, tablero y API. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
 
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
 | 2 Geográfico | ~60 % | Google Maps, pines, GPS PWA, cluster ~50 m, filtros de supervisión | Mapa **por instalación**; capas territoriales; heatmap / concentración |
 | 3 Multifuente | ~30 % | Portería (`guard_logs`) y campo (`supervisor_field_logs`) como silos | Catálogo de fuentes; normalizar; `source` en cada reporte |
-| 4 Comunidad | ~12 % | Privacidad de menores (Normoteca + censo). PQRS **no existe** | Intake web (anónimo o no); estados; vínculo sede/evento. No es el pánico de portería |
-| 5 Eventos | ~40 % | Fichas y minutas con evidencia, cada una en su mundo | Incidente único, dueño, estados, agrupar reportes, histórico |
+| 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. Link copiable en empresa/cliente | Varias fuentes (campo, portería); no es el pánico de portería |
+| 5 Eventos | ~65 % | Evento 1:1 con el primer reporte; folio; estados `nuevo` → `en_atencion` → `cerrado` (admin de instalaciones); histórico | Agrupar varios reportes en un incidente |
 | 6 Analítica | ~55 % | Command Center, resumen supervisión, PPTX, filtros | Tendencias/ranking escolar; prioridad **configurable**; tablero + export del Observatorio |
 | 7 Interoperabilidad | ~25 % externo | API Sanctum de supervisión + catálogo de módulos (`docs/SUPERVISION-CAMPO.md`) | API de eventos/riesgos del Observatorio + OpenAPI / control de interfaz |
 
@@ -249,7 +249,7 @@ El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta
 
 PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. Línea 123 y Policía son **convenio**; el día 1 pueden simularse conectores si el pliego no exige el tubo en vivo.
 
-**Orden de código cuando se abra fase** (dentro del punto 8 del §11): primero ficha colegio + búsqueda (factor 1); en paralelo o justo después reporte → evento (factores 4 y 5), que es lo más visible en visita; luego mapa/calor (2), tablero (6), fuentes/API (3 y 7). No se escribe código en este corte.
+**Orden de código** (punto 8 del §11): ficha colegio + búsqueda (factor 1) **hecho**; reporte → evento (factores 4 y 5, 1:1) **hecho**. Siguiente: mapa/calor (2), luego tablero (6), fuentes/API (3 y 7).
 
 ---
 
@@ -328,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (Anexo 7.5, 7 factores / 4 puntos) — capa aparte, misma geometría. Alcance y brecha en §7. Sin código hasta abrir esta fase.
+8. Observatorio escolar (Anexo 7.5). Factor 1 **hecho**. Factores 4 y 5 v1 **hechos** (reporte → evento; link `/o/{slug}`). Siguiente: mapa/calor (2). Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 
@@ -370,3 +370,5 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Área de la sede desde el mapa: comuna / localidad / vereda / corregimiento; si no aplica no se guarda. |
 | 2026-09-11 | Factor 1: `kind` + DANE de sede (único, solo colegio, texto 8–12 dígitos; sin catálogo MEN); nombre repetible; personal N con permiso admin/apoyo; `rector_user_id` = contacto del directorio. |
 | 2026-09-11 | Ficha de sede: dirección bajo el nombre; bloques Administrador y Apoyo (`cargo · nombre`). |
+| 2026-09-11 | Observatorio v1: reporte → evento. Público `/o/{slug}` (colegios, 3 pasos, foto opcional, anónimo). Estados `nuevo` → `en_atencion` → `cerrado`; los cierra el admin de instalaciones. Empresa y `client-admin` ven, no cambian estado. |
+| 2026-09-11 | Observatorio: link público copiable en empresa y cliente. Permisos `observatory.view` / `observatory.events.update`. Siguiente: mapa/calor. |

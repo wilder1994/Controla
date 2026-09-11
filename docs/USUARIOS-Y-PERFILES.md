@@ -6,7 +6,7 @@ Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalizac
 
 La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
-Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
+Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · **Observatorio** · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Observatorio: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 
@@ -175,6 +175,8 @@ Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `clien
 | `company.settings.manage` | Perfil legal/geo de la empresa |
 | `client.users.manage` | Ver/editar administradores del cliente. **No** crear. |
 | `client.settings.manage` | Crear/editar tipos de persona. El admin de instalaciones no lo tiene (Ajustes solo ver) |
+| `observatory.view` | Ver eventos del Observatorio (empresa: sus clientes; cliente: su alcance) |
+| `observatory.events.update` | Cambiar estado. Solo admin de instalaciones de esa sede (`site_permission=admin`), no el apoyo |
 
 Tras cambios en permisos:
 

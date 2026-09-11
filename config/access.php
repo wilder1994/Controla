@@ -24,6 +24,8 @@ return [
         'company.users.assign',
         'company.settings.manage',
         'company.supervision.view',
+        'observatory.view',
+        'observatory.events.update',
 
         // Cliente / censo (fase 1+)
         'client.structures.manage',
@@ -82,6 +84,7 @@ return [
             'company.users.assign',
             'company.settings.manage',
             'company.supervision.view',
+            'observatory.view',
             'client.structures.manage',
             'client.members.manage',
             'client.pets.manage',
@@ -114,6 +117,7 @@ return [
         ],
 
         'client-admin' => [
+            'observatory.view',
             'client.structures.manage',
             'client.members.manage',
             'client.pets.manage',
@@ -146,6 +150,8 @@ return [
         ],
 
         'client-installation-admin' => [
+            'observatory.view',
+            'observatory.events.update',
             'client.structures.manage',
             'client.members.manage',
             'client.pets.manage',
@@ -317,6 +323,7 @@ return [
             'items' => [
                 ['label' => 'Resumen', 'route' => 'client.dashboard', 'permission' => 'client.structures.manage'],
                 ['label' => 'Instalaciones', 'route' => 'client.installations.index', 'permission' => 'client.structures.manage'],
+                ['label' => 'Observatorio', 'route' => 'client.observatory.events.index', 'permission' => 'observatory.view'],
                 ['label' => 'Personas', 'route' => 'client.members.index', 'permission' => 'client.members.manage'],
                 ['label' => 'Usuarios', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
                 ['label' => 'Accesos', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],

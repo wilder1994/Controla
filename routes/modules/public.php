@@ -2,10 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Public\ObservatoryIntakeController;
 use App\Http\Controllers\Public\PlansController;
 use App\Http\Controllers\Public\SignupCheckoutController;
 use App\Http\Controllers\Public\SignupController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('o/{slug}')->name('observatory.public.')->group(function () {
+    Route::get('/', [ObservatoryIntakeController::class, 'show'])->name('show');
+    Route::get('/sedes', [ObservatoryIntakeController::class, 'sites'])->name('sites');
+    Route::post('/', [ObservatoryIntakeController::class, 'store'])->middleware('throttle:10,1')->name('store');
+    Route::get('/gracias/{report}', [ObservatoryIntakeController::class, 'thanks'])->name('thanks');
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('/planes', [PlansController::class, 'index'])

@@ -46,6 +46,7 @@
             || request()->routeIs('company.clients.create')
             || request()->routeIs('company.clients.edit');
         $onInstallations = request()->routeIs('company.installations.*');
+        $onObservatory = request()->routeIs('company.observatory.*');
         $companyContext = $companyContext ?? ['company_name' => null, 'is_quota_full' => true];
         $supportMode = $supportMode ?? ['active' => false, 'company_name' => null, 'company_id' => null];
     @endphp
@@ -74,6 +75,12 @@
                 <a href="{{ route('company.installations.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onInstallations ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Instalaciones</span>
+                </a>
+                @endcan
+                @can('observatory.view')
+                <a href="{{ route('company.observatory.events.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onObservatory ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Observatorio</span>
                 </a>
                 @endcan
                 @can('company.supervision.view')

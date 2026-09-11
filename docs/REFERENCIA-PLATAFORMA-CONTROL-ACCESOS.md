@@ -5,6 +5,7 @@ Alcance del producto (sin documentos de terceros):
 - [Informe de visión de producto (W Codex)](INFORME-VISION-PRODUCTO-W-CODEX.md)
 - [Plan de inicio](PLAN-INICIO-PROYECTO-CONTROLA.md)
 - [Clientes y estructura](CLIENTES-Y-ESTRUCTURA.md)
+- [Observatorio](OBSERVATORIO.md)
 - [Usuarios y perfiles](USUARIOS-Y-PERFILES.md)
 - [Empleados y cargos](EMPLEADOS-Y-CARGOS.md)
 - [Paquetes Accesos y Supervisión](PAQUETES-ACCESOS-Y-SUPERVISION.md)

@@ -7,6 +7,7 @@ use App\Http\Controllers\Client\AuthorizationController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\InstallationController;
 use App\Http\Controllers\Client\MemberController;
+use App\Http\Controllers\Client\ObservatoryEventController;
 use App\Http\Controllers\Client\MemberTypeController;
 use App\Http\Controllers\Client\PersonnelDocumentController;
 use App\Http\Controllers\Client\PetController;
@@ -37,6 +38,16 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::get('/installations/{installation}', [InstallationController::class, 'show'])
             ->middleware('permission:client.structures.manage')
             ->name('installations.show');
+
+        Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.events.index');
+        Route::get('/observatory/events/{event}', [ObservatoryEventController::class, 'show'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.events.show');
+        Route::patch('/observatory/events/{event}/status', [ObservatoryEventController::class, 'updateStatus'])
+            ->middleware('permission:observatory.events.update')
+            ->name('observatory.events.status');
 
         Route::get('/structures', [StructureController::class, 'index'])
             ->middleware('permission:client.structures.manage')
