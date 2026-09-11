@@ -3,7 +3,7 @@
     $maps = $map['google_maps'] ?? [];
     $sites = $map['sites'] ?? [];
 @endphp
-<div class="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden">
+<div class="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden h-full min-h-80">
     @if (! empty($maps['api_key']))
         <div
             x-data="observatoryMap(@js([
@@ -21,7 +21,7 @@
                         :class="mode === 'heat' ? 'bg-white text-slate-900' : 'bg-slate-900/80 text-slate-200 border border-slate-700'"
                         @click="setMode('heat')">Calor</button>
             </div>
-            <div x-ref="map" class="h-80 w-full"></div>
+            <div x-ref="map" class="h-80 xl:h-[22rem] w-full"></div>
             <p class="px-3 py-2 text-[11px] text-slate-500 border-t border-slate-800">
                 Ámbar nuevo · índigo en atención · gris cerrado o sin reportes. Calor = eventos abiertos.
             </p>

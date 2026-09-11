@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Company;
 
+use App\Enums\ObservatoryEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ObservatoryEvent;
+use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class ObservatoryEventController extends Controller
@@ -19,19 +22,20 @@ final class ObservatoryEventController extends Controller
         $this->authorize('viewAny', ObservatoryEvent::class);
 
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
-        $search = $request->string('q')->trim()->toString();
+        $filters = $this->filters($request);
+        $board = app(BuildObservatoryBoardService::class);
 
-        $events = ObservatoryEvent::query()
+        $events = $board->scoped($companyId, null, null, $filters['from'], $filters['to'])
             ->with(['client', 'installation'])
-            ->whereHas('client', fn ($q) => $q->where('security_company_id', $companyId))
-            ->when($search !== '', function ($q) use ($search) {
-                $q->where(function ($inner) use ($search) {
-                    $inner->where('title', 'like', '%'.$search.'%')
-                        ->orWhereHas('installation', fn ($i) => $i->where('name', 'like', '%'.$search.'%')
-                            ->orWhere('dane_code', 'like', '%'.$search.'%'))
-                        ->orWhereHas('client', fn ($c) => $c->where('name', 'like', '%'.$search.'%'));
+            ->when($filters['search'] !== '', function ($q) use ($filters) {
+                $q->where(function ($inner) use ($filters) {
+                    $inner->where('title', 'like', '%'.$filters['search'].'%')
+                        ->orWhereHas('installation', fn ($i) => $i->where('name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('dane_code', 'like', '%'.$filters['search'].'%'))
+                        ->orWhereHas('client', fn ($c) => $c->where('name', 'like', '%'.$filters['search'].'%'));
                 });
             })
+            ->when($filters['status'] !== '', fn ($q) => $q->where('status', $filters['status']))
             ->orderByDesc('opened_at')
             ->paginate(20)
             ->withQueryString();
@@ -45,8 +49,12 @@ final class ObservatoryEventController extends Controller
 
         return view('modules.observatory.company.index', [
             'events' => $events,
-            'search' => $search,
+            'search' => $filters['search'],
+            'from' => $filters['from'],
+            'to' => $filters['to'],
+            'status' => $filters['status'],
             'shareClients' => $shareClients,
+            'board' => $board->execute($companyId, null, null, $filters['from'], $filters['to']),
             'map' => app(BuildObservatoryMapService::class)->execute(
                 $companyId,
                 null,
@@ -65,5 +73,23 @@ final class ObservatoryEventController extends Controller
             'event' => $event,
             'canUpdateStatus' => $request->user()?->can('update', $event) ?? false,
         ]);
+    }
+
+    /** @return array{search: string, from: ?string, to: ?string, status: string} */
+    private function filters(Request $request): array
+    {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'status' => ['nullable', 'string', Rule::enum(ObservatoryEventStatus::class)],
+        ]);
+
+        return [
+            'search' => trim((string) ($validated['q'] ?? '')),
+            'from' => $validated['from'] ?? null,
+            'to' => $validated['to'] ?? null,
+            'status' => (string) ($validated['status'] ?? ''),
+        ];
     }
 }

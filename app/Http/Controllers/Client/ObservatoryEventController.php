@@ -8,6 +8,7 @@ use App\Enums\ObservatoryEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ObservatoryEvent;
+use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
 use App\Services\Observatory\UpdateObservatoryEventStatusService;
 use App\Support\Tenancy\TenantContext;
@@ -30,21 +31,20 @@ final class ObservatoryEventController extends Controller
 
         $clientId = (int) $this->tenantContext->clientId();
         abort_unless($clientId > 0, 403);
-        $search = $request->string('q')->trim()->toString();
+        $filters = $this->filters($request);
+        $board = app(BuildObservatoryBoardService::class);
+        $siteIds = $this->tenantContext->installationIds();
 
-        $events = ObservatoryEvent::query()
+        $events = $board->scoped(null, $clientId, $siteIds, $filters['from'], $filters['to'])
             ->with(['installation'])
-            ->where('client_id', $clientId)
-            ->when($this->tenantContext->installationIds() !== null, function ($q) {
-                $q->whereIn('installation_id', $this->tenantContext->installationIds() ?? []);
-            })
-            ->when($search !== '', function ($q) use ($search) {
-                $q->where(function ($inner) use ($search) {
-                    $inner->where('title', 'like', '%'.$search.'%')
-                        ->orWhereHas('installation', fn ($i) => $i->where('name', 'like', '%'.$search.'%')
-                            ->orWhere('dane_code', 'like', '%'.$search.'%'));
+            ->when($filters['search'] !== '', function ($q) use ($filters) {
+                $q->where(function ($inner) use ($filters) {
+                    $inner->where('title', 'like', '%'.$filters['search'].'%')
+                        ->orWhereHas('installation', fn ($i) => $i->where('name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('dane_code', 'like', '%'.$filters['search'].'%'));
                 });
             })
+            ->when($filters['status'] !== '', fn ($q) => $q->where('status', $filters['status']))
             ->orderByDesc('opened_at')
             ->paginate(20)
             ->withQueryString();
@@ -53,12 +53,16 @@ final class ObservatoryEventController extends Controller
 
         return view('modules.observatory.client.index', [
             'events' => $events,
-            'search' => $search,
+            'search' => $filters['search'],
+            'from' => $filters['from'],
+            'to' => $filters['to'],
+            'status' => $filters['status'],
             'publicUrl' => route('observatory.public.show', $client->slug),
+            'board' => $board->execute(null, $clientId, $siteIds, $filters['from'], $filters['to']),
             'map' => app(BuildObservatoryMapService::class)->execute(
                 null,
                 $clientId,
-                $this->tenantContext->installationIds(),
+                $siteIds,
                 'client.observatory.events.show',
             ),
         ]);
@@ -105,5 +109,23 @@ final class ObservatoryEventController extends Controller
     {
         abort_unless((int) $event->client_id === (int) $this->tenantContext->clientId(), 404);
         abort_unless($this->tenantContext->allowsInstallation((int) $event->installation_id), 403);
+    }
+
+    /** @return array{search: string, from: ?string, to: ?string, status: string} */
+    private function filters(Request $request): array
+    {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'status' => ['nullable', 'string', Rule::enum(ObservatoryEventStatus::class)],
+        ]);
+
+        return [
+            'search' => trim((string) ($validated['q'] ?? '')),
+            'from' => $validated['from'] ?? null,
+            'to' => $validated['to'] ?? null,
+            'status' => (string) ($validated['status'] ?? ''),
+        ];
     }
 }

@@ -123,7 +123,18 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertOk()
             ->assertSee($event->folio(), false)
             ->assertSee('/o/'.$client->slug, false)
-            ->assertSee('Copiar', false);
+            ->assertSee('Copiar', false)
+            ->assertSee('Nuevos', false)
+            ->assertSee('Colegios con más eventos', false)
+            ->assertSee('IE Santa Librada', false);
+
+        $this->actingAs($company)
+            ->get(route('company.observatory.events.index', [
+                'from' => now()->addDay()->toDateString(),
+                'to' => now()->addDays(2)->toDateString(),
+            ]))
+            ->assertOk()
+            ->assertDontSee($event->folio(), false);
 
         $this->actingAs($company)
             ->get(route('company.observatory.events.show', $event))

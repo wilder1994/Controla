@@ -40,10 +40,14 @@ Empresa y `client-admin` **ven** y no cambian estado.
 
 Permisos: `observatory.view`, `observatory.events.update`. Tras el alta: `php artisan db:seed --class=RoleAndPermissionSeeder`.
 
+## Tablero (v1)
+
+Filtro por fechas. Cifras: eventos / nuevos / en atención / cerrados (clic filtra la tabla). Ranking de colegios con más eventos. Mapa a la izquierda, ranking y link a la derecha.
+
 ## Mapa (v1)
 
 En Observatorio de empresa y cliente: pines de colegios con coordenadas. Color por estado (ámbar nuevo, índigo en atención, gris cerrado/sin reportes). Botón **Calor** = eventos abiertos. Requiere `GOOGLE_MAPS_API_KEY`.
 
 ## Siguiente
 
-Tablero, varios reportes en un evento, Policía/123, API.
+Varios reportes en un evento, Policía/123, API.
