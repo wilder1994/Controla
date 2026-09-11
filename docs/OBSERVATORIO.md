@@ -40,6 +40,10 @@ Empresa y `client-admin` **ven** y no cambian estado.
 
 Permisos: `observatory.view`, `observatory.events.update`. Tras el alta: `php artisan db:seed --class=RoleAndPermissionSeeder`.
 
+## Mapa (v1)
+
+En Observatorio de empresa y cliente: pines de colegios con coordenadas. Color por estado (ámbar nuevo, índigo en atención, gris cerrado/sin reportes). Botón **Calor** = eventos abiertos. Requiere `GOOGLE_MAPS_API_KEY`.
+
 ## Siguiente
 
-Mapa/calor (factor 2): pines de colegios y eventos, concentraciones. Después: tablero, varios reportes en un evento, Policía/123, API.
+Tablero, varios reportes en un evento, Policía/123, API.

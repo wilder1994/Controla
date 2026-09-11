@@ -194,6 +194,32 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSessionHasErrors('status');
     }
 
+    public function test_map_lists_only_scoped_colegios_with_coordinates(): void
+    {
+        config(['google-maps.api_key' => 'test-maps-key']);
+        [$client, $colegio, $conjunto, $other] = $this->sites();
+        $colegio->update(['latitude' => '3.4372200', 'longitude' => '-76.5225000']);
+        $conjunto->update(['latitude' => '3.4516000', 'longitude' => '-76.5320000']);
+        $other->update(['latitude' => '3.4600000', 'longitude' => '-76.5100000']);
+
+        $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $this->actingAs($company)
+            ->get(route('company.observatory.events.index'))
+            ->assertOk()
+            ->assertSee('test-maps-key', false)
+            ->assertSee('IE Santa Librada', false)
+            ->assertSee('IE Republica del Peru', false)
+            ->assertSee('Pines', false)
+            ->assertSee('Calor', false);
+
+        $admin = $this->makeSiteAdmin($company, $client, $colegio, 'mapa.obs@palmas.test', '1098000884');
+        $this->actingAs($admin)->withSession(['tenancy.active_client_id' => $client->id])
+            ->get(route('client.observatory.events.index'))
+            ->assertOk()
+            ->assertSee('IE Santa Librada', false)
+            ->assertDontSee('IE Republica del Peru', false);
+    }
+
     public function test_guard_cannot_open_observatory(): void
     {
         $this->sites();

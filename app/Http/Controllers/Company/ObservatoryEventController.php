@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ObservatoryEvent;
+use App\Services\Observatory\BuildObservatoryMapService;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -46,6 +47,12 @@ final class ObservatoryEventController extends Controller
             'events' => $events,
             'search' => $search,
             'shareClients' => $shareClients,
+            'map' => app(BuildObservatoryMapService::class)->execute(
+                $companyId,
+                null,
+                null,
+                'company.observatory.events.show',
+            ),
         ]);
     }
 

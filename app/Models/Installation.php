@@ -192,6 +192,11 @@ final class Installation extends Model
         return $this->hasMany(Structure::class);
     }
 
+    public function observatoryEvents(): HasMany
+    {
+        return $this->hasMany(ObservatoryEvent::class);
+    }
+
     public function hasDoors(): bool
     {
         return Location::query()

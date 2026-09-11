@@ -184,7 +184,7 @@ Controla es maduro en **accesos, censo y supervisión de campo**. El Observatori
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
-| 2 Geográfico | ~60 % | Google Maps, pines, GPS PWA, cluster ~50 m, filtros de supervisión | Mapa **por instalación**; capas territoriales; heatmap / concentración |
+| 2 Geográfico | ~75 % | Mapa Observatorio (pines por estado + calor de eventos abiertos). Google Maps, GPS PWA | Capas territoriales / comunas; calor PostGIS |
 | 3 Multifuente | ~30 % | Portería (`guard_logs`) y campo (`supervisor_field_logs`) como silos | Catálogo de fuentes; normalizar; `source` en cada reporte |
 | 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. Link copiable en empresa/cliente | Varias fuentes (campo, portería); no es el pánico de portería |
 | 5 Eventos | ~65 % | Evento 1:1 con el primer reporte; folio; estados `nuevo` → `en_atencion` → `cerrado` (admin de instalaciones); histórico | Agrupar varios reportes en un incidente |
@@ -249,7 +249,7 @@ El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta
 
 PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. Línea 123 y Policía son **convenio**; el día 1 pueden simularse conectores si el pliego no exige el tubo en vivo.
 
-**Orden de código** (punto 8 del §11): ficha colegio + búsqueda (factor 1) **hecho**; reporte → evento (factores 4 y 5, 1:1) **hecho**. Siguiente: mapa/calor (2), luego tablero (6), fuentes/API (3 y 7).
+**Orden de código** (punto 8 del §11): ficha colegio + búsqueda (factor 1) **hecho**; reporte → evento (4 y 5, 1:1) **hecho**; mapa/calor v1 (2) **hecho**. Siguiente: tablero (6), fuentes/API (3 y 7).
 
 ---
 
@@ -328,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (Anexo 7.5). Factor 1 **hecho**. Factores 4 y 5 v1 **hechos** (reporte → evento; link `/o/{slug}`). Siguiente: mapa/calor (2). Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
+8. Observatorio escolar (Anexo 7.5). Factores 1, 4, 5 v1 y mapa/calor v1 **hechos**. Siguiente: tablero (6). Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 
@@ -372,3 +372,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Ficha de sede: dirección bajo el nombre; bloques Administrador y Apoyo (`cargo · nombre`). |
 | 2026-09-11 | Observatorio v1: reporte → evento. Público `/o/{slug}` (colegios, 3 pasos, foto opcional, anónimo). Estados `nuevo` → `en_atencion` → `cerrado`; los cierra el admin de instalaciones. Empresa y `client-admin` ven, no cambian estado. |
 | 2026-09-11 | Observatorio: link público copiable en empresa y cliente. Permisos `observatory.view` / `observatory.events.update`. Siguiente: mapa/calor. |
+| 2026-09-11 | Observatorio mapa/calor v1: pines de colegios por estado y capa de calor de eventos abiertos. |

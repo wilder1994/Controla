@@ -8,6 +8,7 @@ use App\Enums\ObservatoryEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ObservatoryEvent;
+use App\Services\Observatory\BuildObservatoryMapService;
 use App\Services\Observatory\UpdateObservatoryEventStatusService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -54,6 +55,12 @@ final class ObservatoryEventController extends Controller
             'events' => $events,
             'search' => $search,
             'publicUrl' => route('observatory.public.show', $client->slug),
+            'map' => app(BuildObservatoryMapService::class)->execute(
+                null,
+                $clientId,
+                $this->tenantContext->installationIds(),
+                'client.observatory.events.show',
+            ),
         ]);
     }
 

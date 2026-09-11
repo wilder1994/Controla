@@ -5,6 +5,8 @@
             @include('modules.observatory.partials.public-link', ['url' => $publicUrl])
         </div>
 
+        @include('modules.observatory.partials.map', ['map' => $map])
+
         <form method="GET" action="{{ route('client.observatory.events.index') }}"
               class="rounded-lg border border-slate-800 bg-slate-900/60 p-3 flex flex-col sm:flex-row sm:items-center gap-3">
             <div class="flex-1 min-w-0">
