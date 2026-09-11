@@ -31,6 +31,10 @@ final class ObservatoryIntakeController extends Controller
         return view('modules.observatory.public.intake', [
             'client' => $row,
             'kinds' => ObservatoryReportKind::options(),
+            'maps' => [
+                'api_key' => config('google-maps.api_key'),
+                'center' => config('google-maps.default_center'),
+            ],
         ]);
     }
 
@@ -52,7 +56,7 @@ final class ObservatoryIntakeController extends Controller
             })
             ->orderBy('name')
             ->limit(20)
-            ->get(['id', 'name', 'dane_code', 'city']);
+            ->get(['id', 'name', 'dane_code', 'city', 'latitude', 'longitude']);
 
         return response()->json([
             'sites' => $sites->map(static fn (Installation $site): array => [
@@ -60,6 +64,8 @@ final class ObservatoryIntakeController extends Controller
                 'name' => $site->name,
                 'dane_code' => $site->dane_code,
                 'city' => $site->city,
+                'lat' => $site->latitude !== null ? (float) $site->latitude : null,
+                'lng' => $site->longitude !== null ? (float) $site->longitude : null,
             ])->all(),
         ]);
     }
@@ -77,6 +83,8 @@ final class ObservatoryIntakeController extends Controller
                 'reporter_name' => $request->validated('reporter_name'),
                 'reporter_phone' => $request->validated('reporter_phone'),
                 'photo' => $request->file('photo'),
+                'latitude' => $request->validated('latitude'),
+                'longitude' => $request->validated('longitude'),
             ], $request->ip());
         } catch (ValidationException $e) {
             return back()->withInput()->withErrors($e->errors());

@@ -2,12 +2,14 @@
     $map = $map ?? ['google_maps' => ['api_key' => null], 'sites' => []];
     $maps = $map['google_maps'] ?? [];
     $sites = $map['sites'] ?? [];
+    $points = $map['points'] ?? [];
 @endphp
 <div class="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden h-full min-h-80">
     @if (! empty($maps['api_key']))
         <div
             x-data="observatoryMap(@js([
                 'sites' => $sites,
+                'points' => $points,
                 'center' => $maps['center'] ?? ['lat' => 4.5709, 'lng' => -74.2973],
                 'zoom' => $maps['zoom'] ?? 6,
             ]))"
@@ -23,7 +25,7 @@
             </div>
             <div x-ref="map" class="h-80 xl:h-[22rem] w-full"></div>
             <p class="px-3 py-2 text-[11px] text-slate-500 border-t border-slate-800">
-                Ámbar nuevo · índigo en atención · gris cerrado o sin reportes. Calor = eventos abiertos.
+                Ámbar nuevo · índigo en atención · gris cerrado. Calor = ubicación de cada reporte abierto.
             </p>
         </div>
         @push('scripts')

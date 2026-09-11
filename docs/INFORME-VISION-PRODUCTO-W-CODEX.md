@@ -179,15 +179,15 @@ El Anexo en prosa pide lo mismo sin puntajes: maestro + búsqueda; mapa + evento
 
 ### 7.2 Qué hay hoy en Controla (brecha)
 
-Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio v1 ya tiene intake y eventos; faltan mapa/calor, tablero y API. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
+Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio v1 ya tiene intake, agrupar reportes (1 h), mapa/calor y tablero; falta API y fuentes extra. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
 
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
-| 2 Geográfico | ~75 % | Mapa Observatorio (pines por estado + calor de eventos abiertos). Google Maps, GPS PWA | Capas territoriales / comunas; calor PostGIS |
+| 2 Geográfico | ~80 % | Mapa Observatorio (colegio + pin del reporte; calor por ubicación del reporte). Google Maps, GPS PWA | Capas territoriales / comunas; calor PostGIS |
 | 3 Multifuente | ~30 % | Portería (`guard_logs`) y campo (`supervisor_field_logs`) como silos | Catálogo de fuentes; normalizar; `source` en cada reporte |
 | 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. Link copiable en empresa/cliente | Varias fuentes (campo, portería); no es el pánico de portería |
-| 5 Eventos | ~65 % | Evento 1:1 con el primer reporte; folio; estados `nuevo` → `en_atencion` → `cerrado` (admin de instalaciones); histórico | Agrupar varios reportes en un incidente |
+| 5 Eventos | ~85 % | Folio; agrupa mismo colegio + tipo si el evento está abierto y el último reporte de ese tipo fue hace menos de 1 h; estados `nuevo` → `en_atencion` → `cerrado` (admin de instalaciones); histórico | Unir/desenganchar a mano |
 | 6 Analítica | ~70 % | Tablero Observatorio: conteos por estado, ranking de colegios, filtro fecha. Command Center, PPTX | Prioridad configurable; export; tendencias históricas |
 | 7 Interoperabilidad | ~25 % externo | API Sanctum de supervisión + catálogo de módulos (`docs/SUPERVISION-CAMPO.md`) | API de eventos/riesgos del Observatorio + OpenAPI / control de interfaz |
 
@@ -328,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (Anexo 7.5). Factores 1, 2, 4, 5 y 6 v1 **hechos**. Siguiente: agrupar reportes + fuentes/API. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
+8. Observatorio escolar (Anexo 7.5). Factores 1, 2, 4, 5 y 6 v1 **hechos** (agrupar 1 h + pin del reporte). Siguiente: fuentes/API y unión manual. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 

@@ -24,11 +24,17 @@
             'installationName' => old('installation_label', ''),
             'kind' => old('kind', ''),
             'anonymous' => (bool) old('is_anonymous', false),
+            'latitude' => old('latitude', ''),
+            'longitude' => old('longitude', ''),
+            'mapsKey' => $maps['api_key'] ?? '',
+            'center' => $maps['center'] ?? ['lat' => 4.5709, 'lng' => -74.2973],
         ]))"
     >
         @csrf
         <input type="hidden" name="installation_id" :value="installationId">
         <input type="hidden" name="installation_label" :value="installationName">
+        <input type="hidden" name="latitude" :value="latitude">
+        <input type="hidden" name="longitude" :value="longitude">
 
         <div class="flex gap-2 text-[11px] text-slate-500">
             <span :class="step === 1 ? 'text-teal-300' : ''">1. Colegio</span>
@@ -59,7 +65,7 @@
                 </template>
                 <p x-show="searched && sites.length === 0" class="px-3 py-3 text-xs text-slate-500">No hay colegios con ese nombre o DANE.</p>
             </div>
-            <button type="button" class="w-full h-11 rounded-lg bg-teal-600 text-sm font-semibold text-white disabled:opacity-40" :disabled="!installationId" @click="step = 2">
+            <button type="button" class="w-full h-11 rounded-lg bg-teal-600 text-sm font-semibold text-white disabled:opacity-40" :disabled="!installationId" @click="goStep(2)">
                 Continuar
             </button>
         </div>
@@ -79,11 +85,19 @@
                 <textarea id="body" name="body" rows="5" required minlength="10" maxlength="2000" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">{{ old('body') }}</textarea>
             </div>
             <div>
+                <label class="block text-xs text-slate-400 mb-1">Dónde pasó</label>
+                <div x-show="hasPin && mapsKey" class="overflow-hidden rounded-lg border border-slate-800">
+                    <div x-ref="pinMap" class="h-56 w-full"></div>
+                    <p class="px-3 py-2 text-[11px] text-slate-500">Arrastra el pin o toca el mapa. Si no lo mueves, queda en el colegio.</p>
+                </div>
+                <p x-show="!mapsKey || !hasPin" class="text-[11px] text-slate-500">Sin mapa: se usa el pin del colegio si existe.</p>
+            </div>
+            <div>
                 <label class="block text-xs text-slate-400 mb-1" for="photo">Foto (opcional)</label>
                 <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="w-full text-sm text-slate-400">
             </div>
             <div class="flex gap-2">
-                <button type="button" class="h-11 px-4 rounded-lg border border-slate-700 text-sm text-slate-300" @click="step = 1">Atrás</button>
+                <button type="button" class="h-11 px-4 rounded-lg border border-slate-700 text-sm text-slate-300" @click="goStep(1)">Atrás</button>
                 <button type="button" class="flex-1 h-11 rounded-lg bg-teal-600 text-sm font-semibold text-white disabled:opacity-40" :disabled="!kind" @click="step = 3">Continuar</button>
             </div>
         </div>
@@ -106,7 +120,7 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                <button type="button" class="h-11 px-4 rounded-lg border border-slate-700 text-sm text-slate-300" @click="step = 2">Atrás</button>
+                <button type="button" class="h-11 px-4 rounded-lg border border-slate-700 text-sm text-slate-300" @click="goStep(2)">Atrás</button>
                 <button type="submit" class="flex-1 h-11 rounded-lg bg-teal-600 text-sm font-semibold text-white">Enviar reporte</button>
             </div>
         </div>

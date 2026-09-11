@@ -36,6 +36,7 @@ export function observatoryMap(cfg) {
             }
 
             const sites = cfg.sites || [];
+            const points = cfg.points || [];
             const center = cfg.center || { lat: 4.5709, lng: -74.2973 };
             this.map = new google.maps.Map(el, {
                 center,
@@ -55,11 +56,12 @@ export function observatoryMap(cfg) {
                     position: pos,
                     map: this.map,
                     title: site.name,
+                    zIndex: 1,
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
-                        scale: site.open_count > 0 ? 9 : 7,
+                        scale: site.open_count > 0 ? 8 : 6,
                         fillColor: this.colorFor(site.status),
-                        fillOpacity: 0.95,
+                        fillOpacity: 0.85,
                         strokeColor: '#0f172a',
                         strokeWeight: 1,
                     },
@@ -79,12 +81,56 @@ export function observatoryMap(cfg) {
                     info.open(this.map, marker);
                 });
                 this.markers.push(marker);
-                if (site.open_count > 0) {
-                    heat.push({ location: new google.maps.LatLng(pos.lat, pos.lng), weight: Number(site.heat_weight || 1) });
+            });
+
+            points.forEach((point) => {
+                const pos = { lat: Number(point.lat), lng: Number(point.lng) };
+                bounds.extend(pos);
+                const marker = new google.maps.Marker({
+                    position: pos,
+                    map: this.map,
+                    title: point.kind || point.title,
+                    zIndex: 2,
+                    icon: {
+                        path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                        scale: 5,
+                        fillColor: this.colorFor(point.status),
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 1,
+                    },
+                });
+                marker.addListener('click', () => {
+                    const link = point.show_url
+                        ? `<a href="${this.esc(point.show_url)}">Ver evento</a>`
+                        : '';
+                    info.setContent(
+                        `<div style="color:#0f172a;font:13px/1.4 sans-serif;max-width:220px">`
+                        + `<strong>${this.esc(point.title)}</strong><br>`
+                        + `${this.esc(point.kind)} · ${this.esc(point.status_label)}`
+                        + (link ? `<br>${link}` : '')
+                        + `</div>`,
+                    );
+                    info.open(this.map, marker);
+                });
+                this.markers.push(marker);
+                if (point.open) {
+                    heat.push({ location: new google.maps.LatLng(pos.lat, pos.lng), weight: 1 });
                 }
             });
 
-            if (sites.length > 0) {
+            if (heat.length === 0) {
+                sites.forEach((site) => {
+                    if (site.open_count > 0) {
+                        heat.push({
+                            location: new google.maps.LatLng(Number(site.lat), Number(site.lng)),
+                            weight: Number(site.heat_weight || 1),
+                        });
+                    }
+                });
+            }
+
+            if (sites.length > 0 || points.length > 0) {
                 this.map.fitBounds(bounds, 48);
             }
 

@@ -8,18 +8,19 @@ use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
 use App\Models\Installation;
 use App\Models\ObservatoryEvent;
+use App\Models\ObservatoryReport;
 
 final class BuildObservatoryMapService
 {
     /**
      * @param  list<int>|null  $installationIds
-     * @return array{google_maps: array{api_key: ?string, center: mixed, zoom: mixed}, sites: list<array<string, mixed>>}
+     * @return array{google_maps: array{api_key: ?string, center: mixed, zoom: mixed}, sites: list<array<string, mixed>>, points: list<array<string, mixed>>}
      */
     public function execute(?int $companyId, ?int $clientId, ?array $installationIds, string $eventShowRoute): array
     {
         $sites = Installation::query()
             ->withoutGlobalScopes()
-            ->with(['client:id,name,security_company_id', 'observatoryEvents'])
+            ->with(['client:id,name,security_company_id', 'observatoryEvents.reports'])
             ->where('kind', InstallationKind::Colegio->value)
             ->where('is_active', true)
             ->whereNotNull('latitude')
@@ -63,6 +64,28 @@ final class BuildObservatoryMapService
                         : null,
                     'heat_weight' => max(1, $open->count()),
                 ];
+            })->values()->all(),
+            'points' => $sites->flatMap(function (Installation $site) use ($eventShowRoute) {
+                return $site->observatoryEvents->flatMap(function (ObservatoryEvent $event) use ($site, $eventShowRoute) {
+                    return $event->reports->map(function (ObservatoryReport $report) use ($site, $event, $eventShowRoute): ?array {
+                        $lat = $report->latitude ?? $site->latitude;
+                        $lng = $report->longitude ?? $site->longitude;
+                        if ($lat === null || $lng === null) {
+                            return null;
+                        }
+
+                        return [
+                            'lat' => (float) $lat,
+                            'lng' => (float) $lng,
+                            'open' => $event->status !== ObservatoryEventStatus::Cerrado,
+                            'status' => $event->status->value,
+                            'status_label' => $event->statusLabel(),
+                            'title' => $site->name,
+                            'kind' => $report->kindLabel(),
+                            'show_url' => route($eventShowRoute, $event),
+                        ];
+                    })->filter();
+                });
             })->values()->all(),
         ];
     }

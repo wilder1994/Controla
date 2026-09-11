@@ -67,6 +67,103 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->assertSame(1, ObservatoryReport::query()->count());
     }
 
+    public function test_same_kind_within_hour_joins_one_event(): void
+    {
+        [$client, $colegio] = $this->sites();
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'rina',
+            'body' => 'Riña en el patio del descanso de la mañana.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'rina',
+            'body' => 'Otra persona confirma la misma riña del patio.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+
+        $this->assertSame(1, ObservatoryEvent::query()->count());
+        $this->assertSame(2, ObservatoryReport::query()->count());
+        $this->assertSame(2, ObservatoryEvent::query()->firstOrFail()->reports()->count());
+    }
+
+    public function test_expired_window_other_kind_or_closed_opens_new_event(): void
+    {
+        [$client, $colegio] = $this->sites();
+
+        $this->travel(-61)->minutes();
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'hurto',
+            'body' => 'Vieron a alguien saltando el muro del colegio.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+        $this->travelBack();
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'hurto',
+            'body' => 'Otro hurto una hora después ya no es el mismo.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+        $this->assertSame(2, ObservatoryEvent::query()->count());
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'rina',
+            'body' => 'Riña distinta al hurto aunque sea el mismo colegio.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+        $this->assertSame(3, ObservatoryEvent::query()->count());
+
+        ObservatoryEvent::query()->latest('id')->firstOrFail()->update([
+            'status' => ObservatoryEventStatus::Cerrado,
+            'closed_at' => now(),
+        ]);
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'rina',
+            'body' => 'El evento cerrado no recibe más reportes.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+        $this->assertSame(4, ObservatoryEvent::query()->count());
+    }
+
+    public function test_report_stores_pin_or_falls_back_to_school(): void
+    {
+        [$client, $colegio] = $this->sites();
+        $colegio->update(['latitude' => '3.4372200', 'longitude' => '-76.5225000']);
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'amenaza',
+            'body' => 'Amenaza detrás de las canchas del colegio.',
+            'is_anonymous' => '1',
+            'latitude' => '3.4512001',
+            'longitude' => '-76.5311002',
+        ])->assertRedirect();
+
+        $first = ObservatoryReport::query()->firstOrFail();
+        $this->assertEqualsWithDelta(3.4512001, (float) $first->latitude, 0.0000002);
+        $this->assertEqualsWithDelta(-76.5311002, (float) $first->longitude, 0.0000002);
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'amenaza',
+            'body' => 'Misma amenaza; quien reporta no mueve el pin.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+
+        $second = ObservatoryReport::query()->latest('id')->firstOrFail();
+        $this->assertEqualsWithDelta(3.4372200, (float) $second->latitude, 0.0000002);
+        $this->assertEqualsWithDelta(-76.5225000, (float) $second->longitude, 0.0000002);
+        $this->assertSame((int) $first->event_id, (int) $second->event_id);
+    }
+
     public function test_anonymous_report_hides_identity_and_photo_is_optional(): void
     {
         Storage::fake('public');

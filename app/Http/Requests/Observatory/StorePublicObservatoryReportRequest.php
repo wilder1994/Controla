@@ -28,6 +28,8 @@ final class StorePublicObservatoryReportRequest extends FormRequest
             'reporter_name' => [$anonymous ? 'nullable' : 'required', 'string', 'max:120'],
             'reporter_phone' => ['nullable', 'string', 'max:30'],
             'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 
@@ -41,6 +43,8 @@ final class StorePublicObservatoryReportRequest extends FormRequest
             'reporter_name' => 'nombre',
             'reporter_phone' => 'teléfono',
             'photo' => 'foto',
+            'latitude' => 'latitud',
+            'longitude' => 'longitud',
         ];
     }
 }

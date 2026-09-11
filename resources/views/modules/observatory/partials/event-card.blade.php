@@ -48,6 +48,9 @@
                 <p class="text-xs text-slate-500">{{ $report->kindLabel() }} · {{ $report->sourceLabel() }} · {{ $report->created_at?->format('d/m/Y H:i') }}</p>
                 <p class="text-sm text-slate-200 whitespace-pre-line">{{ $report->body }}</p>
                 <p class="text-xs text-slate-500">{{ $report->reporterLabel() }}@if (! $report->is_anonymous && $report->reporter_phone) · {{ $report->reporter_phone }}@endif</p>
+                @if ($report->hasCoordinates())
+                    <p class="text-[11px] text-slate-500">Pin {{ number_format((float) $report->latitude, 5) }}, {{ number_format((float) $report->longitude, 5) }}</p>
+                @endif
                 @if ($report->photoUrl())
                     <img src="{{ $report->photoUrl() }}" alt="Evidencia" class="mt-2 max-h-64 rounded-lg border border-slate-800">
                 @endif

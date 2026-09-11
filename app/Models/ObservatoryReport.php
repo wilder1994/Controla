@@ -23,6 +23,8 @@ final class ObservatoryReport extends Model
         'reporter_name',
         'reporter_phone',
         'photo_path',
+        'latitude',
+        'longitude',
         'ip_hash',
     ];
 
@@ -32,7 +34,14 @@ final class ObservatoryReport extends Model
             'source' => ObservatoryReportSource::class,
             'kind' => ObservatoryReportKind::class,
             'is_anonymous' => 'boolean',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
         ];
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
     }
 
     public function kindLabel(): string
