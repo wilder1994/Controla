@@ -33,11 +33,11 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Documentos** | Normoteca (globales + contrato por SKU), versionado, expediente congelado, clickwrap, pago manual, factura demo | ✅ Implementada (v1.1) |
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
-| **Empleados** | Maestro + Excel (preview → alta o **actualización** por documento). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
+| **Empleados** | Ficha SJ-SIG (4 bloques + foto) + Excel WM ampliado (preview → alta o **actualización** por documento). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
 | **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos). Mapa En vivo/Historial, cierre automático, cola offline por usuario. Fuente de verdad: Controla | ✅ Implementada |
 | **Árbol del cliente** | Instalaciones compartidas; Accesos = puertas (`locations`); Supervisión = puestos (`supervisor_posts`). Excel solo ficha | ✅ Implementada |
 
-Documentación detallada: [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
+Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFORME-VISION-PRODUCTO-W-CODEX.md) · [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12)
 
 ---
 
@@ -410,7 +410,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `GET /company/supervision` | En vivo: mapa + tabla (GPS, en línea/sin señal); Historial: mapa + lista (Roads si el turno está cerrado); Resumen; Fichas |
 | `GET /company/supervision/live.json` | Feed En vivo (turnos abiertos + revistas); no llama Roads |
 | `GET /company/supervision/turnos/{shift}/ruta` | Historial: Snap to Roads en turno cerrado (cache `snapped_route`) |
-| `GET /company/supervision/fichas/{kind}/{id}` | Ficha de campo HTML carta (revista, alarma, apoyo, documentos) |
+| `GET /company/supervision/fichas/{kind}/{id}` | Ficha HTML carta: marca de la empresa, encabezado Decreto 356, cliente/instalación/puesto |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro; solo cifras). Compositor + párrafos + GRACIAS + DeepSeek + chatbot/PQRS: pendiente, [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md) §§ Informe PPTX y Chatbot y PQRS |
 | `GET /company/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; `SUPERVISION_PWA_URL`; no APK ni tiendas) |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
@@ -421,10 +421,11 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión 
 | `POST /company/billing/package/schedule` | Programar cambio de plan (cobra online, aplica al corte) |
 | `GET /company/users` | Usuarios de la empresa y conjuntos asignados |
 | `GET/PUT /company/users/{id}/edit` | Crear/editar usuario scoped |
-| `GET /company/settings` | **Mis datos**: perfil legal y ubicación (sin pestañas) |
-| `PUT /company/settings` | Guardar perfil empresa |
-| `GET /company/employees` | **Empleados**: maestro, Formato Excel, carga masiva (preview → alta o actualización por documento) |
-| `GET /company/employees/template` | Descarga plantilla (hojas Empleados + Instrucciones) |
+| `GET /company/settings` | **Mis datos**: perfil, ubicación, logo y encabezado de fichas (sin pestañas) |
+| `PUT /company/settings` | Guardar perfil, logo y texto de encabezado |
+| `GET /company/employees` | **Empleados**: listado (Ficha), Formato Excel, carga masiva (preview → alta o actualización por documento) |
+| `GET /company/employees/template` | Descarga plantilla (hojas Empleados + Instrucciones; A–Z WM + extras SJ-SIG) |
+| `GET/POST /company/employees/{id}/photo` | Foto de la ficha (JPG/PNG/WebP, disco local) |
 | `GET /company/job-titles` | **Ajustes → Cargos**: catálogo por empresa |
 | `GET /company/collaborator-types` | **Ajustes → Tipos**: catálogo por empresa |
 | `GET /company/structure-types` | **Ajustes → Estructuras**: tipos de sitio por empresa |

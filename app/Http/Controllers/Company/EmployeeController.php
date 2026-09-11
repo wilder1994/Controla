@@ -18,9 +18,13 @@ use App\Models\Employee;
 use App\Models\IdentityDocumentType;
 use App\Repositories\EmployeeRepository;
 use App\Services\Company\CommitEmployeeImportService;
+use App\Services\Company\CreateEmployeeCatalogItemsService;
 use App\Services\Company\ManageEmployeeService;
 use App\Services\Company\PreviewEmployeeImportService;
+use App\Services\Company\StoreEmployeePhotoService;
+use App\Support\Geo\ColombiaDivipola;
 use App\Support\Platform\ActingCompanyResolver;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -36,6 +40,8 @@ final class EmployeeController extends Controller
         private readonly ManageEmployeeService $manageEmployeeService,
         private readonly PreviewEmployeeImportService $previewEmployeeImportService,
         private readonly CommitEmployeeImportService $commitEmployeeImportService,
+        private readonly CreateEmployeeCatalogItemsService $createEmployeeCatalogItemsService,
+        private readonly StoreEmployeePhotoService $storeEmployeePhotoService,
     ) {}
 
     public function index(Request $request): View
@@ -48,14 +54,19 @@ final class EmployeeController extends Controller
             $status = 'active';
         }
 
+        $perPage = (int) $request->integer('per_page', 25);
+        if (! in_array($perPage, [10, 25, 50, 100], true)) {
+            $perPage = 25;
+        }
+
         $employees = $this->employeeRepository->paginateForCompany(
             $companyId,
-            15,
+            $perPage,
             $search !== '' ? $search : null,
             $status,
         );
 
-        return view('modules.company.employees.index', compact('employees', 'search', 'status'));
+        return view('modules.company.employees.index', compact('employees', 'search', 'status', 'perPage'));
     }
 
     public function downloadTemplate(Request $request): BinaryFileResponse
@@ -132,12 +143,25 @@ final class EmployeeController extends Controller
         return view('modules.company.employees.create', $this->formPayload($this->companyId($request)));
     }
 
+    public function storeCatalogStarter(Request $request): JsonResponse
+    {
+        $this->authorize('create', CompanyJobTitle::class);
+
+        $result = $this->createEmployeeCatalogItemsService->execute(
+            $this->companyId($request),
+            $request->all(),
+        );
+
+        return response()->json($this->catalogStarterPayload($result));
+    }
+
     public function store(StoreEmployeeRequest $request): RedirectResponse
     {
         $companyId = $this->companyId($request);
         $employee = $this->manageEmployeeService->create(
             SaveEmployeeData::fromValidated($request->validated(), $companyId),
         );
+        $this->storeUploadedPhoto($request, $employee);
 
         return redirect()
             ->route('company.employees.show', $employee)
@@ -173,6 +197,7 @@ final class EmployeeController extends Controller
             $employee,
             SaveEmployeeData::fromValidated($request->validated(), $this->companyId($request)),
         );
+        $this->storeUploadedPhoto($request, $employee);
 
         return redirect()
             ->route('company.employees.show', $employee)
@@ -199,6 +224,30 @@ final class EmployeeController extends Controller
         return redirect()
             ->route('company.employees.show', $employee)
             ->with('success', 'Empleado restaurado.');
+    }
+
+    public function photo(Request $request, Employee $employee): BinaryFileResponse
+    {
+        $this->assertCompany($request, $employee);
+        $this->authorize('view', $employee);
+
+        return $employee->photoFileResponse() ?? abort(404);
+    }
+
+    public function storePhoto(Request $request, Employee $employee): RedirectResponse
+    {
+        $this->assertCompany($request, $employee);
+        $this->authorize('update', $employee);
+
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+        ]);
+
+        $this->storeEmployeePhotoService->store($employee, $request->file('photo'));
+
+        return redirect()
+            ->route('company.employees.show', $employee)
+            ->with('success', 'Foto actualizada.');
     }
 
     /** @return array<string, mixed> */
@@ -234,6 +283,27 @@ final class EmployeeController extends Controller
             'documentTypes' => IdentityDocumentType::optionsForSelect(),
             'sexOptions' => Sex::options(),
             'bloodGroups' => BloodGroup::options(),
+            'colombiaPlaces' => ColombiaDivipola::tree(),
+            'catalogStarterUrl' => route('company.employees.catalog-starter'),
+        ];
+    }
+
+    /**
+     * @param  array{collaborator_type: ?CompanyCollaboratorType, job_title: ?CompanyJobTitle}  $result
+     * @return array{collaborator_type: ?array{id: int, name: string}, job_title: ?array{id: int, name: string}, message: string}
+     */
+    private function catalogStarterPayload(array $result): array
+    {
+        return [
+            'collaborator_type' => $result['collaborator_type'] === null ? null : [
+                'id' => $result['collaborator_type']->id,
+                'name' => $result['collaborator_type']->name,
+            ],
+            'job_title' => $result['job_title'] === null ? null : [
+                'id' => $result['job_title']->id,
+                'name' => $result['job_title']->name,
+            ],
+            'message' => 'Ya puedes seleccionar el tipo y el cargo.',
         ];
     }
 
@@ -245,5 +315,15 @@ final class EmployeeController extends Controller
     private function assertCompany(Request $request, Employee $employee): void
     {
         abort_unless((int) $employee->security_company_id === $this->companyId($request), 404);
+    }
+
+    private function storeUploadedPhoto(Request $request, Employee $employee): void
+    {
+        $photo = $request->file('photo');
+        if ($photo === null) {
+            return;
+        }
+
+        $this->storeEmployeePhotoService->store($employee, $photo);
     }
 }

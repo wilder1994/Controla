@@ -32,6 +32,25 @@ final readonly class SaveEmployeeData
         public ?string $documentIssueCity = null,
         public ?string $documentIssuedAt = null,
         public ?bool $sameCostCenter = null,
+        public ?string $education = null,
+        public ?string $maritalStatus = null,
+        public ?int $childrenCount = null,
+        public ?string $phone = null,
+        public ?string $residenceCity = null,
+        public ?string $address = null,
+        public ?string $engagementType = null,
+        public ?string $contributorType = null,
+        public ?string $laborContractType = null,
+        public ?string $hiredOn = null,
+        public ?string $laborContractEndsOn = null,
+        public ?string $leftOn = null,
+        public ?string $epsCode = null,
+        public ?string $epsName = null,
+        public ?string $afpCode = null,
+        public ?string $afpName = null,
+        public ?string $compensationFund = null,
+        public ?string $arlName = null,
+        public ?string $arlRiskLevel = null,
     ) {}
 
     /** @param array<string, mixed> $validated */
@@ -62,6 +81,25 @@ final readonly class SaveEmployeeData
             documentIssueCity: self::nullableString($validated['document_issue_city'] ?? null),
             documentIssuedAt: self::nullableString($validated['document_issued_at'] ?? null),
             sameCostCenter: $sameCostCenter === null ? null : (bool) $sameCostCenter,
+            education: self::nullableString($validated['education'] ?? null),
+            maritalStatus: self::nullableString($validated['marital_status'] ?? null),
+            childrenCount: self::nullableInt($validated['children_count'] ?? null),
+            phone: self::nullableString($validated['phone'] ?? null),
+            residenceCity: self::nullableString($validated['residence_city'] ?? null),
+            address: self::nullableString($validated['address'] ?? null),
+            engagementType: self::nullableString($validated['engagement_type'] ?? null),
+            contributorType: self::nullableString($validated['contributor_type'] ?? null),
+            laborContractType: self::nullableString($validated['labor_contract_type'] ?? null),
+            hiredOn: self::nullableString($validated['hired_on'] ?? null),
+            laborContractEndsOn: self::nullableString($validated['labor_contract_ends_on'] ?? null),
+            leftOn: self::nullableString($validated['left_on'] ?? null),
+            epsCode: self::nullableString($validated['eps_code'] ?? null),
+            epsName: self::nullableString($validated['eps_name'] ?? null),
+            afpCode: self::nullableString($validated['afp_code'] ?? null),
+            afpName: self::nullableString($validated['afp_name'] ?? null),
+            compensationFund: self::nullableString($validated['compensation_fund'] ?? null),
+            arlName: self::nullableString($validated['arl_name'] ?? null),
+            arlRiskLevel: self::nullableString($validated['arl_risk_level'] ?? null),
         );
     }
 
@@ -72,5 +110,14 @@ final readonly class SaveEmployeeData
         }
 
         return (string) $value;
+    }
+
+    private static function nullableInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
     }
 }

@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -45,12 +46,30 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (TokenMismatchException $e, Request $request) {
+        $redirectExpiredPage = function (Request $request) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Sesión expirada. Recarga la página e intenta de nuevo.'], 419);
+                return response()->json(['message' => 'La sesión expiró. Recarga la página e intenta de nuevo.'], 419);
+            }
+
+            if ($request->user()) {
+                return redirect()
+                    ->back()
+                    ->with('error', 'La página expiró. Recarga e intenta guardar de nuevo.');
             }
 
             return redirect()->route('login')
-                ->with('status', 'Tu sesión expiró. Vuelve a intentar el inicio de sesión.');
+                ->with('status', 'Tu sesión expiró. Vuelve a iniciar sesión.');
+        };
+
+        $exceptions->render(function (TokenMismatchException $e, Request $request) use ($redirectExpiredPage) {
+            return $redirectExpiredPage($request);
+        });
+
+        $exceptions->render(function (HttpException $e, Request $request) use ($redirectExpiredPage) {
+            if ($e->getStatusCode() !== 419) {
+                return null;
+            }
+
+            return $redirectExpiredPage($request);
         });
     })->create();

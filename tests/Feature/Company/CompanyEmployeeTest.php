@@ -10,6 +10,8 @@ use App\Models\Employee;
 use App\Models\SecurityCompany;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 final class CompanyEmployeeTest extends TestCase
@@ -25,7 +27,26 @@ final class CompanyEmployeeTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Mis datos');
-        $response->assertDontSee('admin-header-tab');
+        $response->assertSee('Selecciona, pega o arrastra el logo');
+        $this->actingAs($admin)->get(route('company.settings.logo'))->assertNotFound();
+    }
+
+    public function test_http_419_on_settings_redirects_back_with_flash(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->companyAdmin();
+        $this->actingAs($admin);
+        session()->setPreviousUrl(route('company.settings.edit'));
+
+        $request = \Illuminate\Http\Request::create(route('company.settings.update'), 'PUT');
+        $request->setLaravelSession($this->app['session']->driver());
+        $request->setUserResolver(fn () => $admin);
+
+        $response = $this->app[\Illuminate\Contracts\Debug\ExceptionHandler::class]
+            ->render($request, new \Symfony\Component\HttpKernel\Exception\HttpException(419, 'CSRF token mismatch.'));
+
+        $this->assertTrue($response->isRedirect(route('company.settings.edit')));
+        $this->assertSame('La página expiró. Recarga e intenta guardar de nuevo.', session('error'));
     }
 
     public function test_employees_module_has_no_ajustes_tabs(): void
@@ -37,6 +58,10 @@ final class CompanyEmployeeTest extends TestCase
             ->get(route('company.employees.index'))
             ->assertOk()
             ->assertSee('Empleados')
+            ->assertSee('Nuevo empleado')
+            ->assertSee('Ingreso')
+            ->assertSee('Teléfono')
+            ->assertSee('EPS')
             ->assertDontSee('admin-header-tab');
     }
 
@@ -129,14 +154,14 @@ final class CompanyEmployeeTest extends TestCase
         $company = $this->company();
 
         $response = $this->actingAs($admin)->post(route('company.collaborator-types.store'), [
-            'name' => 'OPERATIVO',
+            'name' => 'ADMINISTRATIVO',
             'is_active' => '1',
         ]);
 
         $response->assertRedirect(route('company.collaborator-types.index'));
         $this->assertDatabaseHas('company_collaborator_types', [
             'security_company_id' => $company->id,
-            'name' => 'OPERATIVO',
+            'name' => 'ADMINISTRATIVO',
             'is_active' => 1,
         ]);
     }
@@ -185,8 +210,76 @@ final class CompanyEmployeeTest extends TestCase
         $employee = Employee::query()->where('document_number', '1098765432')->firstOrFail();
         $response->assertRedirect(route('company.employees.show', $employee));
         $this->assertSame('Ana', $employee->first_names);
+        $this->assertSame('Antioquia', $employee->birth_department);
+        $this->assertSame('Medellín', $employee->birth_city);
+        $this->assertSame('3001112233', $employee->phone);
+        $this->assertSame('Sura', $employee->eps_name);
+        $this->assertSame('2024-01-15', $employee->hired_on?->toDateString());
         $this->assertTrue($employee->is_active);
         $this->assertNull($employee->user);
+    }
+
+    public function test_employee_ficha_shows_sj_sig_blocks(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->companyAdmin();
+        $employee = $this->createEmployee($this->createJobTitle('Vigilante'), [
+            'phone' => '3001112233',
+            'eps_name' => 'Sura',
+            'hired_on' => '2024-01-15',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('company.employees.index'))
+            ->assertOk()
+            ->assertSee('Ficha')
+            ->assertSee('3001112233')
+            ->assertSee('Sura');
+
+        $this->actingAs($admin)
+            ->get(route('company.employees.show', $employee))
+            ->assertOk()
+            ->assertSee('Identidad')
+            ->assertSee('Contacto y residencia')
+            ->assertSee('Vinculación laboral')
+            ->assertSee('Seguridad social')
+            ->assertSee('Sura')
+            ->assertSee('carpeta documental');
+    }
+
+    public function test_employee_photo_can_be_uploaded(): void
+    {
+        Storage::fake('local');
+        $this->seedWithPilot();
+        $admin = $this->companyAdmin();
+        $employee = $this->createEmployee($this->createJobTitle('Vigilante'));
+
+        $this->actingAs($admin)->post(route('company.employees.photo.store', $employee), [
+            'photo' => UploadedFile::fake()->image('foto.jpg', 200, 200),
+        ])->assertRedirect(route('company.employees.show', $employee));
+
+        $employee->refresh();
+        $this->assertNotNull($employee->photo_path);
+        Storage::disk('local')->assertExists($employee->photo_path);
+
+        $this->actingAs($admin)
+            ->get(route('company.employees.photo', $employee))
+            ->assertOk();
+    }
+
+    public function test_employee_rejects_municipality_outside_department(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->companyAdmin();
+        $title = $this->createJobTitle('Vigilante');
+
+        $this->actingAs($admin)->from(route('company.employees.create'))->post(
+            route('company.employees.store'),
+            $this->employeePayload($title, [
+                'birth_department' => 'Antioquia',
+                'birth_city' => 'Cali',
+            ]),
+        )->assertSessionHasErrors('birth_city');
     }
 
     public function test_employee_can_be_created_with_only_one_last_name(): void
@@ -220,7 +313,7 @@ final class CompanyEmployeeTest extends TestCase
             ]),
         )->assertSessionHasErrors('last_name_paternal');
 
-        $this->assertSame(0, Employee::query()->count());
+        $this->assertDatabaseMissing('employees', ['document_number' => '1098765432']);
     }
 
     public function test_employee_document_must_be_unique_in_company(): void
@@ -288,12 +381,16 @@ final class CompanyEmployeeTest extends TestCase
 
     private function createJobTitle(string $name): CompanyJobTitle
     {
-        return CompanyJobTitle::query()->create([
-            'security_company_id' => $this->company()->id,
-            'name' => $name,
-            'is_active' => true,
-            'sort_order' => 10,
-        ]);
+        return CompanyJobTitle::query()->firstOrCreate(
+            [
+                'security_company_id' => $this->company()->id,
+                'name' => $name,
+            ],
+            [
+                'is_active' => true,
+                'sort_order' => 10,
+            ],
+        );
     }
 
     private function createCollaboratorType(string $name = 'OPERATIVO'): CompanyCollaboratorType
@@ -354,6 +451,26 @@ final class CompanyEmployeeTest extends TestCase
             'nationality' => 'COLOMBIANA',
             'blood_group' => 'O+',
             'has_disability' => '0',
+            'birth_department' => 'Antioquia',
+            'birth_city' => 'Medellín',
+            'document_issue_department' => 'Antioquia',
+            'document_issue_city' => 'Medellín',
+            'phone' => '3001112233',
+            'residence_city' => 'Cali',
+            'address' => 'Calle 1 # 2-3',
+            'education' => 'Bachiller',
+            'marital_status' => 'Soltero',
+            'children_count' => '0',
+            'engagement_type' => 'Término fijo',
+            'contributor_type' => 'Dependiente',
+            'labor_contract_type' => 'Laboral',
+            'hired_on' => '2024-01-15',
+            'eps_code' => 'EPS001',
+            'eps_name' => 'Sura',
+            'afp_name' => 'Porvenir',
+            'compensation_fund' => 'Comfandi',
+            'arl_name' => 'Sura ARL',
+            'arl_risk_level' => 'IV',
         ], $overrides);
     }
 }

@@ -17,7 +17,7 @@ final class EmployeeExcelSchema
     public const FILL_GREY = 'D0D0D0';
 
     /** @return list<string> */
-    public static function headers(): array
+    public static function requiredHeaders(): array
     {
         return [
             'Tipo Documento de Identidad',
@@ -50,7 +50,39 @@ final class EmployeeExcelSchema
     }
 
     /** @return list<string> */
-    public static function keys(): array
+    public static function extraHeaders(): array
+    {
+        return [
+            'Teléfono',
+            'Lugar de residencia',
+            'Dirección',
+            'Escolaridad',
+            'Estado civil',
+            'Número de hijos',
+            'Tipo de vinculación',
+            'Tipo de cotizante',
+            'Tipo de contrato',
+            'Fecha de ingreso',
+            'Vencimiento de contrato',
+            'Fecha de retiro',
+            'Código EPS',
+            'EPS',
+            'Código AFP',
+            'Pensión',
+            'Caja de compensación',
+            'ARL',
+            'Nivel de riesgo ARL',
+        ];
+    }
+
+    /** @return list<string> */
+    public static function headers(): array
+    {
+        return array_merge(self::requiredHeaders(), self::extraHeaders());
+    }
+
+    /** @return list<string> */
+    public static function requiredKeys(): array
     {
         return [
             'document_type',
@@ -80,6 +112,38 @@ final class EmployeeExcelSchema
             'document_issued_at',
             'blood_group',
         ];
+    }
+
+    /** @return list<string> */
+    public static function extraKeys(): array
+    {
+        return [
+            'phone',
+            'residence_city',
+            'address',
+            'education',
+            'marital_status',
+            'children_count',
+            'engagement_type',
+            'contributor_type',
+            'labor_contract_type',
+            'hired_on',
+            'labor_contract_ends_on',
+            'left_on',
+            'eps_code',
+            'eps_name',
+            'afp_code',
+            'afp_name',
+            'compensation_fund',
+            'arl_name',
+            'arl_risk_level',
+        ];
+    }
+
+    /** @return list<string> */
+    public static function keys(): array
+    {
+        return array_merge(self::requiredKeys(), self::extraKeys());
     }
 
     /** @return list<string> */
@@ -121,14 +185,21 @@ final class EmployeeExcelSchema
         }
 
         $map = [];
-        foreach (self::headers() as $position => $expected) {
+        foreach (self::requiredHeaders() as $position => $expected) {
             $key = self::normalize($expected);
             if (! array_key_exists($key, $normalized)) {
                 throw new \InvalidArgumentException(
                     'Falta la columna «'.$expected.'». Usa el formato descargado o el maestro WM (A–Z).'
                 );
             }
-            $map[self::keys()[$position]] = $normalized[$key];
+            $map[self::requiredKeys()[$position]] = $normalized[$key];
+        }
+
+        foreach (self::extraHeaders() as $position => $expected) {
+            $key = self::normalize($expected);
+            if (array_key_exists($key, $normalized)) {
+                $map[self::extraKeys()[$position]] = $normalized[$key];
+            }
         }
 
         return $map;

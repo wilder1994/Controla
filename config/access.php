@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    'platform_admin_email' => env('PLATFORM_ADMIN_EMAIL'),
+    'platform_admin_password' => env('PLATFORM_ADMIN_PASSWORD'),
+
     'permissions' => [
         // Plataforma
         'platform.dashboard',

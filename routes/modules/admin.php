@@ -15,6 +15,8 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+        Route::redirect('/', '/admin/dashboard');
+
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->middleware('permission:platform.dashboard')
             ->name('dashboard');
@@ -50,6 +52,22 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::post('/companies', [CompanyController::class, 'store'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.store');
+
+        Route::get('/companies/{company}/primer-admin', [CompanyController::class, 'createFirstAdmin'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.first-admin.create');
+
+        Route::post('/companies/{company}/primer-admin/credenciales', [CompanyController::class, 'previewFirstAdminCredentials'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.first-admin.preview');
+
+        Route::post('/companies/{company}/primer-admin/catalogo', [CompanyController::class, 'storeFirstAdminCatalog'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.first-admin.catalog');
+
+        Route::post('/companies/{company}/primer-admin', [CompanyController::class, 'storeFirstAdmin'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.first-admin.store');
 
         Route::get('/companies/{company}', [CompanyController::class, 'show'])
             ->middleware('permission:platform.companies.view')
@@ -94,6 +112,10 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
         Route::get('/companies/{company}/profile', [CompanyController::class, 'editProfile'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.profile.edit');
+
+        Route::get('/companies/{company}/logo', [CompanyController::class, 'logo'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.logo');
 
         Route::put('/companies/{company}/profile', [CompanyController::class, 'updateProfile'])
             ->middleware('permission:platform.companies.manage')

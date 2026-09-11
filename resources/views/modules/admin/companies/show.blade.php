@@ -15,6 +15,25 @@
         'companyNavActive' => 'show',
     ])
 
+    @if (session('issued_login'))
+        <div
+            x-data="{ open: true }"
+            x-show="open"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4"
+        >
+            <div class="w-full max-w-md rounded-xl border border-amber-400/40 bg-slate-900 p-5 shadow-2xl space-y-3 text-center">
+                <p class="text-sm font-semibold text-amber-100">Copia este usuario y esta contraseña</p>
+                <p class="text-xs text-slate-400">En el primer ingreso debe cambiar la contraseña. La clave no se vuelve a mostrar.</p>
+                <div class="rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-3 text-left space-y-1">
+                    <p class="text-sm text-slate-400">Usuario: <span class="font-mono text-white">{{ session('issued_login') }}</span></p>
+                    <p class="text-sm text-slate-400">Contraseña: <span class="font-mono text-white">{{ session('issued_password') }}</span></p>
+                </div>
+                <button type="button" class="h-9 px-4 rounded-lg bg-violet-600 text-xs font-semibold text-white" @click="open = false">Entendido</button>
+            </div>
+        </div>
+    @endif
+
     <div
         class="w-full space-y-4"
         x-data="{

@@ -9,8 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsurePasswordIsChanged
 {
     protected array $except = [
-        'profile.edit',
-        'profile.update',
+        'password.first',
         'password.update',
         'logout',
     ];
@@ -19,7 +18,7 @@ class EnsurePasswordIsChanged
     {
         if (auth()->check() && auth()->user()->must_change_password) {
             if (! in_array($request->route()?->getName(), $this->except)) {
-                return redirect()->route('profile.edit')
+                return redirect()->route('password.first')
                     ->with('warning', 'Debes cambiar tu contraseña antes de continuar.');
             }
         }

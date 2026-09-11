@@ -248,6 +248,31 @@ final class CompanyEmployeeImportTest extends TestCase
             ->assertDontSee('Aceptar y cargar');
     }
 
+    public function test_import_optional_sj_sig_columns(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('company.employees.import.preview.store'), [
+            'paste' => $this->pasteRow([
+                'phone' => '3009998877',
+                'eps_name' => 'Nueva EPS',
+                'hired_on' => '15-01-2024',
+            ]),
+        ])->assertRedirect(route('company.employees.import.preview'));
+
+        $this->actingAs($admin)
+            ->post(route('company.employees.import.commit'))
+            ->assertRedirect(route('company.employees.index'));
+
+        $this->assertDatabaseHas('employees', [
+            'document_number' => '1098000111',
+            'phone' => '3009998877',
+            'eps_name' => 'Nueva EPS',
+            'hired_on' => '2024-01-15',
+        ]);
+    }
+
     public function test_guard_cannot_download_template(): void
     {
         $this->seedWithPilot();
@@ -295,7 +320,7 @@ final class CompanyEmployeeImportTest extends TestCase
 
         $line = [];
         foreach (EmployeeExcelSchema::keys() as $key) {
-            $line[] = $values[$key];
+            $line[] = $values[$key] ?? '';
         }
 
         return implode("\t", EmployeeExcelSchema::headers())."\n".implode("\t", $line);

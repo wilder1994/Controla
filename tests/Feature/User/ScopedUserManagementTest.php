@@ -200,6 +200,7 @@ final class ScopedUserManagementTest extends TestCase
             'department' => 'Cundinamarca',
             'latitude' => 4.65,
             'longitude' => -74.05,
+            'field_sheet_intro' => 'Encabezado de prueba Decreto 356.',
         ]);
 
         $response->assertRedirect(route('company.settings.edit'));
@@ -208,6 +209,7 @@ final class ScopedUserManagementTest extends TestCase
             'address' => 'Calle 100 # 15-20',
             'city' => 'Bogotá',
             'department' => 'Cundinamarca',
+            'field_sheet_intro' => 'Encabezado de prueba Decreto 356.',
         ]);
     }
 }

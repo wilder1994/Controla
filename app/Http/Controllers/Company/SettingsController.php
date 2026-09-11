@@ -13,6 +13,7 @@ use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class SettingsController extends Controller
 {
@@ -23,22 +24,34 @@ final class SettingsController extends Controller
     public function edit(Request $request): View
     {
         $company = $this->resolveCompany($request);
-        $this->authorize('updateProfile', $company);
 
-        return view('modules.company.settings.edit', compact('company'));
+        return view('modules.company.settings.edit', [
+            'company' => $company,
+            'logoPreviewUrl' => $company->logo_path
+                ? route('company.settings.logo').'?v='.$company->updated_at?->timestamp
+                : null,
+        ]);
+    }
+
+    public function logo(Request $request): BinaryFileResponse
+    {
+        $company = $this->resolveCompany($request);
+
+        return $company->logoFileResponse() ?? abort(404);
     }
 
     public function update(UpdateCompanySettingsRequest $request): RedirectResponse
     {
         $company = $this->resolveCompany($request);
-        $this->authorize('updateProfile', $company);
 
         $this->updateCompanyProfileService->assertTaxIdImmutable($company, $request->input('tax_id'));
 
         $this->updateCompanyProfileService->execute(
             $company,
-            $request->safe()->except(GeoAddressData::formKeys()),
+            $request->safe()->except([...GeoAddressData::formKeys(), 'logo', 'remove_logo']),
             GeoAddressData::fromValidated($request->validated()),
+            $request->file('logo'),
+            $request->boolean('remove_logo'),
         );
 
         return redirect()

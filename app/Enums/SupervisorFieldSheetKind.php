@@ -13,6 +13,16 @@ enum SupervisorFieldSheetKind: string
     case Support = 'support';
     case Document = 'document';
 
+    public function documentTitle(): string
+    {
+        return match ($this) {
+            self::Review => 'Acta de revista de supervisión de puesto',
+            self::Alarm => 'Registro de alarma',
+            self::Support => 'Registro de apoyo',
+            self::Document => 'Registro de documentos de turno',
+        };
+    }
+
     public function label(): string
     {
         return match ($this) {

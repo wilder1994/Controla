@@ -32,7 +32,8 @@ final class EmployeeRepository
                     ->orWhere('last_name_paternal', 'like', $term)
                     ->orWhere('last_name_maternal', 'like', $term)
                     ->orWhere('document_number', 'like', $term)
-                    ->orWhere('email', 'like', $term);
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('phone', 'like', $term);
             });
         }
 

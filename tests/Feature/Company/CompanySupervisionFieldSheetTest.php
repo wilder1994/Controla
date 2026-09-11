@@ -40,7 +40,7 @@ final class CompanySupervisionFieldSheetTest extends TestCase
 
         $apiPrint = $this->withToken($token)->get('/api/supervision/sheets/review/'.$reviewId);
         $apiPrint->assertOk();
-        $apiPrint->assertSee('Ficha de campo');
+        $apiPrint->assertSee('Acta de revista de supervisión de puesto', false);
 
         $list = $this->actingAs($admin)->get(route('company.supervision.index', ['tab' => 'sheets']));
         $list->assertOk();
@@ -53,8 +53,27 @@ final class CompanySupervisionFieldSheetTest extends TestCase
             'id' => $reviewId,
         ]));
         $print->assertOk();
-        $print->assertSee('Ficha de campo');
+        $print->assertSee('Acta de revista de supervisión de puesto', false);
         $print->assertSee('Imprimir / Guardar PDF');
+        $print->assertSee('Cliente:', false);
+        $print->assertSee('Instalación:', false);
+        $print->assertSee('Puesto:', false);
         $print->assertSee($client->name);
+        $print->assertSee('Decreto 356 de 1994', false);
+        $print->assertDontSee('generado desde Controla');
+        $print->assertDontSee('>Controla<', false);
+
+        $this->assertDatabaseHas('supervisor_shift_reviews', [
+            'id' => $reviewId,
+            'sheet_intro' => \App\Support\Supervision\SupervisorFieldSheetIntro::DEFAULT,
+        ]);
+
+        $admin->securityCompany->update(['field_sheet_intro' => 'Texto nuevo de empresa.']);
+        $again = $this->actingAs($admin)->get(route('company.supervision.sheets.show', [
+            'kind' => 'review',
+            'id' => $reviewId,
+        ]));
+        $again->assertSee('Decreto 356 de 1994', false);
+        $again->assertDontSee('Texto nuevo de empresa.');
     }
 }

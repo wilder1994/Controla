@@ -9,6 +9,8 @@ use App\Enums\Sex;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class Employee extends Model
 {
@@ -37,6 +39,26 @@ final class Employee extends Model
         'same_cost_center',
         'is_active',
         'ceased_at',
+        'photo_path',
+        'education',
+        'marital_status',
+        'children_count',
+        'phone',
+        'residence_city',
+        'address',
+        'engagement_type',
+        'contributor_type',
+        'labor_contract_type',
+        'hired_on',
+        'labor_contract_ends_on',
+        'left_on',
+        'eps_code',
+        'eps_name',
+        'afp_code',
+        'afp_name',
+        'compensation_fund',
+        'arl_name',
+        'arl_risk_level',
     ];
 
     protected function casts(): array
@@ -50,6 +72,10 @@ final class Employee extends Model
             'same_cost_center' => 'boolean',
             'is_active' => 'boolean',
             'ceased_at' => 'date',
+            'children_count' => 'integer',
+            'hired_on' => 'date',
+            'labor_contract_ends_on' => 'date',
+            'left_on' => 'date',
         ];
     }
 
@@ -81,5 +107,48 @@ final class Employee extends Model
     public function age(): ?int
     {
         return $this->birth_date?->age;
+    }
+
+    public function initials(): string
+    {
+        $parts = preg_split('/\s+/u', $this->fullName()) ?: [];
+        $letters = '';
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $letters .= mb_strtoupper(mb_substr($part, 0, 1));
+        }
+
+        return $letters !== '' ? $letters : 'EM';
+    }
+
+    public function photoUrl(): ?string
+    {
+        if ($this->photo_path === null || $this->photo_path === '') {
+            return null;
+        }
+
+        if (! Storage::disk('local')->exists($this->photo_path)) {
+            return null;
+        }
+
+        return route('company.employees.photo', $this);
+    }
+
+    public function photoFileResponse(): ?BinaryFileResponse
+    {
+        if ($this->photo_path === null || $this->photo_path === '') {
+            return null;
+        }
+
+        if (! Storage::disk('local')->exists($this->photo_path)) {
+            return null;
+        }
+
+        $absolute = Storage::disk('local')->path($this->photo_path);
+        $mime = Storage::disk('local')->mimeType($this->photo_path) ?: 'image/jpeg';
+
+        return response()->file($absolute, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 }

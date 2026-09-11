@@ -37,6 +37,9 @@ final class UpdateCompanyProfileRequest extends FormRequest
             'party_type' => ['required', Rule::enum(PartyType::class)],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40'],
+            'field_sheet_intro' => ['nullable', 'string', 'max:4000'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'remove_logo' => ['sometimes', 'boolean'],
             ...GeoAddressRules::optional(),
         ];
     }

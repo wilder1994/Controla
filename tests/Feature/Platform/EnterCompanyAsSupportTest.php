@@ -37,6 +37,8 @@ final class EnterCompanyAsSupportTest extends TestCase
         $dashboard->assertSee('Entraste como');
         $dashboard->assertSee($company->displayName());
 
+        $this->actingAs($admin)->get(route('company.settings.edit'))->assertOk();
+
         $exit = $this->actingAs($admin)->post(route('admin.support.exit'));
         $exit->assertRedirect(route('admin.companies.show', $company));
         $this->assertNull(SupportCompanyContext::companyId());

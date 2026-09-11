@@ -11,6 +11,7 @@
             'accent' => 'platform',
             'formAction' => route('admin.companies.profile.update', $company),
             'cancelUrl' => route('admin.companies.show', $company),
+            'logoPreviewUrl' => $logoPreviewUrl ?? null,
         ])
     </div>
 </x-admin-layout>

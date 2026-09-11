@@ -1,10 +1,10 @@
 # Empleados, cargos y tipos (empresa)
 
-**Última actualización:** 5 septiembre 2026
+**Última actualización:** 10 septiembre 2026
 
-Maestro de colaboradores de la empresa de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
+Maestro de colaboradores de la **empresa** de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
 
-Fuente de columnas: `Maestro Colaboradores WM.xlsx`, **sin** las cuatro de asignación a cliente (razón social, instalaciones, sector, puesto). Esas viven en la ficha del cliente.
+La pantalla copia Personal de SJ-SIG (listado, ficha, foto, bloques HR/SS) con estilos Controla. Se mantienen nombres partidos, tipo de documento de catálogo, DIVIPOLA y cargos/tipos por empresa. Fuente Excel: `Maestro Colaboradores WM.xlsx` **ampliado** con columnas SJ-SIG opcionales. **No** van las cuatro de asignación a cliente (razón social, instalaciones, sector, puesto).
 
 ---
 
@@ -23,8 +23,34 @@ Sidebar **Empleados** (maestro). **Ajustes** → pestañas **Cargos** | **Tipos*
 | Zonas / turnos / preoperacional (Supervisión) | Ajustes → `/company/supervision-zones`, `…-shifts`, `…-preop` |
 | Formato Excel | `GET /company/employees/template` |
 | Carga masiva | modal en el listado → preview → aceptar |
+| Foto | Círculo en alta/edición; en la ficha se cambia al elegir archivo (`POST /company/employees/{id}/photo`) |
 
 Permiso: `company.settings.manage`. El login se da en **Usuarios** (`company.users.assign`): mismo formulario crear/editar; todos los roles con empleado; usuario `nombre.apellido.####`. El email personal es el de la ficha; el From de avisos es el correo de la **zona** de Supervisión.
+
+El primer administrador de una empresa nueva usa **la misma ficha** (`admin.companies.first-admin.*`).
+
+---
+
+## Listado
+
+Tabla: identificación, nombre, estado (Activo / Retiro), cargo, ingreso, teléfono, EPS, enlace **Ficha**. Búsqueda por nombre, documento, correo o teléfono. Filtro activos / archivados / todos. Tamaño de página 10 / 25 / 50 / 100. Acciones: **Formato**, **Carga masiva**, **Nuevo empleado**.
+
+Filtro por cliente: cuando exista asignación empleado → puesto. No en este corte.
+
+---
+
+## Ficha (pantalla)
+
+Cuatro bloques, como SJ-SIG Personal:
+
+1. **Identidad** — documento (catálogo), expedición DIVIPOLA, nombres partidos, sexo, nacimiento DIVIPOLA, nacionalidad, sangre, escolaridad, estado civil, hijos, discapacidad, foto JPG/PNG/WebP (máx. 2 MB, disco `local`).
+2. **Contacto y residencia** — teléfono, correo, residencia, dirección, emergencia.
+3. **Vinculación laboral** — tipo de colaborador y cargo (catálogos), vinculación, cotizante, tipo de contrato, mismo centro de costo, ingreso, vencimiento, retiro.
+4. **Seguridad social** — EPS, pensión (AFP), caja, ARL y nivel de riesgo.
+
+Tipo o cargo vacíos: modal AJAX para crear el primero sin perder el formulario. Nacimiento y expedición: departamento → municipio (`resources/data/colombia-divipola.json`). Bogotá D.C. es departamento propio.
+
+**No en esta ficha:** carpeta documental (HV, cursos, PDFs) ni asignar/reasignar a cliente → instalación → puesto.
 
 ---
 
@@ -34,7 +60,7 @@ Catálogos **por empresa**, no seeder de plataforma. El formulario usa select. S
 
 ---
 
-## Columnas del Excel (A–Z)
+## Columnas del Excel (A–Z + extras)
 
 Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 
@@ -56,9 +82,11 @@ Rojo = obligatorio en el archivo. Gris = opcional en el archivo.
 | S–U | Expedición documento | Opcional |
 | V | G.Sanguíneo | O+, O-, A+, A-, B+, B-, AB+, AB- o **Pendiente** (si no se conoce). |
 
+Tras V (gris, opcionales): teléfono, residencia, dirección, escolaridad, estado civil, hijos, vinculación, cotizante, tipo de contrato, ingreso, vencimiento, retiro, EPS/AFP (código y nombre), caja, ARL y nivel de riesgo. Un archivo WM solo A–Z sigue valiendo.
+
 **No van en este Excel:** razón social, instalaciones, sector, puesto. Eso es del **cliente** y se arma a mano en la ficha (tarjetas Instalaciones y accesos / Supervisión). «Sector» era ciudad; la ciudad del cliente está en el Excel de clientes. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
-No se archiva desde el Excel. Documento que ya existe: **aviso** (se actualiza la ficha, incluido el cargo). Correo de **otro** empleado: error. No se crea usuario desde el Excel.
+No se archiva desde el Excel. Documento que ya existe: **aviso** (se actualiza la ficha, incluido el cargo). Correo de **otro** empleado: error. No se crea usuario desde el Excel. La foto no viaja en el Excel.
 
 ---
 
@@ -74,7 +102,7 @@ El import lee la hoja `Empleados`, o `WM`, o la primera hoja.
 | Preview | Al aceptar |
 |---------|------------|
 | Documento nuevo | Crea la ficha |
-| Documento ya en la empresa | **Aviso.** Actualiza la ficha (nombres, cargo, tipo, correo, etc.). Si el cargo cambia, el aviso lo dice. No duplica. |
+| Documento ya en la empresa | **Aviso.** Actualiza la ficha (nombres, cargo, tipo, correo, extras SJ-SIG, etc.). Si el cargo cambia, el aviso lo dice. No duplica. |
 | Correo de otro empleado | **Error.** No se acepta el lote |
 | Mismo documento dos veces en el archivo | **Error** (duplicado interno) |
 | Cargo o tipo que no existe | **Aviso.** Se crea en el catálogo al aceptar |
@@ -83,4 +111,13 @@ El import lee la hoja `Empleados`, o `WM`, o la primera hoja.
 
 ## Archivar
 
-No está en el Excel. En la ficha: `is_active = false` + `ceased_at`. Si tenía usuario, se desactiva el acceso.
+No está en el Excel. En la ficha: `is_active = false` + `ceased_at`. Si tenía usuario, se desactiva el acceso. El listado muestra **Retiro**. `left_on` es dato de vinculación; no sustituye archivar.
+
+---
+
+## Pendiente (otro corte)
+
+- Asignar / reasignar: cliente → instalación → puesto (8/12/24 h).
+- Filtrar empleados por cliente (cuando exista esa asignación).
+- Carpeta documental / indexador (HV, cursos, PDFs).
+- Que el cliente vea el expediente (permiso aparte).

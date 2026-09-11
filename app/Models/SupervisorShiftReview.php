@@ -17,6 +17,7 @@ final class SupervisorShiftReview extends Model
         'employee_id',
         'guard_log_id',
         'notes',
+        'sheet_intro',
         'has_novelty',
         'guard_photo_path',
         'latitude',

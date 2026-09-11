@@ -321,6 +321,25 @@ final class PreviewEmployeeImportService
                 'document_issue_city' => $this->nullable($values['document_issue_city']),
                 'document_issued_at' => $issuedAt,
                 'same_cost_center' => $this->parseBoolean($values['same_cost_center']),
+                'phone' => $this->nullable($values['phone'] ?? ''),
+                'residence_city' => $this->nullable($values['residence_city'] ?? ''),
+                'address' => $this->nullable($values['address'] ?? ''),
+                'education' => $this->nullable($values['education'] ?? ''),
+                'marital_status' => $this->nullable($values['marital_status'] ?? ''),
+                'children_count' => $this->nullableInt($values['children_count'] ?? ''),
+                'engagement_type' => $this->nullable($values['engagement_type'] ?? ''),
+                'contributor_type' => $this->nullable($values['contributor_type'] ?? ''),
+                'labor_contract_type' => $this->nullable($values['labor_contract_type'] ?? ''),
+                'hired_on' => $this->optionalDate($values['hired_on'] ?? ''),
+                'labor_contract_ends_on' => $this->optionalDate($values['labor_contract_ends_on'] ?? ''),
+                'left_on' => $this->optionalDate($values['left_on'] ?? ''),
+                'eps_code' => $this->nullable($values['eps_code'] ?? ''),
+                'eps_name' => $this->nullable($values['eps_name'] ?? ''),
+                'afp_code' => $this->nullable($values['afp_code'] ?? ''),
+                'afp_name' => $this->nullable($values['afp_name'] ?? ''),
+                'compensation_fund' => $this->nullable($values['compensation_fund'] ?? ''),
+                'arl_name' => $this->nullable($values['arl_name'] ?? ''),
+                'arl_risk_level' => $this->nullable($values['arl_risk_level'] ?? ''),
             ],
         ];
     }
@@ -406,7 +425,7 @@ final class PreviewEmployeeImportService
 
     private function cellString(Cell $cell, string $key): string
     {
-        if (in_array($key, ['birth_date', 'document_issued_at'], true)) {
+        if (in_array($key, ['birth_date', 'document_issued_at', 'hired_on', 'labor_contract_ends_on', 'left_on'], true)) {
             $value = $cell->getValue();
             if (is_numeric($value) && ExcelDate::isDateTime($cell)) {
                 return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
@@ -470,6 +489,26 @@ final class PreviewEmployeeImportService
         $raw = trim($raw);
 
         return $raw === '' ? null : $raw;
+    }
+
+    private function nullableInt(string $raw): ?int
+    {
+        $raw = trim($raw);
+        if ($raw === '' || ! is_numeric($raw)) {
+            return null;
+        }
+
+        return (int) $raw;
+    }
+
+    private function optionalDate(string $raw): ?string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        return $this->parseDateString($raw);
     }
 
     /** @param array<string, string> $values */

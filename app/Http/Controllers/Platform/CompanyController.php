@@ -16,6 +16,7 @@ use App\Enums\SupervisionPackageSku;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\CancelCompanyMembershipRequest;
 use App\Http\Requests\Platform\SchedulePackageChangeRequest;
+use App\Http\Requests\Platform\StoreCompanyFirstAdminRequest;
 use App\Http\Requests\Platform\StoreCompanyRequest;
 use App\Http\Requests\Platform\StoreManualPaymentRequest;
 use App\Http\Requests\Platform\UpdateCompanyProfileRequest;
@@ -33,12 +34,17 @@ use App\Services\Platform\UndoCompanyMembershipCancellationService;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Tenant\AssignCompanyPackageService;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
+use App\Services\Company\CreateEmployeeCatalogItemsService;
+use App\Services\Company\StoreEmployeePhotoService;
+use App\Services\Tenant\CreateCompanyFirstAdminService;
 use App\Services\Tenant\CreateCompanyService;
 use App\Services\Tenant\UpdateCompanyProfileService;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class CompanyController extends Controller
 {
@@ -49,6 +55,9 @@ final class CompanyController extends Controller
         private readonly PriceCalculator $priceCalculator,
         private readonly UpdateCompanyProfileService $updateCompanyProfileService,
         private readonly CreateCompanyService $createCompanyService,
+        private readonly CreateCompanyFirstAdminService $createCompanyFirstAdminService,
+        private readonly CreateEmployeeCatalogItemsService $createEmployeeCatalogItemsService,
+        private readonly StoreEmployeePhotoService $storeEmployeePhotoService,
         private readonly EnterCompanyAsSupportService $enterCompanyAsSupportService,
         private readonly RegisterCommercialPaymentService $paymentService,
         private readonly CancelCompanyMembershipService $cancelCompanyMembershipService,
@@ -81,13 +90,91 @@ final class CompanyController extends Controller
         );
 
         return redirect()
-            ->route('admin.companies.show', $company)
-            ->with('success', "Empresa «{$company->displayName()}» creada.");
+            ->route('admin.companies.first-admin.create', $company)
+            ->with('success', "Empresa «{$company->displayName()}» creada. Ahora crea el primer administrador.");
     }
 
-    public function show(Request $request, SecurityCompany $company): View
+    public function createFirstAdmin(SecurityCompany $company): View|RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+
+        if ($company->hasCompanyAdmin()) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->with('warning', 'Esta empresa ya tiene un administrador.');
+        }
+
+        return view('modules.admin.companies.first-admin', array_merge(
+            $this->createCompanyFirstAdminService->formOptions($company),
+            [
+                'company' => $company,
+                'employee' => null,
+                'catalogStarterUrl' => route('admin.companies.first-admin.catalog', $company),
+            ],
+        ));
+    }
+
+    public function previewFirstAdminCredentials(Request $request, SecurityCompany $company): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+        abort_if($company->hasCompanyAdmin(), 404);
+
+        $first = trim((string) $request->input('first_names', ''));
+        $paternal = trim((string) $request->input('last_name_paternal', ''));
+        $maternal = trim((string) $request->input('last_name_maternal', ''));
+        abort_if($first === '' || ($paternal === '' && $maternal === ''), 422);
+
+        return response()->json($this->createCompanyFirstAdminService->preview($first, $paternal, $maternal));
+    }
+
+    public function storeFirstAdminCatalog(Request $request, SecurityCompany $company): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+        abort_if($company->hasCompanyAdmin(), 404);
+
+        $result = $this->createEmployeeCatalogItemsService->execute((int) $company->id, $request->all());
+
+        return response()->json([
+            'collaborator_type' => $result['collaborator_type'] === null ? null : [
+                'id' => $result['collaborator_type']->id,
+                'name' => $result['collaborator_type']->name,
+            ],
+            'job_title' => $result['job_title'] === null ? null : [
+                'id' => $result['job_title']->id,
+                'name' => $result['job_title']->name,
+            ],
+            'message' => 'Ya puedes seleccionar el tipo y el cargo.',
+        ]);
+    }
+
+    public function storeFirstAdmin(StoreCompanyFirstAdminRequest $request, SecurityCompany $company): RedirectResponse
+    {
+        $result = $this->createCompanyFirstAdminService->execute(
+            $company,
+            $request->user(),
+            $request->validated(),
+        );
+
+        if ($request->file('photo') !== null) {
+            $this->storeEmployeePhotoService->store($result['employee'], $request->file('photo'));
+        }
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with([
+                'success' => 'Primer administrador creado.',
+                'issued_login' => $result['user']->username,
+                'issued_password' => $result['password'],
+            ]);
+    }
+
+    public function show(Request $request, SecurityCompany $company): View|RedirectResponse
     {
         abort_unless(auth()->user()?->can('platform.companies.view'), 403);
+
+        if (! $company->hasCompanyAdmin() && auth()->user()?->can('platform.companies.manage')) {
+            return redirect()->route('admin.companies.first-admin.create', $company);
+        }
 
         $company->loadCount('clients')
             ->loadCount([
@@ -365,7 +452,19 @@ final class CompanyController extends Controller
     {
         abort_unless(auth()->user()?->can('updateProfile', $company), 403);
 
-        return view('modules.admin.companies.profile', compact('company'));
+        return view('modules.admin.companies.profile', [
+            'company' => $company,
+            'logoPreviewUrl' => $company->logo_path
+                ? route('admin.companies.logo', $company).'?v='.$company->updated_at?->timestamp
+                : null,
+        ]);
+    }
+
+    public function logo(SecurityCompany $company): BinaryFileResponse
+    {
+        abort_unless(auth()->user()?->can('updateProfile', $company), 403);
+
+        return $company->logoFileResponse() ?? abort(404);
     }
 
     public function updateProfile(UpdateCompanyProfileRequest $request, SecurityCompany $company): RedirectResponse
@@ -374,8 +473,10 @@ final class CompanyController extends Controller
 
         $this->updateCompanyProfileService->execute(
             $company,
-            $request->safe()->except(GeoAddressData::formKeys()),
+            $request->safe()->except([...GeoAddressData::formKeys(), 'logo', 'remove_logo']),
             GeoAddressData::fromValidated($request->validated()),
+            $request->file('logo'),
+            $request->boolean('remove_logo'),
         );
 
         return redirect()

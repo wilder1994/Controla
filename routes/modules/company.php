@@ -66,6 +66,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/settings', [SettingsController::class, 'edit'])
             ->middleware('permission:company.settings.manage')
             ->name('settings.edit');
+        Route::get('/settings/logo', [SettingsController::class, 'logo'])
+            ->middleware('permission:company.settings.manage')
+            ->name('settings.logo');
         Route::put('/settings', [SettingsController::class, 'update'])
             ->middleware('permission:company.settings.manage')
             ->name('settings.update');
@@ -74,12 +77,15 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
             Route::get('/employees/template', [EmployeeController::class, 'downloadTemplate'])->name('employees.template');
             Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+            Route::post('/employees/catalog-starter', [EmployeeController::class, 'storeCatalogStarter'])->name('employees.catalog-starter');
             Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
             Route::post('/employees/import/preview', [EmployeeController::class, 'storeImportPreview'])->name('employees.import.preview.store');
             Route::get('/employees/import/preview', [EmployeeController::class, 'showImportPreview'])->name('employees.import.preview');
             Route::post('/employees/import/commit', [EmployeeController::class, 'commitImport'])->name('employees.import.commit');
             Route::post('/employees/import/cancel', [EmployeeController::class, 'cancelImport'])->name('employees.import.cancel');
             Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
+            Route::get('/employees/{employee}/photo', [EmployeeController::class, 'photo'])->name('employees.photo');
+            Route::post('/employees/{employee}/photo', [EmployeeController::class, 'storePhoto'])->name('employees.photo.store');
             Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
             Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
             Route::post('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');

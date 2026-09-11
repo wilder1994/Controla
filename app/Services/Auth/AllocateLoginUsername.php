@@ -13,8 +13,16 @@ final class AllocateLoginUsername
 {
     public function forEmployee(Employee $employee): string
     {
-        $first = $this->slugPart($this->firstWord($employee->first_names));
-        $last = $this->slugPart($this->firstWord($employee->last_name_paternal ?: ($employee->last_name_maternal ?: '')));
+        return $this->forNames(
+            $employee->first_names,
+            $employee->last_name_paternal ?: ($employee->last_name_maternal ?: ''),
+        );
+    }
+
+    public function forNames(string $firstNames, string $lastPaternal): string
+    {
+        $first = $this->slugPart($this->firstWord($firstNames));
+        $last = $this->slugPart($this->firstWord($lastPaternal));
         if ($first === '') {
             $first = 'sup';
         }

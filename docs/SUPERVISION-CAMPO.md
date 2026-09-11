@@ -90,11 +90,11 @@ Cierre automático (`supervision:auto-close-shifts`, cada 5 min en el scheduler)
 
 ## Fichas de campo
 
-No es el Historial GPS ni el PPTX. Cada captura (revista, alarma, apoyo, documentos) genera una **ficha inmutable** en HTML carta (`window.print()` / Guardar como PDF). Folio `FC-{año}-{R|A|S|D}{id}` (ej. `FC-2026-R000042`). No se guarda un archivo PDF: se arma al abrirla desde `supervisor_shift_reviews` + `supervisor_field_logs`.
+No es el Historial GPS ni el PPTX. Cada captura (revista, alarma, apoyo, documentos) genera una **ficha inmutable** en HTML carta (`window.print()` / Guardar como PDF). Folio `FC-{año}-{R|A|S|D}{id}` (ej. `FC-2026-R000042`). No se guarda un archivo PDF: se arma al abrirla. Cabecera: logo, nombre y NIT de la **empresa** (Mis datos). Sin marca de la plataforma. La revista copia el **encabezado** al guardar (`sheet_intro`). Sitio: cliente, instalación, puesto.
 
 | Origen | Contenido | Cliente | GPS |
 |--------|-----------|---------|-----|
-| Revista | Cliente, puesto, vigilante, foto, novedad y módulos del puesto | Sí | Sí (el de la revista) |
+| Revista | Marco normativo, cliente / instalación / puesto, vigilante, foto, novedad y módulos | Sí | Sí (el de la revista) |
 | Alarma | Tipo, modalidad, resultado | Sí | Sí |
 | Apoyo | Tipo y motivo | Sí | Sí |
 | Documentos | Entregados / pendientes | No | No |
@@ -244,6 +244,7 @@ Apertura: todos los ítems EPP y vehículo en sí; si falta uno la API responde 
 - `2026_09_05_151000_add_email_to_supervisor_zones_table`
 - `2026_09_07_193000_add_snapped_route_to_supervisor_shifts` (`snapped_route` JSON cacheado)
 - `2026_09_08_103900_add_auto_close_queue_to_supervisor_shifts` (`pending_outbox_count`, `closed_by_system`)
+- `2026_09_08_151600_add_field_sheet_branding_to_companies` (`field_sheet_intro` en empresa; `sheet_intro` en revista)
 
 Tipos de estructura por empresa (panel, no Supervisión): `2026_09_03_144000_add_security_company_id_to_structure_types`.
 

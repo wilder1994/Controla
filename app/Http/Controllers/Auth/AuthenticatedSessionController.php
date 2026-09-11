@@ -31,6 +31,11 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
+
+        if ($user->must_change_password) {
+            return redirect()->route('password.first');
+        }
+
         $home = $this->resolveUserHomeRoute->forUser($user);
 
         if ($user->hasRole('super-admin')) {

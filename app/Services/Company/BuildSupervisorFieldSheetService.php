@@ -13,6 +13,7 @@ use App\Enums\SupervisorRiskImpact;
 use App\Enums\SupervisorRiskLevel;
 use App\Enums\SupervisorRiskLikelihood;
 use App\Enums\SupervisorWeaponPermitKind;
+use App\Models\SecurityCompany;
 use App\Models\SupervisorAlarmType;
 use App\Models\SupervisorControlBookType;
 use App\Models\SupervisorDocumentType;
@@ -23,6 +24,7 @@ use App\Models\SupervisorSupportType;
 use App\Models\SupervisorWeaponBrand;
 use App\Models\SupervisorWeaponType;
 use App\Support\Supervision\RecommendationEvidencePhotos;
+use App\Support\Supervision\SupervisorFieldSheetIntro;
 use App\Support\Supervision\WeaponInspectionPhotos;
 use Illuminate\Support\Facades\Storage;
 
@@ -51,7 +53,8 @@ final class BuildSupervisorFieldSheetService
                 })
                 ->with([
                     'client:id,name',
-                    'supervisorPost:id,name',
+                    'supervisorPost:id,name,installation_id',
+                    'supervisorPost.installation:id,name',
                     'employee:id,first_names,last_name_paternal,last_name_maternal',
                     'shift.user:id,name,username',
                     'shift.zone:id,name',
@@ -90,19 +93,26 @@ final class BuildSupervisorFieldSheetService
             $sections[] = $this->sectionFromLog($log);
         }
 
+        $company = $shift?->securityCompany;
+        $brand = $this->branding($company);
         $guardName = $review->employee?->fullName();
 
         return new SupervisorFieldSheet(
             kind: $kind,
             id: (int) $review->id,
             folio: $kind->folio((int) $review->id, $recordedAt),
-            companyName: $shift?->securityCompany?->displayName() ?? 'Empresa',
+            companyName: $brand['display'],
+            companyLegalName: $brand['legal'],
+            companyTaxId: $brand['taxId'],
+            companyLogoSrc: $brand['logo'],
+            intro: SupervisorFieldSheetIntro::resolve($review->sheet_intro ?? $company?->field_sheet_intro),
             supervisorName: $shift?->user?->name ?? 'Supervisor',
             username: $shift?->user?->username,
             zoneName: $shift?->zone?->name,
             shiftLabel: $shift?->schedule_label,
             recordedAt: $recordedAt,
             clientName: $review->client?->name,
+            installationName: $review->supervisorPost?->installation?->name,
             postName: $review->supervisorPost?->name,
             guardName: $guardName !== null && $guardName !== '' ? $guardName : null,
             hasNovelty: (bool) $review->has_novelty,
@@ -123,21 +133,25 @@ final class BuildSupervisorFieldSheetService
 
         $recordedAt = $log->recorded_at ?? now();
         $shift = $log->shift;
-        $companyName = $shift?->securityCompany?->displayName()
-            ?? $log->company?->displayName()
-            ?? 'Empresa';
+        $company = $shift?->securityCompany ?? $log->company;
+        $brand = $this->branding($company);
 
         return new SupervisorFieldSheet(
             kind: $kind,
             id: (int) $log->id,
             folio: $kind->folio((int) $log->id, $recordedAt),
-            companyName: $companyName,
+            companyName: $brand['display'],
+            companyLegalName: $brand['legal'],
+            companyTaxId: $brand['taxId'],
+            companyLogoSrc: $brand['logo'],
+            intro: SupervisorFieldSheetIntro::resolve($company?->field_sheet_intro),
             supervisorName: $log->user?->name ?? $shift?->user?->name ?? 'Supervisor',
             username: $log->user?->username ?? $shift?->user?->username,
             zoneName: $shift?->zone?->name,
             shiftLabel: $shift?->schedule_label,
             recordedAt: $recordedAt,
             clientName: $log->client?->name,
+            installationName: null,
             postName: null,
             guardName: null,
             hasNovelty: $log->outcome !== null && $log->outcome->value !== 'ok',
@@ -435,6 +449,21 @@ final class BuildSupervisorFieldSheetService
         }
 
         return $rows !== [] ? $rows : ['Sin documentos.'];
+    }
+
+    /**
+     * @return array{display: string, legal: string, taxId: ?string, logo: ?string}
+     */
+    private function branding(?SecurityCompany $company): array
+    {
+        $display = $company?->displayName() ?? 'Empresa';
+
+        return [
+            'display' => $display,
+            'legal' => (string) ($company?->legal_name ?: $display),
+            'taxId' => $company?->tax_id,
+            'logo' => $this->dataUri($company?->logo_path),
+        ];
     }
 
     private function dataUri(?string $path): ?string

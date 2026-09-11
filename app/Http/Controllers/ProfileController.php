@@ -14,8 +14,12 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request): View|RedirectResponse
     {
+        if ($request->user()?->must_change_password) {
+            return redirect()->route('password.first');
+        }
+
         return view('profile.edit', [
             'user' => $request->user(),
         ]);

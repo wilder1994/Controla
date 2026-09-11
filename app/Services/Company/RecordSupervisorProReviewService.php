@@ -11,6 +11,7 @@ use App\Models\SupervisorPost;
 use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
 use App\Support\Supervision\RecommendationEvidencePhotos;
+use App\Support\Supervision\SupervisorFieldSheetIntro;
 use App\Support\Supervision\WeaponInspectionPhotos;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -84,12 +85,14 @@ final class RecordSupervisorProReviewService
         }
 
         return DB::transaction(function () use ($shift, $input, $client, $post, $employee) {
+            $company = $shift->securityCompany;
             $review = SupervisorShiftReview::query()->create([
                 'supervisor_shift_id' => $shift->id,
                 'client_id' => $client->id,
                 'supervisor_post_id' => $post->id,
                 'employee_id' => $employee->id,
                 'notes' => $input->notes !== '' ? $input->notes : null,
+                'sheet_intro' => SupervisorFieldSheetIntro::resolve($company?->field_sheet_intro),
                 'has_novelty' => $input->hasNovelty,
                 'latitude' => $input->latitude,
                 'longitude' => $input->longitude,

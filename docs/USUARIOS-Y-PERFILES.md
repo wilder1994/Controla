@@ -2,9 +2,9 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de conjuntos.
 
-**Última actualización:** 5 septiembre 2026
+**Última actualización:** 10 septiembre 2026
 
-La **ficha de empleado** (maestro, Excel) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
+La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
 Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · Supervisión · **Descargas** · **Empleados** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
@@ -19,7 +19,7 @@ Panel `/company/users`. **Crear y editar usan el mismo formulario** (`modules/co
 3. **Cargo / función**: select del catálogo `company_job_titles`. Al elegir empleado se precarga el cargo de la ficha.
 4. **Email personal**: el de la ficha (`employees.email`). Solo lectura. **No** es login. No se copia a `users.email` en altas nuevas. Envío de usuario/clave por correo: pendiente.
 5. Rol, conjunto (solo vigilante / admin conjunto), generar clave, activo.
-6. Clave aleatoria; `must_change_password` en la primera entrada. Supervisor: además `supervisor_code` de 6 dígitos (revista Accesos, no login).
+6. Clave aleatoria; `must_change_password` en la primera entrada (pantalla `/password/primera`, no Breeze `/profile`). Supervisor: además `supervisor_code` de 6 dígitos (revista Accesos, no login).
 7. La zona de Supervisión **no** se pega al usuario ni se muestra en la tabla: se elige al abrir turno.
 8. **No se elimina** la cuenta. **Desactivar** (pestaña Activos) pone `is_active = false`: sale del listado activo, no puede entrar al panel ni a la PWA, el historial queda. Pestaña **Desactivados** → Reactivar. No se puede desactivar a uno mismo.
 
@@ -64,7 +64,7 @@ Slug técnico: `guardia`. Label UI: **Vigilante**.
 ## Reglas: Supervisor de vigilancia
 
 1. Pertenece a la **empresa** (`security_company_id`). **No** requiere asignación fija a un conjunto ni a una zona.
-2. Alta de acceso: **Usuarios** → Nuevo → nombre y cédula del empleado (misma fila) → se genera **usuario de acceso** (`nombre.apellido.####`) y clave. Rol supervisor. El **email personal** de la ficha se muestra; no es el login. El correo corporativo de avisos está en **Ajustes → Zonas** y se toma al **abrir turno**. La ficha de empleado (Ver/Editar) no crea usuarios.
+2. Alta de acceso: **Usuarios** → Nuevo → nombre y cédula del empleado (misma fila) → se genera **usuario de acceso** (`nombre.apellido.####`) y clave. Rol supervisor. El **email personal** de la ficha se muestra; no es el login. El correo corporativo de avisos está en **Ajustes → Zonas** y se toma al **abrir turno**. La ficha de empleado (Ficha/Editar) no crea usuarios.
 3. Al crear el usuario también se genera un **`supervisor_code`**: numérico, **6 dígitos**, **permanente** hasta regeneración deliberada. **Solo** para revista básica en portería Accesos cuando el cliente **no** tiene paquete Supervisión. No es el usuario de la PWA.
 4. El código de 6 dígitos es único **por empresa**.
 5. **Revista Supervisión:** en la app de campo; no se vuelve a firmar en puesto. Zona se elige al abrir turno (Norte hoy, Sur mañana, o las dos el mismo día). Ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
@@ -111,7 +111,7 @@ Roles que requieren asignación a conjunto (`client_ids`): `client-admin`, `guar
 | `avatar_path` | Foto de perfil (storage `public`) |
 | `supervisor_code` | Código revista Accesos 6 dígitos (solo rol supervisor; no es login PWA) |
 | `primary_client_id` | Cliente actual del vigilante (y otros roles con asignación) |
-| `must_change_password` | Flag existente; usable si se fuerza cambio en login |
+| `must_change_password` | Primera entrada: redirige a `password.first` (`/password/primera`) hasta cambiar la clave |
 
 ### `clients`
 
@@ -159,8 +159,8 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 | `GET/PUT /company/users/{user}/edit` | Editar (foto, cargo, reasignación, código supervisor) |
 | `POST /company/users/{user}/deactivate` | Desactiva el acceso; conserva historial |
 | `POST /company/users/{user}/reactivate` | Reactiva el acceso |
-| `GET /company/settings` | **Mis datos**: perfil legal y ubicación |
-| `PUT /company/settings` | Guardar perfil + ubicación |
+| `GET /company/settings` | **Mis datos**: perfil, ubicación, logo (arrastrar / pegar / recortar) e encabezado de fichas |
+| `PUT /company/settings` | Guardar perfil, logo y texto de encabezado |
 | `GET/POST /company/clients` | Cartera de conjuntos (`service_started_at`) |
 
 ### Conjunto
@@ -200,6 +200,7 @@ Usado en: signup paso 1, **Mis datos** (`/company/settings`), perfil/alta admin 
 - `tax_id` **inmutable** tras `hasCompletedAcceptance()` (clickwrap en expediente).
 - Servicio: `UpdateCompanyProfileService` · DTO: `GeoAddressData` · reglas: `GeoAddressRules`.
 - Alta admin: `CreateCompanyService` · `StoreCompanyRequest` · rutas `admin.companies.create/store`.
+- Tras crear la empresa a mano, **paso obligatorio**: misma ficha de empleado + acceso `company-admin` (`CreateCompanyFirstAdminService` · `admin.companies.first-admin.*`). Tipo y cargo se crean en el modal de la ficha (no se siembran solos). Sin ese admin, el detalle redirige al paso 2. Usuario `nombre.apellido.####` y clave se muestran una vez.
 
 ---
 

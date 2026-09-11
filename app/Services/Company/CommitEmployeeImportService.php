@@ -99,6 +99,25 @@ final class CommitEmployeeImportService
                     sameCostCenter: array_key_exists('same_cost_center', $payload)
                         ? ($payload['same_cost_center'] === null ? null : (bool) $payload['same_cost_center'])
                         : null,
+                    education: $payload['education'] ?? null,
+                    maritalStatus: $payload['marital_status'] ?? null,
+                    childrenCount: isset($payload['children_count']) ? (int) $payload['children_count'] : null,
+                    phone: $payload['phone'] ?? null,
+                    residenceCity: $payload['residence_city'] ?? null,
+                    address: $payload['address'] ?? null,
+                    engagementType: $payload['engagement_type'] ?? null,
+                    contributorType: $payload['contributor_type'] ?? null,
+                    laborContractType: $payload['labor_contract_type'] ?? null,
+                    hiredOn: $payload['hired_on'] ?? null,
+                    laborContractEndsOn: $payload['labor_contract_ends_on'] ?? null,
+                    leftOn: $payload['left_on'] ?? null,
+                    epsCode: $payload['eps_code'] ?? null,
+                    epsName: $payload['eps_name'] ?? null,
+                    afpCode: $payload['afp_code'] ?? null,
+                    afpName: $payload['afp_name'] ?? null,
+                    compensationFund: $payload['compensation_fund'] ?? null,
+                    arlName: $payload['arl_name'] ?? null,
+                    arlRiskLevel: $payload['arl_risk_level'] ?? null,
                 );
 
                 $employeeId = isset($payload['employee_id']) ? (int) $payload['employee_id'] : 0;

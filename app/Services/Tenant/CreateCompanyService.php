@@ -8,6 +8,7 @@ use App\Domain\Geo\GeoAddressData;
 use App\Enums\BillingCycle;
 use App\Enums\CompanyPackageSku;
 use App\Enums\PartyType;
+use App\Enums\SupervisionPackageSku;
 use App\Models\SecurityCompany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,18 +17,20 @@ final class CreateCompanyService
 {
     public function __construct(
         private readonly AssignCompanyPackageService $assignCompanyPackageService,
+        private readonly AssignCompanySupervisionPackageService $assignCompanySupervisionPackageService,
     ) {}
 
     /**
      * @param  array{
      *     legal_name: string,
-     *     trade_name?: string|null,
+     *     trade_name: string,
      *     tax_id: string,
      *     party_type: string|PartyType,
-     *     email?: string|null,
-     *     phone?: string|null,
-     *     package_sku?: string|null,
-     *     billing_cycle?: string|null,
+     *     email: string,
+     *     phone: string,
+     *     package_sku: string,
+     *     billing_cycle: string,
+     *     supervision_package_sku?: string|null,
      * }  $attributes
      */
     public function execute(array $attributes, GeoAddressData $geo): SecurityCompany
@@ -54,12 +57,16 @@ final class CreateCompanyService
                 'is_active' => true,
             ]);
 
-            $skuValue = $attributes['package_sku'] ?? null;
-            if ($skuValue) {
-                $sku = CompanyPackageSku::from((string) $skuValue);
-                $cycle = BillingCycle::tryFrom((string) ($attributes['billing_cycle'] ?? 'monthly'))
-                    ?? BillingCycle::Monthly;
-                $this->assignCompanyPackageService->execute($company, $sku, $cycle);
+            $sku = CompanyPackageSku::from((string) $attributes['package_sku']);
+            $cycle = BillingCycle::from((string) $attributes['billing_cycle']);
+            $this->assignCompanyPackageService->execute($company, $sku, $cycle);
+
+            $supervisionValue = $attributes['supervision_package_sku'] ?? null;
+            if ($sku->allowsSupervision() && filled($supervisionValue)) {
+                $this->assignCompanySupervisionPackageService->execute(
+                    $company,
+                    SupervisionPackageSku::from((string) $supervisionValue),
+                );
             }
 
             return $company->fresh();

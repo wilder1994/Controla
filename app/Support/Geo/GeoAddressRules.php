@@ -17,4 +17,16 @@ final class GeoAddressRules
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
+
+    /** @return array<string, mixed> */
+    public static function required(): array
+    {
+        return [
+            'address' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:120'],
+            'department' => ['required', 'string', 'max:120'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ];
+    }
 }

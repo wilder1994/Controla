@@ -18,6 +18,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SecurityCompany extends Model
 {
@@ -36,6 +38,7 @@ class SecurityCompany extends Model
         'latitude',
         'longitude',
         'logo_path',
+        'field_sheet_intro',
         'is_active',
         'package_size',
         'package_manual_seats',
@@ -203,6 +206,13 @@ class SecurityCompany extends Model
         return $this->hasMany(User::class);
     }
 
+    public function hasCompanyAdmin(): bool
+    {
+        return $this->users()
+            ->whereHas('roles', fn ($q) => $q->where('name', 'company-admin'))
+            ->exists();
+    }
+
     public function jobTitles(): HasMany
     {
         return $this->hasMany(CompanyJobTitle::class);
@@ -246,6 +256,25 @@ class SecurityCompany extends Model
     public function displayName(): string
     {
         return (string) ($this->trade_name ?: $this->legal_name ?: 'Empresa');
+    }
+
+    public function logoFileResponse(): ?BinaryFileResponse
+    {
+        if ($this->logo_path === null || $this->logo_path === '') {
+            return null;
+        }
+
+        if (! Storage::disk('local')->exists($this->logo_path)) {
+            return null;
+        }
+
+        $absolute = Storage::disk('local')->path($this->logo_path);
+        $mime = Storage::disk('local')->mimeType($this->logo_path) ?: 'image/png';
+
+        return response()->file($absolute, [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     public function activeClients(): HasMany
