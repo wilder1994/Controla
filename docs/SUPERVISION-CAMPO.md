@@ -38,14 +38,14 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v34`.
+PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v35`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
 Fotos: no se enciende la cámara al abrir. **Trasera** / **Frontal** o **Tomar foto** piden `getUserMedia` (hace falta HTTPS o localhost). Tras capturar se apaga. Galería solo si no hay contexto seguro.
 
 1. Login (`POST /api/supervision/login`) → rito de **apertura**: turno y zona del catálogo, EPP/vehículo plegables, km + foto odómetro + selfie (cámara, no galería).
-2. Hub: ficha de perfil + **Cerrar**. Cuatro entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**. Debajo: **Mis fichas**. Ping GPS cada **15 s** (`watchPosition` + intervalo; al volver a primer plano reanuda). **En línea** en el mapa = último GPS &lt; 90 s. Con la pantalla apagada Android/iOS pausan el JS y el GPS de la PWA; Tailscale no sustituye eso. Tracking con pantalla off requiere app nativa.
+2. Hub: ficha de perfil + **Cerrar**. Entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**, **Observatorio**, **Mis fichas**. Ping GPS cada **15 s** (`watchPosition` + intervalo; al volver a primer plano reanuda). **En línea** en el mapa = último GPS &lt; 90 s. Con la pantalla apagada Android/iOS pausan el JS y el GPS de la PWA; Tailscale no sustituye eso. Tracking con pantalla off requiere app nativa.
 3. **Revista** (al clic): cliente, puesto, vigilante, foto. Los módulos del puesto (inventario, libros de control, etc.) se registran en borrador. **Guardar revista** (abajo) envía GPS + foto + módulos juntos. Mientras envía: botón bloqueado y texto *Guardando revista…* (mismo candado en Entrar, iniciar/cerrar turno y Registrar). Un `client_event_id` por intento: el API no duplica. Si cancela, no queda nada.
 4. Alarmas y apoyos: cada uno abre su formulario (cliente + GPS obligatorios). Documentos: sin cliente ni GPS.
 5. Cierre: km final + odómetro + selfie → sesión cerrada.
@@ -79,6 +79,7 @@ Cerrar turno sin red también se encola (fotos incluidas). No borrar datos del s
 | `alarms` | `POST /logs` | Formulario propio. Requiere cliente y GPS. Tipo, modalidad (prueba/atención) y resultado |
 | `supports` | `POST /logs` | Formulario propio. Requiere cliente y GPS. Tipo + motivo |
 | `documents` | `POST /logs` | Del turno. Sin cliente ni GPS. Tipos + entregado/pendiente |
+| Observatorio | `POST /observatory/reports` | No es un log de revista. Colegio + tipo + texto; anónimo opcional. Colegios en el paquete offline |
 
 Contrato de campos: `GET /api/supervision/catalog` (`FieldModuleCatalog`). Logs append-only en `supervisor_field_logs` (`supervisor_shift_review_id` si cuelga de revista). Recomendaciones: `supervisor_recommendations` (registro inmutable del turno; `GET /recommendations` lista recientes).
 

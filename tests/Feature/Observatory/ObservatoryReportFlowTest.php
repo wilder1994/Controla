@@ -27,7 +27,9 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->get(route('observatory.public.show', $client->slug))
             ->assertOk()
             ->assertSee('Reportar', false)
-            ->assertSee($client->name, false);
+            ->assertSee($client->name, false)
+            ->assertSee('Quién eres', false)
+            ->assertSee('Alumno', false);
 
         $this->getJson(route('observatory.public.sites', ['slug' => $client->slug, 'q' => 'Santa']))
             ->assertOk()
@@ -43,6 +45,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'hurto',
             'body' => 'Intentaron entrar por la portería del conjunto.',
             'is_anonymous' => '0',
+            'reporter_role' => 'padre',
             'reporter_name' => 'Ana Padre',
         ])->assertSessionHasErrors('installation_id');
 
@@ -51,12 +54,14 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'hurto',
             'body' => 'Vieron a alguien saltando el muro del colegio.',
             'is_anonymous' => '0',
+            'reporter_role' => 'padre',
             'reporter_name' => 'Ana Padre',
             'reporter_phone' => '3001112233',
         ])->assertRedirect();
 
         $report = ObservatoryReport::query()->firstOrFail();
         $this->assertSame('comunidad', $report->source->value);
+        $this->assertSame('padre', $report->reporter_role->value);
         $this->assertFalse($report->is_anonymous);
         $this->assertSame('Ana Padre', $report->reporter_name);
         $this->assertSame((int) $colegio->id, (int) $report->installation_id);
@@ -76,6 +81,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'Riña en el patio del descanso de la mañana.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
 
         $this->post(route('observatory.public.store', $client->slug), [
@@ -83,6 +89,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'Otra persona confirma la misma riña del patio.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
 
         $this->assertSame(1, ObservatoryEvent::query()->count());
@@ -100,6 +107,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'hurto',
             'body' => 'Vieron a alguien saltando el muro del colegio.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
         $this->travelBack();
 
@@ -108,6 +116,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'hurto',
             'body' => 'Otro hurto una hora después ya no es el mismo.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
         $this->assertSame(2, ObservatoryEvent::query()->count());
 
@@ -116,6 +125,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'Riña distinta al hurto aunque sea el mismo colegio.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
         $this->assertSame(3, ObservatoryEvent::query()->count());
 
@@ -129,6 +139,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'El evento cerrado no recibe más reportes.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
         $this->assertSame(4, ObservatoryEvent::query()->count());
     }
@@ -143,6 +154,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'amenaza',
             'body' => 'Amenaza detrás de las canchas del colegio.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
             'latitude' => '3.4512001',
             'longitude' => '-76.5311002',
         ])->assertRedirect();
@@ -156,6 +168,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'amenaza',
             'body' => 'Misma amenaza; quien reporta no mueve el pin.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
 
         $second = ObservatoryReport::query()->latest('id')->firstOrFail();
@@ -174,6 +187,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'amenaza',
             'body' => 'Amenazaron a un estudiante a la salida.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
             'reporter_name' => 'No debe guardarse',
             'reporter_phone' => '3000000000',
         ])->assertRedirect();
@@ -199,6 +213,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'Hubo una riña en el descanso de la mañana.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
             'photo' => UploadedFile::fake()->image('patio.jpg'),
         ])->assertRedirect();
 
@@ -317,6 +332,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'hurto',
             'body' => 'Vieron a alguien saltando el muro del colegio.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
         $keep = ObservatoryEvent::query()->latest('id')->firstOrFail();
 
@@ -325,6 +341,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'Riña que en realidad era el mismo incidente del muro.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
         $source = ObservatoryEvent::query()->latest('id')->firstOrFail();
         $this->assertNotSame((int) $keep->id, (int) $source->id);
@@ -334,6 +351,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'hurto',
             'body' => 'Hurto en otro colegio no se une al primero.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
         $foreign = ObservatoryEvent::query()->latest('id')->firstOrFail();
 
@@ -439,6 +457,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'Riña en el patio del descanso de la mañana.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
 
         $this->post(route('observatory.public.store', $client->slug), [
@@ -446,6 +465,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'rina',
             'body' => 'Otra persona confirma la misma riña del patio.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
 
         $event = ObservatoryEvent::query()->firstOrFail();
@@ -497,6 +517,197 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertOk()
             ->assertSee('IE Santa Librada', false)
             ->assertDontSee('IE Republica del Peru', false);
+    }
+
+    public function test_public_report_requires_role_and_keeps_it_when_anonymous(): void
+    {
+        [$client, $colegio] = $this->sites();
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'hurto',
+            'body' => 'Vieron a alguien saltando el muro del colegio.',
+            'is_anonymous' => '1',
+        ])->assertSessionHasErrors('reporter_role');
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'hurto',
+            'body' => 'Vieron a alguien saltando el muro del colegio.',
+            'is_anonymous' => '1',
+            'reporter_role' => 'alumno',
+            'reporter_name' => 'No debe guardarse',
+        ])->assertRedirect();
+
+        $report = ObservatoryReport::query()->firstOrFail();
+        $this->assertSame('alumno', $report->reporter_role->value);
+        $this->assertTrue($report->is_anonymous);
+        $this->assertNull($report->reporter_name);
+    }
+
+    public function test_site_admin_and_support_report_from_panel(): void
+    {
+        [$client, $colegio] = $this->sites();
+        $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $rector = $this->makeSiteAdmin($company, $client, $colegio, 'rector.rep@palmas.test', '1098000991', 'admin');
+        $apoyo = $this->makeSiteAdmin($company, $client, $colegio, 'apoyo.rep@palmas.test', '1098000992', 'support');
+        $session = ['tenancy.active_client_id' => $client->id];
+
+        $this->actingAs($rector)
+            ->withSession($session)
+            ->get(route('client.observatory.reports.create'))
+            ->assertOk()
+            ->assertSee('Rector', false);
+
+        $this->actingAs($rector)
+            ->withSession($session)
+            ->post(route('client.observatory.reports.store'), [
+                'installation_id' => $colegio->id,
+                'kind' => 'amenaza',
+                'body' => 'Amenaza reportada por el rector desde el panel.',
+                'is_anonymous' => '0',
+            ])
+            ->assertRedirect();
+
+        $rectorReport = ObservatoryReport::query()->latest('id')->firstOrFail();
+        $this->assertSame('panel', $rectorReport->source->value);
+        $this->assertSame('rector', $rectorReport->reporter_role->value);
+        $this->assertSame($rector->name, $rectorReport->reporter_name);
+        $this->assertSame((int) $rector->id, (int) $rectorReport->reported_by_user_id);
+
+        $this->actingAs($apoyo)
+            ->withSession($session)
+            ->post(route('client.observatory.reports.store'), [
+                'installation_id' => $colegio->id,
+                'kind' => 'amenaza',
+                'body' => 'El apoyo confirma la misma amenaza del rector.',
+                'is_anonymous' => '1',
+            ])
+            ->assertRedirect();
+
+        $apoyoReport = ObservatoryReport::query()->latest('id')->firstOrFail();
+        $this->assertSame('apoyo', $apoyoReport->reporter_role->value);
+        $this->assertTrue($apoyoReport->is_anonymous);
+        $this->assertNull($apoyoReport->reporter_name);
+        $this->assertNull($apoyoReport->reported_by_user_id);
+        $this->assertSame((int) $rectorReport->event_id, (int) $apoyoReport->event_id);
+
+        $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+        $this->actingAs($clientAdmin)
+            ->withSession($session)
+            ->get(route('client.observatory.reports.create'))
+            ->assertForbidden();
+    }
+
+    public function test_supervisor_reports_from_field_app(): void
+    {
+        [$client, $colegio] = $this->sites();
+        $user = $this->companySupervisor();
+        app(\App\Services\Tenant\AssignCompanySupervisionPackageService::class)->execute(
+            $user->securityCompany,
+            \App\Enums\SupervisionPackageSku::Sit1,
+        );
+        $token = $this->loginCompanySupervisor();
+        $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload())->assertCreated();
+
+        $this->withToken($token)
+            ->getJson('/api/supervision/observatory/sites?q=Santa')
+            ->assertOk()
+            ->assertJsonPath('sites.0.id', $colegio->id);
+
+        $this->withToken($token)
+            ->post('/api/supervision/observatory/reports', [
+                'installation_id' => $colegio->id,
+                'kind' => 'hurto',
+                'body' => 'El supervisor vio el hurto desde la patrulla.',
+                'is_anonymous' => '0',
+                'latitude' => 3.4516,
+                'longitude' => -76.5320,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('report.event_id', ObservatoryEvent::query()->value('id'));
+
+        $report = ObservatoryReport::query()->firstOrFail();
+        $this->assertSame('campo', $report->source->value);
+        $this->assertSame('supervisor', $report->reporter_role->value);
+        $this->assertSame($user->name, $report->reporter_name);
+        $this->assertSame((int) $client->id, (int) $report->client_id);
+    }
+
+    public function test_minuta_novedad_can_copy_to_observatory_only_on_colegio_door(): void
+    {
+        [$client, $colegio, $conjunto] = $this->sites();
+        config(['access.geo.required' => false, 'access.shifts.enforced' => false]);
+
+        $door = \App\Models\Location::query()->create([
+            'client_id' => $client->id,
+            'installation_id' => $colegio->id,
+            'code' => 'COL-01',
+            'name' => 'Portería Santa Librada',
+            'type' => 'access_point',
+            'is_active' => true,
+        ]);
+        $conjuntoDoor = \App\Models\Location::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->where('installation_id', $conjunto->id)
+            ->where('is_active', true)
+            ->first();
+
+        $vigilante = User::query()->where('email', 'guardia@control-acceso.test')->firstOrFail();
+        $supervisor = $this->companySupervisor();
+        $session = ['tenancy.active_client_id' => $client->id];
+
+        $this->actingAs($vigilante)
+            ->withSession($session)
+            ->get(route('access.guard_logs.create'))
+            ->assertOk()
+            ->assertSee('Portería Santa Librada', false);
+
+        $this->actingAs($vigilante)
+            ->withSession($session)
+            ->post(route('access.guard_logs.store'), [
+                'location_id' => $door->id,
+                'log_time' => now()->format('Y-m-d H:i:s'),
+                'type' => 'novedad',
+                'shift_type' => 'diurno',
+                'description' => 'Novedad en la puerta del colegio para el observatorio.',
+                'signed' => '1',
+                'supervision_code' => $supervisor->supervisor_code,
+                'to_observatory' => '1',
+                'observatory_kind' => 'otro',
+                'observatory_anonymous' => '0',
+                'latitude' => 3.4516,
+                'longitude' => -76.5320,
+            ])
+            ->assertRedirect(route('access.guard_logs.index'));
+
+        $report = ObservatoryReport::query()->firstOrFail();
+        $this->assertSame('porteria', $report->source->value);
+        $this->assertSame('vigilante', $report->reporter_role->value);
+        $this->assertSame($vigilante->name, $report->reporter_name);
+        $this->assertSame((int) $colegio->id, (int) $report->installation_id);
+
+        if ($conjuntoDoor !== null) {
+            $this->actingAs($vigilante)
+                ->withSession($session)
+                ->post(route('access.guard_logs.store'), [
+                    'location_id' => $conjuntoDoor->id,
+                    'log_time' => now()->format('Y-m-d H:i:s'),
+                    'type' => 'novedad',
+                    'shift_type' => 'diurno',
+                    'description' => 'Novedad de conjunto no debe ir al observatorio.',
+                    'signed' => '1',
+                    'supervision_code' => $supervisor->supervisor_code,
+                    'to_observatory' => '1',
+                    'observatory_kind' => 'otro',
+                    'latitude' => 3.4516,
+                    'longitude' => -76.5320,
+                ])
+                ->assertRedirect(route('access.guard_logs.index'));
+
+            $this->assertSame(1, ObservatoryReport::query()->count());
+        }
     }
 
     public function test_guard_cannot_open_observatory(): void
@@ -552,6 +763,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'kind' => 'otro',
             'body' => 'Situación reportada para seguimiento del observatorio.',
             'is_anonymous' => '1',
+            'reporter_role' => 'padre',
         ])->assertRedirect();
 
         return ObservatoryEvent::query()->firstOrFail();

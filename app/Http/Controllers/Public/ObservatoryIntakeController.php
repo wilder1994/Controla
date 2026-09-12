@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Public;
 
 use App\Enums\InstallationKind;
 use App\Enums\ObservatoryReportKind;
+use App\Enums\ObservatoryReporterRole;
+use App\Enums\ObservatoryReportSource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Observatory\StorePublicObservatoryReportRequest;
 use App\Models\Client;
@@ -31,6 +33,7 @@ final class ObservatoryIntakeController extends Controller
         return view('modules.observatory.public.intake', [
             'client' => $row,
             'kinds' => ObservatoryReportKind::options(),
+            'roles' => ObservatoryReporterRole::publicOptions(),
             'maps' => [
                 'api_key' => config('google-maps.api_key'),
                 'center' => config('google-maps.default_center'),
@@ -80,6 +83,8 @@ final class ObservatoryIntakeController extends Controller
                 'kind' => (string) $request->validated('kind'),
                 'body' => (string) $request->validated('body'),
                 'is_anonymous' => $request->boolean('is_anonymous'),
+                'source' => ObservatoryReportSource::Comunidad,
+                'reporter_role' => (string) $request->validated('reporter_role'),
                 'reporter_name' => $request->validated('reporter_name'),
                 'reporter_phone' => $request->validated('reporter_phone'),
                 'photo' => $request->file('photo'),

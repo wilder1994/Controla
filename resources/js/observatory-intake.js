@@ -32,6 +32,12 @@ export function observatoryIntake(cfg) {
         installationName: cfg.installationName || '',
         kind: cfg.kind || '',
         anonymous: Boolean(cfg.anonymous),
+        role: cfg.role || '',
+        reporterName: cfg.reporterName || '',
+        reporterPhone: cfg.reporterPhone || '',
+        remember: false,
+        remembered: false,
+        storageKey: cfg.storageKey || '',
         latitude: cfg.latitude || '',
         longitude: cfg.longitude || '',
         siteLat: cfg.siteLat ?? null,
@@ -42,8 +48,71 @@ export function observatoryIntake(cfg) {
         marker: null,
 
         init() {
+            this.restoreIdentity();
             if (this.step === 2) {
                 this.goStep(2);
+            }
+        },
+
+        restoreIdentity() {
+            if (!this.storageKey || typeof localStorage === 'undefined') {
+                return;
+            }
+            try {
+                const raw = localStorage.getItem(this.storageKey);
+                if (!raw) {
+                    return;
+                }
+                const data = JSON.parse(raw);
+                if (!data?.role) {
+                    return;
+                }
+                if (!this.role) {
+                    this.role = String(data.role);
+                }
+                if (data.role !== 'alumno') {
+                    if (!this.reporterName && data.name) {
+                        this.reporterName = String(data.name);
+                    }
+                    if (!this.reporterPhone && data.phone) {
+                        this.reporterPhone = String(data.phone);
+                    }
+                }
+                this.remembered = true;
+                this.remember = true;
+            } catch {
+                // storage corrupto o privado
+            }
+        },
+
+        persistIdentity() {
+            if (!this.storageKey || typeof localStorage === 'undefined') {
+                return;
+            }
+            if (!this.remember || !this.role) {
+                return;
+            }
+            const payload = { role: this.role };
+            if (this.role !== 'alumno') {
+                payload.name = this.reporterName || '';
+                payload.phone = this.reporterPhone || '';
+            }
+            try {
+                localStorage.setItem(this.storageKey, JSON.stringify(payload));
+            } catch {
+                // storage lleno o privado
+            }
+        },
+
+        forget() {
+            this.remembered = false;
+            this.remember = false;
+            if (this.storageKey && typeof localStorage !== 'undefined') {
+                try {
+                    localStorage.removeItem(this.storageKey);
+                } catch {
+                    // ignore
+                }
             }
         },
 

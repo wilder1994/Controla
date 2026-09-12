@@ -188,6 +188,7 @@
             <button type="button" class="entry" id="btn-open-alarms">Alarmas<span>Prueba en sitio</span></button>
             <button type="button" class="entry" id="btn-open-supports">Apoyos<span>Cliente, tipo, motivo y GPS</span></button>
             <button type="button" class="entry" id="btn-open-documents">Documentos<span>Entregados y pendientes del turno</span></button>
+            <button type="button" class="entry" id="btn-open-observatory">Observatorio<span>Novedad en un colegio</span></button>
             <button type="button" class="entry" id="btn-open-sheets">Mis fichas<span>Ver e imprimir lo registrado</span></button>
         </div>
 
@@ -240,6 +241,31 @@
             <form id="module-form"></form>
             <button type="button" id="btn-submit">Registrar</button>
             <button type="button" class="ghost" id="btn-mod-back">Volver</button>
+        </div>
+
+        <div class="card hidden" id="observatory-card">
+            <div class="head-row">
+                <p class="sec-title" style="margin:0;">Observatorio</p>
+                <button type="button" class="ghost btn-sm" id="btn-obs-back">Volver</button>
+            </div>
+            <p class="hint">Reporte de novedad en un colegio. No es la revista ni la minuta.</p>
+            <label for="obs-q">Colegio</label>
+            <div class="combo">
+                <input id="obs-q" autocomplete="off" placeholder="Nombre o DANE">
+                <div id="obs-list" class="combo-list hidden"></div>
+            </div>
+            <p class="hint" id="obs-picked"></p>
+            <label for="obs-kind">Tipo</label>
+            <select id="obs-kind">
+                <option value="">Seleccione…</option>
+            </select>
+            <label for="obs-body">Qué pasó</label>
+            <textarea id="obs-body"></textarea>
+            <label for="obs-photo">Foto (opcional)</label>
+            <input id="obs-photo" type="file" accept="image/*">
+            <label class="check"><input type="checkbox" id="obs-anonymous"><span>Enviar en anónimo</span></label>
+            <p class="hint hidden" id="obs-anon-warn">En este reporte se oculta tu nombre y teléfono. Solo se muestra la denuncia.</p>
+            <button type="button" class="gold" id="btn-obs-send">Enviar reporte</button>
         </div>
 
         <div class="card hidden" id="sheets-card">

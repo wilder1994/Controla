@@ -20,10 +20,14 @@
         class="mt-6 space-y-4"
         x-data="observatoryIntake(@js([
             'sitesUrl' => route('observatory.public.sites', $client->slug),
+            'storageKey' => 'observatory.identity.'.$client->slug,
             'installationId' => (string) old('installation_id', ''),
             'installationName' => old('installation_label', ''),
             'kind' => old('kind', ''),
             'anonymous' => (bool) old('is_anonymous', false),
+            'role' => old('reporter_role', ''),
+            'reporterName' => old('reporter_name', ''),
+            'reporterPhone' => old('reporter_phone', ''),
             'latitude' => old('latitude', ''),
             'longitude' => old('longitude', ''),
             'mapsKey' => $maps['api_key'] ?? '',
@@ -104,24 +108,46 @@
 
         <div x-show="step === 3" x-cloak class="space-y-3">
             @include('partials.minors-data-notice')
-            <label class="flex items-center gap-2 text-sm text-slate-300">
+            <div x-show="remembered" class="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-xs text-slate-400">
+                Datos guardados en este teléfono.
+                <button type="button" class="ml-1 text-teal-300 underline" @click="forget()">Borrar</button>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1" for="reporter_role">Quién eres</label>
+                <select id="reporter_role" name="reporter_role" x-model="role" required class="w-full h-11 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                    <option value="">Seleccione…</option>
+                    @foreach ($roles as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <label class="flex items-start gap-2 text-sm text-slate-300">
                 <input type="hidden" name="is_anonymous" value="0">
-                <input type="checkbox" name="is_anonymous" value="1" x-model="anonymous" class="rounded border-slate-600 bg-slate-950 text-teal-600">
-                Quiero reportar en anónimo
+                <input type="checkbox" name="is_anonymous" value="1" x-model="anonymous" class="mt-0.5 rounded border-slate-600 bg-slate-950 text-teal-600">
+                <span>Quiero reportar en anónimo</span>
             </label>
+            <div x-show="anonymous" class="rounded-lg border border-amber-800 bg-amber-950/40 px-3 py-2 text-sm text-amber-100">
+                En este reporte se oculta tu nombre y teléfono. Solo se muestra la denuncia.
+            </div>
             <div x-show="!anonymous" class="space-y-3">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1" for="reporter_name">Nombre</label>
-                    <input id="reporter_name" type="text" name="reporter_name" value="{{ old('reporter_name') }}" class="w-full h-11 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                    <input id="reporter_name" type="text" name="reporter_name" x-model="reporterName" class="w-full h-11 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                    <p x-show="role === 'alumno'" class="mt-1 text-[11px] text-slate-500">Si eres alumno, el nombre de este reporte no se guarda en el teléfono.</p>
                 </div>
-                <div>
+                <div x-show="role !== 'alumno'">
                     <label class="block text-xs text-slate-400 mb-1" for="reporter_phone">Teléfono (opcional)</label>
-                    <input id="reporter_phone" type="text" name="reporter_phone" value="{{ old('reporter_phone') }}" class="w-full h-11 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                    <input id="reporter_phone" type="text" name="reporter_phone" x-model="reporterPhone" class="w-full h-11 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                 </div>
             </div>
+            <label class="flex items-center gap-2 text-sm text-slate-300">
+                <input type="checkbox" x-model="remember" class="rounded border-slate-600 bg-slate-950 text-teal-600">
+                Recordarme en este teléfono
+            </label>
+            <p class="text-[11px] text-slate-500">La próxima vez no tendrás que volver a escribir quién eres. En otro celular empieza de nuevo.</p>
             <div class="flex gap-2">
                 <button type="button" class="h-11 px-4 rounded-lg border border-slate-700 text-sm text-slate-300" @click="goStep(2)">Atrás</button>
-                <button type="submit" class="flex-1 h-11 rounded-lg bg-teal-600 text-sm font-semibold text-white">Enviar reporte</button>
+                <button type="submit" class="flex-1 h-11 rounded-lg bg-teal-600 text-sm font-semibold text-white" @click="persistIdentity()">Enviar reporte</button>
             </div>
         </div>
     </form>

@@ -68,7 +68,7 @@
         <x-ui.field-error :messages="$errors->get('report')" />
         @forelse ($event->reports as $report)
             <article class="rounded-lg border border-slate-800 bg-slate-950/50 p-3 space-y-1">
-                <p class="text-xs text-slate-500">{{ $report->kindLabel() }} · {{ $report->sourceLabel() }} · {{ $report->created_at?->format('d/m/Y H:i') }}</p>
+                <p class="text-xs text-slate-500">{{ $report->kindLabel() }} · {{ $report->originLabel() }} · {{ $report->created_at?->format('d/m/Y H:i') }}</p>
                 <p class="text-sm text-slate-200 whitespace-pre-line">{{ $report->body }}</p>
                 <p class="text-xs text-slate-500">{{ $report->reporterLabel() }}@if (! $report->is_anonymous && $report->reporter_phone) · {{ $report->reporter_phone }}@endif</p>
                 @if ($report->hasCoordinates())

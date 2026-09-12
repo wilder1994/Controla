@@ -52,7 +52,7 @@ Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFOR
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
 | **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
-| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola por supervisor (flush en segundo plano, no bloquea al de turno). Caché SW `controla-sup-v34` |
+| **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola por supervisor (flush en segundo plano, no bloquea al de turno). Caché SW `controla-sup-v35` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
 
@@ -791,6 +791,8 @@ API autenticada con tokens Laravel Sanctum para consumo desde app móvil futura.
 | `/api/supervision/catalog` | GET | Contrato de 8 módulos de campo |
 | `/api/supervision/posts` | GET | Puestos `supervisor_posts` del cliente (no `locations`) |
 | `/api/supervision/reviews` | POST | Revista en puesto de Supervisión (no llena minuta Accesos) |
+| `/api/supervision/observatory/sites` | GET | Colegios de la empresa para el Observatorio |
+| `/api/supervision/observatory/reports` | POST | Reporte Observatorio desde la PWA (supervisor) |
 | `/api/supervision/offline-pack` | GET | Snapshot offline: sitios, puestos, vigilantes, catálogo |
 | `/api/supervision/logs` | POST | Inventario, libros, carpetas, armamento, recomendaciones, etc. `client_event_id` opcional |
 | `/api/supervision/sheets` | GET | Fichas del supervisor autenticado |

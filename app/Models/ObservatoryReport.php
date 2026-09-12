@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ObservatoryReportKind;
+use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,11 +18,13 @@ final class ObservatoryReport extends Model
         'client_id',
         'installation_id',
         'source',
+        'reporter_role',
         'kind',
         'body',
         'is_anonymous',
         'reporter_name',
         'reporter_phone',
+        'reported_by_user_id',
         'photo_path',
         'latitude',
         'longitude',
@@ -32,6 +35,7 @@ final class ObservatoryReport extends Model
     {
         return [
             'source' => ObservatoryReportSource::class,
+            'reporter_role' => ObservatoryReporterRole::class,
             'kind' => ObservatoryReportKind::class,
             'is_anonymous' => 'boolean',
             'latitude' => 'decimal:7',
@@ -52,6 +56,18 @@ final class ObservatoryReport extends Model
     public function sourceLabel(): string
     {
         return $this->source instanceof ObservatoryReportSource ? $this->source->label() : '—';
+    }
+
+    public function roleLabel(): string
+    {
+        return $this->reporter_role instanceof ObservatoryReporterRole ? $this->reporter_role->label() : '';
+    }
+
+    public function originLabel(): string
+    {
+        $role = $this->roleLabel();
+
+        return $role !== '' ? $this->sourceLabel().' · '.$role : $this->sourceLabel();
     }
 
     public function reporterLabel(): string
@@ -82,5 +98,10 @@ final class ObservatoryReport extends Model
     public function installation(): BelongsTo
     {
         return $this->belongsTo(Installation::class);
+    }
+
+    public function reportedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reported_by_user_id');
     }
 }

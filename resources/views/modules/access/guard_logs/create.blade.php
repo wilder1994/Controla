@@ -15,7 +15,16 @@
                 <h3 class="text-lg font-semibold text-white">Registrar Novedad</h3>
                 <p class="text-sm text-slate-500 mt-0.5">Complete los campos para registrar una nueva minuta de vigilancia</p>
             </div>
-            <div class="px-6 py-5" x-data="geoCapture({{ in_array(old('type', 'general'), ['incidente', 'novedad', 'revista'], true) ? 'true' : 'false' }})">
+            <div class="px-6 py-5" x-data="guardLogForm(@js([
+                'requiresSupervisor' => in_array(old('type', 'general'), ['incidente', 'novedad', 'revista'], true),
+                'observatoryIds' => $observatoryLocationIds ?? [],
+                'locationId' => (string) old('location_id', $locations->first()?->id),
+                'type' => old('type', 'general'),
+                'toObservatory' => (bool) old('to_observatory', false),
+                'anonymous' => (bool) old('observatory_anonymous', false),
+                'latitude' => old('latitude', ''),
+                'longitude' => old('longitude', ''),
+            ]))">
                 <form method="POST" action="{{ route('access.guard_logs.store') }}">
                     @csrf
 
@@ -30,7 +39,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Ubicación</label>
-                            <select name="location_id" required class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
+                            <select name="location_id" x-model="locationId" required class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
                                 @foreach($locations as $loc)
                                 <option value="{{ $loc->id }}">{{ $loc->name }}</option>
                                 @endforeach
@@ -42,7 +51,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Tipo</label>
-                            <select name="type" x-on:change="requiresSupervisor = ['incidente','novedad','revista'].includes($event.target.value)" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
+                            <select name="type" x-model="type" x-on:change="requiresSupervisor = ['incidente','novedad','revista'].includes($event.target.value)" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="general" @selected(old('type') === 'general')>📋 General</option>
                                 <option value="novedad" @selected(old('type') === 'novedad')>🔶 Novedad</option>
                                 <option value="revista" @selected(old('type') === 'revista')>✅ Revista de puesto</option>
@@ -85,6 +94,36 @@
                         <textarea name="description" rows="4" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="Describa la novedad, incidente o novedad ocurrida durante el turno..." required>{{ old('description') }}</textarea>
                     </div>
 
+                    <template x-if="showObservatory">
+                    <div class="mt-5">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="hidden" name="to_observatory" value="0">
+                            <input type="checkbox" name="to_observatory" value="1" x-model="toObservatory" class="mt-0.5 rounded bg-slate-950 border-teal-600 text-teal-500 focus:ring-teal-500">
+                            <div>
+                                <p class="text-sm font-medium text-teal-200">También al Observatorio</p>
+                                <p class="text-xs text-slate-400">Copia esta novedad al folio del colegio. Solo si la sede es colegio y tiene puerta.</p>
+                            </div>
+                        </label>
+                        <div x-show="toObservatory" class="mt-3 space-y-3 p-4 bg-teal-950/30 rounded-lg border border-teal-800">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300">Tipo en Observatorio</label>
+                                <select name="observatory_kind" class="mt-1 block w-full max-w-xs rounded-lg bg-slate-950 border-slate-700 text-white">
+                                    <option value="">Seleccione…</option>
+                                    @foreach ($observatoryKinds ?? [] as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('observatory_kind') === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="hidden" name="observatory_anonymous" value="0">
+                                <input type="checkbox" name="observatory_anonymous" value="1" x-model="anonymous" class="mt-0.5 rounded bg-slate-950 border-amber-600 text-amber-500">
+                                <span class="text-sm text-slate-300">Enviar en anónimo</span>
+                            </label>
+                            <p x-show="anonymous" class="text-sm text-amber-100">En este reporte se oculta tu nombre y teléfono. Solo se muestra la denuncia.</p>
+                        </div>
+                    </div>
+                    </template>
+
                     <div class="mt-5">
                         <label class="flex items-start gap-3 cursor-pointer">
                             <input type="checkbox" x-model="requiresSupervisor" name="requires_supervisor" value="1" class="mt-0.5 rounded bg-slate-950 border-indigo-600 text-indigo-500 focus:ring-indigo-500">
@@ -123,13 +162,21 @@
 
 @push('scripts')
 <script>
-    function geoCapture(requiresSupervisor = false) {
+    function guardLogForm(cfg) {
         return {
-            requiresSupervisor,
+            requiresSupervisor: Boolean(cfg.requiresSupervisor),
             supervisorCode: '{{ old('supervision_code') }}',
-            lat: '{{ old('latitude') }}',
-            lng: '{{ old('longitude') }}',
-            captured: !!'{{ old('latitude') }}',
+            locationId: String(cfg.locationId || ''),
+            type: cfg.type || 'general',
+            toObservatory: Boolean(cfg.toObservatory),
+            anonymous: Boolean(cfg.anonymous),
+            observatoryIds: (cfg.observatoryIds || []).map(String),
+            get showObservatory() {
+                return this.type === 'novedad' && this.observatoryIds.includes(String(this.locationId));
+            },
+            lat: cfg.latitude || '',
+            lng: cfg.longitude || '',
+            captured: Boolean(cfg.latitude),
             loading: false,
             error: '',
             capture() {

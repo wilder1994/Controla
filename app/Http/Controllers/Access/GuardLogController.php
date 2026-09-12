@@ -2,17 +2,24 @@
 
 namespace App\Http\Controllers\Access;
 
+use App\Enums\InstallationKind;
+use App\Enums\ObservatoryReportKind;
+use App\Enums\ObservatoryReporterRole;
+use App\Enums\ObservatoryReportSource;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\GuardLog;
 use App\Models\Location;
 use App\Models\SupervisionCode;
 use App\Models\User;
+use App\Services\Observatory\SubmitObservatoryReportService;
 use App\Notifications\AlertaOperativa;
 use App\Services\Access\AuditLogger;
 use App\Services\Access\GeoService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class GuardLogController extends Controller
 {
@@ -27,9 +34,18 @@ class GuardLogController extends Controller
 
     public function create()
     {
-        $locations = Location::where('is_active', true)->get();
+        $locations = Location::where('is_active', true)->with('installation')->get();
+        $observatoryLocationIds = $locations
+            ->filter(fn (Location $location) => $this->observatoryEligible($location))
+            ->pluck('id')
+            ->values()
+            ->all();
 
-        return view('modules.access.guard_logs.create', compact('locations'));
+        return view('modules.access.guard_logs.create', [
+            'locations' => $locations,
+            'observatoryLocationIds' => $observatoryLocationIds,
+            'observatoryKinds' => ObservatoryReportKind::options(),
+        ]);
     }
 
     public function store(Request $request)
@@ -50,6 +66,13 @@ class GuardLogController extends Controller
                 'string',
                 'max:50',
             ],
+            'to_observatory' => ['sometimes', 'boolean'],
+            'observatory_kind' => [
+                $request->boolean('to_observatory') && $request->input('type') === 'novedad' ? 'required' : 'nullable',
+                'string',
+                Rule::enum(ObservatoryReportKind::class),
+            ],
+            'observatory_anonymous' => ['sometimes', 'boolean'],
         ];
 
         $validated = $request->validate($rules);
@@ -67,6 +90,11 @@ class GuardLogController extends Controller
                 return back()->withErrors(['geo' => implode(' ', $geoErrors)])->withInput();
             }
         }
+
+        $toObservatory = $request->boolean('to_observatory') && $validated['type'] === 'novedad';
+        $observatoryKind = $validated['observatory_kind'] ?? null;
+        $observatoryAnonymous = $request->boolean('observatory_anonymous');
+        unset($validated['to_observatory'], $validated['observatory_kind'], $validated['observatory_anonymous']);
 
         $validated['user_id'] = auth()->id();
         $validated['signed_at'] = $request->boolean('signed') ? now() : null;
@@ -96,8 +124,33 @@ class GuardLogController extends Controller
             'supervisor_name' => $log->supervisor_name,
         ]);
 
+        $message = 'Minuta registrada exitosamente.';
+        if ($toObservatory && $location !== null) {
+            $location->loadMissing('installation.client');
+            if ($this->observatoryEligible($location) && $location->installation?->client) {
+                try {
+                    $user = $request->user();
+                    app(SubmitObservatoryReportService::class)->execute($location->installation->client, [
+                        'installation_id' => (int) $location->installation_id,
+                        'kind' => (string) $observatoryKind,
+                        'body' => (string) $validated['description'],
+                        'is_anonymous' => $observatoryAnonymous,
+                        'source' => ObservatoryReportSource::Porteria,
+                        'reporter_role' => ObservatoryReporterRole::Vigilante,
+                        'reporter_name' => $observatoryAnonymous ? null : $user?->name,
+                        'reported_by' => $user,
+                        'latitude' => $validated['latitude'] ?? null,
+                        'longitude' => $validated['longitude'] ?? null,
+                    ], $request->ip());
+                    $message = 'Minuta registrada y enviada al Observatorio.';
+                } catch (ValidationException) {
+                    $message = 'Minuta registrada. No se pudo enviar al Observatorio.';
+                }
+            }
+        }
+
         return redirect()->route('access.guard_logs.index')
-            ->with('success', 'Minuta registrada exitosamente.');
+            ->with('success', $message);
     }
 
     public function panic(Request $request)
@@ -187,6 +240,23 @@ class GuardLogController extends Controller
         }
 
         return ['code' => null, 'name' => $supervisor->name];
+    }
+
+    private function observatoryEligible(?Location $location): bool
+    {
+        $installation = $location?->installation;
+        if ($installation === null || ! $installation->is_active) {
+            return false;
+        }
+        if ((string) $installation->kind !== InstallationKind::Colegio->value) {
+            return false;
+        }
+
+        return Location::query()
+            ->withoutGlobalScopes()
+            ->where('installation_id', $installation->id)
+            ->where('is_active', true)
+            ->exists();
     }
 
     private function porteriaCompanyId(): ?int

@@ -42,6 +42,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
             ->middleware('permission:observatory.view')
             ->name('observatory.events.index');
+        Route::get('/observatory/reports/create', [ObservatoryEventController::class, 'create'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.reports.create');
+        Route::post('/observatory/reports', [ObservatoryEventController::class, 'store'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.reports.store');
         Route::get('/observatory/events/{event}', [ObservatoryEventController::class, 'show'])
             ->middleware('permission:observatory.view')
             ->name('observatory.events.show');

@@ -376,3 +376,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Observatorio tablero v1: KPIs por estado, ranking de colegios, filtro fecha; vista reordenada (filtro → cifras → mapa/ranking → eventos). |
 | 2026-09-11 | Observatorio: agrupa reportes (mismo colegio + tipo, ventana 1 h) y pin en el intake; calor por ubicación del reporte. |
 | 2026-09-12 | Observatorio: el admin de la sede une folios del mismo colegio o saca un reporte a un folio nuevo. Empresa, `client-admin` y apoyo no. |
+| 2026-09-12 | Observatorio fuentes: comunidad (alumno/padre/vecino + recordar en el teléfono), panel (rector/apoyo), PWA patrulla (supervisor), minuta novedad si hay puerta de colegio (vigilante). Anónimo oculta nombre y teléfono. |

@@ -7,11 +7,13 @@ namespace App\Services\Observatory;
 use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
 use App\Enums\ObservatoryReportKind;
+use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use App\Models\Client;
 use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +21,7 @@ use Illuminate\Validation\ValidationException;
 final class SubmitObservatoryReportService
 {
     /**
-     * @param  array{installation_id: int, kind: string, body: string, is_anonymous: bool, reporter_name?: ?string, reporter_phone?: ?string, photo?: ?UploadedFile, latitude?: ?float, longitude?: ?float}  $data
+     * @param  array{installation_id: int, kind: string, body: string, is_anonymous: bool, source: ObservatoryReportSource|string, reporter_role: ObservatoryReporterRole|string, reporter_name?: ?string, reporter_phone?: ?string, reported_by?: ?User, photo?: ?UploadedFile, latitude?: ?float, longitude?: ?float}  $data
      */
     public function execute(Client $client, array $data, ?string $ip = null): ObservatoryReport
     {
@@ -44,6 +46,19 @@ final class SubmitObservatoryReportService
             ]);
         }
 
+        $source = $data['source'] instanceof ObservatoryReportSource
+            ? $data['source']
+            : ObservatoryReportSource::tryFrom((string) $data['source']);
+        $role = $data['reporter_role'] instanceof ObservatoryReporterRole
+            ? $data['reporter_role']
+            : ObservatoryReporterRole::tryFrom((string) $data['reporter_role']);
+
+        if ($source === null || $role === null || ! $role->allowedFor($source)) {
+            throw ValidationException::withMessages([
+                'reporter_role' => 'Indica quién reporta.',
+            ]);
+        }
+
         $body = trim((string) $data['body']);
         $anonymous = (bool) $data['is_anonymous'];
         $photo = $data['photo'] ?? null;
@@ -51,20 +66,24 @@ final class SubmitObservatoryReportService
             ? $photo->store('observatory/photos', 'public')
             : null;
         $coords = $this->coordinates($data, $installation);
+        $reporter = $data['reported_by'] ?? null;
+        $reporter = $reporter instanceof User ? $reporter : null;
 
-        return DB::transaction(function () use ($client, $installation, $kind, $body, $anonymous, $data, $photoPath, $ip, $coords): ObservatoryReport {
+        return DB::transaction(function () use ($client, $installation, $kind, $body, $anonymous, $data, $photoPath, $ip, $coords, $source, $role, $reporter): ObservatoryReport {
             $event = $this->openOrAttach($client, $installation, $kind);
 
             return ObservatoryReport::query()->create([
                 'event_id' => $event->id,
                 'client_id' => $client->id,
                 'installation_id' => $installation->id,
-                'source' => ObservatoryReportSource::Comunidad,
+                'source' => $source,
+                'reporter_role' => $role,
                 'kind' => $kind,
                 'body' => $body,
                 'is_anonymous' => $anonymous,
                 'reporter_name' => $anonymous ? null : $this->nullable($data['reporter_name'] ?? null),
                 'reporter_phone' => $anonymous ? null : $this->nullable($data['reporter_phone'] ?? null),
+                'reported_by_user_id' => $anonymous ? null : $reporter?->id,
                 'photo_path' => $photoPath,
                 'latitude' => $coords['lat'],
                 'longitude' => $coords['lng'],

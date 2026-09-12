@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CorrespondenceController;
 use App\Http\Controllers\Api\PreAuthorizationController;
 use App\Http\Controllers\Api\SupervisorFieldLogController;
 use App\Http\Controllers\Api\SupervisorFieldSheetController;
+use App\Http\Controllers\Api\SupervisorObservatoryController;
 use App\Http\Controllers\Api\SupervisorShiftController;
 use App\Http\Controllers\Api\VisitorController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/reviews', [SupervisorShiftController::class, 'review']);
         Route::get('/catalog', [SupervisorFieldLogController::class, 'catalog']);
         Route::post('/logs', [SupervisorFieldLogController::class, 'store']);
+        Route::get('/observatory/sites', [SupervisorObservatoryController::class, 'sites']);
+        Route::post('/observatory/reports', [SupervisorObservatoryController::class, 'store']);
         Route::get('/recommendations', [SupervisorFieldLogController::class, 'recommendations']);
         Route::get('/sheets', [SupervisorFieldSheetController::class, 'index']);
         Route::get('/sheets/{kind}/{id}', [SupervisorFieldSheetController::class, 'show']);

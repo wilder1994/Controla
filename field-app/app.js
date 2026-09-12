@@ -27,6 +27,10 @@ let closeQueued = false;
 let reviewEventId = null;
 let closeEventId = null;
 let logEventId = null;
+let obsSite = null;
+let obsKinds = {};
+let obsSitesCache = [];
+let obsSearchTimer = null;
 
 async function withBusy(btn, busyLabel, fn) {
     if (!btn || btn.dataset.busy === '1') return;
@@ -125,6 +129,15 @@ function applyPack(pack) {
     postsCache = pack.posts || postsCache;
     guardsCache = pack.guards || guardsCache;
     if (pack.modules?.length) catalog = pack.modules;
+    if (pack.observatory_sites) obsSitesCache = pack.observatory_sites;
+    if (pack.observatory_kinds) {
+        obsKinds = pack.observatory_kinds;
+        const select = document.getElementById('obs-kind');
+        if (select && select.options.length <= 1) {
+            select.innerHTML = '<option value="">Seleccione…</option>'
+                + Object.entries(obsKinds).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+        }
+    }
     const select = document.getElementById('mod-client');
     if (select) {
         select.innerHTML = (sites || []).map((s) => `<option value="${s.id}">${s.name}</option>`).join('')
@@ -278,7 +291,24 @@ async function sendOutboxItem(row, authToken) {
         fd.append('odometer_photo', row.files.odometer, 'odometer-end.jpg');
         fd.append('selfie_photo', row.files.selfie, 'selfie-end.jpg');
         await api('/supervision/shifts/close', { method: 'POST', body: fd, ...auth });
+        return;
     }
+    if (row.type === 'observatory') {
+        const fd = observatoryFormFromQueue(row);
+        await api('/supervision/observatory/reports', { method: 'POST', body: fd, ...auth });
+    }
+}
+
+function observatoryFormFromQueue(row) {
+    const fd = new FormData();
+    Object.entries(row.body || {}).forEach(([key, value]) => {
+        if (value == null || value === '') return;
+        fd.append(key, typeof value === 'string' ? value : String(value));
+    });
+    if (row.files?.photo) {
+        fd.append('photo', row.files.photo, 'observatory.jpg');
+    }
+    return fd;
 }
 
 function reviewFormFromQueue(row) {
@@ -538,6 +568,7 @@ function showOpsHome() {
     document.getElementById('review-card').classList.add('hidden');
     document.getElementById('module-card').classList.add('hidden');
     document.getElementById('sheets-card')?.classList.add('hidden');
+    document.getElementById('observatory-card')?.classList.add('hidden');
 }
 
 function showReview() {
@@ -545,6 +576,7 @@ function showReview() {
     document.getElementById('ops-home').classList.add('hidden');
     document.getElementById('module-card').classList.add('hidden');
     document.getElementById('sheets-card')?.classList.add('hidden');
+    document.getElementById('observatory-card')?.classList.add('hidden');
     document.getElementById('review-card').classList.remove('hidden');
 }
 
@@ -556,6 +588,7 @@ function openModule(key, from = 'home') {
     document.getElementById('ops-home').classList.add('hidden');
     document.getElementById('review-card').classList.add('hidden');
     document.getElementById('sheets-card')?.classList.add('hidden');
+    document.getElementById('observatory-card')?.classList.add('hidden');
     const wrap = document.getElementById('module-client-wrap');
     wrap.classList.toggle('hidden', !currentModule.requires_client);
     document.getElementById('module-card').classList.remove('hidden');
@@ -1716,6 +1749,139 @@ document.getElementById('btn-review-back').onclick = () => {
 document.getElementById('btn-open-alarms').onclick = () => openModule('alarms', 'home');
 document.getElementById('btn-open-supports').onclick = () => openModule('supports', 'home');
 document.getElementById('btn-open-documents').onclick = () => openModule('documents', 'home');
+
+function showObservatory() {
+    stopAllCams();
+    document.getElementById('ops-home').classList.add('hidden');
+    document.getElementById('review-card').classList.add('hidden');
+    document.getElementById('module-card').classList.add('hidden');
+    document.getElementById('sheets-card')?.classList.add('hidden');
+    document.getElementById('observatory-card').classList.remove('hidden');
+    loadObservatoryKinds();
+}
+
+async function loadObservatoryKinds() {
+    const select = document.getElementById('obs-kind');
+    if (select.options.length > 1) return;
+    try {
+        const data = await api('/supervision/observatory/sites');
+        obsKinds = data.kinds || {};
+        select.innerHTML = '<option value="">Seleccione…</option>'
+            + Object.entries(obsKinds).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+    } catch (e) {
+        setStatus(e.message, false);
+    }
+}
+
+document.getElementById('obs-q').addEventListener('input', () => {
+    clearTimeout(obsSearchTimer);
+    obsSearchTimer = setTimeout(searchObservatorySites, 250);
+});
+
+function filterObservatoryCache(q) {
+    const term = q.toLowerCase();
+    return (obsSitesCache || []).filter((row) => (
+        String(row.name || '').toLowerCase().includes(term)
+        || String(row.dane_code || '').toLowerCase().includes(term)
+    )).slice(0, 30);
+}
+
+function renderObservatoryList(rows) {
+    const list = document.getElementById('obs-list');
+    list.innerHTML = rows.map((row) => `
+        <button type="button" data-id="${row.id}">${row.name}${row.dane_code ? ` · DANE ${row.dane_code}` : ''}</button>
+    `).join('') || '<p class="hint">Sin colegios</p>';
+    list.classList.remove('hidden');
+    list.querySelectorAll('button').forEach((btn) => {
+        btn.onclick = () => {
+            const found = rows.find((row) => String(row.id) === btn.dataset.id);
+            obsSite = found || null;
+            document.getElementById('obs-q').value = found?.name || '';
+            document.getElementById('obs-picked').textContent = found
+                ? `Elegido: ${found.name}${found.client ? ` · ${found.client}` : ''}`
+                : '';
+            list.classList.add('hidden');
+        };
+    });
+}
+
+async function searchObservatorySites() {
+    const q = document.getElementById('obs-q').value.trim();
+    const list = document.getElementById('obs-list');
+    if (q.length < 2) {
+        list.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+    }
+    const cached = filterObservatoryCache(q);
+    if (cached.length) {
+        renderObservatoryList(cached);
+        return;
+    }
+    try {
+        const data = await api(`/supervision/observatory/sites?q=${encodeURIComponent(q)}`);
+        const rows = data.sites || [];
+        if (data.kinds && Object.keys(obsKinds).length === 0) {
+            obsKinds = data.kinds;
+            document.getElementById('obs-kind').innerHTML = '<option value="">Seleccione…</option>'
+                + Object.entries(obsKinds).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+        }
+        renderObservatoryList(rows);
+    } catch (e) {
+        setStatus(e.message, false);
+    }
+}
+
+document.getElementById('obs-anonymous').addEventListener('change', () => {
+    document.getElementById('obs-anon-warn').classList.toggle('hidden', !document.getElementById('obs-anonymous').checked);
+});
+
+document.getElementById('btn-obs-send').onclick = () => withBusy(
+    document.getElementById('btn-obs-send'),
+    'Enviando…',
+    async () => {
+        if (closeQueued) throw new Error('Hay un cierre pendiente de envío.');
+        if (!obsSite?.id) throw new Error('Elija el colegio.');
+        const kind = document.getElementById('obs-kind').value;
+        const body = document.getElementById('obs-body').value.trim();
+        if (!kind) throw new Error('Indique el tipo.');
+        if (body.length < 10) throw new Error('Describa qué pasó (mínimo 10 caracteres).');
+        const pos = await geo();
+        const payload = {
+            installation_id: obsSite.id,
+            kind,
+            body,
+            is_anonymous: document.getElementById('obs-anonymous').checked ? 1 : 0,
+            latitude: pos?.latitude,
+            longitude: pos?.longitude,
+        };
+        const photo = document.getElementById('obs-photo').files[0] || null;
+        const fd = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+            if (value == null || value === '') return;
+            fd.append(key, String(value));
+        });
+        if (photo) fd.append('photo', photo, photo.name || 'observatory.jpg');
+        try {
+            const data = await api('/supervision/observatory/reports', { method: 'POST', body: fd });
+            setStatus(data.report?.folio ? `Reporte ${data.report.folio} enviado.` : 'Reporte enviado.');
+        } catch (e) {
+            if (!ControlaOffline.isOfflineError(e)) throw e;
+            await enqueueOrThrow(
+                { type: 'observatory', body: payload, files: photo ? { photo } : {} },
+                'Observatorio guardado en el teléfono. Se enviará al reconectar.',
+            );
+        }
+        document.getElementById('obs-body').value = '';
+        document.getElementById('obs-photo').value = '';
+        document.getElementById('obs-anonymous').checked = false;
+        document.getElementById('obs-anon-warn').classList.add('hidden');
+        showOpsHome();
+    },
+);
+
+document.getElementById('btn-open-observatory').onclick = () => showObservatory();
+document.getElementById('btn-obs-back').onclick = showOpsHome;
 document.getElementById('btn-open-sheets').onclick = () => {
     showSheets();
 };
@@ -1726,6 +1892,7 @@ async function showSheets() {
     document.getElementById('ops-home').classList.add('hidden');
     document.getElementById('review-card').classList.add('hidden');
     document.getElementById('module-card').classList.add('hidden');
+    document.getElementById('observatory-card')?.classList.add('hidden');
     document.getElementById('sheets-card').classList.remove('hidden');
     const list = document.getElementById('sheets-list');
     list.innerHTML = '<p class="hint">Cargando…</p>';
