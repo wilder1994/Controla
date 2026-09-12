@@ -2,14 +2,14 @@
 
 Intake público de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 11 septiembre 2026
+**Última actualización:** 12 septiembre 2026
 
 ## Piezas
 
 | Pieza | Qué es |
 |--------|--------|
 | **Reporte** | Intake público. Fuente v1: `comunidad`. Puede llevar pin (lat/lng). |
-| **Evento** | Incidente. Folio `EV-000123`. Varios reportes del mismo colegio y tipo se unen si el evento sigue abierto y el último reporte de ese tipo fue hace menos de 1 hora (`OBSERVATORY_MERGE_WINDOW_MINUTES`). Cerrado nunca recibe más reportes. |
+| **Evento** | Incidente. Folio `EV-000123`. Varios reportes del mismo colegio y tipo se unen si el evento sigue abierto y el último reporte de ese tipo fue hace menos de 1 hora (`OBSERVATORY_MERGE_WINDOW_MINUTES`). Cerrado nunca recibe más reportes. El admin de esa sede puede unir folios a mano o sacar un reporte a un folio nuevo. |
 
 ## Público `/o/{slug}`
 
@@ -25,20 +25,29 @@ Empresa y admin del cliente copian el link en Observatorio (botón Copiar). El a
 
 ## Estados
 
-`nuevo` → `en_atencion` → `cerrado`. **Los cierra el admin de instalaciones** de esa sede (`client-installation-admin` con `site_permission=admin`). El apoyo ve y no cambia estado. Desde `cerrado` no se reabre.
+`nuevo` → `en_atencion` → `cerrado`. **Los cierra el admin de instalaciones** de esa sede (`client-installation-admin` con `site_permission=admin`). El mismo admin puede **unir** otro folio del mismo colegio (el otro se elimina) o **sacar** un reporte a un folio nuevo (el evento debe tener al menos dos reportes). No se une a un evento cerrado. El apoyo ve y no cambia estado ni une. Desde `cerrado` no se reabre.
 
-Empresa y `client-admin` **ven** y no cambian estado.
+Empresa y `client-admin` **ven** y no cambian estado ni unen.
 
 ## Quién ve
 
 | Actor | Superficie |
 |--------|------------|
 | Comunidad | `/o/{slug}` |
-| Admin instalaciones / apoyo | `/client/observatory/events` — solo sus sedes. Solo el administrador (no el apoyo) cambia estado. |
-| Admin del cliente | Mismo listado, todo el cliente. Sin cambiar estado. |
-| Empresa | `/company/observatory/events` — clientes de la empresa. Seguimiento, no portal, no cambia estado. |
+| Admin instalaciones / apoyo | `/client/observatory/events` — solo sus sedes. Solo el administrador (no el apoyo) cambia estado, une folios o saca un reporte. |
+| Admin del cliente | Mismo listado, todo el cliente. Sin cambiar estado ni unir. |
+| Empresa | `/company/observatory/events` — clientes de la empresa. Seguimiento, no portal, no cambia estado ni une. |
 
 Permisos: `observatory.view`, `observatory.events.update`. Tras el alta: `php artisan db:seed --class=RoleAndPermissionSeeder`.
+
+## Unir / sacar (v1)
+
+En la ficha del evento (`/client/observatory/events/{id}`), solo el admin de esa sede:
+
+- **Unir aquí:** elige otro folio del mismo colegio. Los reportes pasan a este evento y el otro folio se elimina. No se une a un evento cerrado.
+- **Sacar a folio nuevo:** en cada reporte, si el evento tiene dos o más. Crea un `EV-` nuevo (`nuevo`) con ese reporte.
+
+Empresa, `client-admin` y apoyo no ven esos botones.
 
 ## Tablero (v1)
 
@@ -50,4 +59,4 @@ En Observatorio de empresa y cliente: pines de colegios + pines de cada reporte.
 
 ## Siguiente
 
-Unir/desenganchar a mano, Policía/123, API.
+Policía/123, API.

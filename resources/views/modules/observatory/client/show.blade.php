@@ -4,8 +4,11 @@
         @include('modules.observatory.partials.event-card', [
             'event' => $event,
             'canUpdateStatus' => $canUpdateStatus,
+            'canMerge' => $canMerge ?? false,
             'statuses' => $statuses,
             'statusAction' => route('client.observatory.events.status', $event),
+            'mergeAction' => route('client.observatory.events.merge', $event),
+            'mergeCandidates' => $mergeCandidates ?? collect(),
         ])
     </div>
 </x-client-layout>

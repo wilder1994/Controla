@@ -8,8 +8,11 @@ use App\Enums\ObservatoryEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ObservatoryEvent;
+use App\Models\ObservatoryReport;
 use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
+use App\Services\Observatory\MergeObservatoryEventsService;
+use App\Services\Observatory\UnhookObservatoryReportService;
 use App\Services\Observatory\UpdateObservatoryEventStatusService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +26,8 @@ final class ObservatoryEventController extends Controller
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly UpdateObservatoryEventStatusService $statuses,
+        private readonly MergeObservatoryEventsService $merger,
+        private readonly UnhookObservatoryReportService $unhook,
     ) {}
 
     public function index(Request $request): View
@@ -74,10 +79,14 @@ final class ObservatoryEventController extends Controller
         $event->load(['client', 'installation', 'reports', 'statusLogs.user', 'closedBy']);
         $this->authorize('view', $event);
 
+        $canUpdate = $request->user()?->can('update', $event) ?? false;
+
         return view('modules.observatory.client.show', [
             'event' => $event,
-            'canUpdateStatus' => $request->user()?->can('update', $event) ?? false,
+            'canUpdateStatus' => $canUpdate,
+            'canMerge' => $canUpdate && $event->status !== ObservatoryEventStatus::Cerrado,
             'statuses' => ObservatoryEventStatus::options(),
+            'mergeCandidates' => $this->mergeCandidates($event),
         ]);
     }
 
@@ -103,6 +112,60 @@ final class ObservatoryEventController extends Controller
         return redirect()
             ->route('client.observatory.events.show', $event)
             ->with('success', 'Estado actualizado.');
+    }
+
+    public function merge(Request $request, ObservatoryEvent $event): RedirectResponse
+    {
+        $this->assertClient($event);
+        $this->authorize('update', $event);
+
+        $validated = $request->validate([
+            'source_event_id' => ['required', 'integer', 'exists:observatory_events,id'],
+        ]);
+
+        $source = ObservatoryEvent::query()->findOrFail((int) $validated['source_event_id']);
+        $this->assertClient($source);
+        $this->authorize('update', $source);
+
+        try {
+            $this->merger->execute($event, $source);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        return redirect()
+            ->route('client.observatory.events.show', $event)
+            ->with('success', 'Folio '.$source->folio().' unido aquí.');
+    }
+
+    public function detach(Request $request, ObservatoryEvent $event, ObservatoryReport $report): RedirectResponse
+    {
+        $this->assertClient($event);
+        $this->authorize('update', $event);
+        abort_unless((int) $report->event_id === (int) $event->id, 404);
+
+        try {
+            $created = $this->unhook->execute($event, $report);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        return redirect()
+            ->route('client.observatory.events.show', $event)
+            ->with('success', 'Reporte pasado a '.$created->folio().'.');
+    }
+
+    /** @return \Illuminate\Support\Collection<int, ObservatoryEvent> */
+    private function mergeCandidates(ObservatoryEvent $event)
+    {
+        return ObservatoryEvent::query()
+            ->where('client_id', $event->client_id)
+            ->where('installation_id', $event->installation_id)
+            ->whereKeyNot($event->id)
+            ->withCount('reports')
+            ->orderByDesc('opened_at')
+            ->limit(30)
+            ->get();
     }
 
     private function assertClient(ObservatoryEvent $event): void

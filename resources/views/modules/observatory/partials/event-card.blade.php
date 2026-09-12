@@ -1,7 +1,10 @@
 @php
     $canUpdateStatus = $canUpdateStatus ?? false;
+    $canMerge = $canMerge ?? false;
     $statuses = $statuses ?? [];
     $statusAction = $statusAction ?? null;
+    $mergeAction = $mergeAction ?? null;
+    $mergeCandidates = $mergeCandidates ?? collect();
 @endphp
 <div class="space-y-4">
     <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-2">
@@ -41,8 +44,27 @@
         </form>
     @endif
 
+    @if ($canMerge && $mergeAction && $mergeCandidates->isNotEmpty())
+        <form method="POST" action="{{ $mergeAction }}" class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
+            @csrf
+            <p class="text-sm font-medium text-white">Unir folio</p>
+            <p class="text-xs text-slate-500">Trae los reportes de otro evento de este colegio a este folio. El otro folio se elimina.</p>
+            <select name="source_event_id" required class="w-full h-11 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                <option value="">Elegir folio…</option>
+                @foreach ($mergeCandidates as $candidate)
+                    <option value="{{ $candidate->id }}">
+                        {{ $candidate->folio() }} · {{ $candidate->title }} · {{ $candidate->statusLabel() }} · {{ $candidate->reports_count }} reporte{{ (int) $candidate->reports_count === 1 ? '' : 's' }}
+                    </option>
+                @endforeach
+            </select>
+            <x-ui.field-error :messages="$errors->get('source_event_id')" />
+            <button type="submit" class="h-9 px-3 rounded-lg bg-indigo-600 text-xs font-semibold text-white">Unir aquí</button>
+        </form>
+    @endif
+
     <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
         <p class="text-sm font-medium text-white">Reportes</p>
+        <x-ui.field-error :messages="$errors->get('report')" />
         @forelse ($event->reports as $report)
             <article class="rounded-lg border border-slate-800 bg-slate-950/50 p-3 space-y-1">
                 <p class="text-xs text-slate-500">{{ $report->kindLabel() }} · {{ $report->sourceLabel() }} · {{ $report->created_at?->format('d/m/Y H:i') }}</p>
@@ -53,6 +75,14 @@
                 @endif
                 @if ($report->photoUrl())
                     <img src="{{ $report->photoUrl() }}" alt="Evidencia" class="mt-2 max-h-64 rounded-lg border border-slate-800">
+                @endif
+                @if ($canUpdateStatus && $event->reports->count() > 1)
+                    <form method="POST" action="{{ route('client.observatory.events.reports.detach', [$event, $report]) }}" class="pt-2">
+                        @csrf
+                        <button type="submit" class="h-8 px-2 rounded-md border border-slate-700 text-[11px] font-semibold text-slate-300 hover:bg-slate-800">
+                            Sacar a folio nuevo
+                        </button>
+                    </form>
                 @endif
             </article>
         @empty
