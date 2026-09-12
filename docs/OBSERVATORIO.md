@@ -112,6 +112,17 @@ El POST usa las mismas reglas de unión (1 h, mismo colegio y tipo). Anónimo oc
 
 En Observatorio de empresa y cliente: pines de colegios + pines de cada reporte. Color por estado (ámbar nuevo, índigo en atención, gris cerrado/sin reportes). Botón **Calor** = ubicación de cada reporte abierto (no el centroide del colegio). Requiere `GOOGLE_MAPS_API_KEY`.
 
+## Pliego (Anexo 7.5)
+
+Texto literal: fuentes diversas + origen; **no** nombra Policía ni Línea 123. Visita: Secretaría de Educación de Cali.
+
+| Pedido | Estado |
+|--------|--------|
+| Maestro, mapa, pines, calor, intake, folio, bitácora, tablero, API | Hecho |
+| Filtros/capas territoriales | Pendiente: comunas urbanas Cali (IDESC / [datos.cali.gov.co](https://datos.cali.gov.co/dataset/servicio-wms-comunas-de-cali)). No cubren el Valle |
+| Priorización configurable | Pendiente |
+| Salida de resultados (export) | Pendiente |
+
 ## Siguiente
 
-Capas por comuna. Catálogo MEN. Policía/123 (sin convenio).
+Capas y filtro por comuna (Cali). Luego prioridad configurable y export. Sin conector 123.

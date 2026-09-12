@@ -177,6 +177,8 @@ Eso es **Controla + Observatorio** sobre el cliente Secretaría. No es otra marc
 
 El Anexo en prosa pide lo mismo sin puntajes: maestro + búsqueda; mapa + eventos geo + capas + concentraciones; fuentes + normalización + origen; reportes comunitarios con privacidad, flujo y vínculo; eventos con dueño, cruce de fuentes e histórico; analítica configurable y tablero; API o equivalente documentado.
 
+**Lectura literal (12 sep 2026, texto del pliego / Anexo 7.5):** no nombra Policía ni Línea 123. Eso era glosa nuestra. Multifuente = fuentes autorizadas diversas + unirlas + ver el origen. Visita prevista: Secretaría de Educación de Cali. Capas territoriales = comunas urbanas de Cali (IDESC / [datos.cali.gov.co](https://datos.cali.gov.co/dataset/servicio-wms-comunas-de-cali)); no cubren todo el Valle.
+
 ### 7.2 Qué hay hoy en Controla (brecha)
 
 Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio ya tiene intake, fuentes, agrupar 1 h, unir/sacar, mapa/calor, Tablero + Eventos, ficha con bitácora y API documentada. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
@@ -184,11 +186,11 @@ Controla es maduro en **accesos, censo y supervisión de campo**. El Observatori
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
-| 2 Geográfico | ~80 % | Mapa Observatorio (colegio + pin del reporte; calor por ubicación del reporte). Google Maps, GPS PWA | Capas territoriales / comunas; calor PostGIS |
-| 3 Multifuente | ~90 % | Comunidad, panel, PWA, minuta y API; origen en la ficha | Policía / 123 (convenio) |
-| 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. **Compartir link** en el Tablero | Varias fuentes (campo, portería); no es el pánico de portería |
-| 5 Eventos | ~95 % | Folio; agrupa 1 h; unir/sacar; ficha con mapa, reportes y bitácora; rector **Agregar** / **Cerrar folio** (nota obligatoria) | — |
-| 6 Analítica | ~90 % | Tablero: mapa + leyenda; colegios + tendencia; tipo/canal/cierre. Eventos (tabla). KPIs abren Eventos filtrados | Prioridad configurable; export |
+| 2 Geográfico | ~80 % | Mapa Observatorio (colegio + pin del reporte; calor). Google Maps | **Capas/filtro por comuna (Cali, IDESC)** — 0,25 del factor. PostGIS no es requisito del pliego |
+| 3 Multifuente | **Sí** | Comunidad, panel, PWA, minuta y API; origen (canal + rol) en la ficha | Nada del pliego. No hace falta 123 |
+| 4 Comunidad | **Sí** | Intake `/o/{slug}`, anónimo, aviso menores, flujo de estados, vínculo a sede/folio | — |
+| 5 Eventos | **Sí** | Folio; agrupa 1 h; unir/sacar; bitácora; rector **Agregar** / **Cerrar folio** | — |
+| 6 Analítica | ~70 % | Tablero + filtros + tendencia + ranking + calor | **Prioridad configurable** (0,30) y **salida/export** (parte del 0,30 de tablero) |
 | 7 Interoperabilidad | ~90 % | `/api/observatory/*` Sanctum + OpenAPI `/docs/observatory` | Tokens de integración dedicados (hoy login del usuario) |
 
 **No cumple el Anexo, por sí solo:** pánico de portería, minuta, `locations`, clustering visual de pines, ni el tablero de la empresa de seguridad.
@@ -206,9 +208,7 @@ Capa **Observatorio**. Lee instalaciones/colegios. **No** vive en minuta ni en `
 | Tablero | Tendencias, recurrencia, ranking, prioridad configurable, filtros y export |
 | API | JSON de eventos/riesgos + documentación (OpenAPI) y control de la interfaz |
 
-**Fuentes v1 (visita técnica, sin convenio externo):** comunidad educativa, panel (rector/apoyo), supervisión de campo, portería, API de Secretaría (canal Integración).
-
-**Fuentes después (convenio, no solo JSON):** Policía, Línea 123. El día 1 se pueden **simular** conectores si el pliego no exige el tubo en vivo.
+**Fuentes que pide el pliego:** varias y autorizadas, con origen visible. En Controla: comunidad educativa, panel (rector/apoyo), supervisión de campo, portería, API (canal Integración). El pliego **no** exige conector Policía ni Línea 123.
 
 **Privacidad:** el aviso de menores de Normoteca (`minors_data_policy`) aplica al censo y, cuando haya intake comunitario, al tratamiento de datos de NNA. El reporte anónimo oculta nombre y teléfono; no reutiliza el pánico de Accesos.
 
@@ -229,7 +229,7 @@ Las mismas del Anexo, en el orden en que se enseñan en visita. Encajan 1:1 con 
 |---|----------------------------|--------|--------|
 | 1 | Directorio de colegios (código, comuna, rector, contacto) | 1 | Instalación + admins |
 | 2 | Mapa de la ciudad: pines por tipo de alerta + mapa de calor | 2 | Observatorio (nuevo) |
-| 3 | Denuncias de padre, Policía, Línea 123 en la misma base | 3 y 4 | Observatorio + conectores |
+| 3 | Varias fuentes (padre, rector, patrulla, portería, API) en la misma base | 3 y 4 | Observatorio |
 | 4 | Botón de pánico anónimo (ocultar nombre y teléfono) | 4 | Observatorio; **no** pánico de portería |
 | 5 | Enganchar reportes repetidos en un incidente | 5 | Observatorio |
 | 6 | Tablero, gráficas, ranking colegio más peligroso → más seguro | 6 | Observatorio |
@@ -247,9 +247,9 @@ El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta
 | Panel Secretaría | Mapa + tablas + gráficos, privado |
 | Interoperabilidad | OpenAPI del Observatorio; mismos formatos en la visita (crear evento, listar, filtrar) |
 
-PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. Línea 123 y Policía son **convenio**; el día 1 pueden simularse conectores si el pliego no exige el tubo en vivo.
+PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. **No** es requisito del Anexo 7.5: las capas de visita son GeoJSON de IDESC sobre Google Maps.
 
-**Orden de código** (punto 8 del §11): factores 1–7 v1 **hechos** (fuentes + API + tablero). Opcional: comunas, MEN, export.
+**Siguiente corte (pliego, no 123):** (1) capas y filtro por comuna Cali; (2) prioridad configurable; (3) export del tablero/eventos. MEN / typeahead: no está en el Anexo.
 
 ---
 
@@ -328,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (Anexo 7.5). Factores 1–7 v1 **hechos** (fuentes, tablero, API OpenAPI). Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
+8. Observatorio escolar (Anexo 7.5). v1 **hecho** salvo capas comunas, prioridad configurable y export. El pliego no pide 123. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 
@@ -336,7 +336,7 @@ No se abre código en este corte. El orden acordado:
 
 - Fusionar repos Controla + SJ-SIG.
 - Sustituir el Excel WM por el de SJ-SIG.
-- Meter denuncias, calor o Línea 123 en minuta / `locations`.
+- Meter denuncias o calor en minuta / `locations`. No construir conector 123: el Anexo no lo pide.
 - Tratar el pánico de portería como pánico anónimo escolar.
 - Hacer cada colegio un `clients` aparte.
 - Publicar Play Store antes de tener el *foreground service* real.
@@ -381,3 +381,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Observatorio: pestañas Tablero / Eventos; ficha con bitácora (Agregar / Cerrar folio, nota obligatoria); Compartir link; Nuevo reporte visible y bloqueado si no es rector/apoyo. |
 | 2026-09-12 | Shell: pestañas colgando del header; Nuevo reporte en `$actions`; Cerrar sesión en el pie del sidebar (todos los paneles); flecha para ocultar/mostrar el menú. |
 | 2026-09-12 | Tablero Observatorio: mapa + leyenda; colegios + tendencia ancha; tipo/canal más grandes; controles Pines/Calor y Mapa/Satélite fuera del lienzo de Google. |
+| 2026-09-12 | Anexo 7.5 leído en literal: no pide Policía ni 123. Visita Cali. Falta para el pliego: capas comunas IDESC, prioridad configurable, export. |
