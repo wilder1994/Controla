@@ -379,3 +379,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Observatorio fuentes: comunidad (alumno/padre/vecino + recordar en el teléfono), panel (rector/apoyo), PWA patrulla (supervisor), minuta novedad si hay puerta de colegio (vigilante). Anónimo oculta nombre y teléfono. |
 | 2026-09-12 | Observatorio tablero (tendencia, tipos, canales, medidor de cierre) y API Sanctum + OpenAPI `/docs/observatory`. Secretaría escribe como Integración; empresa solo lee. |
 | 2026-09-12 | Observatorio: pestañas Tablero / Eventos; ficha con bitácora (Agregar / Cerrar folio, nota obligatoria); Compartir link; Nuevo reporte visible y bloqueado si no es rector/apoyo. |
+| 2026-09-12 | Shell: pestañas colgando del header; Nuevo reporte en `$actions`; Cerrar sesión en el pie del sidebar (todos los paneles); flecha para ocultar/mostrar el menú. |

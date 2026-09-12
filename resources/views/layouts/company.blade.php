@@ -50,13 +50,16 @@
         $companyContext = $companyContext ?? ['company_name' => null, 'is_quota_full' => true];
         $supportMode = $supportMode ?? ['active' => false, 'company_name' => null, 'company_id' => null];
     @endphp
-    <div class="h-screen flex overflow-hidden">
-        <aside class="hidden lg:flex lg:w-64 lg:h-full lg:flex-col bg-slate-900 border-r border-slate-800 shrink-0">
+    <div class="h-screen flex overflow-hidden" x-data="panelSidebar">
+        <div class="relative hidden lg:block h-full shrink-0">
+            <aside class="h-full flex flex-col bg-slate-900 border-r border-slate-800 overflow-hidden transition-[width] duration-200 ease-out"
+                   :class="open ? 'w-64' : 'w-0 border-r-0'">
+                <div class="w-64 h-full min-h-0 flex flex-col">
             <div class="px-6 py-5 border-b border-slate-800 shrink-0">
                 <p class="text-xs uppercase tracking-wider text-slate-500">Controla</p>
                 <h1 class="text-lg font-semibold text-white">Panel Empresa</h1>
             </div>
-            <nav class="flex-1 px-4 py-6 space-y-1">
+            <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll">
                 @can('company.dashboard')
                 <a href="{{ route('company.dashboard') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.dashboard') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
@@ -137,16 +140,11 @@
                 </a>
                 @endcan
             </nav>
-            <div class="px-4 py-4 border-t border-slate-800 shrink-0">
-                <p class="text-xs text-slate-400 truncate">{{ Auth::user()->name }}</p>
-                <form method="POST" action="{{ route('logout') }}" class="mt-1">
-                    @csrf
-                    <button type="submit" class="text-xs text-slate-500 hover:text-white transition">
-                        Cerrar sesión
-                    </button>
-                </form>
-            </div>
-        </aside>
+                    @include('partials.sidebar-user')
+                </div>
+            </aside>
+            @include('partials.sidebar-toggle')
+        </div>
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
             @if (! empty($supportMode['active']))
@@ -201,7 +199,7 @@
                 </div>
 
                 @isset($headerTabs)
-                    <div class="company-shell-rail flex flex-wrap items-start gap-1.5 -mt-px pt-0 pb-3">
+                    <div class="company-shell-rail flex flex-wrap items-start gap-1.5 -mt-px pt-0 pb-2">
                         {{ $headerTabs }}
                     </div>
                 @endisset

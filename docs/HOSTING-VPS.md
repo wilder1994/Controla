@@ -18,7 +18,7 @@ Flujo: push local a `origin` (`wilder1994/Controla`, `main`). El VPS solo hace `
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
-Observatorio: migrate `2026_09_11_260000`, `2026_09_12_150000` (rol) y `2026_09_12_210000` (nota de bitácora) si no están. Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe. Este commit **sí** añade migrate de `note` en `observatory_event_status_logs`. No añade permisos nuevos: no correr el seeder salvo que falten roles.
+Observatorio: migrate `2026_09_11_260000`, `2026_09_12_150000` (rol) y `2026_09_12_210000` (nota de bitácora) si no están. Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe. Este commit **no** añade migrate ni permisos: pull + composer + `npm run build` + caches. No correr el seeder.
 
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud

@@ -11,11 +11,13 @@ import { observatoryIntake } from './observatory-intake';
 import { observatoryMap } from './observatory-map';
 import { postEmployeePicker } from './post-employee-picker';
 import { employeeReassignForm } from './employee-reassign-form';
+import { panelSidebar } from './panel-sidebar';
 import './employee-document-indexer';
 
 import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
+Alpine.data('panelSidebar', panelSidebar);
 Alpine.data('companyLogoField', companyLogoField);
 Alpine.data('employeeFichaForm', employeeFichaForm);
 Alpine.data('createCompanyForm', createCompanyForm);

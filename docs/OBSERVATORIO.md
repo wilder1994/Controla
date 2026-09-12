@@ -37,7 +37,7 @@ Aviso de menores (Normoteca). Anónimo no guarda nombre ni teléfono. Alumno: el
 
 Si no mueven el pin, se guarda el del colegio. Sin pin de colegio ni API, las coordenadas quedan vacías.
 
-En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar / Cerrar). Rector y apoyo reportan desde **Nuevo reporte** en el panel del cliente. Empresa o admin del cliente ven el botón; al abrir, el sistema dice que con ese usuario no pueden reportar.
+En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar / Cerrar). Rector y apoyo reportan desde **Nuevo reporte** (botón en el header del panel cliente, slot `$actions`). Empresa o admin del cliente ven el botón; al abrir, el sistema dice que con ese usuario no pueden reportar.
 
 ## App de patrulla
 
@@ -83,7 +83,7 @@ Empresa, `client-admin` y apoyo no ven esos botones.
 
 ## Tablero y Eventos
 
-Pestañas **Tablero** | **Eventos**.
+Pestañas **Tablero** | **Eventos** (cuelgan del header, no van dentro de la barra).
 
 - **Tablero:** filtros, **Compartir link** (modal: URL + Copiar + Cerrar), API, KPIs (clic abre Eventos filtrados), mapa a la izquierda, ranking + leyenda de pines a la derecha, charts (tendencia, tipo, canal, cierre).
 - **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).

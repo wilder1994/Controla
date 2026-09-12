@@ -6,12 +6,12 @@
         ])
     </x-slot:headerTabs>
 
-    <div class="mb-4 flex justify-end">
+    <x-slot:actions>
         <a href="{{ route('client.observatory.reports.create') }}"
-           class="inline-flex h-10 items-center rounded-lg bg-teal-600 px-4 text-sm font-semibold text-white">
+           class="inline-flex h-9 items-center rounded-lg bg-teal-600 px-4 text-sm font-medium text-white hover:bg-teal-500">
             Nuevo reporte
         </a>
-    </div>
+    </x-slot:actions>
 
     @include('modules.observatory.partials.index-workspace', [
         'action' => route('client.observatory.events.index'),

@@ -13,7 +13,7 @@ Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo
 | `/admin` | `super-admin` | `platform.dashboard`, `platform.companies.view`, `platform.companies.manage` |
 
 Layout: `resources/views/layouts/admin.blade.php` (acento **violet**).  
-Shell: altura de viewport fija (`h-screen`); sidebar sin scroll; pie de usuario anclado abajo; scroll solo en la columna de contenido.  
+Shell: altura de viewport fija (`h-screen`); nav del sidebar con scroll interno; pie (nombre + Cerrar sesión) anclado abajo; flecha a media altura para ocultar/mostrar el menú.  
 Módulo Documentos (definición + v1 implementado; fases futuras §12): [`MODULO-DOCUMENTOS.md`](MODULO-DOCUMENTOS.md).  
 Guía visual: [`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md) §13.
 

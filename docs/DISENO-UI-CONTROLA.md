@@ -10,7 +10,7 @@ Referencia oficial del sistema visual. **Panel empresa** (`/company`, acento ind
 
 **Sidebar cliente:** Resumen · Instalaciones · Observatorio · Personas · Usuarios · Accesos · Ajustes (fijos). Opcionales en ficha empresa (**Gestión de módulos**): Vehículos · Mascotas · Autorizaciones · Puertas. Zonas comunes y Documentos siguen por permiso / flag.
 
-**Shell común (agosto 2026):** wrapper `h-screen flex overflow-hidden`. El `aside` ocupa la altura del viewport (`lg:h-full`), sin estirarse con el contenido. Tres zonas: marca (`shrink-0`) · nav (`flex-1`) · pie usuario (`shrink-0`, siempre visible). Scroll únicamente en la columna derecha (`min-h-0 overflow-y-auto`). En portería (`access`), el nav largo puede hacer scroll interno (`min-h-0 overflow-y-auto`) sin mover el pie.
+**Shell común:** wrapper `h-screen flex overflow-hidden` + Alpine `panelSidebar`. El aside ocupa el viewport (`w-64`); se oculta/muestra con la flecha a media altura del borde (`partials/sidebar-toggle`, `localStorage` `controla-sidebar-open`). Tres zonas: marca (`shrink-0`) · nav (`flex-1 min-h-0 overflow-y-auto sidebar-scroll`) · pie (`partials/sidebar-user`: nombre + **Cerrar sesión**, `shrink-0`). Sin Cerrar sesión en el header (residente no tiene sidebar: nombre + Cerrar sesión arriba). Pestañas `.admin-header-tab` cuelgan del borde del header (fondo solo en la fila del título). Slot `$actions` a la derecha (ej. **Nuevo reporte**).
 
 **Sidebar empresa:** Mi empresa · Facturación · Clientes · Instalaciones · Observatorio · Supervisión · Descargas · Empleados · Documentos · Usuarios · Mis datos · Ajustes. Observatorio: filtro + KPIs + mapa/ranking + tabla. Ajustes usa `headerTabs` Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos. Supervisión usa `headerTabs` En vivo | Historial | Resumen | Fichas. Usuarios usa `headerTabs` Activos | Desactivados; Buscar y **+ Nuevo usuario** en la misma fila; formulario con foto circular (`avatar`) y Cliente + Instalaciones en una fila (filtro + checkbox). Panel cliente `/client/users`: mismos tabs; solo admins **externos** de ese cliente (nunca personal de la empresa). En vivo e Historial: mapa alto + lista. Pines agrupados (~50 m): lista vertical; la moto no entra en esa lista. Hover moto: tooltip nombre + En línea/Sin señal. Clic: OverlayView compacto (no InfoWindow nativo). Leyenda en la columna. Historial cerrado: callejero (Roads, `GOOGLE_MAPS_SERVER_API_KEY`); abierto: GPS. Cierre automático al fin de plantilla + 30 min (sin replay). Pendiente: compositor PPTX y chatbot ayuda/PQRS ([`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md)). Empleados y Mis datos no tienen pestañas.
 
@@ -267,8 +267,8 @@ Misma estructura `px-4 py-3` — solo cambia color semántico:
 - Alto: viewport completo (`lg:h-full` dentro de `h-screen`); **no** crece con el `main`
 - Nav item activo: `bg-indigo-600 text-white`
 - Nav item idle: `text-slate-300 hover:bg-slate-800`
-- Pie: nombre usuario + **Cerrar sesión** (`text-xs text-slate-500 hover:text-white`), fijo abajo (`shrink-0`)
-- Sin scroll en el aside (pocos ítems)
+- Pie: nombre usuario + **Cerrar sesión** (`partials/sidebar-user`), fijo abajo (`shrink-0`)
+- Nav con scroll interno si el menú es largo; flecha a media altura para plegar el aside
 
 ### Flash messages
 

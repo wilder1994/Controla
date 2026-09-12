@@ -21,7 +21,7 @@
                         <span class="text-sm text-slate-400">{{ auth()->user()?->name }}</span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="text-xs text-slate-500 hover:text-red-400">Salir</button>
+                            <button type="submit" class="text-xs text-slate-500 hover:text-red-400">Cerrar sesión</button>
                         </form>
                     </div>
                 </div>

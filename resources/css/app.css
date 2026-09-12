@@ -47,10 +47,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 9.5rem;
-    min-height: 2.35rem;
-    padding: 0.5rem 1.5rem 0.6rem;
-    font-size: 0.8125rem;
+    min-width: 7.5rem;
+    min-height: 1.65rem;
+    padding: 0.28rem 1.15rem 0.32rem;
+    font-size: 0.75rem;
     font-weight: 500;
     line-height: 1.2;
     color: #e2e8f0;
@@ -96,4 +96,51 @@
 .admin-header-tab:focus-visible {
     outline: 2px solid #64748b;
     outline-offset: 2px;
+}
+
+.panel-sidebar-toggle {
+    display: none;
+    position: absolute;
+    top: 50%;
+    z-index: 30;
+    width: 1.25rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 9999px;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.4);
+    cursor: pointer;
+}
+
+.panel-sidebar-toggle.is-open {
+    left: 16rem;
+    transform: translate(-50%, -50%);
+}
+
+.panel-sidebar-toggle.is-closed {
+    left: 0;
+    transform: translate(0, -50%);
+}
+
+.panel-sidebar-toggle.is-closed svg {
+    transform: rotate(180deg);
+}
+
+.panel-sidebar-toggle:hover {
+    color: #f8fafc;
+    background: #1e293b;
+}
+
+.panel-sidebar-toggle:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+    .panel-sidebar-toggle {
+        display: flex;
+    }
 }

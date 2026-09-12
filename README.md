@@ -402,7 +402,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
 | `GET /company/installations` | Directorio de sedes: búsqueda, crear, ficha (código, área, admin de sede, mapa, puestos) |
-| `GET /company/observatory/events` | Observatorio: **Tablero** (KPIs, mapa, charts, compartir link) y **Eventos** (tabla de folios). No cambia estado ni une. API: `/docs/observatory` |
+| `GET /company/observatory/events` | Observatorio: pestañas **Tablero** / **Eventos** (cuelgan del header). No cambia estado ni une. API: `/docs/observatory` |
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas). **No** crea instalaciones, accesos ni puestos |
 | `POST/PUT/DELETE /company/clients/{id}/installations` | CRUD instalaciones (catálogo compartido) |
@@ -552,7 +552,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `layouts/company.blade.php` — shell `h-screen`; sidebar; rail `.company-shell-rail`; slots `subtitle` / `actions` / `headerTabs` (pestañas colgantes bajo el borde del header) |
+| Layout | `layouts/company.blade.php` — shell `h-screen`; sidebar plegable (flecha a media altura); rail `.company-shell-rail`; slots `subtitle` / `actions` / `headerTabs` (pestañas colgantes bajo el borde del header) |
 | Dashboard | Command Center v3: grid responsive, mapa satélite/terreno |
 | Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields`, `x-ui.flash-toasts` |
 | Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
@@ -568,7 +568,7 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `resources/views/layouts/admin.blade.php` — shell `h-screen`; sidebar violet fijo al viewport (pie usuario siempre visible); scroll solo en contenido |
+| Layout | `resources/views/layouts/admin.blade.php` — shell `h-screen`; sidebar violet plegable; pie (nombre + Cerrar sesión) siempre visible; nav con scroll interno |
 | Dashboard | Mapa geográfico (Google Maps), KPIs, estado de cartera (6 segmentos), modalidad/cupo/ciclo, TOP 5 facturación, KPIs comerciales, tendencia MRR (Chart.js) |
 | Empresas | 3 KPIs: Riesgo (suspendidas/archivadas/eliminadas), Total empresas, Total conjuntos; tabla de cartera |
 | Analytics | `PlatformDashboardAnalytics` — agregación de métricas y marcadores del mapa |
@@ -603,7 +603,7 @@ Tablas relacionadas:
 |------|--------|
 | `/client/dashboard` | Resumen |
 | `/client/installations` | Directorio de sedes; la ficha incluye estructura (nodos). `/client/structures` redirige |
-| `/client/observatory/events` | Observatorio: Tablero + Eventos + ficha (bitácora). Rector cierra con observación; apoyo reporta. Empresa operando / admin cliente ven **Nuevo reporte** pero no envían |
+| `/client/observatory/events` | Observatorio: Tablero + Eventos + ficha (bitácora). **Nuevo reporte** en el header. Rector cierra con observación; apoyo reporta. Empresa operando / admin cliente ven el botón pero no envían |
 | `/client/members` | Personas: tipo de documento + fecha de nacimiento; menores (Ley 1581) sin export; QR solo adultos |
 | `/client/pets` | Directorio de mascotas por unidad |
 | `/client/vehicles` | Directorio vehicular |

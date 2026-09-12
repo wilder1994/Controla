@@ -11,41 +11,45 @@
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100 overflow-hidden">
-    <div class="h-screen flex overflow-hidden">
-        <aside class="hidden lg:flex lg:w-64 lg:h-full lg:flex-col bg-slate-900 border-r border-slate-800 shrink-0">
-            <div class="px-6 py-5 border-b border-slate-800 shrink-0">
-                <p class="text-xs uppercase tracking-wider text-slate-500">Controla</p>
-                <h1 class="text-lg font-semibold text-white">Panel cliente</h1>
-                @isset($activeClient)
-                    <p class="text-xs text-indigo-300 mt-1">{{ $activeClient->name }}</p>
-                @endisset
-            </div>
-            <nav class="flex-1 px-4 py-6 space-y-1">
-                @foreach (config('access.navigation.client.items', []) as $item)
-                    @php
-                        $module = $item['module'] ?? null;
-                        $moduleOk = $module === null || (isset($activeClient) && $activeClient->panelModuleEnabled($module));
-                    @endphp
-                    @if ($moduleOk)
-                    @can($item['permission'])
-                    <a href="{{ route($item['route']) }}"
-                       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs(str_replace('.index', '.*', $item['route'])) || request()->routeIs($item['route']) ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
-                        <span>{{ $item['label'] }}</span>
-                    </a>
-                    @endcan
-                    @endif
-                @endforeach
-                @if (isset($activeClient) && $activeClient->has_access && $activeClient->show_personnel_folders)
-                <a href="{{ route('client.personnel-documents.index') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('client.personnel-documents.*') ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
-                    <span>Documentos</span>
-                </a>
-                @endif
-            </nav>
-            <div class="px-4 py-4 border-t border-slate-800 text-xs text-slate-500 shrink-0">
-                {{ Auth::user()->name }}
-            </div>
-        </aside>
+    <div class="h-screen flex overflow-hidden" x-data="panelSidebar">
+        <div class="relative hidden lg:block h-full shrink-0">
+            <aside class="h-full flex flex-col bg-slate-900 border-r border-slate-800 overflow-hidden transition-[width] duration-200 ease-out"
+                   :class="open ? 'w-64' : 'w-0 border-r-0'">
+                <div class="w-64 h-full min-h-0 flex flex-col">
+                    <div class="px-6 py-5 border-b border-slate-800 shrink-0">
+                        <p class="text-xs uppercase tracking-wider text-slate-500">Controla</p>
+                        <h1 class="text-lg font-semibold text-white">Panel cliente</h1>
+                        @isset($activeClient)
+                            <p class="text-xs text-indigo-300 mt-1 truncate" title="{{ $activeClient->name }}">{{ $activeClient->name }}</p>
+                        @endisset
+                    </div>
+                    <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll">
+                        @foreach (config('access.navigation.client.items', []) as $item)
+                            @php
+                                $module = $item['module'] ?? null;
+                                $moduleOk = $module === null || (isset($activeClient) && $activeClient->panelModuleEnabled($module));
+                            @endphp
+                            @if ($moduleOk)
+                            @can($item['permission'])
+                            <a href="{{ route($item['route']) }}"
+                               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs(str_replace('.index', '.*', $item['route'])) || request()->routeIs($item['route']) ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                                <span>{{ $item['label'] }}</span>
+                            </a>
+                            @endcan
+                            @endif
+                        @endforeach
+                        @if (isset($activeClient) && $activeClient->has_access && $activeClient->show_personnel_folders)
+                        <a href="{{ route('client.personnel-documents.index') }}"
+                           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('client.personnel-documents.*') ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                            <span>Documentos</span>
+                        </a>
+                        @endif
+                    </nav>
+                    @include('partials.sidebar-user')
+                </div>
+            </aside>
+            @include('partials.sidebar-toggle')
+        </div>
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
             @include('partials.operate-return-banner')
@@ -54,22 +58,25 @@
                     ? 'w-full px-4 sm:px-6 lg:px-8'
                     : 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8';
             @endphp
-            <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-10 shrink-0">
-                <div class="{{ $rail }} py-4 flex items-center justify-between gap-4">
-                    <div>
-                        @isset($header)
-                            {{ $header }}
-                        @else
-                            <h2 class="text-xl font-semibold text-white">{{ $title ?? 'Panel cliente' }}</h2>
+            <header class="sticky top-0 z-10 shrink-0">
+                <div class="bg-slate-900/80 border-b border-slate-800 backdrop-blur">
+                    <div class="{{ $rail }} py-3 flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            @isset($header)
+                                {{ $header }}
+                            @else
+                                <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Panel cliente' }}</h2>
+                            @endisset
+                        </div>
+                        @isset($actions)
+                            <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                                {{ $actions }}
+                            </div>
                         @endisset
                     </div>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="text-sm text-slate-400 hover:text-white">Cerrar sesión</button>
-                    </form>
                 </div>
                 @isset($headerTabs)
-                    <div class="{{ $rail }} flex flex-wrap items-start gap-1.5 -mt-px pt-0 pb-3">
+                    <div class="{{ $rail }} flex flex-wrap items-start gap-1.5 -mt-px pt-0 pb-2">
                         {{ $headerTabs }}
                     </div>
                 @endisset
