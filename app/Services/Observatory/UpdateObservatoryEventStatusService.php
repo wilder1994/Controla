@@ -13,8 +13,12 @@ use Illuminate\Validation\ValidationException;
 
 final class UpdateObservatoryEventStatusService
 {
-    public function execute(ObservatoryEvent $event, ObservatoryEventStatus $status, User $actor): ObservatoryEvent
-    {
+    public function execute(
+        ObservatoryEvent $event,
+        ObservatoryEventStatus $status,
+        User $actor,
+        string $note,
+    ): ObservatoryEvent {
         $current = $event->status instanceof ObservatoryEventStatus
             ? $event->status
             : ObservatoryEventStatus::tryFrom((string) $event->status);
@@ -25,6 +29,13 @@ final class UpdateObservatoryEventStatusService
             ]);
         }
 
+        $note = trim($note);
+        if (mb_strlen($note) < 10) {
+            throw ValidationException::withMessages([
+                'note' => 'La observación es obligatoria (mínimo 10 caracteres).',
+            ]);
+        }
+
         if ($current === ObservatoryEventStatus::Cerrado) {
             throw ValidationException::withMessages([
                 'status' => 'El evento ya está cerrado.',
@@ -32,7 +43,13 @@ final class UpdateObservatoryEventStatusService
         }
 
         if ($current === $status) {
-            return $event;
+            if ($current !== ObservatoryEventStatus::EnAtencion) {
+                throw ValidationException::withMessages([
+                    'status' => 'Solo se puede agregar una observación con el folio en atención.',
+                ]);
+            }
+
+            return $this->writeLog($event, $current, $status, $actor, $note);
         }
 
         if (! $current->canTransitionTo($status)) {
@@ -41,7 +58,7 @@ final class UpdateObservatoryEventStatusService
             ]);
         }
 
-        return DB::transaction(function () use ($event, $current, $status, $actor): ObservatoryEvent {
+        return DB::transaction(function () use ($event, $current, $status, $actor, $note): ObservatoryEvent {
             $event->status = $status;
             if ($status === ObservatoryEventStatus::Cerrado) {
                 $event->closed_at = now();
@@ -49,16 +66,28 @@ final class UpdateObservatoryEventStatusService
             }
 
             $event->save();
-
-            ObservatoryEventStatusLog::query()->create([
-                'event_id' => $event->id,
-                'from_status' => $current,
-                'to_status' => $status,
-                'user_id' => $actor->id,
-                'created_at' => now(),
-            ]);
+            $this->writeLog($event, $current, $status, $actor, $note);
 
             return $event->refresh();
         });
+    }
+
+    private function writeLog(
+        ObservatoryEvent $event,
+        ObservatoryEventStatus $from,
+        ObservatoryEventStatus $to,
+        User $actor,
+        string $note,
+    ): ObservatoryEvent {
+        ObservatoryEventStatusLog::query()->create([
+            'event_id' => $event->id,
+            'from_status' => $from,
+            'to_status' => $to,
+            'user_id' => $actor->id,
+            'note' => $note,
+            'created_at' => now(),
+        ]);
+
+        return $event->refresh();
     }
 }

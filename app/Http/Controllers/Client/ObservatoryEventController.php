@@ -51,7 +51,7 @@ final class ObservatoryEventController extends Controller
         $siteIds = $this->tenantContext->installationIds();
 
         $events = $board->scoped(null, $clientId, $siteIds, $filters['from'], $filters['to'])
-            ->with(['installation'])
+            ->with(['installation', 'latestReport'])
             ->when($filters['search'] !== '', function ($q) use ($filters) {
                 $q->where(function ($inner) use ($filters) {
                     $inner->where('title', 'like', '%'.$filters['search'].'%')
@@ -72,8 +72,10 @@ final class ObservatoryEventController extends Controller
             'from' => $filters['from'],
             'to' => $filters['to'],
             'status' => $filters['status'],
+            'vista' => $filters['vista'],
             'publicUrl' => route('observatory.public.show', $client->slug),
             'canReport' => $this->canReportFromPanel($request->user()),
+            'reporterName' => $request->user()?->name,
             'board' => $board->execute(null, $clientId, $siteIds, $filters['from'], $filters['to']),
             'map' => app(BuildObservatoryMapService::class)->execute(
                 null,
@@ -87,13 +89,15 @@ final class ObservatoryEventController extends Controller
     public function create(Request $request): View
     {
         $this->authorize('viewAny', ObservatoryEvent::class);
-        abort_unless($this->canReportFromPanel($request->user()), 403);
 
         $user = $request->user();
+        $canReport = $this->canReportFromPanel($user);
         $permission = $user?->installationAssignments()->value('site_permission') ?? 'admin';
 
         return view('modules.observatory.client.create', [
-            'sites' => $this->reportableColegios(),
+            'canReport' => $canReport,
+            'reporterName' => $user?->name,
+            'sites' => $canReport ? $this->reportableColegios() : collect(),
             'kinds' => ObservatoryReportKind::options(),
             'roleLabel' => $permission === 'support'
                 ? ObservatoryReporterRole::Apoyo->label()
@@ -140,7 +144,7 @@ final class ObservatoryEventController extends Controller
     public function show(Request $request, ObservatoryEvent $event): View
     {
         $this->assertClient($event);
-        $event->load(['client', 'installation', 'reports', 'statusLogs.user', 'closedBy']);
+        $event->load(['client', 'installation', 'reports.reportedBy', 'statusLogs.user', 'closedBy']);
         $this->authorize('view', $event);
 
         $canUpdate = $request->user()?->can('update', $event) ?? false;
@@ -152,6 +156,7 @@ final class ObservatoryEventController extends Controller
             'canDetach' => $canUpdate && $event->status !== ObservatoryEventStatus::Cerrado,
             'statuses' => ObservatoryEventStatus::options(),
             'mergeCandidates' => $this->mergeCandidates($event),
+            'folioMap' => app(BuildObservatoryMapService::class)->forEvent($event),
         ]);
     }
 
@@ -162,21 +167,27 @@ final class ObservatoryEventController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::enum(ObservatoryEventStatus::class)],
+            'note' => ['required', 'string', 'min:10', 'max:2000'],
         ]);
 
+        $target = ObservatoryEventStatus::from($validated['status']);
+        $was = $event->status;
+
         try {
-            $this->statuses->execute(
-                $event,
-                ObservatoryEventStatus::from($validated['status']),
-                $request->user(),
-            );
+            $this->statuses->execute($event, $target, $request->user(), (string) $validated['note']);
         } catch (ValidationException $e) {
             return back()->withErrors($e->errors());
         }
 
+        $message = match (true) {
+            $was === $target && $target === ObservatoryEventStatus::EnAtencion => 'Observación agregada.',
+            $target === ObservatoryEventStatus::Cerrado => 'Folio cerrado.',
+            default => 'Folio en atención.',
+        };
+
         return redirect()
             ->route('client.observatory.events.show', $event)
-            ->with('success', 'Estado actualizado.');
+            ->with('success', $message);
     }
 
     public function merge(Request $request, ObservatoryEvent $event): RedirectResponse
@@ -267,7 +278,7 @@ final class ObservatoryEventController extends Controller
             ->get();
     }
 
-    /** @return array{search: string, from: ?string, to: ?string, status: string} */
+    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string} */
     private function filters(Request $request): array
     {
         $validated = $request->validate([
@@ -275,6 +286,7 @@ final class ObservatoryEventController extends Controller
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
             'status' => ['nullable', 'string', Rule::enum(ObservatoryEventStatus::class)],
+            'vista' => ['nullable', 'string', Rule::in(['tablero', 'eventos'])],
         ]);
 
         return [
@@ -282,6 +294,7 @@ final class ObservatoryEventController extends Controller
             'from' => $validated['from'] ?? null,
             'to' => $validated['to'] ?? null,
             'status' => (string) ($validated['status'] ?? ''),
+            'vista' => (string) ($validated['vista'] ?? 'tablero'),
         ];
     }
 }

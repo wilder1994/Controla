@@ -26,7 +26,7 @@ final class ObservatoryEventController extends Controller
         $board = app(BuildObservatoryBoardService::class);
 
         $events = $board->scoped($companyId, null, null, $filters['from'], $filters['to'])
-            ->with(['client', 'installation'])
+            ->with(['client', 'installation', 'latestReport'])
             ->when($filters['search'] !== '', function ($q) use ($filters) {
                 $q->where(function ($inner) use ($filters) {
                     $inner->where('title', 'like', '%'.$filters['search'].'%')
@@ -53,6 +53,7 @@ final class ObservatoryEventController extends Controller
             'from' => $filters['from'],
             'to' => $filters['to'],
             'status' => $filters['status'],
+            'vista' => $filters['vista'],
             'shareClients' => $shareClients,
             'board' => $board->execute($companyId, null, null, $filters['from'], $filters['to']),
             'map' => app(BuildObservatoryMapService::class)->execute(
@@ -66,16 +67,17 @@ final class ObservatoryEventController extends Controller
 
     public function show(Request $request, ObservatoryEvent $event): View
     {
-        $event->load(['client', 'installation', 'reports', 'statusLogs.user', 'closedBy']);
+        $event->load(['client', 'installation', 'reports.reportedBy', 'statusLogs.user', 'closedBy']);
         $this->authorize('view', $event);
 
         return view('modules.observatory.company.show', [
             'event' => $event,
             'canUpdateStatus' => $request->user()?->can('update', $event) ?? false,
+            'folioMap' => app(BuildObservatoryMapService::class)->forEvent($event),
         ]);
     }
 
-    /** @return array{search: string, from: ?string, to: ?string, status: string} */
+    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string} */
     private function filters(Request $request): array
     {
         $validated = $request->validate([
@@ -83,6 +85,7 @@ final class ObservatoryEventController extends Controller
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
             'status' => ['nullable', 'string', Rule::enum(ObservatoryEventStatus::class)],
+            'vista' => ['nullable', 'string', Rule::in(['tablero', 'eventos'])],
         ]);
 
         return [
@@ -90,6 +93,7 @@ final class ObservatoryEventController extends Controller
             'from' => $validated['from'] ?? null,
             'to' => $validated['to'] ?? null,
             'status' => (string) ($validated['status'] ?? ''),
+            'vista' => (string) ($validated['vista'] ?? 'tablero'),
         ];
     }
 }

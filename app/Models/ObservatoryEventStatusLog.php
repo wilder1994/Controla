@@ -17,6 +17,7 @@ final class ObservatoryEventStatusLog extends Model
         'from_status',
         'to_status',
         'user_id',
+        'note',
         'created_at',
     ];
 

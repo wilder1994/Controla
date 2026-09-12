@@ -179,16 +179,16 @@ El Anexo en prosa pide lo mismo sin puntajes: maestro + búsqueda; mapa + evento
 
 ### 7.2 Qué hay hoy en Controla (brecha)
 
-Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio ya tiene intake, fuentes, agrupar 1 h, unir/sacar, mapa/calor, tablero con gráficos y API documentada. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
+Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio ya tiene intake, fuentes, agrupar 1 h, unir/sacar, mapa/calor, Tablero + Eventos, ficha con bitácora y API documentada. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
 
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
 | 2 Geográfico | ~80 % | Mapa Observatorio (colegio + pin del reporte; calor por ubicación del reporte). Google Maps, GPS PWA | Capas territoriales / comunas; calor PostGIS |
 | 3 Multifuente | ~90 % | Comunidad, panel, PWA, minuta y API; origen en la ficha | Policía / 123 (convenio) |
-| 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. Link copiable en empresa/cliente | Varias fuentes (campo, portería); no es el pánico de portería |
-| 5 Eventos | ~95 % | Folio; agrupa automático 1 h; el admin de la sede une folios del mismo colegio o saca un reporte a folio nuevo; estados `nuevo` → `en_atencion` → `cerrado`; histórico | — |
-| 6 Analítica | ~85 % | Tablero: KPIs, tendencia, tipos, canales, medidor de cierre, ranking, filtro fecha | Prioridad configurable; export |
+| 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. **Compartir link** en el Tablero | Varias fuentes (campo, portería); no es el pánico de portería |
+| 5 Eventos | ~95 % | Folio; agrupa 1 h; unir/sacar; ficha con mapa, reportes y bitácora; rector **Agregar** / **Cerrar folio** (nota obligatoria) | — |
+| 6 Analítica | ~90 % | Tablero (mapa + leyenda + charts) y pestaña Eventos (tabla). KPIs abren Eventos filtrados | Prioridad configurable; export |
 | 7 Interoperabilidad | ~90 % | `/api/observatory/*` Sanctum + OpenAPI `/docs/observatory` | Tokens de integración dedicados (hoy login del usuario) |
 
 **No cumple el Anexo, por sí solo:** pánico de portería, minuta, `locations`, clustering visual de pines, ni el tablero de la empresa de seguridad.
@@ -378,3 +378,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Observatorio: el admin de la sede une folios del mismo colegio o saca un reporte a un folio nuevo. Empresa, `client-admin` y apoyo no. |
 | 2026-09-12 | Observatorio fuentes: comunidad (alumno/padre/vecino + recordar en el teléfono), panel (rector/apoyo), PWA patrulla (supervisor), minuta novedad si hay puerta de colegio (vigilante). Anónimo oculta nombre y teléfono. |
 | 2026-09-12 | Observatorio tablero (tendencia, tipos, canales, medidor de cierre) y API Sanctum + OpenAPI `/docs/observatory`. Secretaría escribe como Integración; empresa solo lee. |
+| 2026-09-12 | Observatorio: pestañas Tablero / Eventos; ficha con bitácora (Agregar / Cerrar folio, nota obligatoria); Compartir link; Nuevo reporte visible y bloqueado si no es rector/apoyo. |

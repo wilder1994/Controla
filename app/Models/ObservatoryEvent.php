@@ -8,6 +8,7 @@ use App\Enums\ObservatoryEventStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class ObservatoryEvent extends Model
 {
@@ -66,6 +67,25 @@ final class ObservatoryEvent extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(ObservatoryReport::class, 'event_id')->orderByDesc('id');
+    }
+
+    public function latestReport(): HasOne
+    {
+        return $this->hasOne(ObservatoryReport::class, 'event_id')->latestOfMany();
+    }
+
+    public function kindLabel(): string
+    {
+        $report = $this->relationLoaded('latestReport')
+            ? $this->latestReport
+            : ($this->relationLoaded('reports') ? $this->reports->first() : $this->latestReport()->first());
+
+        return $report instanceof ObservatoryReport ? $report->kindLabel() : '—';
+    }
+
+    public function canAddNote(): bool
+    {
+        return $this->status === ObservatoryEventStatus::EnAtencion;
     }
 
     public function statusLogs(): HasMany

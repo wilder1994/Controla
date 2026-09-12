@@ -35,11 +35,7 @@ final class BuildObservatoryMapService
             ->get();
 
         return [
-            'google_maps' => [
-                'api_key' => config('google-maps.api_key'),
-                'center' => config('google-maps.default_center'),
-                'zoom' => config('google-maps.default_zoom'),
-            ],
+            'google_maps' => $this->googleMaps(),
             'sites' => $sites->map(function (Installation $site) use ($eventShowRoute): array {
                 $events = $site->observatoryEvents;
                 $open = $events->filter(
@@ -87,6 +83,56 @@ final class BuildObservatoryMapService
                     })->filter();
                 });
             })->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array{google_maps: array{api_key: ?string, center: mixed, zoom: mixed}, sites: list<array<string, mixed>>, points: list<array<string, mixed>>}
+     */
+    public function forEvent(ObservatoryEvent $event): array
+    {
+        $event->loadMissing(['installation', 'reports']);
+        $site = $event->installation;
+        $status = $event->status instanceof ObservatoryEventStatus ? $event->status->value : null;
+
+        $points = $event->reports->map(function (ObservatoryReport $report) use ($site, $event, $status): ?array {
+            $lat = $report->latitude ?? $site?->latitude;
+            $lng = $report->longitude ?? $site?->longitude;
+            if ($lat === null || $lng === null) {
+                return null;
+            }
+
+            return [
+                'lat' => (float) $lat,
+                'lng' => (float) $lng,
+                'open' => $event->status !== ObservatoryEventStatus::Cerrado,
+                'status' => $status,
+                'status_label' => $event->statusLabel(),
+                'title' => $site?->name ?? $event->folio(),
+                'kind' => $report->kindLabel(),
+                'show_url' => null,
+            ];
+        })->filter()->values()->all();
+
+        return [
+            'google_maps' => $this->googleMaps(
+                $site?->latitude !== null && $site?->longitude !== null
+                    ? ['lat' => (float) $site->latitude, 'lng' => (float) $site->longitude]
+                    : null,
+                16,
+            ),
+            'sites' => [],
+            'points' => $points,
+        ];
+    }
+
+    /** @return array{api_key: ?string, center: mixed, zoom: mixed} */
+    private function googleMaps(mixed $center = null, mixed $zoom = null): array
+    {
+        return [
+            'api_key' => config('google-maps.api_key'),
+            'center' => $center ?? config('google-maps.default_center'),
+            'zoom' => $zoom ?? config('google-maps.default_zoom'),
         ];
     }
 

@@ -7,9 +7,9 @@ alwaysApply: true
 
 ## Remotos
 
-- **Oficial (wmcodesoft):** `https://github.com/wmcodesoft/Controla.git` — en esta máquina es `origin`
-- **Fork personal (wilder1994):** `https://github.com/wilder1994/Controla.git` — remoto `wilder-fork`
-- **NO** hacer push a `wilder-fork` ni a `origin` salvo petición explícita del usuario.
+- **Trabajo / origin (wilder1994):** `https://github.com/wilder1994/Controla.git` — en esta máquina es `origin` (`main`)
+- **Oficial (wmcodesoft):** `https://github.com/wmcodesoft/Controla.git` — remoto `wmcodesoft`
+- **NO** hacer push a `wmcodesoft` ni a `origin` salvo petición explícita del usuario.
 
 ## Política de push
 
@@ -22,6 +22,6 @@ alwaysApply: true
 ```bash
 git push -u origin main
 git push origin creawilder
-git push wilder-fork main
+git push wmcodesoft main
 git push origin --tags
 ```

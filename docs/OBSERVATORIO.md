@@ -37,7 +37,7 @@ Aviso de menores (Normoteca). Anónimo no guarda nombre ni teléfono. Alumno: el
 
 Si no mueven el pin, se guarda el del colegio. Sin pin de colegio ni API, las coordenadas quedan vacías.
 
-Empresa y admin del cliente copian el link en Observatorio (botón Copiar). Rector y apoyo reportan identificados desde **Nuevo reporte** en el panel del cliente.
+En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar / Cerrar). Rector y apoyo reportan desde **Nuevo reporte** en el panel del cliente. Empresa o admin del cliente ven el botón; al abrir, el sistema dice que con ese usuario no pueden reportar.
 
 ## App de patrulla
 
@@ -49,9 +49,14 @@ En `/access/guard_logs/create`, tipo **Novedad** y ubicación de un **colegio co
 
 ## Estados
 
-`nuevo` → `en_atencion` → `cerrado`. **Los cierra el admin de instalaciones** de esa sede (`client-installation-admin` con `site_permission=admin`). El mismo admin puede **unir** otro folio del mismo colegio (el otro se elimina) o **sacar** un reporte a un folio nuevo (el evento debe tener al menos dos reportes). No se une ni se saca de un evento cerrado. El apoyo ve, reporta y no cambia estado ni une. Desde `cerrado` no se reabre.
+`nuevo` → `en_atencion` → `cerrado`. **Los gestiona el admin de instalaciones** de esa sede (`client-installation-admin` con `site_permission=admin`) en la ficha:
 
-Empresa y `client-admin` **ven** y no cambian estado ni unen ni reportan desde el panel.
+- **Agregar:** observación obligatoria. Desde Nuevo pasa a En atención. Si ya está en atención, el folio no cambia y la nota va a la bitácora.
+- **Cerrar folio:** solo En atención; observación obligatoria. No se reabre.
+
+Cancelar cierra el recuadro, no el folio. El apoyo ve, reporta y no cambia estado ni une. Empresa y `client-admin` solo leen. El botón **Nuevo reporte** se ve siempre en el panel cliente (y si la empresa opera el cliente); si el usuario no es rector/apoyo, al abrir dice que con ese usuario no puede reportar.
+
+El mismo admin puede **unir** otro folio del mismo colegio o **sacar** un reporte a un folio nuevo (el evento debe tener al menos dos reportes). No se une ni se saca de un evento cerrado.
 
 ## Quién ve
 
@@ -59,7 +64,7 @@ Empresa y `client-admin` **ven** y no cambian estado ni unen ni reportan desde e
 |--------|------------|
 | Comunidad | `/o/{slug}` |
 | Admin instalaciones / apoyo | `/client/observatory/events` — solo sus sedes. Solo el administrador (no el apoyo) cambia estado, une folios o saca un reporte. Ambos pueden **Nuevo reporte**. |
-| Admin del cliente | Mismo listado, todo el cliente. Sin cambiar estado, unir ni reportar desde el panel. |
+| Admin del cliente | Mismo listado, todo el cliente. Ve **Nuevo reporte** pero no puede enviarlo. Sin cambiar estado ni unir. |
 | Empresa | `/company/observatory/events` — clientes de la empresa. Seguimiento, no portal, no cambia estado ni une. |
 | Supervisor | PWA Observatorio |
 | Vigilante | Minuta → Observatorio si hay puerta de colegio |
@@ -76,9 +81,16 @@ En la ficha del evento (`/client/observatory/events/{id}`), solo el admin de esa
 
 Empresa, `client-admin` y apoyo no ven esos botones.
 
-## Tablero
+## Tablero y Eventos
 
-Filtro por fechas. KPIs (clic filtra la tabla). Línea de eventos por día, barras por tipo, torta por canal, medidor de % cerrados (0 si no hay eventos; los ejes se ven). Ranking de colegios. Mapa a la izquierda. Botón **API** → `/docs/observatory`.
+Pestañas **Tablero** | **Eventos**.
+
+- **Tablero:** filtros, **Compartir link** (modal: URL + Copiar + Cerrar), API, KPIs (clic abre Eventos filtrados), mapa a la izquierda, ranking + leyenda de pines a la derecha, charts (tendencia, tipo, canal, cierre).
+- **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).
+
+## Ficha
+
+Expediente del folio: cabecera, mapa de pines de *ese* evento, novedades (hora, canal, rol, denunciante), bitácora (estado + observación + quién + cuándo). Rector: Agregar / Cerrar folio.
 
 ## API
 

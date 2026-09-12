@@ -14,11 +14,11 @@ Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 | PHP | 8.3 |
 | Repo | `https://github.com/wilder1994/Controla.git` rama `main` |
 
-Flujo: push local a `wilder-fork` (`wilder1994/Controla`). El VPS solo hace `git pull` + composer/npm/migrate. No FTP ni ZIP. No `migrate:fresh` ni `db:wipe` en producción.
+Flujo: push local a `origin` (`wilder1994/Controla`, `main`). El VPS solo hace `git pull` + composer/npm/migrate. No FTP ni ZIP. No `migrate:fresh` ni `db:wipe` en producción.
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
-Observatorio: migrate `2026_09_11_260000` y `2026_09_12_150000` (rol del denunciante) si no están. Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe. Este commit de tablero/API **no** añade migrate ni permisos nuevos.
+Observatorio: migrate `2026_09_11_260000`, `2026_09_12_150000` (rol) y `2026_09_12_210000` (nota de bitácora) si no están. Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe. Este commit **sí** añade migrate de `note` en `observatory_event_status_logs`. No añade permisos nuevos: no correr el seeder salvo que falten roles.
 
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud
@@ -27,7 +27,8 @@ sudo -u wcodex-controla git pull --ff-only origin main
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && npm ci && npm run build"
 php8.3 artisan migrate --force --no-interaction
-php8.3 artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction
+# Solo si el commit cambia roles/permisos:
+# php8.3 artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction
 php8.3 artisan config:cache
 php8.3 artisan route:cache
 php8.3 artisan view:cache

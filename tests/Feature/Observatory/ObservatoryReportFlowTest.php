@@ -233,7 +233,9 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->actingAs($company)
             ->get(route('company.observatory.events.index'))
             ->assertOk()
-            ->assertSee($event->folio(), false)
+            ->assertSee('Tablero', false)
+            ->assertSee('Eventos', false)
+            ->assertSee('Compartir link', false)
             ->assertSee('/o/'.$client->slug, false)
             ->assertSee('Copiar', false)
             ->assertSee('Nuevos', false)
@@ -241,7 +243,14 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('IE Santa Librada', false);
 
         $this->actingAs($company)
+            ->get(route('company.observatory.events.index', ['vista' => 'eventos']))
+            ->assertOk()
+            ->assertSee($event->folio(), false)
+            ->assertSee('Otro', false);
+
+        $this->actingAs($company)
             ->get(route('company.observatory.events.index', [
+                'vista' => 'eventos',
                 'from' => now()->addDay()->toDateString(),
                 'to' => now()->addDays(2)->toDateString(),
             ]))
@@ -260,8 +269,17 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->actingAs($clientAdmin)->withSession($session)
             ->get(route('client.observatory.events.index'))
             ->assertOk()
+            ->assertSee('Nuevo reporte', false)
+            ->assertSee('Compartir link', false)
             ->assertSee('/o/'.$client->slug, false)
             ->assertSee('Copiar', false);
+
+        $this->actingAs($clientAdmin)->withSession($session)
+            ->get(route('client.observatory.reports.create'))
+            ->assertOk()
+            ->assertSee($clientAdmin->name, false)
+            ->assertSee('no puedes realizar el reporte', false)
+            ->assertSee('administrador de la sede', false);
 
         $this->actingAs($clientAdmin)->withSession($session)
             ->get(route('client.observatory.events.show', $event))
@@ -294,17 +312,44 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($admin)->withSession($session)
-            ->patch(route('client.observatory.events.status', $event), ['status' => 'cerrado'])
+            ->patch(route('client.observatory.events.status', $event), [
+                'status' => 'cerrado',
+                'note' => 'Intento de cierre sin pasar por atención.',
+            ])
             ->assertSessionHasErrors('status');
 
         $this->actingAs($admin)->withSession($session)
             ->patch(route('client.observatory.events.status', $event), ['status' => 'en_atencion'])
+            ->assertSessionHasErrors('note');
+
+        $this->actingAs($admin)->withSession($session)
+            ->patch(route('client.observatory.events.status', $event), [
+                'status' => 'en_atencion',
+                'note' => 'Se tomó el folio y se avisó a convivencia.',
+            ])
             ->assertRedirect(route('client.observatory.events.show', $event));
 
         $this->assertSame(ObservatoryEventStatus::EnAtencion, $event->fresh()->status);
 
         $this->actingAs($admin)->withSession($session)
-            ->patch(route('client.observatory.events.status', $event), ['status' => 'cerrado'])
+            ->patch(route('client.observatory.events.status', $event), [
+                'status' => 'en_atencion',
+                'note' => 'Se habló con el coordinador y se sigue verificando.',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(ObservatoryEventStatus::EnAtencion, $event->fresh()->status);
+        $this->assertSame(2, $event->statusLogs()->count());
+        $this->assertSame(
+            'Se habló con el coordinador y se sigue verificando.',
+            $event->statusLogs()->orderByDesc('id')->first()?->note,
+        );
+
+        $this->actingAs($admin)->withSession($session)
+            ->patch(route('client.observatory.events.status', $event), [
+                'status' => 'cerrado',
+                'note' => 'Se atendió con la familia y el caso quedó resuelto.',
+            ])
             ->assertRedirect();
 
         $closed = $event->fresh();
@@ -313,7 +358,10 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->assertSame((int) $admin->id, (int) $closed->closed_by_user_id);
 
         $this->actingAs($admin)->withSession($session)
-            ->patch(route('client.observatory.events.status', $event), ['status' => 'en_atencion'])
+            ->patch(route('client.observatory.events.status', $event), [
+                'status' => 'en_atencion',
+                'note' => 'Intento de reabrir un folio ya cerrado.',
+            ])
             ->assertSessionHasErrors('status');
     }
 
@@ -422,10 +470,16 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->assertSame(1, $keep->fresh()->reports()->count());
 
         $this->actingAs($admin)->withSession($session)
-            ->patch(route('client.observatory.events.status', $keep), ['status' => 'en_atencion'])
+            ->patch(route('client.observatory.events.status', $keep), [
+                'status' => 'en_atencion',
+                'note' => 'Se unificó el seguimiento de este colegio.',
+            ])
             ->assertRedirect();
         $this->actingAs($admin)->withSession($session)
-            ->patch(route('client.observatory.events.status', $keep), ['status' => 'cerrado'])
+            ->patch(route('client.observatory.events.status', $keep), [
+                'status' => 'cerrado',
+                'note' => 'El rector cerró el folio tras verificar los hechos.',
+            ])
             ->assertRedirect();
 
         $this->actingAs($admin)->withSession($session)
@@ -473,10 +527,16 @@ final class ObservatoryReportFlowTest extends TestCase
         $report = $event->reports()->firstOrFail();
 
         $this->actingAs($admin)->withSession($session)
-            ->patch(route('client.observatory.events.status', $event), ['status' => 'en_atencion'])
+            ->patch(route('client.observatory.events.status', $event), [
+                'status' => 'en_atencion',
+                'note' => 'Se está atendiendo la riña del patio.',
+            ])
             ->assertRedirect();
         $this->actingAs($admin)->withSession($session)
-            ->patch(route('client.observatory.events.status', $event), ['status' => 'cerrado'])
+            ->patch(route('client.observatory.events.status', $event), [
+                'status' => 'cerrado',
+                'note' => 'La riña se resolvió con mediación escolar.',
+            ])
             ->assertRedirect();
 
         $this->actingAs($admin)->withSession($session)
@@ -532,7 +592,9 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('De dónde llega', false)
             ->assertSee('Eventos resueltos', false)
             ->assertSee('Sin eventos en el periodo', false)
-            ->assertSee('API', false);
+            ->assertSee('API', false)
+            ->assertSee('Compartir link', false)
+            ->assertSee('Qué significa cada pin', false);
     }
 
     public function test_public_report_requires_role_and_keeps_it_when_anonymous(): void
@@ -612,6 +674,16 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->actingAs($clientAdmin)
             ->withSession($session)
             ->get(route('client.observatory.reports.create'))
+            ->assertOk()
+            ->assertSee('no puedes realizar el reporte', false);
+
+        $this->actingAs($clientAdmin)
+            ->withSession($session)
+            ->post(route('client.observatory.reports.store'), [
+                'installation_id' => $colegio->id,
+                'kind' => 'amenaza',
+                'body' => 'La secretaría no debe poder reportar desde el panel.',
+            ])
             ->assertForbidden();
     }
 
