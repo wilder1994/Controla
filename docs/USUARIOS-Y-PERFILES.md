@@ -175,7 +175,7 @@ Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `clien
 | `company.settings.manage` | Perfil legal/geo de la empresa |
 | `client.users.manage` | Ver/editar administradores del cliente. **No** crear. |
 | `client.settings.manage` | Crear/editar tipos de persona. El admin de instalaciones no lo tiene (Ajustes solo ver) |
-| `observatory.view` | Ver eventos del Observatorio (empresa: sus clientes; cliente: su alcance) |
+| `observatory.view` | Ver eventos del Observatorio (empresa: sus clientes; cliente: su alcance). Misma llave para la API `/api/observatory/*` |
 | `observatory.events.update` | Cambiar estado, unir folios del mismo colegio o sacar un reporte a folio nuevo. Solo admin de instalaciones de esa sede (`site_permission=admin`), no el apoyo |
 
 Tras cambios en permisos:

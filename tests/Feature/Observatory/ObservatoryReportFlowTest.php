@@ -519,6 +519,22 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertDontSee('IE Republica del Peru', false);
     }
 
+    public function test_empty_board_still_renders_charts(): void
+    {
+        [$client] = $this->sites();
+        $admin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+
+        $this->actingAs($admin)->withSession(['tenancy.active_client_id' => $client->id])
+            ->get(route('client.observatory.events.index'))
+            ->assertOk()
+            ->assertSee('Eventos abiertos por día', false)
+            ->assertSee('Qué se reporta', false)
+            ->assertSee('De dónde llega', false)
+            ->assertSee('Eventos resueltos', false)
+            ->assertSee('Sin eventos en el periodo', false)
+            ->assertSee('API', false);
+    }
+
     public function test_public_report_requires_role_and_keeps_it_when_anonymous(): void
     {
         [$client, $colegio] = $this->sites();

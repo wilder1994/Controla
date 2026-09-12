@@ -179,17 +179,17 @@ El Anexo en prosa pide lo mismo sin puntajes: maestro + búsqueda; mapa + evento
 
 ### 7.2 Qué hay hoy en Controla (brecha)
 
-Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio v1 ya tiene intake, agrupar 1 h, unir/sacar a mano, mapa/calor y tablero; falta API y fuentes extra. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
+Controla es maduro en **accesos, censo y supervisión de campo**. El Observatorio ya tiene intake, fuentes, agrupar 1 h, unir/sacar, mapa/calor, tablero con gráficos y API documentada. El lenguaje de producto sigue siendo cliente / instalación / portería, no «institución educativa».
 
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
 | 2 Geográfico | ~80 % | Mapa Observatorio (colegio + pin del reporte; calor por ubicación del reporte). Google Maps, GPS PWA | Capas territoriales / comunas; calor PostGIS |
-| 3 Multifuente | ~30 % | Portería (`guard_logs`) y campo (`supervisor_field_logs`) como silos | Catálogo de fuentes; normalizar; `source` en cada reporte |
+| 3 Multifuente | ~90 % | Comunidad, panel, PWA, minuta y API; origen en la ficha | Policía / 123 (convenio) |
 | 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. Link copiable en empresa/cliente | Varias fuentes (campo, portería); no es el pánico de portería |
 | 5 Eventos | ~95 % | Folio; agrupa automático 1 h; el admin de la sede une folios del mismo colegio o saca un reporte a folio nuevo; estados `nuevo` → `en_atencion` → `cerrado`; histórico | — |
-| 6 Analítica | ~70 % | Tablero Observatorio: conteos por estado, ranking de colegios, filtro fecha. Command Center, PPTX | Prioridad configurable; export; tendencias históricas |
-| 7 Interoperabilidad | ~25 % externo | API Sanctum de supervisión + catálogo de módulos (`docs/SUPERVISION-CAMPO.md`) | API de eventos/riesgos del Observatorio + OpenAPI / control de interfaz |
+| 6 Analítica | ~85 % | Tablero: KPIs, tendencia, tipos, canales, medidor de cierre, ranking, filtro fecha | Prioridad configurable; export |
+| 7 Interoperabilidad | ~90 % | `/api/observatory/*` Sanctum + OpenAPI `/docs/observatory` | Tokens de integración dedicados (hoy login del usuario) |
 
 **No cumple el Anexo, por sí solo:** pánico de portería, minuta, `locations`, clustering visual de pines, ni el tablero de la empresa de seguridad.
 
@@ -206,7 +206,7 @@ Capa **Observatorio**. Lee instalaciones/colegios. **No** vive en minuta ni en `
 | Tablero | Tendencias, recurrencia, ranking, prioridad configurable, filtros y export |
 | API | JSON de eventos/riesgos + documentación (OpenAPI) y control de la interfaz |
 
-**Fuentes v1 (visita técnica, sin convenio externo):** comunidad educativa, supervisión de campo, portería (como origen trazable, no como UI del Observatorio), carga manual autorizada.
+**Fuentes v1 (visita técnica, sin convenio externo):** comunidad educativa, panel (rector/apoyo), supervisión de campo, portería, API de Secretaría (canal Integración).
 
 **Fuentes después (convenio, no solo JSON):** Policía, Línea 123. El día 1 se pueden **simular** conectores si el pliego no exige el tubo en vivo.
 
@@ -249,7 +249,7 @@ El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta
 
 PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. Línea 123 y Policía son **convenio**; el día 1 pueden simularse conectores si el pliego no exige el tubo en vivo.
 
-**Orden de código** (punto 8 del §11): factores 1, 2, 4, 5 y 6 v1 **hechos**. Siguiente: fuentes/API (3 y 7).
+**Orden de código** (punto 8 del §11): factores 1–7 v1 **hechos** (fuentes + API + tablero). Opcional: comunas, MEN, export.
 
 ---
 
@@ -328,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (Anexo 7.5). Factores 1, 2, 4, 5 y 6 v1 **hechos** (agrupar 1 h, pin, unir/sacar a mano). Siguiente: fuentes/API. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
+8. Observatorio escolar (Anexo 7.5). Factores 1–7 v1 **hechos** (fuentes, tablero, API OpenAPI). Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 
@@ -377,3 +377,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-11 | Observatorio: agrupa reportes (mismo colegio + tipo, ventana 1 h) y pin en el intake; calor por ubicación del reporte. |
 | 2026-09-12 | Observatorio: el admin de la sede une folios del mismo colegio o saca un reporte a un folio nuevo. Empresa, `client-admin` y apoyo no. |
 | 2026-09-12 | Observatorio fuentes: comunidad (alumno/padre/vecino + recordar en el teléfono), panel (rector/apoyo), PWA patrulla (supervisor), minuta novedad si hay puerta de colegio (vigilante). Anónimo oculta nombre y teléfono. |
+| 2026-09-12 | Observatorio tablero (tendencia, tipos, canales, medidor de cierre) y API Sanctum + OpenAPI `/docs/observatory`. Secretaría escribe como Integración; empresa solo lee. |

@@ -10,6 +10,7 @@ enum ObservatoryReportSource: string
     case Panel = 'panel';
     case Campo = 'campo';
     case Porteria = 'porteria';
+    case Api = 'api';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum ObservatoryReportSource: string
             self::Panel => 'Panel',
             self::Campo => 'App de patrulla',
             self::Porteria => 'Portería',
+            self::Api => 'Integración',
         };
     }
 }

@@ -13,6 +13,7 @@ enum ObservatoryReporterRole: string
     case Apoyo = 'apoyo';
     case Supervisor = 'supervisor';
     case Vigilante = 'vigilante';
+    case Integracion = 'integracion';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum ObservatoryReporterRole: string
             self::Apoyo => 'Apoyo',
             self::Supervisor => 'Supervisor',
             self::Vigilante => 'Vigilante',
+            self::Integracion => 'Sistema externo',
         };
     }
 
@@ -50,6 +52,7 @@ enum ObservatoryReporterRole: string
             ObservatoryReportSource::Panel => in_array($this, [self::Rector, self::Apoyo], true),
             ObservatoryReportSource::Campo => $this === self::Supervisor,
             ObservatoryReportSource::Porteria => $this === self::Vigilante,
+            ObservatoryReportSource::Api => $this === self::Integracion,
         };
     }
 }

@@ -38,7 +38,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos). Mapa En vivo/Historial, cierre automático, cola offline por usuario. Fuente de verdad: Controla | ✅ Implementada |
 | **Árbol del cliente** | Una tarjeta **Instalaciones y puestos**; otra **Puertas** (solo Accesos). Modalidad + vigilantes en el puesto | ✅ Implementada |
 
-Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFORME-VISION-PRODUCTO-W-CODEX.md) · [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12) · [**Hosting VPS**](docs/HOSTING-VPS.md)
+Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFORME-VISION-PRODUCTO-W-CODEX.md) · [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Observatorio**](docs/OBSERVATORIO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12) · [**Hosting VPS**](docs/HOSTING-VPS.md)
 
 ---
 
@@ -51,7 +51,7 @@ Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFOR
 | **Cliente** | `/client` | `client-admin`, `client-installation-admin` | Censo: nodos (`structures`, tipo heredado del cliente), personas, vehículos, mascotas, autorizaciones. **Observatorio**. Admin instalaciones: solo sus sedes (cierran estados, unen folios, sacan reportes); Ajustes solo ver |
 | **Portería** | `/access` | `guardia` (Vigilante), `supervisor` (Supervisor de vigilancia), `client-admin` | Ops diarias + **accesos** (puertas de una instalación del cliente) |
 | **Residente** | `/resident` | `resident`, `anfitrion` | Portal web: pre-autorizaciones y correspondencia |
-| **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo** |
+| **API** | `/api` | Token-based | Sanctum: auth, pre-autorizaciones, correspondencia, **Supervisión de campo**, **Observatorio** (`/docs/observatory`) |
 | **PWA campo** | `field-app/` · `controla_supervision.test` | `supervisor` | Captura; login usuario o correo legado; API inferida. Offline: cola por supervisor (flush en segundo plano, no bloquea al de turno). Caché SW `controla-sup-v35` |
 
 Tras el login, cada rol es redirigido a su **home** vía `ResolveUserHomeRoute` → ruta `/home`.
@@ -402,7 +402,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
 | `GET /company/installations` | Directorio de sedes: búsqueda, crear, ficha (código, área, admin de sede, mapa, puestos) |
-| `GET /company/observatory/events` | Observatorio: seguimiento + links `/o/{slug}` por cliente. No cambia estado ni une folios |
+| `GET /company/observatory/events` | Observatorio: tablero (KPIs, tendencia, tipos, canales, cierre) + links `/o/{slug}`. No cambia estado ni une folios. API: `/docs/observatory` |
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas). **No** crea instalaciones, accesos ni puestos |
 | `POST/PUT/DELETE /company/clients/{id}/installations` | CRUD instalaciones (catálogo compartido) |
@@ -603,7 +603,7 @@ Tablas relacionadas:
 |------|--------|
 | `/client/dashboard` | Resumen |
 | `/client/installations` | Directorio de sedes; la ficha incluye estructura (nodos). `/client/structures` redirige |
-| `/client/observatory/events` | Observatorio: eventos + link `/o/{slug}`. El admin de instalaciones cierra estados, une folios y saca reportes |
+| `/client/observatory/events` | Observatorio: tablero + eventos + link `/o/{slug}`. El admin de instalaciones cierra estados, une folios y saca reportes |
 | `/client/members` | Personas: tipo de documento + fecha de nacimiento; menores (Ley 1581) sin export; QR solo adultos |
 | `/client/pets` | Directorio de mascotas por unidad |
 | `/client/vehicles` | Directorio vehicular |
@@ -736,6 +736,8 @@ Suites relevantes:
 - `tests/Feature/Api/SupervisorFieldLogApiTest.php`
 - `tests/Feature/Company/CompanySupervisionCatalogTest.php`
 - `tests/Feature/Company/CompanyStructureTypeTest.php`
+- `tests/Feature/Observatory/ObservatoryReportFlowTest.php`
+- `tests/Feature/Observatory/ObservatoryApiTest.php`
 - `tests/Feature/Billing/LocalPaymentCheckoutTest.php`
 - `tests/Feature/Public/PublicSignupFlowTest.php`
 - `tests/Feature/User/ScopedUserManagementTest.php`
@@ -785,6 +787,13 @@ API autenticada con tokens Laravel Sanctum para consumo desde app móvil futura.
 | `/api/correspondence` | GET | Lista de correspondencia del usuario |
 | `/api/correspondence/{id}` | GET | Detalle de correspondencia |
 | `/api/visitors/search` | GET | Buscar visitantes por nombre/documento |
+| `/api/observatory/events` | GET | Observatorio: listar eventos del alcance (filtro estado/fecha/colegio) |
+| `/api/observatory/events/{id}` | GET | Observatorio: folio + reportes |
+| `/api/observatory/board` | GET | Observatorio: KPIs, tendencia, tipos, canales, ranking |
+| `/api/observatory/sites` | GET | Observatorio: colegios del alcance |
+| `/api/observatory/reports` | POST | Observatorio: crear reporte (Secretaría = Integración; rector/apoyo = panel). Empresa solo lee |
+| `/api/observatory/openapi.json` | GET | Contrato OpenAPI 3 (público) |
+| `/docs/observatory` | GET | Documentación Swagger UI |
 | `/api/supervision/login` | POST | Login supervisor (paquete Supervisión) |
 | `/api/supervision/intake` | GET | Catálogos de turno, zona, EPP, flota |
 | `/api/supervision/shifts/*` | GET/POST | Abrir, ping GPS, cerrar turno (multipart fotos) |

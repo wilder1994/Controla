@@ -1,4 +1,4 @@
-# Observatorio (v1 + fuentes)
+# Observatorio (tablero + API)
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
@@ -21,6 +21,7 @@ En la ficha: `tipo · Canal · Rol · fecha` y abajo el nombre, o **Anónimo**.
 | Rector / apoyo | Panel `/client/observatory` (ya tienen usuario) | Panel · Rector / Apoyo |
 | Supervisor de patrulla | PWA Supervisión → Observatorio | App de patrulla · Supervisor |
 | Vigilante | Minuta, novedad, si la sede es colegio y tiene puerta | Portería · Vigilante |
+| Software de Secretaría | `POST /api/observatory/reports` | Integración · Sistema externo |
 
 Anónimo (todas las superficies): aviso «se oculta tu nombre y teléfono; solo se muestra la denuncia». No se guarda nombre, teléfono ni `reported_by_user_id`. Sí quedan canal y rol.
 
@@ -62,6 +63,7 @@ Empresa y `client-admin` **ven** y no cambian estado ni unen ni reportan desde e
 | Empresa | `/company/observatory/events` — clientes de la empresa. Seguimiento, no portal, no cambia estado ni une. |
 | Supervisor | PWA Observatorio |
 | Vigilante | Minuta → Observatorio si hay puerta de colegio |
+| Software de Secretaría | `/docs/observatory` + token Sanctum. Solo Observatorio de ese cliente |
 
 Permisos: `observatory.view`, `observatory.events.update`. Tras el alta: `php artisan db:seed --class=RoleAndPermissionSeeder`.
 
@@ -74,9 +76,25 @@ En la ficha del evento (`/client/observatory/events/{id}`), solo el admin de esa
 
 Empresa, `client-admin` y apoyo no ven esos botones.
 
-## Tablero (v1)
+## Tablero
 
-Filtro por fechas. Cifras: eventos / nuevos / en atención / cerrados (clic filtra la tabla). Ranking de colegios con más eventos. Mapa a la izquierda, ranking y link a la derecha.
+Filtro por fechas. KPIs (clic filtra la tabla). Línea de eventos por día, barras por tipo, torta por canal, medidor de % cerrados (0 si no hay eventos; los ejes se ven). Ranking de colegios. Mapa a la izquierda. Botón **API** → `/docs/observatory`.
+
+## API
+
+Para el software de Secretaría (u otro sistema). Token Sanctum (`POST /api/auth/login`). Solo Observatorio de ese cliente o, en empresa, de sus clientes. No censo ni portería.
+
+| Método | Ruta | Quién |
+|--------|------|--------|
+| GET | `/api/observatory/events` | Secretaría, rector/apoyo (sus sedes), empresa |
+| GET | `/api/observatory/events/{id}` | Igual |
+| GET | `/api/observatory/board` | Igual |
+| GET | `/api/observatory/sites` | Igual |
+| POST | `/api/observatory/reports` | Secretaría = canal Integración. Rector/apoyo = Panel. Empresa no |
+| GET | `/api/observatory/openapi.json` | Público (contrato) |
+| GET | `/docs/observatory` | Público (Swagger) |
+
+El POST usa las mismas reglas de unión (1 h, mismo colegio y tipo). Anónimo oculta nombre y teléfono.
 
 ## Mapa (v1)
 
@@ -84,4 +102,4 @@ En Observatorio de empresa y cliente: pines de colegios + pines de cada reporte.
 
 ## Siguiente
 
-Policía/123 (sin convenio; no va en v1).
+Capas por comuna. Catálogo MEN. Policía/123 (sin convenio).

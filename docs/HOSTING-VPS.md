@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 11 septiembre 2026
+**Última actualización:** 12 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
@@ -18,7 +18,7 @@ Flujo: push local a `wilder-fork` (`wilder1994/Controla`). El VPS solo hace `git
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
-Observatorio v1: migrate `2026_09_11_260000` + ese seeder. Intake público `/o/{slug}`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe.
+Observatorio: migrate `2026_09_11_260000` y `2026_09_12_150000` (rol del denunciante) si no están. Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe. Este commit de tablero/API **no** añade migrate ni permisos nuevos.
 
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud

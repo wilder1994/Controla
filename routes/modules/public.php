@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Public\ObservatoryApiDocsController;
 use App\Http\Controllers\Public\ObservatoryIntakeController;
 use App\Http\Controllers\Public\PlansController;
 use App\Http\Controllers\Public\SignupCheckoutController;
 use App\Http\Controllers\Public\SignupController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/docs/observatory', [ObservatoryApiDocsController::class, 'page'])->name('observatory.docs');
 
 Route::prefix('o/{slug}')->name('observatory.public.')->group(function () {
     Route::get('/', [ObservatoryIntakeController::class, 'show'])->name('show');
