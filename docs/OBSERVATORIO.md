@@ -85,7 +85,7 @@ Empresa, `client-admin` y apoyo no ven esos botones.
 
 Pestañas **Tablero** | **Eventos** (cuelgan del header, no van dentro de la barra).
 
-- **Tablero:** filtros, **Compartir link** (modal: URL + Copiar + Cerrar), API, KPIs (clic abre Eventos filtrados), mapa a la izquierda, ranking + leyenda de pines a la derecha, charts (tendencia, tipo, canal, cierre).
+- **Tablero:** filtros, **Compartir link**, API, KPIs (clic abre Eventos). Fila 1: mapa (~70%) + leyenda de pines (mismo alto). Pines/Calor y Mapa/Satélite van en una barra sobre el mapa (sin tapar controles de Google; sin fullscreen). Fila 2: colegios (lista con scroll) + tendencia ancha. Fila 3: tipo · canal (más grandes) · cierre (mismo tamaño).
 - **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).
 
 ## Ficha

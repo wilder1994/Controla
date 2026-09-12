@@ -188,7 +188,7 @@ Controla es maduro en **accesos, censo y supervisión de campo**. El Observatori
 | 3 Multifuente | ~90 % | Comunidad, panel, PWA, minuta y API; origen en la ficha | Policía / 123 (convenio) |
 | 4 Comunidad | ~70 % | Intake `/o/{slug}` (3 pasos, anónimo o no, foto opcional). Privacidad de menores. **Compartir link** en el Tablero | Varias fuentes (campo, portería); no es el pánico de portería |
 | 5 Eventos | ~95 % | Folio; agrupa 1 h; unir/sacar; ficha con mapa, reportes y bitácora; rector **Agregar** / **Cerrar folio** (nota obligatoria) | — |
-| 6 Analítica | ~90 % | Tablero (mapa + leyenda + charts) y pestaña Eventos (tabla). KPIs abren Eventos filtrados | Prioridad configurable; export |
+| 6 Analítica | ~90 % | Tablero: mapa + leyenda; colegios + tendencia; tipo/canal/cierre. Eventos (tabla). KPIs abren Eventos filtrados | Prioridad configurable; export |
 | 7 Interoperabilidad | ~90 % | `/api/observatory/*` Sanctum + OpenAPI `/docs/observatory` | Tokens de integración dedicados (hoy login del usuario) |
 
 **No cumple el Anexo, por sí solo:** pánico de portería, minuta, `locations`, clustering visual de pines, ni el tablero de la empresa de seguridad.
@@ -380,3 +380,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Observatorio tablero (tendencia, tipos, canales, medidor de cierre) y API Sanctum + OpenAPI `/docs/observatory`. Secretaría escribe como Integración; empresa solo lee. |
 | 2026-09-12 | Observatorio: pestañas Tablero / Eventos; ficha con bitácora (Agregar / Cerrar folio, nota obligatoria); Compartir link; Nuevo reporte visible y bloqueado si no es rector/apoyo. |
 | 2026-09-12 | Shell: pestañas colgando del header; Nuevo reporte en `$actions`; Cerrar sesión en el pie del sidebar (todos los paneles); flecha para ocultar/mostrar el menú. |
+| 2026-09-12 | Tablero Observatorio: mapa + leyenda; colegios + tendencia ancha; tipo/canal más grandes; controles Pines/Calor y Mapa/Satélite fuera del lienzo de Google. |

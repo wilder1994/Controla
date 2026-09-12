@@ -402,7 +402,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
 | `GET /company/installations` | Directorio de sedes: búsqueda, crear, ficha (código, área, admin de sede, mapa, puestos) |
-| `GET /company/observatory/events` | Observatorio: pestañas **Tablero** / **Eventos** (cuelgan del header). No cambia estado ni une. API: `/docs/observatory` |
+| `GET /company/observatory/events` | Observatorio: **Tablero** (mapa + leyenda; colegios + tendencia; tipo/canal/cierre) y **Eventos**. No cambia estado ni une. API: `/docs/observatory` |
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas). **No** crea instalaciones, accesos ni puestos |
 | `POST/PUT/DELETE /company/clients/{id}/installations` | CRUD instalaciones (catálogo compartido) |

@@ -1,4 +1,4 @@
-<div class="obs-card p-3 space-y-2.5">
+<div class="obs-card p-3 space-y-2.5 h-full min-h-80">
     <p class="text-xs uppercase tracking-wide text-slate-500">Qué significa cada pin</p>
     <div class="space-y-2">
         <div class="flex items-start gap-2.5">

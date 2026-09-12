@@ -67,6 +67,8 @@
     .obs-card-h p { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; margin: 0; }
     .obs-card-h h3 { margin: .15rem 0 0; font-size: .95rem; font-weight: 600; color: #e2e8f0; }
     .obs-chart { height: 12.5rem; padding: .5rem 1rem 1rem; }
+    .obs-chart-lg { height: 20rem; }
+    .obs-chart-md { height: 16rem; }
     .obs-gauge { height: 11.5rem; }
 </style>
 @endpush
@@ -117,11 +119,18 @@
             @endforeach
         </div>
 
-        <div class="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(17rem,0.7fr)] xl:items-stretch">
-            @include('modules.observatory.partials.map', ['map' => $map])
-            <div class="flex flex-col gap-3 min-h-0">
-                <div class="obs-card p-3 space-y-2 flex-1">
-                    <p class="text-xs uppercase tracking-wide text-slate-500">Colegios con más eventos</p>
+        <div class="grid gap-3 xl:grid-cols-[minmax(0,7fr)_minmax(16rem,3fr)] xl:items-stretch">
+            @include('modules.observatory.partials.map', [
+                'map' => $map,
+                'mapCanvasClass' => 'h-80 xl:h-full xl:min-h-[24rem]',
+            ])
+            @include('modules.observatory.partials.pin-legend')
+        </div>
+
+        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-stretch">
+            <section class="obs-card p-3 flex flex-col min-h-0">
+                <p class="text-xs uppercase tracking-wide text-slate-500 shrink-0">Colegios con más eventos</p>
+                <div class="mt-2 space-y-2 overflow-y-auto max-h-[20rem] xl:max-h-none xl:flex-1 sidebar-scroll">
                     @forelse ($board['top'] as $row)
                         <div class="flex items-start justify-between gap-3 text-sm">
                             <div class="min-w-0">
@@ -136,31 +145,30 @@
                         <p class="text-sm text-slate-500">Aún no hay eventos en el periodo.</p>
                     @endforelse
                 </div>
-                @include('modules.observatory.partials.pin-legend')
-            </div>
-        </div>
-
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            </section>
             <section class="obs-card">
                 <div class="obs-card-h">
                     <p>Tendencia</p>
                     <h3>Eventos abiertos por día</h3>
                 </div>
-                <div class="obs-chart"><canvas x-ref="trend" aria-label="Tendencia de eventos"></canvas></div>
+                <div class="obs-chart obs-chart-lg"><canvas x-ref="trend" aria-label="Tendencia de eventos"></canvas></div>
             </section>
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.15fr_1.15fr_0.85fr] xl:items-stretch">
             <section class="obs-card">
                 <div class="obs-card-h">
                     <p>Tipo</p>
                     <h3>Qué se reporta</h3>
                 </div>
-                <div class="obs-chart"><canvas x-ref="kinds" aria-label="Reportes por tipo"></canvas></div>
+                <div class="obs-chart obs-chart-md"><canvas x-ref="kinds" aria-label="Reportes por tipo"></canvas></div>
             </section>
             <section class="obs-card">
                 <div class="obs-card-h">
                     <p>Canal</p>
                     <h3>De dónde llega</h3>
                 </div>
-                <div class="obs-chart"><canvas x-ref="sources" aria-label="Reportes por canal"></canvas></div>
+                <div class="obs-chart obs-chart-md"><canvas x-ref="sources" aria-label="Reportes por canal"></canvas></div>
             </section>
             <section class="obs-card">
                 <div class="obs-card-h">

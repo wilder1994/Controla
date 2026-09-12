@@ -1,6 +1,7 @@
 export function observatoryMap(cfg) {
     return {
         mode: 'pins',
+        mapType: 'satellite',
         map: null,
         heatmap: null,
         markers: [],
@@ -43,6 +44,12 @@ export function observatoryMap(cfg) {
                 zoom: Number(cfg.zoom || 6),
                 mapTypeId: google.maps.MapTypeId.SATELLITE,
                 streetViewControl: false,
+                fullscreenControl: false,
+                mapTypeControl: false,
+                zoomControl: true,
+                zoomControlOptions: {
+                    position: google.maps.ControlPosition.RIGHT_BOTTOM,
+                },
             });
 
             const bounds = new google.maps.LatLngBounds();
@@ -148,6 +155,13 @@ export function observatoryMap(cfg) {
         setMode(mode) {
             this.mode = mode;
             this.applyMode();
+        },
+
+        setMapType(type) {
+            this.mapType = type;
+            if (this.map) {
+                this.map.setMapTypeId(type === 'roadmap' ? google.maps.MapTypeId.ROADMAP : google.maps.MapTypeId.SATELLITE);
+            }
         },
 
         applyMode() {
