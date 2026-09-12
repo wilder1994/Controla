@@ -427,6 +427,52 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertDontSee('Sacar a folio nuevo', false);
     }
 
+    public function test_cannot_detach_from_closed_event(): void
+    {
+        [$client, $colegio] = $this->sites();
+        $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $admin = $this->makeSiteAdmin($company, $client, $colegio, 'cierra.une@palmas.test', '1098000888');
+        $session = ['tenancy.active_client_id' => $client->id];
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'rina',
+            'body' => 'Riña en el patio del descanso de la mañana.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'rina',
+            'body' => 'Otra persona confirma la misma riña del patio.',
+            'is_anonymous' => '1',
+        ])->assertRedirect();
+
+        $event = ObservatoryEvent::query()->firstOrFail();
+        $this->assertSame(2, $event->reports()->count());
+        $report = $event->reports()->firstOrFail();
+
+        $this->actingAs($admin)->withSession($session)
+            ->patch(route('client.observatory.events.status', $event), ['status' => 'en_atencion'])
+            ->assertRedirect();
+        $this->actingAs($admin)->withSession($session)
+            ->patch(route('client.observatory.events.status', $event), ['status' => 'cerrado'])
+            ->assertRedirect();
+
+        $this->actingAs($admin)->withSession($session)
+            ->get(route('client.observatory.events.show', $event))
+            ->assertOk()
+            ->assertDontSee('Sacar a folio nuevo', false)
+            ->assertDontSee('Unir aquí', false);
+
+        $this->actingAs($admin)->withSession($session)
+            ->post(route('client.observatory.events.reports.detach', [$event, $report]))
+            ->assertSessionHasErrors('report');
+
+        $this->assertSame(1, ObservatoryEvent::query()->count());
+        $this->assertSame(2, $event->fresh()->reports()->count());
+    }
+
     public function test_map_lists_only_scoped_colegios_with_coordinates(): void
     {
         config(['google-maps.api_key' => 'test-maps-key']);

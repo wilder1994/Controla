@@ -85,6 +85,7 @@ final class ObservatoryEventController extends Controller
             'event' => $event,
             'canUpdateStatus' => $canUpdate,
             'canMerge' => $canUpdate && $event->status !== ObservatoryEventStatus::Cerrado,
+            'canDetach' => $canUpdate && $event->status !== ObservatoryEventStatus::Cerrado,
             'statuses' => ObservatoryEventStatus::options(),
             'mergeCandidates' => $this->mergeCandidates($event),
         ]);

@@ -5,6 +5,7 @@
             'event' => $event,
             'canUpdateStatus' => $canUpdateStatus,
             'canMerge' => $canMerge ?? false,
+            'canDetach' => $canDetach ?? false,
             'statuses' => $statuses,
             'statusAction' => route('client.observatory.events.status', $event),
             'mergeAction' => route('client.observatory.events.merge', $event),

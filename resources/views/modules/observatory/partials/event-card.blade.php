@@ -1,6 +1,7 @@
 @php
     $canUpdateStatus = $canUpdateStatus ?? false;
     $canMerge = $canMerge ?? false;
+    $canDetach = $canDetach ?? false;
     $statuses = $statuses ?? [];
     $statusAction = $statusAction ?? null;
     $mergeAction = $mergeAction ?? null;
@@ -76,7 +77,7 @@
                 @if ($report->photoUrl())
                     <img src="{{ $report->photoUrl() }}" alt="Evidencia" class="mt-2 max-h-64 rounded-lg border border-slate-800">
                 @endif
-                @if ($canUpdateStatus && $event->reports->count() > 1)
+                @if ($canDetach && $event->reports->count() > 1)
                     <form method="POST" action="{{ route('client.observatory.events.reports.detach', [$event, $report]) }}" class="pt-2">
                         @csrf
                         <button type="submit" class="h-8 px-2 rounded-md border border-slate-700 text-[11px] font-semibold text-slate-300 hover:bg-slate-800">

@@ -25,7 +25,7 @@ Empresa y admin del cliente copian el link en Observatorio (botón Copiar). El a
 
 ## Estados
 
-`nuevo` → `en_atencion` → `cerrado`. **Los cierra el admin de instalaciones** de esa sede (`client-installation-admin` con `site_permission=admin`). El mismo admin puede **unir** otro folio del mismo colegio (el otro se elimina) o **sacar** un reporte a un folio nuevo (el evento debe tener al menos dos reportes). No se une a un evento cerrado. El apoyo ve y no cambia estado ni une. Desde `cerrado` no se reabre.
+`nuevo` → `en_atencion` → `cerrado`. **Los cierra el admin de instalaciones** de esa sede (`client-installation-admin` con `site_permission=admin`). El mismo admin puede **unir** otro folio del mismo colegio (el otro se elimina) o **sacar** un reporte a un folio nuevo (el evento debe tener al menos dos reportes). No se une ni se saca de un evento cerrado. El apoyo ve y no cambia estado ni une. Desde `cerrado` no se reabre.
 
 Empresa y `client-admin` **ven** y no cambian estado ni unen.
 
@@ -45,7 +45,7 @@ Permisos: `observatory.view`, `observatory.events.update`. Tras el alta: `php ar
 En la ficha del evento (`/client/observatory/events/{id}`), solo el admin de esa sede:
 
 - **Unir aquí:** elige otro folio del mismo colegio. Los reportes pasan a este evento y el otro folio se elimina. No se une a un evento cerrado.
-- **Sacar a folio nuevo:** en cada reporte, si el evento tiene dos o más. Crea un `EV-` nuevo (`nuevo`) con ese reporte.
+- **Sacar a folio nuevo:** en cada reporte, si el evento está abierto y tiene dos o más. Crea un `EV-` nuevo (`nuevo`) con ese reporte. No se saca de un evento cerrado.
 
 Empresa, `client-admin` y apoyo no ven esos botones.
 

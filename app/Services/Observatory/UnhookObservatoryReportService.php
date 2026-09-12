@@ -20,8 +20,21 @@ final class UnhookObservatoryReportService
             ]);
         }
 
+        if ($event->status === ObservatoryEventStatus::Cerrado) {
+            throw ValidationException::withMessages([
+                'report' => 'El evento está cerrado. No se pueden sacar reportes.',
+            ]);
+        }
+
         return DB::transaction(function () use ($event, $report): ObservatoryEvent {
             $locked = ObservatoryEvent::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === ObservatoryEventStatus::Cerrado) {
+                throw ValidationException::withMessages([
+                    'report' => 'El evento está cerrado. No se pueden sacar reportes.',
+                ]);
+            }
+
             $count = ObservatoryReport::query()->where('event_id', $locked->id)->count();
 
             if ($count < 2) {
