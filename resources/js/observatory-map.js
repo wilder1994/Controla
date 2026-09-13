@@ -4,6 +4,9 @@ export function observatoryMap(cfg) {
         mapType: 'satellite',
         typeFilter: '',
         comuna: cfg.comuna || '',
+        comunaQ: '',
+        comunaOpen: false,
+        comunas: cfg.comunas || [],
         map: null,
         heatmap: null,
         markers: [],
@@ -45,10 +48,10 @@ export function observatoryMap(cfg) {
 
             const sites = cfg.sites || [];
             const points = cfg.points || [];
-            const center = cfg.center || { lat: 4.5709, lng: -74.2973 };
+            const center = cfg.center || { lat: 3.4372, lng: -76.5225 };
             this.map = new google.maps.Map(el, {
                 center,
-                zoom: Number(cfg.zoom || 6),
+                zoom: Number(cfg.zoom || 12),
                 mapTypeId: google.maps.MapTypeId.SATELLITE,
                 streetViewControl: false,
                 fullscreenControl: false,
@@ -160,7 +163,7 @@ export function observatoryMap(cfg) {
                 }
             });
 
-            if (sites.length > 0 || points.length > 0) {
+            if (!this.comuna && (sites.length > 0 || points.length > 0)) {
                 this.map.fitBounds(bounds, 48);
             }
 
@@ -187,17 +190,7 @@ export function observatoryMap(cfg) {
                         return;
                     }
                     this.map.data.addGeoJson(geo);
-                    this.map.data.setStyle((feature) => {
-                        const selected = feature.getProperty('code') === this.comuna;
-                        return {
-                            strokeColor: selected ? '#f8fafc' : '#94a3b8',
-                            strokeOpacity: 0.9,
-                            strokeWeight: selected ? 2.2 : 1,
-                            fillColor: '#38bdf8',
-                            fillOpacity: selected ? 0.28 : 0.07,
-                            clickable: true,
-                        };
-                    });
+                    this.styleComunas();
                     this.map.data.addListener('click', (event) => {
                         const code = event.feature?.getProperty('code');
                         if (!code) {
@@ -205,22 +198,78 @@ export function observatoryMap(cfg) {
                         }
                         this.goComuna(code);
                     });
-                    if ((cfg.sites || []).length === 0 && (cfg.points || []).length === 0) {
-                        const bounds = new google.maps.LatLngBounds();
-                        this.map.data.forEach((feature) => {
-                            feature.getGeometry()?.forEachLatLng((ll) => bounds.extend(ll));
-                        });
-                        if (!bounds.isEmpty()) {
-                            this.map.fitBounds(bounds, 24);
-                        }
-                    }
+                    this.fitLayer();
                 })
                 .catch(() => {});
         },
 
+        styleComunas() {
+            if (!this.map?.data) {
+                return;
+            }
+            this.map.data.setStyle((feature) => {
+                const selected = feature.getProperty('code') === this.comuna;
+                return {
+                    strokeColor: selected ? '#f8fafc' : '#64748b',
+                    strokeOpacity: selected ? 1 : 0.55,
+                    strokeWeight: selected ? 2.6 : 1,
+                    fillColor: '#38bdf8',
+                    fillOpacity: selected ? 0.38 : (this.comuna ? 0.02 : 0.08),
+                    clickable: true,
+                    visible: !this.comuna || this.comuna === 'fuera' || selected,
+                };
+            });
+        },
+
+        fitLayer() {
+            if (!this.map?.data || this.comuna === 'fuera') {
+                return;
+            }
+            const bounds = new google.maps.LatLngBounds();
+            let any = false;
+            this.map.data.forEach((feature) => {
+                const code = feature.getProperty('code');
+                if (this.comuna && this.comuna !== 'fuera' && code !== this.comuna) {
+                    return;
+                }
+                feature.getGeometry()?.forEachLatLng((ll) => {
+                    bounds.extend(ll);
+                    any = true;
+                });
+            });
+            if (any && (this.comuna || !(cfg.sites || []).length)) {
+                this.map.fitBounds(bounds, 36);
+            }
+        },
+
+        comunaRows() {
+            return [...this.comunas, { code: 'fuera', name: 'Fuera de Cali' }];
+        },
+
+        comunaLabel() {
+            if (!this.comuna) {
+                return '';
+            }
+            return this.comunaRows().find((row) => row.code === this.comuna)?.name || this.comuna;
+        },
+
+        filteredComunas() {
+            const q = this.comunaQ.trim().toLowerCase();
+            const rows = this.comunaRows();
+            if (!q) {
+                return rows;
+            }
+
+            return rows.filter((row) => (
+                row.code.toLowerCase().includes(q)
+                || row.name.toLowerCase().replace(/^comuna\s+0?/, '').includes(q)
+                || row.name.toLowerCase().includes(q)
+            ));
+        },
+
         goComuna(code) {
             const url = new URL(window.location.href);
-            if (this.comuna === code) {
+            if (!code || this.comuna === code) {
                 url.searchParams.delete('comuna');
             } else {
                 url.searchParams.set('comuna', code);

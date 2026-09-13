@@ -569,7 +569,10 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('IE Santa Librada', false)
             ->assertSee('IE Republica del Peru', false)
             ->assertSee('Pines', false)
-            ->assertSee('Calor', false);
+            ->assertSee('Calor', false)
+            ->assertSee('Desde — Hasta', false)
+            ->assertSee('Comuna…', false)
+            ->assertDontSee('Comuna Cali', false);
 
         $admin = $this->makeSiteAdmin($company, $client, $colegio, 'mapa.obs@palmas.test', '1098000884');
         $this->actingAs($admin)->withSession(['tenancy.active_client_id' => $client->id])
@@ -577,7 +580,7 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertOk()
             ->assertSee('IE Santa Librada', false)
             ->assertDontSee('IE Republica del Peru', false)
-            ->assertSee('IDESC Cali', false);
+            ->assertSee('Comuna', false);
     }
 
     public function test_board_filters_colegios_by_cali_comuna(): void
@@ -609,7 +612,8 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertOk()
             ->assertSee('IE Santa Librada', false)
             ->assertDontSee('IE Republica del Peru', false)
-            ->assertSee('Comuna 09', false);
+            ->assertSee('Comuna 09', false)
+            ->assertSee('name="comuna" value="09"', false);
 
         $this->actingAs($company)
             ->get(route('company.observatory.events.index', ['comuna' => 'fuera', 'vista' => 'eventos']))

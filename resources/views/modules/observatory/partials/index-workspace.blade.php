@@ -79,10 +79,14 @@
 
 <div class="obs-board space-y-3" @if ($vista === 'tablero') x-data="observatoryBoard(@js($charts))" @endif>
     <form method="GET" action="{{ $action }}"
-          class="rounded-xl border border-slate-800 bg-slate-900/70 p-2.5 flex flex-col xl:flex-row xl:items-end gap-2">
+          x-data="obsDateRange({ from: @js($from), to: @js($to) })"
+          class="rounded-xl border border-slate-800 bg-slate-900/70 p-2.5 flex flex-col lg:flex-row lg:flex-wrap xl:flex-nowrap xl:items-end gap-2">
         <input type="hidden" name="vista" value="{{ $vista }}">
+        <input type="hidden" name="from" :value="from">
+        <input type="hidden" name="to" :value="to">
+        <input type="hidden" name="comuna" value="{{ $comuna }}">
         @if ($showClientColumn && $filterClients->isNotEmpty())
-            <div class="min-w-[12rem]">
+            <div class="w-full lg:w-36 shrink-0">
                 <label for="client_id" class="block text-[11px] text-slate-500 mb-1">Cliente</label>
                 <select id="client_id" name="client_id" class="w-full h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                     <option value="">Todos</option>
@@ -92,27 +96,46 @@
                 </select>
             </div>
         @endif
-        <div>
-            <label for="from" class="block text-[11px] text-slate-500 mb-1">Desde</label>
-            <input type="date" id="from" name="from" value="{{ $from }}"
-                   class="h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+        <div class="shrink-0">
+            <p class="block text-[11px] text-slate-500 mb-1">Desde — Hasta</p>
+            <button type="button"
+                    class="h-9 px-2.5 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 text-sm text-slate-200 hover:bg-slate-800"
+                    @click="show()">
+                <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                    <path d="M3 10h18M8 3v4M16 3v4"></path>
+                </svg>
+                <span class="whitespace-nowrap" x-text="label"></span>
+            </button>
+            <template x-teleport="body">
+                <div x-show="open" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                     @keydown.escape.window="close()">
+                    <div class="absolute inset-0 bg-slate-950/75" @click="close()"></div>
+                    <div class="relative w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl" @click.stop>
+                        <p class="text-[11px] uppercase tracking-wide text-slate-500">Rango</p>
+                        <h3 class="text-sm font-semibold text-white">Desde y hasta</h3>
+                        <div class="mt-3 grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="obs-from" class="block text-[11px] text-slate-500 mb-1">Desde</label>
+                                <input type="date" id="obs-from" x-model="draftFrom"
+                                       class="w-full h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            </div>
+                            <div>
+                                <label for="obs-to" class="block text-[11px] text-slate-500 mb-1">Hasta</label>
+                                <input type="date" id="obs-to" x-model="draftTo"
+                                       class="w-full h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end gap-2">
+                            <button type="button" class="h-9 px-3 rounded-lg border border-slate-700 text-sm text-slate-300" @click="close()">Cerrar</button>
+                            <button type="button" class="h-9 px-3 rounded-lg bg-slate-100 text-sm font-medium text-slate-900" @click="apply()">Aceptar</button>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
-        <div>
-            <label for="to" class="block text-[11px] text-slate-500 mb-1">Hasta</label>
-            <input type="date" id="to" name="to" value="{{ $to }}"
-                   class="h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
-        </div>
-        <div>
-            <label for="comuna" class="block text-[11px] text-slate-500 mb-1">Comuna Cali</label>
-            <select id="comuna" name="comuna" class="h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
-                <option value="">Todas</option>
-                @foreach ($comunas as $row)
-                    <option value="{{ $row['code'] }}" @selected($comuna === $row['code'])>{{ $row['name'] }}</option>
-                @endforeach
-                <option value="fuera" @selected($comuna === 'fuera')>Fuera de Cali</option>
-            </select>
-        </div>
-        <div>
+        <div class="shrink-0">
             <label for="grain" class="block text-[11px] text-slate-500 mb-1">Líneas</label>
             <select id="grain" name="grain" class="h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                 <option value="day" @selected($grain === 'day')>Por día</option>
@@ -120,7 +143,7 @@
                 <option value="year" @selected($grain === 'year')>Por año</option>
             </select>
         </div>
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-[10rem]">
             <label for="q" class="block text-[11px] text-slate-500 mb-1">Buscar</label>
             <input type="search" id="q" name="q" value="{{ $search }}" placeholder="{{ $searchPlaceholder }}"
                    class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white placeholder:text-slate-600">
@@ -128,7 +151,7 @@
         @if ($status !== '')
             <input type="hidden" name="status" value="{{ $status }}">
         @endif
-        <button type="submit" class="h-9 px-4 rounded-lg border border-slate-700 text-sm text-slate-200 hover:bg-slate-800">Filtrar</button>
+        <button type="submit" class="h-9 px-4 shrink-0 rounded-lg border border-slate-700 text-sm text-slate-200 hover:bg-slate-800">Filtrar</button>
         @if ($vista === 'tablero')
             @include('modules.observatory.partials.share-modal')
         @endif
@@ -154,7 +177,7 @@
         <div class="grid gap-2 xl:grid-cols-[minmax(0,7fr)_minmax(13rem,3fr)] xl:items-stretch">
             @include('modules.observatory.partials.map', [
                 'map' => $map,
-                'mapCanvasClass' => 'h-64 xl:h-full xl:min-h-[20rem]',
+                'mapCanvasClass' => 'h-80 xl:h-full xl:min-h-[26rem]',
             ])
             @include('modules.observatory.partials.pin-legend')
         </div>

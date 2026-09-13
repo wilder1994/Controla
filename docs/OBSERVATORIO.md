@@ -2,7 +2,7 @@
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 13 septiembre 2026 (comunas IDESC)
+**Última actualización:** 12 septiembre 2026 (UX tablero: comuna + fechas)
 
 ## Piezas
 
@@ -85,7 +85,7 @@ Empresa, `client-admin` y apoyo no ven esos botones.
 
 Pestañas **Tablero** | **Eventos** (cuelgan del header, no van dentro de la barra).
 
-- **Tablero:** filtros (fecha, cliente en empresa, **Comuna Cali**), **Compartir link**, API, KPIs (clic abre Eventos). Fila 1: mapa (~70%) + leyenda de pines (mismo alto). Pines/Calor, Mapa/Satélite y chips de comuna van sobre el mapa (sin tapar controles de Google; sin fullscreen). Fila 2: colegios (lista con scroll + comuna) + tendencia ancha. Fila 3: picos · canal · cierre.
+- **Tablero:** filtros en una sola fila (xl): **Cliente** angosto (solo empresa), **Desde — Hasta** (ícono; el rango se elige en un modal: Aceptar aplica, Cerrar descarta), Líneas, Buscar, **Filtrar**, Compartir link, API. `?comuna=` va hidden para no perderla al filtrar. Fila 1: mapa más alto + leyenda. En la barra del mapa: Pines/Calor, **buscador de comuna** (escribe `7` o “comuna”) y Mapa/Satélite. Al elegir una comuna (lista o clic en el polígono) recorta tablero/eventos y hace zoom a ese polígono IDESC, aunque no haya sedes. Fila 2: colegios + tendencia. Fila 3: picos · canal · cierre.
 - **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).
 
 ## Ficha
@@ -118,7 +118,7 @@ Puntaje del colegio = suma de niveles de sus reportes. Tablero: líneas por tipo
 
 Círculo = colegio (color del tipo abierto más grave). Gota = reporte (color del tipo). Modos: Pines · Calor sede (cantidad) · Calor riesgo (nivel). Requiere `GOOGLE_MAPS_API_KEY`.
 
-Capa y filtro: **22 comunas urbanas de Cali** (IDESC / `dapm:pdt_dpa_comunas`). Clic en el polígono o chip; combo **Comuna Cali** recorta tablero, ranking y eventos. Colegios fuera del perímetro: **Fuera de Cali**. No cubren el Valle. GeoJSON: `/geo/cali-comunas.geojson`.
+Capa y filtro: **22 comunas urbanas de Cali** (IDESC / `dapm:pdt_dpa_comunas`). Buscador al lado de Pines/Calor (no hay fila de chips). Clic en el polígono o elegir en el buscador recorta tablero/eventos y hace zoom a esa comuna. Colegios fuera del perímetro: **Fuera de Cali**. No cubren el Valle. GeoJSON: `/geo/cali-comunas.geojson`.
 
 La **ficha de la instalación** usa la misma capa: al poner el pin, si cae en Cali se guarda y se muestra la comuna IDESC (contorno en el mapa de al lado). Fuera de Cali no hay polígono; el área sigue saliendo de Places.
 

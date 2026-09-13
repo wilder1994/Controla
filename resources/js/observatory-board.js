@@ -1,5 +1,54 @@
 import Chart from 'chart.js/auto';
 
+export function obsDateRange(config) {
+    const fmt = (value) => {
+        if (!value) {
+            return '';
+        }
+        const [y, m, d] = String(value).split('-');
+        return `${d}/${m}/${y}`;
+    };
+
+    return {
+        open: false,
+        from: config.from || '',
+        to: config.to || '',
+        draftFrom: config.from || '',
+        draftTo: config.to || '',
+        get label() {
+            if (this.from && this.to) {
+                return `${fmt(this.from)} – ${fmt(this.to)}`;
+            }
+            if (this.from) {
+                return `Desde ${fmt(this.from)}`;
+            }
+            if (this.to) {
+                return `Hasta ${fmt(this.to)}`;
+            }
+
+            return 'Fechas';
+        },
+        show() {
+            this.draftFrom = this.from;
+            this.draftTo = this.to;
+            this.open = true;
+        },
+        apply() {
+            this.from = this.draftFrom;
+            this.to = this.draftTo;
+            this.open = false;
+            this.$nextTick(() => {
+                if (this.$el instanceof HTMLFormElement) {
+                    this.$el.submit();
+                }
+            });
+        },
+        close() {
+            this.open = false;
+        },
+    };
+}
+
 const SLATE = '#94a3b8';
 const GRID = '#1e293b';
 const MUTED = '#64748b';

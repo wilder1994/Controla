@@ -186,7 +186,7 @@ Controla es maduro en **accesos, censo y supervisión de campo**. El Observatori
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
-| 2 Geográfico | **Sí** | Mapa Observatorio (colegio + pin; calor; **comunas IDESC + filtro**). Google Maps | PostGIS no es requisito del pliego |
+| 2 Geográfico | **Sí** | Mapa Observatorio (colegio + pin; calor; **buscador de comuna IDESC** + zoom al polígono). Google Maps | PostGIS no es requisito del pliego |
 | 3 Multifuente | **Sí** | Comunidad, panel, PWA, minuta y API; origen (canal + rol) en la ficha | Nada del pliego. No hace falta 123 |
 | 4 Comunidad | **Sí** | Intake `/o/{slug}`, anónimo, aviso menores, flujo de estados, vínculo a sede/folio | — |
 | 5 Eventos | **Sí** | Folio; agrupa 1 h; unir/sacar; bitácora; rector **Agregar** / **Cerrar folio** | — |
@@ -385,3 +385,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-13 | Observatorio: tipos del cliente (nivel+color), puntaje, líneas, picos, calor sede/riesgo, filtro empresa por cliente, módulo opt-in. Falta comunas y PPTX. |
 | 2026-09-13 | Observatorio: capa y filtro por comuna urbana de Cali (IDESC). Queda export PPTX. |
 | 2026-09-12 | Ficha de instalación: el pin en Cali asigna y pinta la comuna IDESC (no solo Places). |
+| 2026-09-12 | Observatorio UX: buscador de comuna en el mapa (sin chips 01–22), zoom al polígono aunque no haya sedes, fechas en modal, cliente más angosto. |
