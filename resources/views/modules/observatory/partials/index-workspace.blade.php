@@ -184,7 +184,7 @@
 
         <div class="grid gap-2 xl:grid-cols-[minmax(14rem,1fr)_minmax(0,2fr)] xl:items-stretch">
             <section class="obs-card p-2.5 flex flex-col min-h-0">
-                <p class="text-[10px] uppercase tracking-wide text-slate-500 shrink-0">Colegios por riesgo</p>
+                <p class="text-[10px] uppercase tracking-wide text-slate-500 shrink-0">Sedes por riesgo</p>
                 <div class="mt-1.5 space-y-1.5 overflow-y-auto max-h-48 xl:max-h-none xl:flex-1 sidebar-scroll">
                     @forelse ($board['top'] as $row)
                         <div class="flex items-start justify-between gap-2 text-sm">

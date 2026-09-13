@@ -27,7 +27,7 @@
         <form method="POST" action="{{ route('client.observatory.reports.store') }}" enctype="multipart/form-data" class="mt-6 max-w-xl space-y-4" x-data="{ anonymous: {{ old('is_anonymous') ? 'true' : 'false' }} }">
             @csrf
             <div>
-                <label class="block text-xs text-slate-400 mb-1" for="installation_id">Colegio</label>
+                <label class="block text-xs text-slate-400 mb-1" for="installation_id">Sede</label>
                 <select id="installation_id" name="installation_id" required class="w-full h-11 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                     <option value="">Seleccione…</option>
                     @foreach ($sites as $site)

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Observatory;
 
-use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
 use App\Models\Installation;
 use App\Models\ObservatoryEvent;
@@ -24,7 +23,6 @@ final class BuildObservatoryMapService
         $sites = Installation::query()
             ->withoutGlobalScopes()
             ->with(['client:id,name,security_company_id', 'observatoryEvents.reports.reportType'])
-            ->where('kind', InstallationKind::Colegio->value)
             ->where('is_active', true)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')

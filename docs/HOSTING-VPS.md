@@ -18,7 +18,7 @@ Flujo: push local a `origin` (`wilder1994/Controla`, `main`). El VPS solo hace `
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
-Observatorio: migrate `2026_09_13_120000` (tipos de hecho + `panel_modules.observatory` en clientes ya creados). Tras ese migrate: `php artisan db:seed --class=RoleAndPermissionSeeder` (añade `observatory.events.update` al admin del cliente). Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Comunas Cali: `resources/data/cali-comunas.geojson` (IDESC, sin migrate). El pin de la ficha de instalación usa la misma capa. El corte UX del tablero (buscador de comuna, fechas en modal) es Blade/JS: `npm run build` + `view:cache`. Sin migrate ni seeder.
+Observatorio: migrate `2026_09_13_120000` (tipos de hecho + `panel_modules.observatory` en clientes ya creados). Tras ese migrate: `php artisan db:seed --class=RoleAndPermissionSeeder` (añade `observatory.events.update` al admin del cliente). Intake `/o/{slug}` (solo colegios). API `/api/observatory/*` + docs `/docs/observatory`. Comunas Cali: `resources/data/cali-comunas.geojson` (IDESC, sin migrate). El tablero pinta **cualquier sede** activa con coordenadas. Pin en Cali: comuna IDESC bloqueada. Cortes UX (buscador, fechas, capas): Blade/JS + PHP, `npm run build` + `view:cache`. Sin migrate ni seeder.
 
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud

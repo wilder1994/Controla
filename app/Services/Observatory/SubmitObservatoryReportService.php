@@ -25,17 +25,29 @@ final class SubmitObservatoryReportService
      */
     public function execute(Client $client, array $data, ?string $ip = null): ObservatoryReport
     {
+        $source = $data['source'] instanceof ObservatoryReportSource
+            ? $data['source']
+            : ObservatoryReportSource::tryFrom((string) $data['source']);
+        $role = $data['reporter_role'] instanceof ObservatoryReporterRole
+            ? $data['reporter_role']
+            : ObservatoryReporterRole::tryFrom((string) $data['reporter_role']);
+
         $installation = Installation::query()
             ->withoutGlobalScopes()
             ->where('client_id', $client->id)
             ->where('is_active', true)
-            ->where('kind', InstallationKind::Colegio->value)
             ->whereKey((int) $data['installation_id'])
+            ->when(
+                $source === ObservatoryReportSource::Comunidad,
+                fn ($q) => $q->where('kind', InstallationKind::Colegio->value),
+            )
             ->first();
 
         if ($installation === null) {
             throw ValidationException::withMessages([
-                'installation_id' => 'Elige un colegio de esta Secretaría.',
+                'installation_id' => $source === ObservatoryReportSource::Comunidad
+                    ? 'Elige un colegio de esta Secretaría.'
+                    : 'Elige una sede de este cliente.',
             ]);
         }
 
@@ -45,13 +57,6 @@ final class SubmitObservatoryReportService
                 'kind' => 'Indica el tipo de situación.',
             ]);
         }
-
-        $source = $data['source'] instanceof ObservatoryReportSource
-            ? $data['source']
-            : ObservatoryReportSource::tryFrom((string) $data['source']);
-        $role = $data['reporter_role'] instanceof ObservatoryReporterRole
-            ? $data['reporter_role']
-            : ObservatoryReporterRole::tryFrom((string) $data['reporter_role']);
 
         if ($source === null || $role === null || ! $role->allowedFor($source)) {
             throw ValidationException::withMessages([

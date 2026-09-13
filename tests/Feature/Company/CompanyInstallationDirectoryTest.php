@@ -70,6 +70,11 @@ final class CompanyInstallationDirectoryTest extends TestCase
         $this->assertTrue($rector->assignedInstallations()->where('installations.id', $installation->id)->exists());
 
         $this->actingAs($admin)
+            ->get(route('company.installations.edit', $installation))
+            ->assertOk()
+            ->assertSee('idescLocked: true', false);
+
+        $this->actingAs($admin)
             ->get(route('company.installations.show', $installation))
             ->assertOk()
             ->assertSee('INEM Jorge Isaacs', false)

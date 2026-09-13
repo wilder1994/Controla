@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Support\Geo;
 
 use App\Enums\ColombianAreaKind;
-use App\Enums\InstallationKind;
 use App\Models\Installation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -126,7 +125,6 @@ final class CaliComunaLayer
 
         return Installation::query()
             ->withoutGlobalScopes()
-            ->where('kind', InstallationKind::Colegio->value)
             ->where('is_active', true)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')

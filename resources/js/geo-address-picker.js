@@ -231,6 +231,7 @@ window.geoAddressPicker = function geoAddressPicker(config) {
                 address: this.address,
                 area: this.draftArea,
                 areaKind: this.draftAreaKind,
+                idesc: Boolean(this.draftComuna),
             });
             this.closeMap();
         },

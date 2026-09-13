@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
@@ -114,7 +113,6 @@ final class ObservatoryController extends Controller
         $sites = Installation::query()
             ->withoutGlobalScopes()
             ->where('is_active', true)
-            ->where('kind', InstallationKind::Colegio->value)
             ->when($scope['client_id'] !== null, fn ($q) => $q->where('client_id', $scope['client_id']))
             ->when($scope['company_id'] !== null, fn ($q) => $q->whereHas(
                 'client',
@@ -161,12 +159,11 @@ final class ObservatoryController extends Controller
             ->with('client')
             ->whereKey($installationId)
             ->where('is_active', true)
-            ->where('kind', InstallationKind::Colegio->value)
             ->first();
 
         if ($installation?->client === null) {
             throw ValidationException::withMessages([
-                'installation_id' => 'Elige un colegio de tu alcance.',
+                'installation_id' => 'Elige una sede de tu alcance.',
             ]);
         }
 

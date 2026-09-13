@@ -239,7 +239,7 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('/o/'.$client->slug, false)
             ->assertSee('Copiar', false)
             ->assertSee('Nuevos', false)
-            ->assertSee('Colegios por riesgo', false)
+            ->assertSee('Sedes por riesgo', false)
             ->assertSee('IE Santa Librada', false);
 
         $this->actingAs($company)
@@ -558,7 +558,11 @@ final class ObservatoryReportFlowTest extends TestCase
         config(['google-maps.api_key' => 'test-maps-key']);
         [$client, $colegio, $conjunto, $other] = $this->sites();
         $colegio->update(['latitude' => '3.4372200', 'longitude' => '-76.5225000']);
-        $conjunto->update(['latitude' => '3.4516000', 'longitude' => '-76.5320000']);
+        $conjunto->update([
+            'name' => 'IPS Salud del Ingenio',
+            'latitude' => '3.4516000',
+            'longitude' => '-76.5320000',
+        ]);
         $other->update(['latitude' => '3.4600000', 'longitude' => '-76.5100000']);
 
         $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
@@ -568,6 +572,7 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('test-maps-key', false)
             ->assertSee('IE Santa Librada', false)
             ->assertSee('IE Republica del Peru', false)
+            ->assertSee('IPS Salud del Ingenio', false)
             ->assertSee('Pines', false)
             ->assertSee('Calor', false)
             ->assertSee('Desde — Hasta', false)
@@ -580,6 +585,7 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertOk()
             ->assertSee('IE Santa Librada', false)
             ->assertDontSee('IE Republica del Peru', false)
+            ->assertDontSee('IPS Salud del Ingenio', false)
             ->assertSee('Comuna', false);
     }
 

@@ -13,8 +13,8 @@
             x-data="observatoryMap(@js([
                 'sites' => $sites,
                 'points' => $points,
-                'center' => $maps['center'] ?? ['lat' => 3.4372, 'lng' => -76.5225],
-                'zoom' => $maps['zoom'] ?? 12,
+                'center' => $maps['center'] ?? ['lat' => 4.5709, 'lng' => -74.2973],
+                'zoom' => $maps['zoom'] ?? 6,
                 'comuna' => $map['comuna'] ?? '',
                 'comunas' => $map['comunas'] ?? [],
                 'layerUrl' => $map['layer_url'] ?? null,
@@ -100,6 +100,6 @@
             {{ count($sites) + count($points) }} puntos. Configura <code class="text-indigo-300">GOOGLE_MAPS_API_KEY</code> para ver el mapa.
         </p>
     @else
-        <p class="p-4 text-sm text-slate-500">No hay colegios con coordenadas.</p>
+        <p class="p-4 text-sm text-slate-500">No hay sedes con coordenadas.</p>
     @endif
 </div>

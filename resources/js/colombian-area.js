@@ -96,24 +96,35 @@ export function installationAreaFields(config) {
     return {
         commune: config.commune || '',
         city: config.city || '',
+        idescLocked: Boolean(config.idescLocked),
         areaKind: classifyArea(config.commune || '', config.city || ''),
         get areaLabel() {
             return areaKindLabel(this.areaKind);
         },
         get areaHint() {
+            if (this.idescLocked) {
+                return 'La pone el pin (comuna IDESC de Cali). No se edita.';
+            }
             if (this.areaKind !== 'none') {
-                return 'Sale del mapa. Puedes corregirlo.';
+                return 'Sale del mapa. Puedes corregirlo si es vereda, corregimiento o localidad.';
             }
             if (this.commune) {
                 return 'No parece comuna, localidad, vereda o corregimiento. Escríbelo con esa palabra (ej. Vereda El Cerrito).';
             }
 
-            return 'En Cali sale del pin (IDESC). En otro municipio, de la dirección. En un pueblo puede no aplicar.';
+            return 'Si el pin cae en Cali, la comuna sale sola. En un pueblo o vereda, escríbela.';
         },
         applyPlace(detail) {
             if (detail.city) {
                 this.city = detail.city;
             }
+            if (detail.idesc) {
+                this.idescLocked = true;
+                this.commune = detail.area || this.commune;
+                this.areaKind = 'comuna';
+                return;
+            }
+            this.idescLocked = false;
             if (detail.area) {
                 this.commune = detail.area;
             } else if (detail.areaKind === 'none') {
@@ -122,6 +133,10 @@ export function installationAreaFields(config) {
             this.refreshKind();
         },
         refreshKind() {
+            if (this.idescLocked) {
+                this.areaKind = 'comuna';
+                return;
+            }
             this.areaKind = classifyArea(this.commune, this.city);
         },
     };

@@ -48,10 +48,10 @@ export function observatoryMap(cfg) {
 
             const sites = cfg.sites || [];
             const points = cfg.points || [];
-            const center = cfg.center || { lat: 3.4372, lng: -76.5225 };
+            const center = cfg.center || { lat: 4.5709, lng: -74.2973 };
             this.map = new google.maps.Map(el, {
                 center,
-                zoom: Number(cfg.zoom || 12),
+                zoom: Number(cfg.zoom || 6),
                 mapTypeId: google.maps.MapTypeId.SATELLITE,
                 streetViewControl: false,
                 fullscreenControl: false,
@@ -177,6 +177,9 @@ export function observatoryMap(cfg) {
 
             this.applyMode();
             this.loadComunas();
+            google.maps.event.addListenerOnce(this.map, 'idle', () => {
+                google.maps.event.trigger(this.map, 'resize');
+            });
         },
 
         loadComunas() {
@@ -203,33 +206,55 @@ export function observatoryMap(cfg) {
                 .catch(() => {});
         },
 
+        occupiedCodes() {
+            const codes = new Set();
+            (cfg.sites || []).forEach((site) => {
+                if (site.comuna) {
+                    codes.add(String(site.comuna));
+                }
+            });
+
+            return codes;
+        },
+
         styleComunas() {
             if (!this.map?.data) {
                 return;
             }
+            const occupied = this.occupiedCodes();
+            const hasSites = (cfg.sites || []).length > 0 || (cfg.points || []).length > 0;
             this.map.data.setStyle((feature) => {
-                const selected = feature.getProperty('code') === this.comuna;
+                const code = String(feature.getProperty('code') || '');
+                const selected = code === this.comuna;
+                let visible = true;
+                if (this.comuna === 'fuera') {
+                    visible = false;
+                } else if (this.comuna) {
+                    visible = selected;
+                } else if (hasSites) {
+                    visible = occupied.has(code);
+                }
+
                 return {
                     strokeColor: selected ? '#f8fafc' : '#64748b',
-                    strokeOpacity: selected ? 1 : 0.55,
-                    strokeWeight: selected ? 2.6 : 1,
+                    strokeOpacity: selected ? 1 : 0.7,
+                    strokeWeight: selected ? 2.6 : 1.2,
                     fillColor: '#38bdf8',
-                    fillOpacity: selected ? 0.38 : (this.comuna ? 0.02 : 0.08),
+                    fillOpacity: selected ? 0.38 : 0.12,
                     clickable: true,
-                    visible: !this.comuna || this.comuna === 'fuera' || selected,
+                    visible,
                 };
             });
         },
 
         fitLayer() {
-            if (!this.map?.data || this.comuna === 'fuera') {
+            if (!this.map?.data || !this.comuna || this.comuna === 'fuera') {
                 return;
             }
             const bounds = new google.maps.LatLngBounds();
             let any = false;
             this.map.data.forEach((feature) => {
-                const code = feature.getProperty('code');
-                if (this.comuna && this.comuna !== 'fuera' && code !== this.comuna) {
+                if (String(feature.getProperty('code') || '') !== this.comuna) {
                     return;
                 }
                 feature.getGeometry()?.forEachLatLng((ll) => {
@@ -237,7 +262,7 @@ export function observatoryMap(cfg) {
                     any = true;
                 });
             });
-            if (any && (this.comuna || !(cfg.sites || []).length)) {
+            if (any) {
                 this.map.fitBounds(bounds, 36);
             }
         },

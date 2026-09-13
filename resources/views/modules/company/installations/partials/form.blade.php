@@ -7,6 +7,10 @@
         'name' => $client->name,
         'has_geo' => $client->latitude !== null && $client->longitude !== null,
     ])->values();
+    $areaLat = old('latitude', $installation?->latitude);
+    $areaLng = old('longitude', $installation?->longitude);
+    $idescLocked = is_numeric($areaLat) && is_numeric($areaLng)
+        && app(\App\Support\Geo\CaliComunaLayer::class)->locate((float) $areaLat, (float) $areaLng) !== null;
 @endphp
 
 <div
@@ -89,11 +93,13 @@
             x-data="installationAreaFields({
                 commune: @js(old('commune', $installation?->commune ?? '')),
                 city: @js(old('city', $installation?->city ?? '')),
+                idescLocked: @js($idescLocked),
             })"
             @geo-place.window="applyPlace($event.detail)"
         >
             <x-ui.label for="commune" x-text="areaLabel">Comuna</x-ui.label>
-            <x-ui.input id="commune" name="commune" x-model="commune" @input="refreshKind()" placeholder="Se llena con el mapa" />
+            <x-ui.input id="commune" name="commune" x-model="commune" @input="refreshKind()" placeholder="Se llena con el mapa"
+                        class="read-only:text-slate-400" x-bind:readonly="idescLocked" />
             <p class="mt-1 text-[11px] text-slate-500" x-text="areaHint"></p>
             <x-ui.field-error :messages="$errors->get('commune')" />
         </div>

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Client;
 
-use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
@@ -112,7 +111,7 @@ final class ObservatoryEventController extends Controller
         return view('modules.observatory.client.create', [
             'canReport' => $canReport,
             'reporterName' => $user?->name,
-            'sites' => $canReport ? $this->reportableColegios() : collect(),
+            'sites' => $canReport ? $this->reportableSites() : collect(),
             'kinds' => ObservatoryReportType::optionsFor((int) $client->id),
             'roleLabel' => $permission === 'support'
                 ? ObservatoryReporterRole::Apoyo->label()
@@ -280,13 +279,12 @@ final class ObservatoryEventController extends Controller
     }
 
     /** @return \Illuminate\Database\Eloquent\Collection<int, Installation> */
-    private function reportableColegios()
+    private function reportableSites()
     {
         $siteIds = $this->tenantContext->installationIds();
 
         return Installation::query()
             ->where('client_id', (int) $this->tenantContext->clientId())
-            ->where('kind', InstallationKind::Colegio->value)
             ->where('is_active', true)
             ->when($siteIds !== null, fn ($q) => $q->whereIn('id', $siteIds))
             ->orderBy('name')
