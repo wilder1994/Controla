@@ -1,4 +1,6 @@
 export function observatoryMap(cfg) {
+    const layerUrl = '/geo/cali-comunas.geojson';
+
     return {
         mode: 'pins',
         mapType: 'satellite',
@@ -8,10 +10,7 @@ export function observatoryMap(cfg) {
         comunaOpen: false,
         comunas: cfg.comunas || [],
         map: null,
-        heatmap: null,
         markers: [],
-        heatSite: [],
-        heatRisk: [],
 
         init() {
             window.initObservatoryMap = () => this.draw();
@@ -30,16 +29,6 @@ export function observatoryMap(cfg) {
             }[char]));
         },
 
-        matches(item) {
-            if (!this.typeFilter) {
-                return true;
-            }
-            if (item.kind_slug) {
-                return item.kind_slug === this.typeFilter;
-            }
-            return (item.summary || []).some((row) => row.slug === this.typeFilter || row.name);
-        },
-
         draw() {
             const el = this.$refs.map;
             if (!el || !window.google?.maps || this.map) {
@@ -48,10 +37,9 @@ export function observatoryMap(cfg) {
 
             const sites = cfg.sites || [];
             const points = cfg.points || [];
-            const center = cfg.center || { lat: 4.5709, lng: -74.2973 };
             this.map = new google.maps.Map(el, {
-                center,
-                zoom: Number(cfg.zoom || 6),
+                center: { lat: 3.4372, lng: -76.5225 },
+                zoom: 12,
                 mapTypeId: google.maps.MapTypeId.SATELLITE,
                 streetViewControl: false,
                 fullscreenControl: false,
@@ -62,28 +50,28 @@ export function observatoryMap(cfg) {
                 },
             });
 
-            const bounds = new google.maps.LatLngBounds();
             const info = new google.maps.InfoWindow();
-            this.heatSite = [];
-            this.heatRisk = [];
 
             sites.forEach((site) => {
                 const pos = { lat: Number(site.lat), lng: Number(site.lng) };
-                bounds.extend(pos);
+                const pinIcon = {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: site.open_count > 0 ? 8 : 6,
+                    fillColor: site.color || '#94a3b8',
+                    fillOpacity: 0.9,
+                    strokeColor: '#0f172a',
+                    strokeWeight: 1,
+                };
                 const marker = new google.maps.Marker({
                     position: pos,
                     map: this.map,
                     title: site.name,
                     zIndex: 1,
+                    icon: pinIcon,
                     kindSlugs: site.type_slugs || (site.kind_slug ? [site.kind_slug] : []),
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: site.open_count > 0 ? 8 : 6,
-                        fillColor: site.color || '#94a3b8',
-                        fillOpacity: 0.9,
-                        strokeColor: '#0f172a',
-                        strokeWeight: 1,
-                    },
+                    pinIcon,
+                    heatWeight: site.open_count > 0 ? Number(site.heat_weight || 1) : 0,
+                    riskWeight: site.open_count > 0 ? Number(site.risk_weight || 1) : 0,
                 });
                 marker.addListener('click', () => {
                     const mix = (site.summary || [])
@@ -102,37 +90,28 @@ export function observatoryMap(cfg) {
                     info.open(this.map, marker);
                 });
                 this.markers.push(marker);
-                if (site.open_count > 0) {
-                    this.heatSite.push({
-                        location: new google.maps.LatLng(pos.lat, pos.lng),
-                        weight: Number(site.heat_weight || 1),
-                        slug: '',
-                    });
-                    this.heatRisk.push({
-                        location: new google.maps.LatLng(pos.lat, pos.lng),
-                        weight: Number(site.risk_weight || 1),
-                        slug: '',
-                    });
-                }
             });
 
             points.forEach((point) => {
                 const pos = { lat: Number(point.lat), lng: Number(point.lng) };
-                bounds.extend(pos);
+                const pinIcon = {
+                    path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                    scale: 5,
+                    fillColor: point.color || '#94a3b8',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 1,
+                };
                 const marker = new google.maps.Marker({
                     position: pos,
                     map: this.map,
                     title: point.kind || point.title,
                     zIndex: 2,
+                    icon: pinIcon,
                     kindSlugs: point.kind_slug ? [point.kind_slug] : [],
-                    icon: {
-                        path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-                        scale: 5,
-                        fillColor: point.color || '#94a3b8',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 1,
-                    },
+                    pinIcon,
+                    heatWeight: point.open ? 1 : 0,
+                    riskWeight: point.open ? Number(point.level || 1) : 0,
                 });
                 marker.addListener('click', () => {
                     const link = point.show_url
@@ -149,31 +128,7 @@ export function observatoryMap(cfg) {
                     info.open(this.map, marker);
                 });
                 this.markers.push(marker);
-                if (point.open) {
-                    this.heatSite.push({
-                        location: new google.maps.LatLng(pos.lat, pos.lng),
-                        weight: 1,
-                        slug: point.kind_slug || '',
-                    });
-                    this.heatRisk.push({
-                        location: new google.maps.LatLng(pos.lat, pos.lng),
-                        weight: Number(point.level || 1),
-                        slug: point.kind_slug || '',
-                    });
-                }
             });
-
-            if (!this.comuna && (sites.length > 0 || points.length > 0)) {
-                this.map.fitBounds(bounds, 48);
-            }
-
-            if (google.maps.visualization) {
-                this.heatmap = new google.maps.visualization.HeatmapLayer({
-                    data: [],
-                    radius: 42,
-                    opacity: 0.65,
-                });
-            }
 
             this.applyMode();
             this.loadComunas();
@@ -183,13 +138,14 @@ export function observatoryMap(cfg) {
         },
 
         loadComunas() {
-            if (!this.map || !cfg.layerUrl) {
+            if (!this.map) {
                 return;
             }
-            fetch(cfg.layerUrl)
-                .then((res) => (res.ok ? res.json() : null))
+            fetch(layerUrl)
+                .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
                 .then((geo) => {
                     if (!geo || !this.map?.data) {
+                        this.fitSitesFallback();
                         return;
                     }
                     this.map.data.addGeoJson(geo);
@@ -199,48 +155,28 @@ export function observatoryMap(cfg) {
                         if (!code) {
                             return;
                         }
-                        this.goComuna(code);
+                        this.goComuna(String(code));
                     });
                     this.fitLayer();
                 })
-                .catch(() => {});
-        },
-
-        occupiedCodes() {
-            const codes = new Set();
-            (cfg.sites || []).forEach((site) => {
-                if (site.comuna) {
-                    codes.add(String(site.comuna));
-                }
-            });
-
-            return codes;
+                .catch(() => this.fitSitesFallback());
         },
 
         styleComunas() {
             if (!this.map?.data) {
                 return;
             }
-            const occupied = this.occupiedCodes();
-            const hasSites = (cfg.sites || []).length > 0 || (cfg.points || []).length > 0;
             this.map.data.setStyle((feature) => {
                 const code = String(feature.getProperty('code') || '');
-                const selected = code === this.comuna;
-                let visible = true;
-                if (this.comuna === 'fuera') {
-                    visible = false;
-                } else if (this.comuna) {
-                    visible = selected;
-                } else if (hasSites) {
-                    visible = occupied.has(code);
-                }
+                const selected = this.comuna !== '' && this.comuna !== 'fuera' && code === this.comuna;
+                const visible = this.comuna !== 'fuera' && (!this.comuna || selected);
 
                 return {
-                    strokeColor: selected ? '#f8fafc' : '#64748b',
-                    strokeOpacity: selected ? 1 : 0.7,
-                    strokeWeight: selected ? 2.6 : 1.2,
+                    strokeColor: selected ? '#f8fafc' : '#7dd3fc',
+                    strokeOpacity: selected ? 1 : 0.85,
+                    strokeWeight: selected ? 2.8 : 1.4,
                     fillColor: '#38bdf8',
-                    fillOpacity: selected ? 0.38 : 0.12,
+                    fillOpacity: selected ? 0.4 : 0.16,
                     clickable: true,
                     visible,
                 };
@@ -248,13 +184,15 @@ export function observatoryMap(cfg) {
         },
 
         fitLayer() {
-            if (!this.map?.data || !this.comuna || this.comuna === 'fuera') {
+            if (!this.map?.data || this.comuna === 'fuera') {
+                this.fitSitesFallback();
                 return;
             }
             const bounds = new google.maps.LatLngBounds();
             let any = false;
             this.map.data.forEach((feature) => {
-                if (String(feature.getProperty('code') || '') !== this.comuna) {
+                const code = String(feature.getProperty('code') || '');
+                if (this.comuna && code !== this.comuna) {
                     return;
                 }
                 feature.getGeometry()?.forEachLatLng((ll) => {
@@ -264,7 +202,28 @@ export function observatoryMap(cfg) {
             });
             if (any) {
                 this.map.fitBounds(bounds, 36);
+                return;
             }
+            this.fitSitesFallback();
+        },
+
+        fitSitesFallback() {
+            const bounds = new google.maps.LatLngBounds();
+            let any = false;
+            (cfg.sites || []).forEach((site) => {
+                bounds.extend({ lat: Number(site.lat), lng: Number(site.lng) });
+                any = true;
+            });
+            (cfg.points || []).forEach((point) => {
+                bounds.extend({ lat: Number(point.lat), lng: Number(point.lng) });
+                any = true;
+            });
+            if (any && !this.comuna) {
+                this.map.fitBounds(bounds, 48);
+                return;
+            }
+            this.map.setCenter({ lat: 3.4372, lng: -76.5225 });
+            this.map.setZoom(this.comuna ? 13 : 12);
         },
 
         comunaRows() {
@@ -273,7 +232,7 @@ export function observatoryMap(cfg) {
 
         comunaLabel() {
             if (!this.comuna) {
-                return '';
+                return 'Todas';
             }
             return this.comunaRows().find((row) => row.code === this.comuna)?.name || this.comuna;
         },
@@ -319,24 +278,32 @@ export function observatoryMap(cfg) {
             }
         },
 
+        heatIcon(weight, risk) {
+            const w = Math.max(1, Number(weight) || 1);
+            return {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10 + Math.min(20, w * 4),
+                fillColor: risk ? '#f97316' : '#38bdf8',
+                fillOpacity: 0.38,
+                strokeColor: risk ? '#fdba74' : '#e0f2fe',
+                strokeWeight: 1,
+            };
+        },
+
         applyMode() {
             const pins = this.mode === 'pins';
+            const risk = this.mode === 'heat_risk';
             this.markers.forEach((marker) => {
                 const slugs = marker.kindSlugs || [];
                 const ok = !this.typeFilter || slugs.length === 0 || slugs.includes(this.typeFilter);
-                marker.setMap(pins && ok ? this.map : null);
+                const weight = risk ? marker.riskWeight : marker.heatWeight;
+                const show = ok && (pins || weight > 0);
+                marker.setMap(show ? this.map : null);
+                if (!show) {
+                    return;
+                }
+                marker.setIcon(pins ? marker.pinIcon : this.heatIcon(weight, risk));
             });
-            if (!this.heatmap) {
-                return;
-            }
-            if (pins) {
-                this.heatmap.setMap(null);
-                return;
-            }
-            const source = this.mode === 'heat_risk' ? this.heatRisk : this.heatSite;
-            const data = source.filter((row) => !this.typeFilter || row.slug === this.typeFilter);
-            this.heatmap.setData(data);
-            this.heatmap.setMap(this.map);
         },
     };
 }

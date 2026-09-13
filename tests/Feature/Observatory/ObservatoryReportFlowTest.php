@@ -576,7 +576,9 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('Pines', false)
             ->assertSee('Calor', false)
             ->assertSee('Desde — Hasta', false)
-            ->assertSee('Comuna…', false)
+            ->assertSee('Todas', false)
+            ->assertSee('cali-comunas.geojson', false)
+            ->assertDontSee('libraries=visualization', false)
             ->assertDontSee('Comuna Cali', false);
 
         $admin = $this->makeSiteAdmin($company, $client, $colegio, 'mapa.obs@palmas.test', '1098000884');

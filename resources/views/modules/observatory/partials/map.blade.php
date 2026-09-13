@@ -13,11 +13,11 @@
             x-data="observatoryMap(@js([
                 'sites' => $sites,
                 'points' => $points,
-                'center' => $maps['center'] ?? ['lat' => 4.5709, 'lng' => -74.2973],
-                'zoom' => $maps['zoom'] ?? 6,
+                'center' => $maps['center'] ?? ['lat' => 3.4372, 'lng' => -76.5225],
+                'zoom' => $maps['zoom'] ?? 12,
                 'comuna' => $map['comuna'] ?? '',
                 'comunas' => $map['comunas'] ?? [],
-                'layerUrl' => $map['layer_url'] ?? null,
+                'layerUrl' => $map['layer_url'] ?? '/geo/cali-comunas.geojson',
             ]))"
             class="relative flex-1 min-h-80 flex flex-col"
         >
@@ -37,8 +37,8 @@
                     <div class="relative min-w-[10rem] max-w-[14rem] flex-1" @click.outside="comunaOpen = false">
                         <input type="search"
                                class="h-7 w-full rounded-md border border-slate-700 bg-slate-900 px-2 text-[11px] text-white placeholder:text-slate-500"
-                               placeholder="Comuna…"
-                               :value="comunaOpen ? comunaQ : (comunaLabel() || '')"
+                               placeholder="Todas"
+                               :value="comunaOpen ? comunaQ : comunaLabel()"
                                @focus="comunaOpen = true; comunaQ = ''"
                                @input="comunaOpen = true; comunaQ = $event.target.value"
                                @keydown.escape="comunaOpen = false"
@@ -93,7 +93,7 @@
                     window.__observatoryMapReady = true;
                 };
             </script>
-            <script src="https://maps.googleapis.com/maps/api/js?key={{ $maps['api_key'] }}&libraries=visualization&callback=initObservatoryMap" async defer></script>
+            <script src="https://maps.googleapis.com/maps/api/js?key={{ $maps['api_key'] }}&callback=initObservatoryMap&loading=async" async defer></script>
         @endpush
     @elseif (count($sites) > 0 || count($points) > 0)
         <p class="p-4 text-xs text-slate-500">

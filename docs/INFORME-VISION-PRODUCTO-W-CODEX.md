@@ -186,7 +186,7 @@ Controla es maduro en **accesos, censo y supervisión de campo**. El Observatori
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
-| 2 Geográfico | **Sí** | Mapa Observatorio (cualquier sede + pin; calor; **comunas IDESC**: ocupadas / elegida / las 22 si no hay sedes). Google Maps | PostGIS no es requisito del pliego |
+| 2 Geográfico | **Sí** | Mapa Observatorio (cualquier sede + pin; calor en círculos; **comunas IDESC**: Todas = Cali + 22, o zoom a una). Google Maps 3.65 sin HeatmapLayer | PostGIS no es requisito del pliego |
 | 3 Multifuente | **Sí** | Comunidad, panel, PWA, minuta y API; origen (canal + rol) en la ficha | Nada del pliego. No hace falta 123 |
 | 4 Comunidad | **Sí** | Intake `/o/{slug}`, anónimo, aviso menores, flujo de estados, vínculo a sede/folio | — |
 | 5 Eventos | **Sí** | Folio; agrupa 1 h; unir/sacar; bitácora; rector **Agregar** / **Cerrar folio** | — |
@@ -387,3 +387,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Ficha de instalación: el pin en Cali asigna y pinta la comuna IDESC (no solo Places). |
 | 2026-09-12 | Observatorio UX: buscador de comuna en el mapa (sin chips 01–22), zoom al polígono aunque no haya sedes, fechas en modal, cliente más angosto. |
 | 2026-09-12 | Observatorio: pines de cualquier tipo de sede; sin sedes = mapa Colombia + 22 comunas; con sedes = zoom a pines y solo comunas ocupadas; comuna vacía se pinta. Área IDESC de la ficha bloqueada. |
+| 2026-09-12 | Observatorio: Google Maps 3.65 quitó HeatmapLayer; el calor es círculo propio. La capa IDESC se carga siempre (ruta relativa); Todas = Cali + 22; una comuna hace zoom a ese polígono. |

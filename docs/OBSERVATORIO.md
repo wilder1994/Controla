@@ -2,7 +2,7 @@
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 12 septiembre 2026 (mapa: todas las sedes + capas)
+**Última actualización:** 12 septiembre 2026 (capa IDESC sin HeatmapLayer)
 
 ## Piezas
 
@@ -85,7 +85,7 @@ Empresa, `client-admin` y apoyo no ven esos botones.
 
 Pestañas **Tablero** | **Eventos** (cuelgan del header, no van dentro de la barra).
 
-- **Tablero:** filtros en una sola fila (xl): **Cliente** angosto (solo empresa), **Desde — Hasta** (ícono; modal Aceptar/Cerrar), Líneas, Buscar, **Filtrar**, Compartir link, API. `?comuna=` va hidden. Fila 1: mapa + leyenda. Sin sedes: Colombia, con las 22 comunas de Cali en la capa (se ven al hacer zoom). Con sedes: zoom a esos pines y solo las comunas que ya tienen instalación. Al elegir otra comuna se pinta esa capa aunque no haya pin. Fila 2: sedes por riesgo + tendencia. Fila 3: picos · canal · cierre.
+- **Tablero:** filtros en una sola fila (xl): **Cliente** angosto (solo empresa), **Desde — Hasta** (ícono; modal Aceptar/Cerrar), Líneas, Buscar, **Filtrar**, Compartir link, API. `?comuna=` va hidden. Fila 1: mapa + leyenda. **Todas** encuadra Cali y pinta las 22 comunas. Una comuna hace zoom a ese polígono. Calor = círculos (Google quitó HeatmapLayer). Fila 2: sedes por riesgo + tendencia. Fila 3: picos · canal · cierre.
 - **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).
 
 ## Ficha
@@ -116,9 +116,9 @@ Puntaje del colegio = suma de niveles de sus reportes. Tablero: líneas por tipo
 
 ## Mapa
 
-Círculo = sede activa con coordenadas (cualquier `kind`: colegio, salud, conjunto…). Gota = reporte. Modos: Pines · Calor sede · Calor riesgo. Requiere `GOOGLE_MAPS_API_KEY`. El intake público `/o/{slug}` sigue siendo solo `kind=colegio`.
+Círculo = sede activa con coordenadas (cualquier `kind`). Gota = reporte. Modos: Pines · Calor sede · Calor riesgo (círculos propios; Google quitó `HeatmapLayer` en Maps JS 3.65). Requiere `GOOGLE_MAPS_API_KEY`. El intake público `/o/{slug}` sigue siendo solo `kind=colegio`.
 
-Capa y filtro: **22 comunas urbanas de Cali** (IDESC). Buscador al lado de Pines/Calor. Sin sedes el mapa es Colombia (las 22 capas están; se ven al acercar Cali). Con sedes, solo las comunas ocupadas. Elegir una comuna vacía la pinta igual. Fuera del perímetro: **Fuera de Cali**. GeoJSON: `/geo/cali-comunas.geojson`.
+Capa y filtro: **22 comunas urbanas de Cali** (IDESC), ruta relativa `/geo/cali-comunas.geojson`. **Todas** (sin `?comuna=`) encuadra Cali y pinta las 22. Una comuna recorta y hace zoom a ese polígono. Fuera del perímetro: **Fuera de Cali**.
 
 La **ficha de la instalación** usa la misma capa: al poner el pin, si cae en Cali se guarda y se muestra la comuna IDESC (contorno en el mapa de al lado). Fuera de Cali no hay polígono; el área sigue saliendo de Places.
 
