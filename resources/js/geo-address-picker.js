@@ -1,4 +1,5 @@
 import { pickArea, classifyArea } from './colombian-area';
+import { fetchCaliComunas, locateCaliComuna, paintCaliLayer, caliComunasUrl } from './cali-comunas';
 
 window.__geoMapsLoader = window.__geoMapsLoader || null;
 
@@ -61,6 +62,8 @@ window.geoAddressPicker = function geoAddressPicker(config) {
         draftArea: '',
         draftAreaKind: 'none',
         draftLabel: '',
+        draftComuna: null,
+        caliGeo: null,
 
         async openMap() {
             this.open = true;
@@ -71,6 +74,7 @@ window.geoAddressPicker = function geoAddressPicker(config) {
             this.draftDepartment = this.department || '';
             this.draftArea = '';
             this.draftAreaKind = 'none';
+            this.draftComuna = null;
             this.draftLabel = this.address || '';
             await this.$nextTick();
             if (!this.maps.apiKey) {
@@ -148,11 +152,40 @@ window.geoAddressPicker = function geoAddressPicker(config) {
                     this.draftArea = parsed.area;
                     this.draftAreaKind = parsed.areaKind;
                     this.draftLabel = place.formatted_address || place.name || this.draftAddress;
+                    this.applyCaliComuna(lat, lng);
                 });
             }
 
             if (hasCoords) {
                 this.draftLabel = this.address || `${this.draftLat}, ${this.draftLng}`;
+            }
+
+            this.loadCaliLayer();
+        },
+
+        async loadCaliLayer() {
+            try {
+                this.caliGeo = await fetchCaliComunas(caliComunasUrl());
+                if (this.caliGeo && this.map) {
+                    this.applyCaliComuna(this.draftLat, this.draftLng);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        applyCaliComuna(lat, lng) {
+            if (!this.caliGeo || lat == null || lng == null) {
+                return;
+            }
+            const hit = locateCaliComuna(Number(lat), Number(lng), this.caliGeo);
+            this.draftComuna = hit;
+            if (hit) {
+                this.draftArea = hit.name;
+                this.draftAreaKind = 'comuna';
+            }
+            if (this.map) {
+                paintCaliLayer(this.map, this.caliGeo, hit?.code || '');
             }
         },
 
@@ -160,6 +193,7 @@ window.geoAddressPicker = function geoAddressPicker(config) {
             this.draftLat = lat;
             this.draftLng = lng;
             this.draftLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            this.applyCaliComuna(lat, lng);
             const geocoder = new google.maps.Geocoder();
             geocoder.geocode({ location: { lat, lng } }, (results, status) => {
                 if (status !== 'OK' || !results?.[0]) {
@@ -172,6 +206,7 @@ window.geoAddressPicker = function geoAddressPicker(config) {
                 this.draftArea = parsed.area;
                 this.draftAreaKind = parsed.areaKind;
                 this.draftLabel = results[0].formatted_address || this.draftLabel;
+                this.applyCaliComuna(lat, lng);
             });
         },
 

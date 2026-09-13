@@ -120,6 +120,8 @@ Círculo = colegio (color del tipo abierto más grave). Gota = reporte (color de
 
 Capa y filtro: **22 comunas urbanas de Cali** (IDESC / `dapm:pdt_dpa_comunas`). Clic en el polígono o chip; combo **Comuna Cali** recorta tablero, ranking y eventos. Colegios fuera del perímetro: **Fuera de Cali**. No cubren el Valle. GeoJSON: `/geo/cali-comunas.geojson`.
 
+La **ficha de la instalación** usa la misma capa: al poner el pin, si cae en Cali se guarda y se muestra la comuna IDESC (contorno en el mapa de al lado). Fuera de Cali no hay polígono; el área sigue saliendo de Places.
+
 ## Módulo
 
 En la ficha del cliente, checkbox **Observatorio**. Si no está chuleado, no aparece en el sidebar del cliente. Empresa siempre ve `/company/observatory`.

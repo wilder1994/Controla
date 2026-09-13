@@ -11,7 +11,7 @@ use App\Models\Installation;
 use App\Models\User;
 use App\Enums\InstallationKind;
 use App\Support\Auth\AssignableRoles;
-use App\Support\Geo\ColombianArea;
+use App\Support\Geo\CaliComunaLayer;
 use Illuminate\Validation\ValidationException;
 
 final class ManageClientInstallationService
@@ -29,7 +29,12 @@ final class ManageClientInstallationService
         }
 
         $geo = $this->geoAttributes($client, $isClientSite, $data['geo'] ?? null);
-        $area = $this->areaAttributes($data['commune'] ?? null, $geo['city'] ?? $client->city);
+        $area = $this->areaAttributes(
+            $data['commune'] ?? null,
+            $geo['city'] ?? $client->city,
+            $geo['latitude'] ?? null,
+            $geo['longitude'] ?? null,
+        );
 
         $kind = $this->resolveKind($data['kind'] ?? null);
         $dane = $this->resolveDane($kind, $data['dane_code'] ?? null);
@@ -88,8 +93,13 @@ final class ManageClientInstallationService
 
         $installation->fill($this->geoAttributes($client, $isClientSite, $data['geo'] ?? null));
 
-        if (array_key_exists('commune', $data)) {
-            $installation->fill($this->areaAttributes($data['commune'] ?? null, $installation->city));
+        if (array_key_exists('commune', $data) || $installation->latitude !== null) {
+            $installation->fill($this->areaAttributes(
+                $data['commune'] ?? $installation->commune,
+                $installation->city,
+                $installation->latitude,
+                $installation->longitude,
+            ));
         }
 
         $installation->save();
@@ -252,14 +262,9 @@ final class ManageClientInstallationService
         $installation->save();
     }
 
-    private function areaAttributes(mixed $commune, mixed $city): array
+    private function areaAttributes(mixed $commune, mixed $city, mixed $lat = null, mixed $lng = null): array
     {
-        $kind = ColombianArea::classify(is_string($commune) ? $commune : null, is_string($city) ? $city : null);
-
-        return [
-            'commune' => ColombianArea::persistableValue(is_string($commune) ? $commune : null, is_string($city) ? $city : null),
-            'area_kind' => $kind->value,
-        ];
+        return app(CaliComunaLayer::class)->areaAttributes($commune, $city, $lat, $lng);
     }
 
     private function nullableString(mixed $value): ?string

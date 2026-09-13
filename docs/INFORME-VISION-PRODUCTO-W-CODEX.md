@@ -384,3 +384,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Anexo 7.5 leído en literal: no pide Policía ni 123. Visita Cali. Falta para el pliego: capas comunas IDESC, prioridad configurable, export. |
 | 2026-09-13 | Observatorio: tipos del cliente (nivel+color), puntaje, líneas, picos, calor sede/riesgo, filtro empresa por cliente, módulo opt-in. Falta comunas y PPTX. |
 | 2026-09-13 | Observatorio: capa y filtro por comuna urbana de Cali (IDESC). Queda export PPTX. |
+| 2026-09-12 | Ficha de instalación: el pin en Cali asigna y pinta la comuna IDESC (no solo Places). |

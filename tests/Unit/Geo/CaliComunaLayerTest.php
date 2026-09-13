@@ -34,4 +34,17 @@ final class CaliComunaLayerTest extends TestCase
         $this->assertSame('', $layer->normalize('99'));
         $this->assertCount(22, $layer->catalog());
     }
+
+    public function test_pin_in_cali_overrides_typed_commune(): void
+    {
+        $layer = app(CaliComunaLayer::class);
+        $area = $layer->areaAttributes('Comuna 17', 'Cali', 3.43722, -76.5225);
+
+        $this->assertSame('Comuna 09', $area['commune']);
+        $this->assertSame('comuna', $area['area_kind']);
+
+        $jamundi = $layer->areaAttributes('Centro', 'Jamundí', 3.2608, -76.5408);
+        $this->assertNull($jamundi['commune']);
+        $this->assertSame('none', $jamundi['area_kind']);
+    }
 }

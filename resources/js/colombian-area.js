@@ -108,7 +108,7 @@ export function installationAreaFields(config) {
                 return 'No parece comuna, localidad, vereda o corregimiento. Escríbelo con esa palabra (ej. Vereda El Cerrito).';
             }
 
-            return 'Se llena con la dirección o el pin. En un pueblo puede no aplicar.';
+            return 'En Cali sale del pin (IDESC). En otro municipio, de la dirección. En un pueblo puede no aplicar.';
         },
         applyPlace(detail) {
             if (detail.city) {

@@ -7,15 +7,11 @@
         <a href="{{ route('client.installations.index') }}" class="text-sm text-slate-400 hover:text-white">← Instalaciones</a>
 
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch">
-            <div class="min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
-                @if ($installation->hasCoordinates() && $maps['api_key'])
-                    <div id="client-installation-pin-map" class="h-96 w-full"></div>
-                @elseif ($installation->hasCoordinates())
-                    <p class="p-4 text-xs text-slate-500">Pin {{ $installation->latitude }}, {{ $installation->longitude }}.</p>
-                @else
-                    <p class="p-4 text-sm text-slate-500">Esta instalación no tiene pin en el mapa.</p>
-                @endif
-            </div>
+            @include('modules.company.installations.partials.pin-map', [
+                'installation' => $installation,
+                'maps' => $maps,
+                'mapId' => 'client-installation-pin-map',
+            ])
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-3">
                 <div>
                     <p class="text-xs text-slate-500">Instalación</p>
@@ -39,9 +35,17 @@
                             <dd class="font-mono text-teal-300">{{ $installation->dane_code }}</dd>
                         </div>
                     @endif
+                    @php
+                        $cali = $installation->hasCoordinates()
+                            ? app(\App\Support\Geo\CaliComunaLayer::class)->locate((float) $installation->latitude, (float) $installation->longitude)
+                            : null;
+                    @endphp
                     <div>
-                        <dt class="text-xs text-slate-500">{{ $installation->areaKindLabel() }}</dt>
-                        <dd class="text-slate-200">{{ $installation->commune ?: '—' }}</dd>
+                        <dt class="text-xs text-slate-500">{{ $cali ? 'Comuna' : $installation->areaKindLabel() }}</dt>
+                        <dd class="text-slate-200">{{ $cali['name'] ?? ($installation->commune ?: '—') }}</dd>
+                        @if ($cali)
+                            <p class="text-[10px] text-slate-500">IDESC Cali</p>
+                        @endif
                     </div>
                     @include('modules.company.installations.partials.ficha-staff')
                 </dl>
@@ -91,30 +95,10 @@
         </div>
     </div>
 
-    @if ($installation->hasCoordinates() && $maps['api_key'])
-        @push('scripts')
-            <script>
-                window.initClientInstallationPinMap = function () {
-                    const pos = {
-                        lat: {{ (float) $installation->latitude }},
-                        lng: {{ (float) $installation->longitude }},
-                    };
-                    const el = document.getElementById('client-installation-pin-map');
-                    if (!el || !window.google?.maps) return;
-                    const map = new google.maps.Map(el, {
-                        center: pos,
-                        zoom: {{ (int) $maps['zoom'] }},
-                        mapTypeId: google.maps.MapTypeId.SATELLITE,
-                        streetViewControl: false,
-                    });
-                    new google.maps.Marker({ position: pos, map, title: @json($installation->name) });
-                    google.maps.event.addListenerOnce(map, 'idle', function () {
-                        google.maps.event.trigger(map, 'resize');
-                        map.setCenter(pos);
-                    });
-                };
-            </script>
-            <script src="https://maps.googleapis.com/maps/api/js?key={{ $maps['api_key'] }}&callback=initClientInstallationPinMap" async defer></script>
-        @endpush
-    @endif
+    @include('modules.company.installations.partials.pin-map-script', [
+        'installation' => $installation,
+        'maps' => $maps,
+        'mapId' => 'client-installation-pin-map',
+        'callback' => 'initClientInstallationPinMap',
+    ])
 </x-client-layout>

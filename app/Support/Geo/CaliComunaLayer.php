@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Geo;
 
+use App\Enums\ColombianAreaKind;
 use App\Enums\InstallationKind;
 use App\Models\Installation;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -68,6 +69,31 @@ final class CaliComunaLayer
     /**
      * @return array{code: string, name: string}|null
      */
+    /**
+     * @return array{commune: ?string, area_kind: string}
+     */
+    public function areaAttributes(mixed $commune, mixed $city, mixed $lat = null, mixed $lng = null): array
+    {
+        $hit = $this->locate(
+            is_numeric($lat) ? (float) $lat : null,
+            is_numeric($lng) ? (float) $lng : null,
+        );
+        if ($hit !== null) {
+            return [
+                'commune' => $hit['name'],
+                'area_kind' => ColombianAreaKind::Comuna->value,
+            ];
+        }
+
+        $name = is_string($commune) ? $commune : null;
+        $town = is_string($city) ? $city : null;
+
+        return [
+            'commune' => ColombianArea::persistableValue($name, $town),
+            'area_kind' => ColombianArea::classify($name, $town)->value,
+        ];
+    }
+
     public function locate(?float $lat, ?float $lng): ?array
     {
         if ($lat === null || $lng === null) {

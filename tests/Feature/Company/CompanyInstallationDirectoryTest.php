@@ -64,7 +64,7 @@ final class CompanyInstallationDirectoryTest extends TestCase
 
         $installation = Installation::query()->where('name', 'INEM Jorge Isaacs')->firstOrFail();
         $this->assertSame('INE-01', $installation->code);
-        $this->assertSame('Comuna 17', $installation->commune);
+        $this->assertSame('Comuna 09', $installation->commune);
         $this->assertSame('comuna', $installation->area_kind);
         $this->assertSame((int) $rector->id, (int) $installation->rector_user_id);
         $this->assertTrue($rector->assignedInstallations()->where('installations.id', $installation->id)->exists());
@@ -75,7 +75,8 @@ final class CompanyInstallationDirectoryTest extends TestCase
             ->assertSee('INEM Jorge Isaacs', false)
             ->assertSee('Calle 5 # 50-00', false)
             ->assertSee('INE-01', false)
-            ->assertSee('Comuna 17', false)
+            ->assertSee('Comuna 09', false)
+            ->assertSee('IDESC Cali', false)
             ->assertSee($rector->name, false)
             ->assertSee('Administrador', false)
             ->assertSee('Apoyo', false)

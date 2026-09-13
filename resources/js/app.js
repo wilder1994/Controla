@@ -1,4 +1,5 @@
 import './bootstrap';
+import './cali-comunas';
 import './geo-address-picker';
 import { companyLogoField } from './company-logo-field';
 import { employeeFichaForm } from './employee-ficha-form';

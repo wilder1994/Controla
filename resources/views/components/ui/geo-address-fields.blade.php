@@ -19,6 +19,7 @@
 
 <div
     class="space-y-4"
+    data-cali-comunas-url="{{ route('geo.cali-comunas') }}"
     x-data="geoAddressPicker({
         address: @js(old('address', $address)),
         city: @js(old('city', $city)),
@@ -116,6 +117,12 @@
                     <div x-ref="map" class="h-72 w-full rounded-lg border border-slate-800 bg-slate-950"></div>
 
                     <p class="text-xs text-slate-400" x-text="draftLabel || 'Sin ubicación seleccionada'"></p>
+                    <p x-show="draftComuna" x-cloak class="text-xs text-sky-300">
+                        <span x-text="draftComuna?.name"></span> · IDESC Cali
+                    </p>
+                    <p x-show="!draftComuna && draftLat !== null" x-cloak class="text-xs text-slate-500">
+                        Fuera del perímetro urbano de Cali. El área sale de la dirección (Places).
+                    </p>
                 </div>
 
                 <div class="flex items-center justify-end gap-2 border-t border-slate-800 px-4 py-3">
