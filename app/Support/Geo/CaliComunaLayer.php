@@ -41,6 +41,23 @@ final class CaliComunaLayer
         );
     }
 
+    public function label(string $code): string
+    {
+        if ($code === '') {
+            return 'Todas';
+        }
+        if ($code === self::FUERA) {
+            return 'Fuera de Cali';
+        }
+        foreach ($this->catalog() as $row) {
+            if ($row['code'] === $code) {
+                return $row['name'];
+            }
+        }
+
+        return $code;
+    }
+
     /** @return list<string> */
     public function codes(): array
     {

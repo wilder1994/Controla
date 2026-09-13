@@ -27,6 +27,7 @@
         'publicUrl' => $publicUrl,
         'showClientColumn' => false,
         'eventShowRoute' => 'client.observatory.events.show',
+        'exportRoute' => route('client.observatory.board.export'),
         'accent' => 'teal',
     ])
 </x-client-layout>

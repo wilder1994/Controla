@@ -25,6 +25,14 @@
         ? 'Buscar por sede, DANE, cliente o texto…'
         : 'Buscar por sede, DANE o texto…';
     $docsUrl = route('observatory.docs');
+    $exportRoute = $exportRoute ?? null;
+    $exportUrl = $exportRoute ? ($exportRoute.'?'.http_build_query(array_filter([
+        'from' => $from ?: null,
+        'to' => $to ?: null,
+        'grain' => $grain,
+        'comuna' => $comuna ?: null,
+        'client_id' => $filterClientId ?: null,
+    ], static fn ($value) => $value !== null && $value !== ''))) : null;
     $tabUrl = static function (string $tab, ?string $statusValue = null) use ($status): string {
         return request()->fullUrlWithQuery([
             'vista' => $tab,
@@ -154,6 +162,10 @@
         <button type="submit" class="h-9 px-4 shrink-0 rounded-lg border border-slate-700 text-sm text-slate-200 hover:bg-slate-800">Filtrar</button>
         @if ($vista === 'tablero')
             @include('modules.observatory.partials.share-modal')
+        @endif
+        @if ($vista === 'tablero' && $exportUrl)
+            <a href="{{ $exportUrl }}"
+               class="h-9 px-4 inline-flex items-center rounded-lg border border-slate-700 text-sm text-slate-300 hover:bg-slate-800">PPTX</a>
         @endif
         <a href="{{ $docsUrl }}" target="_blank" rel="noopener"
            class="h-9 px-4 inline-flex items-center rounded-lg border border-slate-700 text-sm text-slate-300 hover:bg-slate-800">API</a>

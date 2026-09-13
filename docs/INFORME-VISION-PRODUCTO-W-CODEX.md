@@ -190,7 +190,7 @@ Controla es maduro en **accesos, censo y supervisión de campo**. El Observatori
 | 3 Multifuente | **Sí** | Comunidad, panel, PWA, minuta y API; origen (canal + rol) en la ficha | Nada del pliego. No hace falta 123 |
 | 4 Comunidad | **Sí** | Intake `/o/{slug}`, anónimo, aviso menores, flujo de estados, vínculo a sede/folio | — |
 | 5 Eventos | **Sí** | Folio; agrupa 1 h; unir/sacar; bitácora; rector **Agregar** / **Cerrar folio** | — |
-| 6 Analítica | ~90 % | Tablero + tipos del cliente (nivel/color) + puntaje + líneas + picos + calor sede/riesgo | **Salida/export PPTX** (parte del 0,30 de tablero) |
+| 6 Analítica | **Sí** | Tablero + tipos del cliente (nivel/color) + puntaje + líneas + picos + calor sede/riesgo + **PPTX** | — |
 | 7 Interoperabilidad | ~90 % | `/api/observatory/*` Sanctum + OpenAPI `/docs/observatory` | Tokens de integración dedicados (hoy login del usuario) |
 
 **No cumple el Anexo, por sí solo:** pánico de portería, minuta, `locations`, clustering visual de pines, ni el tablero de la empresa de seguridad.
@@ -249,7 +249,7 @@ El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta
 
 PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. **No** es requisito del Anexo 7.5: las capas de visita son GeoJSON de IDESC sobre Google Maps.
 
-**Siguiente corte (pliego, no 123):** export PPTX del tablero. MEN / typeahead: no está en el Anexo. Prioridad y comunas IDESC: hechas.
+**Pliego Observatorio (Anexo 7.5):** v1 cerrada (tablero + PPTX + comunas IDESC + prioridad). MEN / typeahead no está en el Anexo. Sin conector 123.
 
 ---
 
@@ -328,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (Anexo 7.5). v1 **hecho** salvo export PPTX. Prioridad = catálogo del cliente. Comunas = IDESC Cali. El pliego no pide 123. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
+8. Observatorio escolar (Anexo 7.5). v1 **hecho** (tablero + PPTX). Prioridad = catálogo del cliente. Comunas = IDESC Cali. El pliego no pide 123. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 
@@ -388,3 +388,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Observatorio UX: buscador de comuna en el mapa (sin chips 01–22), zoom al polígono aunque no haya sedes, fechas en modal, cliente más angosto. |
 | 2026-09-12 | Observatorio: pines de cualquier tipo de sede; sin sedes = mapa Colombia + 22 comunas; con sedes = zoom a pines y solo comunas ocupadas; comuna vacía se pinta. Área IDESC de la ficha bloqueada. |
 | 2026-09-12 | Observatorio: Google Maps 3.65 quitó HeatmapLayer; el calor es círculo propio. La capa IDESC se carga siempre (ruta relativa); Todas = Cali + 22; una comuna hace zoom a ese polígono. |
+| 2026-09-12 | Observatorio: export PPTX del tablero (mismos filtros; cifras, ranking, tendencia, picos y canal). |

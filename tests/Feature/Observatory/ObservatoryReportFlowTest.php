@@ -240,7 +240,9 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('Copiar', false)
             ->assertSee('Nuevos', false)
             ->assertSee('Sedes por riesgo', false)
-            ->assertSee('IE Santa Librada', false);
+            ->assertSee('IE Santa Librada', false)
+            ->assertSee('PPTX', false)
+            ->assertSee('tablero.pptx', false);
 
         $this->actingAs($company)
             ->get(route('company.observatory.events.index', ['vista' => 'eventos']))
@@ -872,6 +874,47 @@ final class ObservatoryReportFlowTest extends TestCase
             ->withSession(['tenancy.active_client_id' => Client::query()->where('slug', 'palmas-del-ingenio')->value('id')])
             ->get(route('client.observatory.events.index'))
             ->assertForbidden();
+
+        $this->actingAs($guard)
+            ->get(route('company.observatory.board.export'))
+            ->assertForbidden();
+    }
+
+    public function test_company_and_client_admin_download_board_pptx(): void
+    {
+        [$client, $colegio] = $this->sites();
+        $this->openEvent($client, $colegio);
+        $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+        $session = ['tenancy.active_client_id' => $client->id];
+        $from = now()->toDateString();
+
+        $companyFile = $this->actingAs($company)
+            ->get(route('company.observatory.board.export', [
+                'from' => $from,
+                'to' => $from,
+                'client_id' => $client->id,
+            ]));
+        $companyFile->assertOk();
+        $this->assertStringContainsString(
+            'Observatorio_',
+            (string) $companyFile->headers->get('content-disposition'),
+        );
+        $this->assertStringContainsString(
+            $from,
+            (string) $companyFile->headers->get('content-disposition'),
+        );
+
+        $clientFile = $this->actingAs($clientAdmin)->withSession($session)
+            ->get(route('client.observatory.board.export', [
+                'from' => $from,
+                'to' => $from,
+            ]));
+        $clientFile->assertOk();
+        $this->assertStringContainsString(
+            'Observatorio_',
+            (string) $clientFile->headers->get('content-disposition'),
+        );
     }
 
     /** @return array{0: Client, 1: Installation, 2: Installation, 3: Installation} */

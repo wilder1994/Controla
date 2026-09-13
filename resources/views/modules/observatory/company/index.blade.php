@@ -20,6 +20,7 @@
         'shareClients' => $shareClients,
         'showClientColumn' => true,
         'eventShowRoute' => 'company.observatory.events.show',
+        'exportRoute' => route('company.observatory.board.export'),
         'accent' => 'indigo',
     ])
 </x-company-layout>

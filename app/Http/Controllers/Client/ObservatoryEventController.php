@@ -18,6 +18,7 @@ use App\Models\ObservatoryReportType;
 use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
 use App\Services\Observatory\EnsureObservatoryReportTypesService;
+use App\Services\Observatory\ExportObservatoryBoardService;
 use App\Services\Observatory\MergeObservatoryEventsService;
 use App\Services\Observatory\SubmitObservatoryReportService;
 use App\Services\Observatory\UnhookObservatoryReportService;
@@ -27,6 +28,7 @@ use App\Support\Geo\CaliComunaLayer;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -95,6 +97,46 @@ final class ObservatoryEventController extends Controller
                 $filters['comuna'],
             ),
         ]);
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        $this->authorize('viewAny', ObservatoryEvent::class);
+
+        $clientId = (int) $this->tenantContext->clientId();
+        abort_unless($clientId > 0, 403);
+        $filters = $this->filters($request);
+        $siteIds = app(CaliComunaLayer::class)->scopeInstallationIds(
+            $filters['comuna'],
+            null,
+            $clientId,
+            $this->tenantContext->installationIds(),
+        );
+        $client = Client::query()->findOrFail($clientId);
+        $payload = app(BuildObservatoryBoardService::class)->execute(
+            null,
+            $clientId,
+            $siteIds,
+            $filters['from'],
+            $filters['to'],
+            $filters['grain'],
+        );
+        $export = app(ExportObservatoryBoardService::class);
+        $file = $export->execute($payload, [
+            'scope' => $client->name,
+            'caption' => $export->caption(
+                $filters['from'],
+                $filters['to'],
+                $filters['grain'],
+                app(CaliComunaLayer::class)->label($filters['comuna']),
+            ),
+            'from' => $filters['from'],
+            'to' => $filters['to'],
+        ]);
+
+        return response()
+            ->download($file['path'], $file['filename'])
+            ->deleteFileAfterSend();
     }
 
     public function create(Request $request): View

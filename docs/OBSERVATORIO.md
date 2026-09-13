@@ -2,7 +2,7 @@
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 12 septiembre 2026 (capa IDESC sin HeatmapLayer)
+**Última actualización:** 12 septiembre 2026 (export PPTX del tablero)
 
 ## Piezas
 
@@ -85,7 +85,7 @@ Empresa, `client-admin` y apoyo no ven esos botones.
 
 Pestañas **Tablero** | **Eventos** (cuelgan del header, no van dentro de la barra).
 
-- **Tablero:** filtros en una sola fila (xl): **Cliente** angosto (solo empresa), **Desde — Hasta** (ícono; modal Aceptar/Cerrar), Líneas, Buscar, **Filtrar**, Compartir link, API. `?comuna=` va hidden. Fila 1: mapa + leyenda. **Todas** encuadra Cali y pinta las 22 comunas. Una comuna hace zoom a ese polígono. Calor = círculos (Google quitó HeatmapLayer). Fila 2: sedes por riesgo + tendencia. Fila 3: picos · canal · cierre.
+- **Tablero:** filtros en una sola fila (xl): **Cliente** angosto (solo empresa), **Desde — Hasta** (ícono; modal Aceptar/Cerrar), Líneas, Buscar, **Filtrar**, Compartir link, **PPTX**, API. `?comuna=` va hidden. Fila 1: mapa + leyenda. **Todas** encuadra Cali y pinta las 22 comunas. Una comuna hace zoom a ese polígono. Calor = círculos (Google quitó HeatmapLayer). Fila 2: sedes por riesgo + tendencia. Fila 3: picos · canal · cierre. El PPTX usa los mismos filtros (fechas, cliente, comuna, grano); solo cifras.
 - **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).
 
 ## Ficha
@@ -135,8 +135,8 @@ Texto literal: fuentes diversas + origen; **no** nombra Policía ni Línea 123. 
 | Maestro, mapa, pines, calor, intake, folio, bitácora, tablero, API | Hecho |
 | Priorización configurable | Hecho: catálogo tipo + nivel + color |
 | Filtros/capas territoriales | Hecho: comunas urbanas Cali (IDESC). No cubren el Valle |
-| Salida de resultados (export) | Pendiente (PPTX) |
+| Salida de resultados (export) | Hecho: PPTX del tablero (`/company/observatory/tablero.pptx` y `/client/observatory/tablero.pptx`) |
 
 ## Siguiente
 
-Export PPTX del tablero. Sin conector 123.
+v1 del Anexo 7.5 cerrada. Sin conector 123.

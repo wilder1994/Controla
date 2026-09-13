@@ -41,6 +41,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
             ->middleware('permission:observatory.view')
             ->name('observatory.events.index');
+        Route::get('/observatory/tablero.pptx', [ObservatoryEventController::class, 'export'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.board.export');
         Route::get('/observatory/types', [ObservatoryEventController::class, 'types'])
             ->middleware('permission:observatory.view')
             ->name('observatory.types.index');
