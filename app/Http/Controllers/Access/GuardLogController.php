@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Access;
 
 use App\Enums\InstallationKind;
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use App\Http\Controllers\Controller;
@@ -12,6 +11,7 @@ use App\Models\GuardLog;
 use App\Models\Location;
 use App\Models\SupervisionCode;
 use App\Models\User;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\SubmitObservatoryReportService;
 use App\Notifications\AlertaOperativa;
 use App\Services\Access\AuditLogger;
@@ -35,16 +35,20 @@ class GuardLogController extends Controller
     public function create()
     {
         $locations = Location::where('is_active', true)->with('installation')->get();
-        $observatoryLocationIds = $locations
-            ->filter(fn (Location $location) => $this->observatoryEligible($location))
-            ->pluck('id')
-            ->values()
-            ->all();
+        $eligible = $locations->filter(fn (Location $location) => $this->observatoryEligible($location));
+        $kindsByClient = app(EnsureObservatoryReportTypesService::class)
+            ->optionsByClient($eligible->map(fn (Location $location) => $location->installation?->client_id));
+        $kindsByLocation = [];
+        foreach ($eligible as $location) {
+            $clientId = (int) $location->installation?->client_id;
+            $kindsByLocation[(string) $location->id] = $kindsByClient[$clientId] ?? [];
+        }
 
         return view('modules.access.guard_logs.create', [
             'locations' => $locations,
-            'observatoryLocationIds' => $observatoryLocationIds,
-            'observatoryKinds' => ObservatoryReportKind::options(),
+            'observatoryLocationIds' => $eligible->pluck('id')->values()->all(),
+            'observatoryKinds' => $kindsByLocation[$locations->first()?->id] ?? [],
+            'observatoryKindsByLocation' => $kindsByLocation,
         ]);
     }
 
@@ -70,7 +74,7 @@ class GuardLogController extends Controller
             'observatory_kind' => [
                 $request->boolean('to_observatory') && $request->input('type') === 'novedad' ? 'required' : 'nullable',
                 'string',
-                Rule::enum(ObservatoryReportKind::class),
+                'max:80',
             ],
             'observatory_anonymous' => ['sometimes', 'boolean'],
         ];

@@ -181,6 +181,7 @@ final class CompanyClientExpedienteTest extends TestCase
                 'pets' => '1',
                 'authorizations' => '0',
                 'doors' => '1',
+                'observatory' => '1',
             ],
         ])->assertRedirect(route('company.clients.show', $client));
 
@@ -219,6 +220,7 @@ final class CompanyClientExpedienteTest extends TestCase
                 'pets' => '1',
                 'authorizations' => '1',
                 'doors' => '1',
+                'observatory' => '1',
             ],
         ])->assertRedirect();
 
@@ -242,6 +244,7 @@ final class CompanyClientExpedienteTest extends TestCase
                 'pets' => '1',
                 'authorizations' => '1',
                 'doors' => '0',
+                'observatory' => '1',
             ],
         ])->assertRedirect();
 

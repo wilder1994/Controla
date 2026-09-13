@@ -140,6 +140,11 @@ class Client extends Model
         return $this->hasMany(MemberType::class);
     }
 
+    public function observatoryReportTypes(): HasMany
+    {
+        return $this->hasMany(ObservatoryReportType::class)->orderBy('sort_order')->orderBy('name');
+    }
+
     public function hasDoors(): bool
     {
         return Location::query()

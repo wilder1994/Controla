@@ -4,7 +4,8 @@
     $sites = $map['sites'] ?? [];
     $points = $map['points'] ?? [];
     $showLegend = $showLegend ?? false;
-    $mapCanvasClass = $mapCanvasClass ?? 'h-80 xl:h-full xl:min-h-[24rem]';
+    $mapCanvasClass = $mapCanvasClass ?? 'h-64 xl:h-full xl:min-h-[20rem]';
+    $types = $map['types'] ?? [];
 @endphp
 <div class="obs-card overflow-hidden h-full min-h-80 flex flex-col">
     @if (! empty($maps['api_key']))
@@ -17,14 +18,17 @@
             ]))"
             class="relative flex-1 min-h-80 flex flex-col"
         >
-            <div class="shrink-0 flex flex-wrap items-center justify-between gap-2 px-2.5 py-2 border-b border-slate-800 bg-slate-950/80">
-                <div class="flex gap-1">
-                    <button type="button" class="h-7 px-2.5 rounded-md text-[11px] font-semibold"
+            <div class="shrink-0 flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 border-b border-slate-800 bg-slate-950/80">
+                <div class="flex flex-wrap gap-1">
+                    <button type="button" class="h-7 px-2 rounded-md text-[11px] font-semibold"
                             :class="mode === 'pins' ? 'bg-white text-slate-900' : 'bg-slate-900 text-slate-200 border border-slate-700'"
                             @click="setMode('pins')">Pines</button>
-                    <button type="button" class="h-7 px-2.5 rounded-md text-[11px] font-semibold"
-                            :class="mode === 'heat' ? 'bg-white text-slate-900' : 'bg-slate-900 text-slate-200 border border-slate-700'"
-                            @click="setMode('heat')">Calor</button>
+                    <button type="button" class="h-7 px-2 rounded-md text-[11px] font-semibold"
+                            :class="mode === 'heat_site' ? 'bg-white text-slate-900' : 'bg-slate-900 text-slate-200 border border-slate-700'"
+                            @click="setMode('heat_site')">Calor sede</button>
+                    <button type="button" class="h-7 px-2 rounded-md text-[11px] font-semibold"
+                            :class="mode === 'heat_risk' ? 'bg-white text-slate-900' : 'bg-slate-900 text-slate-200 border border-slate-700'"
+                            @click="setMode('heat_risk')">Calor riesgo</button>
                 </div>
                 <div class="flex gap-1">
                     <button type="button" class="h-7 px-2.5 rounded-md text-[11px] font-semibold"
@@ -35,6 +39,19 @@
                             @click="setMapType('satellite')">Satélite</button>
                 </div>
             </div>
+            @if ($types !== [])
+                <div class="shrink-0 flex flex-wrap gap-1 px-2 py-1.5 border-b border-slate-800">
+                    @foreach ($types as $type)
+                        <button type="button"
+                                class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px]"
+                                :class="typeFilter === @js($type['slug']) ? 'border-white text-white' : 'border-slate-700 text-slate-300'"
+                                @click="setTypeFilter(@js($type['slug']))">
+                            <span class="h-1.5 w-1.5 rounded-full" style="background: {{ $type['color'] }}"></span>
+                            {{ $type['name'] }}
+                        </button>
+                    @endforeach
+                </div>
+            @endif
             <div x-ref="map" class="{{ $mapCanvasClass }} w-full flex-1"></div>
             @if ($showLegend)
                 <p class="px-3 py-2 text-[11px] text-slate-500 border-t border-slate-800">

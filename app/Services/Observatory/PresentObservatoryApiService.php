@@ -51,8 +51,10 @@ final class PresentObservatoryApiService
     {
         return [
             'id' => (int) $report->id,
-            'kind' => $report->kind?->value,
+            'kind' => $report->typeSlug(),
             'kind_label' => $report->kindLabel(),
+            'level' => $report->typeLevel(),
+            'color' => $report->typeColor(),
             'source' => $report->source?->value,
             'source_label' => $report->sourceLabel(),
             'reporter_role' => $report->reporter_role?->value,

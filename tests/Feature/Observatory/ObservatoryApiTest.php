@@ -44,7 +44,8 @@ final class ObservatoryApiTest extends TestCase
         $this->assertSame(0, $emptyBoard->json('board.total'));
         $this->assertSame(0, $emptyBoard->json('board.closed_rate'));
         $this->assertNotEmpty($emptyBoard->json('board.trend.labels'));
-        $this->assertSame(0, array_sum($emptyBoard->json('board.trend.values')));
+        $this->assertNotEmpty($emptyBoard->json('board.trend.series'));
+        $this->assertSame(0, array_sum($emptyBoard->json('board.trend.series.0.values')));
         $this->assertContains(0, $emptyBoard->json('board.kinds.values'));
 
         $this->withToken($token)->getJson('/api/observatory/sites')

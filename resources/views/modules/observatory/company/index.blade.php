@@ -2,6 +2,7 @@
     <x-slot:headerTabs>
         @include('modules.observatory.partials.nav-tabs', [
             'indexRoute' => 'company.observatory.events.index',
+            'typesRoute' => 'company.observatory.types.index',
             'vista' => $vista ?? 'tablero',
         ])
     </x-slot:headerTabs>

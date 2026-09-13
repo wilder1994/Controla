@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\ObservatoryEvent;
 use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -22,11 +23,12 @@ final class ObservatoryEventController extends Controller
         $this->authorize('viewAny', ObservatoryEvent::class);
 
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
-        $filters = $this->filters($request);
+        $filters = $this->filters($request, $companyId);
         $board = app(BuildObservatoryBoardService::class);
+        $clientId = $filters['client_id'];
 
-        $events = $board->scoped($companyId, null, null, $filters['from'], $filters['to'])
-            ->with(['client', 'installation', 'latestReport'])
+        $events = $board->scoped($companyId, $clientId, null, $filters['from'], $filters['to'])
+            ->with(['client', 'installation', 'latestReport.reportType'])
             ->when($filters['search'] !== '', function ($q) use ($filters) {
                 $q->where(function ($inner) use ($filters) {
                     $inner->where('title', 'like', '%'.$filters['search'].'%')
@@ -40,12 +42,7 @@ final class ObservatoryEventController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $shareClients = Client::query()
-            ->where('security_company_id', $companyId)
-            ->where('is_active', true)
-            ->whereNotNull('slug')
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug']);
+        $clients = $this->clients($companyId);
 
         return view('modules.observatory.company.index', [
             'events' => $events,
@@ -54,20 +51,42 @@ final class ObservatoryEventController extends Controller
             'to' => $filters['to'],
             'status' => $filters['status'],
             'vista' => $filters['vista'],
-            'shareClients' => $shareClients,
-            'board' => $board->execute($companyId, null, null, $filters['from'], $filters['to']),
+            'grain' => $filters['grain'],
+            'filterClientId' => $clientId,
+            'filterClients' => $clients,
+            'shareClients' => $clients,
+            'board' => $board->execute($companyId, $clientId, null, $filters['from'], $filters['to'], $filters['grain']),
             'map' => app(BuildObservatoryMapService::class)->execute(
                 $companyId,
-                null,
+                $clientId,
                 null,
                 'company.observatory.events.show',
             ),
         ]);
     }
 
+    public function types(Request $request): View
+    {
+        $this->authorize('viewAny', ObservatoryEvent::class);
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
+        $clients = $this->clients($companyId);
+        $clientId = (int) $request->integer('client_id');
+        $client = $clientId > 0 ? $clients->firstWhere('id', $clientId) : null;
+
+        if ($client instanceof Client) {
+            app(EnsureObservatoryReportTypesService::class)->execute($client);
+        }
+
+        return view('modules.observatory.company.types', [
+            'filterClients' => $clients,
+            'filterClientId' => $client?->id,
+            'types' => $client instanceof Client ? $client->observatoryReportTypes()->get() : collect(),
+        ]);
+    }
+
     public function show(Request $request, ObservatoryEvent $event): View
     {
-        $event->load(['client', 'installation', 'reports.reportedBy', 'statusLogs.user', 'closedBy']);
+        $event->load(['client', 'installation', 'reports.reportType', 'reports.reportedBy', 'statusLogs.user', 'closedBy']);
         $this->authorize('view', $event);
 
         return view('modules.observatory.company.show', [
@@ -77,8 +96,19 @@ final class ObservatoryEventController extends Controller
         ]);
     }
 
-    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string} */
-    private function filters(Request $request): array
+    /** @return \Illuminate\Database\Eloquent\Collection<int, Client> */
+    private function clients(int $companyId)
+    {
+        return Client::query()
+            ->where('security_company_id', $companyId)
+            ->where('is_active', true)
+            ->whereNotNull('slug')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
+    }
+
+    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string, grain: string, client_id: ?int} */
+    private function filters(Request $request, int $companyId): array
     {
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
@@ -86,7 +116,15 @@ final class ObservatoryEventController extends Controller
             'to' => ['nullable', 'date'],
             'status' => ['nullable', 'string', Rule::enum(ObservatoryEventStatus::class)],
             'vista' => ['nullable', 'string', Rule::in(['tablero', 'eventos'])],
+            'grain' => ['nullable', 'string', Rule::in(['day', 'month', 'year'])],
+            'client_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('clients', 'id')->where(fn ($q) => $q->where('security_company_id', $companyId)),
+            ],
         ]);
+
+        $clientId = isset($validated['client_id']) ? (int) $validated['client_id'] : 0;
 
         return [
             'search' => trim((string) ($validated['q'] ?? '')),
@@ -94,6 +132,8 @@ final class ObservatoryEventController extends Controller
             'to' => $validated['to'] ?? null,
             'status' => (string) ($validated['status'] ?? ''),
             'vista' => (string) ($validated['vista'] ?? 'tablero'),
+            'grain' => (string) ($validated['grain'] ?? 'day'),
+            'client_id' => $clientId > 0 ? $clientId : null,
         ];
     }
 }

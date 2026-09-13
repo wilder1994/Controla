@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Enums\InstallationKind;
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreSupervisorObservatoryReportRequest;
 use App\Models\Installation;
 use App\Services\Company\ManageSupervisorShiftService;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\SubmitObservatoryReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,6 +48,13 @@ final class SupervisorObservatoryController extends Controller
             ->limit(30)
             ->get(['id', 'client_id', 'name', 'dane_code', 'city', 'latitude', 'longitude']);
 
+        $kindsByClient = app(EnsureObservatoryReportTypesService::class)
+            ->optionsByClient($sites->pluck('client_id'));
+        $kinds = [];
+        foreach ($kindsByClient as $map) {
+            $kinds = $kinds + $map;
+        }
+
         return response()->json([
             'sites' => $sites->map(static fn (Installation $site): array => [
                 'id' => (int) $site->id,
@@ -59,7 +66,8 @@ final class SupervisorObservatoryController extends Controller
                 'lat' => $site->latitude !== null ? (float) $site->latitude : null,
                 'lng' => $site->longitude !== null ? (float) $site->longitude : null,
             ])->all(),
-            'kinds' => ObservatoryReportKind::options(),
+            'kinds' => $kinds,
+            'kinds_by_client' => $kindsByClient,
         ]);
     }
 

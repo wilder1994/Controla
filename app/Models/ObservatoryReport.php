@@ -20,6 +20,7 @@ final class ObservatoryReport extends Model
         'source',
         'reporter_role',
         'kind',
+        'observatory_report_type_id',
         'body',
         'is_anonymous',
         'reporter_name',
@@ -36,7 +37,6 @@ final class ObservatoryReport extends Model
         return [
             'source' => ObservatoryReportSource::class,
             'reporter_role' => ObservatoryReporterRole::class,
-            'kind' => ObservatoryReportKind::class,
             'is_anonymous' => 'boolean',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
@@ -48,9 +48,40 @@ final class ObservatoryReport extends Model
         return $this->latitude !== null && $this->longitude !== null;
     }
 
+    public function reportType(): BelongsTo
+    {
+        return $this->belongsTo(ObservatoryReportType::class, 'observatory_report_type_id');
+    }
+
     public function kindLabel(): string
     {
-        return $this->kind instanceof ObservatoryReportKind ? $this->kind->label() : '—';
+        if ($this->reportType instanceof ObservatoryReportType) {
+            return $this->reportType->name;
+        }
+
+        return ObservatoryReportKind::tryFrom((string) $this->kind)?->label()
+            ?: (filled($this->kind) ? (string) $this->kind : '—');
+    }
+
+    public function typeColor(): string
+    {
+        return $this->reportType instanceof ObservatoryReportType
+            ? $this->reportType->color
+            : '#94a3b8';
+    }
+
+    public function typeLevel(): int
+    {
+        return $this->reportType instanceof ObservatoryReportType
+            ? (int) $this->reportType->level
+            : 1;
+    }
+
+    public function typeSlug(): string
+    {
+        return $this->reportType instanceof ObservatoryReportType
+            ? $this->reportType->slug
+            : (string) $this->kind;
     }
 
     public function sourceLabel(): string

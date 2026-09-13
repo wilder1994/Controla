@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Observatory;
 
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReporterRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -23,7 +22,7 @@ final class StorePublicObservatoryReportRequest extends FormRequest
 
         return [
             'installation_id' => ['required', 'integer'],
-            'kind' => ['required', 'string', Rule::enum(ObservatoryReportKind::class)],
+            'kind' => ['required', 'string', 'max:80'],
             'body' => ['required', 'string', 'min:10', 'max:2000'],
             'is_anonymous' => ['sometimes', 'boolean'],
             'reporter_role' => ['required', 'string', Rule::in(array_keys(ObservatoryReporterRole::publicOptions()))],

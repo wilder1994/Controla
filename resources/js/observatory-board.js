@@ -5,23 +5,27 @@ const GRID = '#1e293b';
 const MUTED = '#64748b';
 
 function chartFont() {
-    return { family: 'Figtree, ui-sans-serif, system-ui', size: 11 };
+    return { family: 'Figtree, ui-sans-serif, system-ui', size: 10 };
 }
 
-function lineOptions() {
+function lineOptions(showLegend = false) {
     return {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-            legend: { display: false },
+            legend: {
+                display: showLegend,
+                position: 'bottom',
+                labels: { color: SLATE, boxWidth: 8, font: { ...chartFont(), size: 10 }, padding: 8 },
+            },
             tooltip: {
                 backgroundColor: '#0f172a',
                 borderColor: '#334155',
                 borderWidth: 1,
                 titleColor: '#e2e8f0',
                 bodyColor: '#cbd5e1',
-                padding: 10,
+                padding: 8,
             },
         },
         scales: {
@@ -46,7 +50,7 @@ function doughnutOptions(empty) {
         plugins: {
             legend: {
                 position: 'bottom',
-                labels: { color: SLATE, boxWidth: 10, font: { ...chartFont(), size: 10 }, padding: 10 },
+                labels: { color: SLATE, boxWidth: 8, font: { ...chartFont(), size: 10 }, padding: 8 },
             },
             tooltip: {
                 callbacks: {
@@ -119,57 +123,59 @@ export function observatoryBoard(payload) {
         },
         draw() {
             const data = this.payload ?? {};
-            const trend = data.trend ?? { labels: ['—'], values: [0] };
-            const kinds = data.kinds ?? { labels: [], values: [] };
+            const trend = data.trend ?? { labels: ['—'], series: [] };
+            const peaks = data.peaks ?? { labels: ['—'], values: [0] };
             const sources = data.sources ?? { labels: [], values: [] };
             const rate = Number(data.closed_rate ?? 0);
-            const accent = data.accent === 'indigo' ? '#818cf8' : '#2dd4bf';
 
-            this.line(this.$refs.trend, trend, accent);
-            this.bars(this.$refs.kinds, kinds);
+            this.lines(this.$refs.trend, trend);
+            this.bars(this.$refs.peaks, peaks);
             this.pie(this.$refs.sources, sources);
             this.gauge(this.$refs.gauge, rate);
         },
-        line(el, series, accent) {
+        lines(el, series) {
             if (!el) {
                 return;
             }
             const labels = series.labels?.length ? series.labels : ['—'];
-            const values = series.values?.length ? series.values : [0];
+            const rows = (series.series || []).length
+                ? series.series
+                : [{ label: 'Reportes', color: '#94a3b8', values: [0] }];
             new Chart(el, {
                 type: 'line',
                 data: {
                     labels,
-                    datasets: [{
-                        data: values,
-                        borderColor: accent,
-                        backgroundColor: accent + '33',
-                        fill: true,
+                    datasets: rows.map((row) => ({
+                        label: row.label,
+                        data: row.values?.length ? row.values : labels.map(() => 0),
+                        borderColor: row.color,
+                        backgroundColor: 'transparent',
+                        fill: false,
                         tension: 0.35,
-                        pointRadius: 3,
-                        pointHoverRadius: 5,
-                        pointBackgroundColor: accent,
+                        pointRadius: 2,
+                        pointHoverRadius: 4,
+                        pointBackgroundColor: row.color,
                         borderWidth: 2,
-                    }],
+                    })),
                 },
-                options: lineOptions(),
+                options: lineOptions(rows.length > 1),
             });
         },
         bars(el, series) {
             if (!el) {
                 return;
             }
-            const labels = series.labels?.length ? series.labels : ['Amenaza', 'Riña', 'Hurto', 'Otro'];
-            const values = series.values?.length ? series.values : [0, 0, 0, 0];
+            const labels = series.labels?.length ? series.labels : ['—'];
+            const values = series.values?.length ? series.values : [0];
             new Chart(el, {
                 type: 'bar',
                 data: {
                     labels,
                     datasets: [{
                         data: values,
-                        backgroundColor: ['#f59e0b', '#f43f5e', '#818cf8', '#64748b'],
-                        borderRadius: 6,
-                        maxBarThickness: 36,
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 5,
+                        maxBarThickness: 22,
                     }],
                 },
                 options: {

@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Client;
 
 use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use App\Http\Controllers\Controller;
@@ -16,8 +15,10 @@ use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
 use App\Models\User;
+use App\Models\ObservatoryReportType;
 use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\MergeObservatoryEventsService;
 use App\Services\Observatory\SubmitObservatoryReportService;
 use App\Services\Observatory\UnhookObservatoryReportService;
@@ -51,7 +52,7 @@ final class ObservatoryEventController extends Controller
         $siteIds = $this->tenantContext->installationIds();
 
         $events = $board->scoped(null, $clientId, $siteIds, $filters['from'], $filters['to'])
-            ->with(['installation', 'latestReport'])
+            ->with(['installation', 'latestReport.reportType'])
             ->when($filters['search'] !== '', function ($q) use ($filters) {
                 $q->where(function ($inner) use ($filters) {
                     $inner->where('title', 'like', '%'.$filters['search'].'%')
@@ -65,6 +66,7 @@ final class ObservatoryEventController extends Controller
             ->withQueryString();
 
         $client = Client::query()->findOrFail($clientId);
+        app(EnsureObservatoryReportTypesService::class)->execute($client);
 
         return view('modules.observatory.client.index', [
             'events' => $events,
@@ -73,10 +75,11 @@ final class ObservatoryEventController extends Controller
             'to' => $filters['to'],
             'status' => $filters['status'],
             'vista' => $filters['vista'],
+            'grain' => $filters['grain'],
             'publicUrl' => route('observatory.public.show', $client->slug),
             'canReport' => $this->canReportFromPanel($request->user()),
             'reporterName' => $request->user()?->name,
-            'board' => $board->execute(null, $clientId, $siteIds, $filters['from'], $filters['to']),
+            'board' => $board->execute(null, $clientId, $siteIds, $filters['from'], $filters['to'], $filters['grain']),
             'map' => app(BuildObservatoryMapService::class)->execute(
                 null,
                 $clientId,
@@ -94,11 +97,14 @@ final class ObservatoryEventController extends Controller
         $canReport = $this->canReportFromPanel($user);
         $permission = $user?->installationAssignments()->value('site_permission') ?? 'admin';
 
+        $client = Client::query()->findOrFail((int) $this->tenantContext->clientId());
+        app(EnsureObservatoryReportTypesService::class)->execute($client);
+
         return view('modules.observatory.client.create', [
             'canReport' => $canReport,
             'reporterName' => $user?->name,
             'sites' => $canReport ? $this->reportableColegios() : collect(),
-            'kinds' => ObservatoryReportKind::options(),
+            'kinds' => ObservatoryReportType::optionsFor((int) $client->id),
             'roleLabel' => $permission === 'support'
                 ? ObservatoryReporterRole::Apoyo->label()
                 : ObservatoryReporterRole::Rector->label(),
@@ -144,7 +150,7 @@ final class ObservatoryEventController extends Controller
     public function show(Request $request, ObservatoryEvent $event): View
     {
         $this->assertClient($event);
-        $event->load(['client', 'installation', 'reports.reportedBy', 'statusLogs.user', 'closedBy']);
+        $event->load(['client', 'installation', 'reports.reportType', 'reports.reportedBy', 'statusLogs.user', 'closedBy']);
         $this->authorize('view', $event);
 
         $canUpdate = $request->user()?->can('update', $event) ?? false;
@@ -278,7 +284,7 @@ final class ObservatoryEventController extends Controller
             ->get();
     }
 
-    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string} */
+    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string, grain: string} */
     private function filters(Request $request): array
     {
         $validated = $request->validate([
@@ -287,6 +293,7 @@ final class ObservatoryEventController extends Controller
             'to' => ['nullable', 'date'],
             'status' => ['nullable', 'string', Rule::enum(ObservatoryEventStatus::class)],
             'vista' => ['nullable', 'string', Rule::in(['tablero', 'eventos'])],
+            'grain' => ['nullable', 'string', Rule::in(['day', 'month', 'year'])],
         ]);
 
         return [
@@ -295,6 +302,7 @@ final class ObservatoryEventController extends Controller
             'to' => $validated['to'] ?? null,
             'status' => (string) ($validated['status'] ?? ''),
             'vista' => (string) ($validated['vista'] ?? 'tablero'),
+            'grain' => (string) ($validated['grain'] ?? 'day'),
         ];
     }
 }

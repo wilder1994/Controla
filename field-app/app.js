@@ -29,6 +29,7 @@ let closeEventId = null;
 let logEventId = null;
 let obsSite = null;
 let obsKinds = {};
+let obsKindsByClient = {};
 let obsSitesCache = [];
 let obsSearchTimer = null;
 
@@ -130,13 +131,10 @@ function applyPack(pack) {
     guardsCache = pack.guards || guardsCache;
     if (pack.modules?.length) catalog = pack.modules;
     if (pack.observatory_sites) obsSitesCache = pack.observatory_sites;
+    if (pack.observatory_kinds_by_client) obsKindsByClient = pack.observatory_kinds_by_client;
     if (pack.observatory_kinds) {
         obsKinds = pack.observatory_kinds;
-        const select = document.getElementById('obs-kind');
-        if (select && select.options.length <= 1) {
-            select.innerHTML = '<option value="">Seleccione…</option>'
-                + Object.entries(obsKinds).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
-        }
+        fillObsKinds(obsKinds);
     }
     const select = document.getElementById('mod-client');
     if (select) {
@@ -1760,14 +1758,30 @@ function showObservatory() {
     loadObservatoryKinds();
 }
 
+function fillObsKinds(kinds) {
+    const select = document.getElementById('obs-kind');
+    if (!select) return;
+    const map = kinds && Object.keys(kinds).length ? kinds : obsKinds;
+    select.innerHTML = '<option value="">Seleccione…</option>'
+        + Object.entries(map || {}).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+}
+
+function kindsForSite(site) {
+    const clientId = site?.client_id;
+    if (clientId && obsKindsByClient[clientId]) {
+        return obsKindsByClient[clientId];
+    }
+    return obsKinds;
+}
+
 async function loadObservatoryKinds() {
     const select = document.getElementById('obs-kind');
     if (select.options.length > 1) return;
     try {
         const data = await api('/supervision/observatory/sites');
         obsKinds = data.kinds || {};
-        select.innerHTML = '<option value="">Seleccione…</option>'
-            + Object.entries(obsKinds).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+        if (data.kinds_by_client) obsKindsByClient = data.kinds_by_client;
+        fillObsKinds(obsKinds);
     } catch (e) {
         setStatus(e.message, false);
     }
@@ -1800,6 +1814,7 @@ function renderObservatoryList(rows) {
             document.getElementById('obs-picked').textContent = found
                 ? `Elegido: ${found.name}${found.client ? ` · ${found.client}` : ''}`
                 : '';
+            fillObsKinds(kindsForSite(found));
             list.classList.add('hidden');
         };
     });
@@ -1821,10 +1836,10 @@ async function searchObservatorySites() {
     try {
         const data = await api(`/supervision/observatory/sites?q=${encodeURIComponent(q)}`);
         const rows = data.sites || [];
+        if (data.kinds_by_client) obsKindsByClient = { ...obsKindsByClient, ...data.kinds_by_client };
         if (data.kinds && Object.keys(obsKinds).length === 0) {
             obsKinds = data.kinds;
-            document.getElementById('obs-kind').innerHTML = '<option value="">Seleccione…</option>'
-                + Object.entries(obsKinds).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+            fillObsKinds(obsKinds);
         }
         renderObservatoryList(rows);
     } catch (e) {

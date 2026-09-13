@@ -18,6 +18,7 @@ use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Correspondence;
 use App\Models\Employee;
+use App\Support\Client\ClientPanelModules;
 use App\Models\GuardLog;
 use App\Models\HousingUnit;
 use App\Models\Installation;
@@ -100,6 +101,9 @@ final class TenantSeeder extends Seeder
                 'is_active' => true,
                 'has_access' => true,
                 'has_supervision' => true,
+                'panel_modules' => array_merge(ClientPanelModules::defaultOptional(), [
+                    ClientPanelModules::OBSERVATORY => true,
+                ]),
                 'service_started_at' => now()->subMonths(6)->toDateString(),
             ]
         );
@@ -125,6 +129,9 @@ final class TenantSeeder extends Seeder
                 'access_url' => 'https://controla.test',
                 'is_active' => true,
                 'has_access' => true,
+                'panel_modules' => array_merge(ClientPanelModules::defaultOptional(), [
+                    ClientPanelModules::OBSERVATORY => true,
+                ]),
                 'service_started_at' => now()->subMonths(3)->toDateString(),
             ]
         );

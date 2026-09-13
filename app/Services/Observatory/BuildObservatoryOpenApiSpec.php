@@ -203,8 +203,10 @@ final class BuildObservatoryOpenApiSpec
                         'type' => 'object',
                         'properties' => [
                             'id' => ['type' => 'integer'],
-                            'kind' => ['type' => 'string', 'enum' => ['amenaza', 'rina', 'hurto', 'otro']],
+                            'kind' => ['type' => 'string'],
                             'kind_label' => ['type' => 'string'],
+                            'level' => ['type' => 'integer'],
+                            'color' => ['type' => 'string'],
                             'source' => ['type' => 'string', 'enum' => ['comunidad', 'panel', 'campo', 'porteria', 'api']],
                             'source_label' => ['type' => 'string'],
                             'reporter_role' => ['type' => 'string'],
@@ -224,7 +226,7 @@ final class BuildObservatoryOpenApiSpec
                         'required' => ['installation_id', 'kind', 'body'],
                         'properties' => [
                             'installation_id' => ['type' => 'integer'],
-                            'kind' => ['type' => 'string', 'enum' => ['amenaza', 'rina', 'hurto', 'otro']],
+                            'kind' => ['type' => 'string', 'description' => 'Slug del tipo configurado por el cliente'],
                             'body' => ['type' => 'string', 'minLength' => 10, 'maxLength' => 2000],
                             'is_anonymous' => ['type' => 'boolean', 'default' => false],
                             'reporter_name' => ['type' => 'string'],

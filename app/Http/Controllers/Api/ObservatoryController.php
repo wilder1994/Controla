@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use App\Http\Controllers\Controller;
@@ -15,6 +14,7 @@ use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\User;
 use App\Services\Observatory\BuildObservatoryBoardService;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\PresentObservatoryApiService;
 use App\Services\Observatory\ResolveObservatoryApiScopeService;
 use App\Services\Observatory\SubmitObservatoryReportService;
@@ -82,7 +82,7 @@ final class ObservatoryController extends Controller
     {
         $scope = $this->scope->execute($request->user(), $request->integer('client_id') ?: null);
         $this->assertEventInScope($event, $scope);
-        $event->load(['installation', 'client', 'reports']);
+        $event->load(['installation', 'client', 'reports.reportType']);
 
         return response()->json([
             'event' => $this->present->event($event, true),
@@ -129,11 +129,21 @@ final class ObservatoryController extends Controller
             })
             ->orderBy('name')
             ->limit(80)
-            ->get(['id', 'name', 'dane_code', 'city', 'latitude', 'longitude']);
+            ->get(['id', 'client_id', 'name', 'dane_code', 'city', 'latitude', 'longitude']);
+
+        $clientIds = $scope['client_id'] !== null
+            ? [$scope['client_id']]
+            : $sites->pluck('client_id')->all();
+        $kindsByClient = app(EnsureObservatoryReportTypesService::class)->optionsByClient($clientIds);
+        $kinds = [];
+        foreach ($kindsByClient as $map) {
+            $kinds = $kinds + $map;
+        }
 
         return response()->json([
             'sites' => $sites->map(fn (Installation $site): array => $this->present->site($site))->all(),
-            'kinds' => ObservatoryReportKind::options(),
+            'kinds' => $kinds,
+            'kinds_by_client' => $kindsByClient,
         ]);
     }
 

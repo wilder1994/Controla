@@ -22,6 +22,7 @@
                 'type' => old('type', 'general'),
                 'toObservatory' => (bool) old('to_observatory', false),
                 'anonymous' => (bool) old('observatory_anonymous', false),
+                'kindsByLocation' => $observatoryKindsByLocation ?? [],
                 'latitude' => old('latitude', ''),
                 'longitude' => old('longitude', ''),
             ]))">
@@ -109,9 +110,9 @@
                                 <label class="block text-sm font-medium text-slate-300">Tipo en Observatorio</label>
                                 <select name="observatory_kind" class="mt-1 block w-full max-w-xs rounded-lg bg-slate-950 border-slate-700 text-white">
                                     <option value="">Seleccione…</option>
-                                    @foreach ($observatoryKinds ?? [] as $value => $label)
-                                        <option value="{{ $value }}" @selected(old('observatory_kind') === $value)>{{ $label }}</option>
-                                    @endforeach
+                                    <template x-for="(label, value) in currentKinds" :key="value">
+                                        <option :value="value" x-text="label"></option>
+                                    </template>
                                 </select>
                             </div>
                             <label class="flex items-start gap-3 cursor-pointer">
@@ -171,8 +172,12 @@
             toObservatory: Boolean(cfg.toObservatory),
             anonymous: Boolean(cfg.anonymous),
             observatoryIds: (cfg.observatoryIds || []).map(String),
+            kindsByLocation: cfg.kindsByLocation || {},
             get showObservatory() {
                 return this.type === 'novedad' && this.observatoryIds.includes(String(this.locationId));
+            },
+            get currentKinds() {
+                return this.kindsByLocation[String(this.locationId)] || {};
             },
             lat: cfg.latitude || '',
             lng: cfg.longitude || '',

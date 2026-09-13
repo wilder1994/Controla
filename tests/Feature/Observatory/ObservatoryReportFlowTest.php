@@ -239,7 +239,7 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('/o/'.$client->slug, false)
             ->assertSee('Copiar', false)
             ->assertSee('Nuevos', false)
-            ->assertSee('Colegios con más eventos', false)
+            ->assertSee('Colegios por riesgo', false)
             ->assertSee('IE Santa Librada', false);
 
         $this->actingAs($company)
@@ -587,14 +587,13 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->actingAs($admin)->withSession(['tenancy.active_client_id' => $client->id])
             ->get(route('client.observatory.events.index'))
             ->assertOk()
-            ->assertSee('Eventos abiertos por día', false)
-            ->assertSee('Qué se reporta', false)
+            ->assertSee('Tendencia por tipo', false)
+            ->assertSee('Días con más reportes', false)
             ->assertSee('De dónde llega', false)
             ->assertSee('Eventos resueltos', false)
-            ->assertSee('Sin eventos en el periodo', false)
             ->assertSee('API', false)
             ->assertSee('Compartir link', false)
-            ->assertSee('Qué significa cada pin', false);
+            ->assertSee('Tipos y nivel', false);
     }
 
     public function test_public_report_requires_role_and_keeps_it_when_anonymous(): void

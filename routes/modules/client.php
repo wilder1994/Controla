@@ -8,6 +8,7 @@ use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\InstallationController;
 use App\Http\Controllers\Client\MemberController;
 use App\Http\Controllers\Client\ObservatoryEventController;
+use App\Http\Controllers\Client\ObservatoryReportTypeController;
 use App\Http\Controllers\Client\MemberTypeController;
 use App\Http\Controllers\Client\PersonnelDocumentController;
 use App\Http\Controllers\Client\PetController;
@@ -39,27 +40,36 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
             ->middleware('permission:client.structures.manage')
             ->name('installations.show');
 
-        Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
-            ->middleware('permission:observatory.view')
-            ->name('observatory.events.index');
-        Route::get('/observatory/reports/create', [ObservatoryEventController::class, 'create'])
-            ->middleware('permission:observatory.view')
-            ->name('observatory.reports.create');
-        Route::post('/observatory/reports', [ObservatoryEventController::class, 'store'])
-            ->middleware('permission:observatory.view')
-            ->name('observatory.reports.store');
-        Route::get('/observatory/events/{event}', [ObservatoryEventController::class, 'show'])
-            ->middleware('permission:observatory.view')
-            ->name('observatory.events.show');
-        Route::patch('/observatory/events/{event}/status', [ObservatoryEventController::class, 'updateStatus'])
-            ->middleware('permission:observatory.events.update')
-            ->name('observatory.events.status');
-        Route::post('/observatory/events/{event}/merge', [ObservatoryEventController::class, 'merge'])
-            ->middleware('permission:observatory.events.update')
-            ->name('observatory.events.merge');
-        Route::post('/observatory/events/{event}/reports/{report}/detach', [ObservatoryEventController::class, 'detach'])
-            ->middleware('permission:observatory.events.update')
-            ->name('observatory.events.reports.detach');
+        Route::middleware(['permission:observatory.view', 'client.module:observatory'])->group(function () {
+            Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
+                ->name('observatory.events.index');
+            Route::get('/observatory/reports/create', [ObservatoryEventController::class, 'create'])
+                ->name('observatory.reports.create');
+            Route::post('/observatory/reports', [ObservatoryEventController::class, 'store'])
+                ->name('observatory.reports.store');
+            Route::get('/observatory/events/{event}', [ObservatoryEventController::class, 'show'])
+                ->name('observatory.events.show');
+            Route::get('/observatory/types', [ObservatoryReportTypeController::class, 'index'])
+                ->name('observatory.types.index');
+            Route::post('/observatory/types', [ObservatoryReportTypeController::class, 'store'])
+                ->middleware('permission:observatory.events.update')
+                ->name('observatory.types.store');
+            Route::put('/observatory/types/{type}', [ObservatoryReportTypeController::class, 'update'])
+                ->middleware('permission:observatory.events.update')
+                ->name('observatory.types.update');
+            Route::delete('/observatory/types/{type}', [ObservatoryReportTypeController::class, 'destroy'])
+                ->middleware('permission:observatory.events.update')
+                ->name('observatory.types.destroy');
+            Route::patch('/observatory/events/{event}/status', [ObservatoryEventController::class, 'updateStatus'])
+                ->middleware('permission:observatory.events.update')
+                ->name('observatory.events.status');
+            Route::post('/observatory/events/{event}/merge', [ObservatoryEventController::class, 'merge'])
+                ->middleware('permission:observatory.events.update')
+                ->name('observatory.events.merge');
+            Route::post('/observatory/events/{event}/reports/{report}/detach', [ObservatoryEventController::class, 'detach'])
+                ->middleware('permission:observatory.events.update')
+                ->name('observatory.events.reports.detach');
+        });
 
         Route::get('/structures', [StructureController::class, 'index'])
             ->middleware('permission:client.structures.manage')

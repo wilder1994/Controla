@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Enums\InstallationKind;
-use App\Enums\ObservatoryReportKind;
 use App\Models\Employee;
 use App\Models\Installation;
 use App\Models\SupervisorPost;
 use App\Models\User;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Support\Supervision\FieldModuleCatalog;
 
 final class BuildSupervisorOfflinePackService
@@ -73,12 +73,20 @@ final class BuildSupervisorOfflinePackService
             ->orderBy('name')
             ->get(['id', 'client_id', 'name', 'dane_code', 'city', 'latitude', 'longitude']);
 
+        $kindsByClient = app(EnsureObservatoryReportTypesService::class)
+            ->optionsByClient($colegios->pluck('client_id'));
+        $kinds = [];
+        foreach ($kindsByClient as $map) {
+            $kinds = $kinds + $map;
+        }
+
         return [
             'sites' => $sites,
             'posts' => $posts,
             'guards' => $guards,
             'modules' => $this->catalog->modules((int) $user->security_company_id),
-            'observatory_kinds' => ObservatoryReportKind::options(),
+            'observatory_kinds' => $kinds,
+            'observatory_kinds_by_client' => $kindsByClient,
             'observatory_sites' => $colegios->map(static fn (Installation $site): array => [
                 'id' => (int) $site->id,
                 'client_id' => (int) $site->client_id,

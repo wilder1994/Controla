@@ -5,33 +5,38 @@ declare(strict_types=1);
 namespace App\Services\Observatory;
 
 use App\Enums\ObservatoryEventStatus;
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReportSource;
-use App\Models\Installation;
+use App\Models\Client;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
+use App\Models\ObservatoryReportType;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 final class BuildObservatoryBoardService
 {
     /**
      * @param  list<int>|null  $installationIds
-     * @return array{
-     *     total: int,
-     *     nuevo: int,
-     *     en_atencion: int,
-     *     cerrado: int,
-     *     closed_rate: int,
-     *     top: list<array{name: string, client: ?string, count: int}>,
-     *     trend: array{labels: list<string>, values: list<int>},
-     *     kinds: array{labels: list<string>, values: list<int>},
-     *     sources: array{labels: list<string>, values: list<int>}
-     * }
+     * @return array<string, mixed>
      */
-    public function execute(?int $companyId, ?int $clientId, ?array $installationIds, ?string $from, ?string $to): array
-    {
+    public function execute(
+        ?int $companyId,
+        ?int $clientId,
+        ?array $installationIds,
+        ?string $from,
+        ?string $to,
+        string $grain = 'day',
+    ): array {
+        if ($clientId !== null) {
+            $client = Client::query()->find($clientId);
+            if ($client) {
+                app(EnsureObservatoryReportTypesService::class)->execute($client);
+            }
+        }
+
         $query = $this->scoped($companyId, $clientId, $installationIds, $from, $to);
+        $grain = in_array($grain, ['day', 'month', 'year'], true) ? $grain : 'day';
 
         $counts = (clone $query)
             ->selectRaw('status, COUNT(*) as aggregate')
@@ -40,6 +45,7 @@ final class BuildObservatoryBoardService
 
         $total = (int) $counts->sum();
         $cerrado = (int) ($counts[ObservatoryEventStatus::Cerrado->value] ?? 0);
+        $types = $this->types($companyId, $clientId);
 
         return [
             'total' => $total,
@@ -48,9 +54,12 @@ final class BuildObservatoryBoardService
             'cerrado' => $cerrado,
             'closed_rate' => $total === 0 ? 0 : (int) round(100 * $cerrado / $total),
             'top' => $this->ranking($query),
-            'trend' => $this->trend($companyId, $clientId, $installationIds, $from, $to),
-            'kinds' => $this->seriesByReport($query, 'kind', ObservatoryReportKind::cases()),
+            'trend' => $this->trendByType($companyId, $clientId, $installationIds, $from, $to, $grain, $types),
+            'peaks' => $this->peakDays($companyId, $clientId, $installationIds, $from, $to),
+            'kinds' => $this->seriesByType($query, $types),
             'sources' => $this->seriesByReport($query, 'source', ObservatoryReportSource::cases()),
+            'types' => $types,
+            'grain' => $grain,
         ];
     }
 
@@ -71,84 +80,160 @@ final class BuildObservatoryBoardService
     }
 
     /**
-     * @return list<array{name: string, client: ?string, count: int}>
+     * @return list<array{id: int, slug: string, name: string, level: int, color: string}>
+     */
+    private function types(?int $companyId, ?int $clientId): array
+    {
+        $query = ObservatoryReportType::query()
+            ->when($clientId !== null, fn ($q) => $q->where('client_id', $clientId))
+            ->when($companyId !== null && $clientId === null, fn ($q) => $q->whereHas(
+                'client',
+                fn ($c) => $c->where('security_company_id', $companyId),
+            ))
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name');
+
+        return $query->get()->map(fn (ObservatoryReportType $type): array => [
+            'id' => (int) $type->id,
+            'slug' => $type->slug,
+            'name' => $type->name,
+            'level' => (int) $type->level,
+            'color' => $type->color,
+        ])->all();
+    }
+
+    /**
+     * @return list<array{name: string, client: ?string, count: int, score: int}>
      */
     private function ranking(Builder $query): array
     {
-        $ranked = (clone $query)
-            ->selectRaw('installation_id, COUNT(*) as aggregate')
-            ->groupBy('installation_id')
-            ->orderByDesc('aggregate')
-            ->limit(5)
-            ->get();
+        $events = (clone $query)->with(['installation.client', 'reports.reportType'])->get();
 
-        $sites = Installation::query()
-            ->withoutGlobalScopes()
-            ->with('client:id,name')
-            ->whereIn('id', $ranked->pluck('installation_id')->all())
-            ->get()
-            ->keyBy('id');
-
-        return $ranked->map(static function (ObservatoryEvent $row) use ($sites): array {
-            $site = $sites->get((int) $row->installation_id);
+        $grouped = $events->groupBy('installation_id')->map(function (Collection $rows): array {
+            $site = $rows->first()?->installation;
+            $score = 0;
+            foreach ($rows as $event) {
+                foreach ($event->reports as $report) {
+                    $score += $report->typeLevel();
+                }
+            }
 
             return [
                 'name' => $site?->name ?? '—',
                 'client' => $site?->client?->name,
-                'count' => (int) $row->aggregate,
+                'count' => $rows->count(),
+                'score' => $score,
             ];
-        })->all();
+        })->sortByDesc('score')->take(8)->values();
+
+        return $grouped->all();
+    }
+
+    /**
+     * @param  list<int>|null  $installationIds
+     * @param  list<array{id: int, slug: string, name: string, level: int, color: string}>  $types
+     * @return array{labels: list<string>, series: list<array{label: string, color: string, values: list<int>}>}
+     */
+    private function trendByType(
+        ?int $companyId,
+        ?int $clientId,
+        ?array $installationIds,
+        ?string $from,
+        ?string $to,
+        string $grain,
+        array $types,
+    ): array {
+        [$start, $end] = $this->range($from, $to, $grain);
+        [$labels, $keys, $sql] = $this->buckets($start, $end, $grain);
+
+        $eventIds = $this->scoped($companyId, $clientId, $installationIds, $start->toDateString(), $end->toDateString())->pluck('id');
+        $raw = $eventIds->isEmpty()
+            ? collect()
+            : ObservatoryReport::query()
+                ->whereIn('event_id', $eventIds->all())
+                ->selectRaw($sql.' as bucket, COALESCE(observatory_report_type_id, 0) as type_id, COUNT(*) as aggregate')
+                ->groupBy('bucket', 'type_id')
+                ->get();
+
+        $lookup = [];
+        foreach ($raw as $row) {
+            $lookup[(string) $row->bucket.'|'.(int) $row->type_id] = (int) $row->aggregate;
+        }
+
+        $series = [];
+        foreach ($types as $type) {
+            $values = [];
+            foreach ($keys as $key) {
+                $values[] = (int) ($lookup[$key.'|'.$type['id']] ?? 0);
+            }
+            $series[] = [
+                'label' => $type['name'],
+                'color' => $type['color'],
+                'values' => $values,
+            ];
+        }
+
+        if ($series === []) {
+            $series[] = ['label' => 'Reportes', 'color' => '#94a3b8', 'values' => array_fill(0, max(1, count($keys)), 0)];
+        }
+
+        if ($labels === []) {
+            return ['labels' => ['—'], 'series' => [['label' => 'Reportes', 'color' => '#94a3b8', 'values' => [0]]]];
+        }
+
+        return ['labels' => $labels, 'series' => $series];
     }
 
     /**
      * @param  list<int>|null  $installationIds
      * @return array{labels: list<string>, values: list<int>}
      */
-    private function trend(?int $companyId, ?int $clientId, ?array $installationIds, ?string $from, ?string $to): array
+    private function peakDays(?int $companyId, ?int $clientId, ?array $installationIds, ?string $from, ?string $to): array
     {
-        $end = ($to !== null && $to !== '') ? Carbon::parse($to)->startOfDay() : now()->startOfDay();
-        $start = ($from !== null && $from !== '') ? Carbon::parse($from)->startOfDay() : $end->copy()->subDays(13);
-        if ($start->greaterThan($end)) {
-            [$start, $end] = [$end, $start];
-        }
-
-        $days = (int) $start->diffInDays($end);
-        $weekly = $days > 45;
-        $cursor = $weekly ? $start->copy()->startOfWeek() : $start->copy();
-        $labels = [];
-        $keys = [];
-
-        while ($cursor->lte($end)) {
-            if ($weekly) {
-                $keys[] = $cursor->format('o-\WW');
-                $labels[] = 'Sem '.$cursor->isoWeek();
-                $cursor->addWeek();
-            } else {
-                $keys[] = $cursor->toDateString();
-                $labels[] = $cursor->isoFormat('D MMM');
-                $cursor->addDay();
-            }
-        }
-
-        $raw = $this->scoped($companyId, $clientId, $installationIds, $start->toDateString(), $end->toDateString())
-            ->selectRaw(
-                $weekly
-                    ? "DATE_FORMAT(opened_at, '%x-W%v') as bucket, COUNT(*) as aggregate"
-                    : 'DATE(opened_at) as bucket, COUNT(*) as aggregate',
-            )
+        $raw = $this->scoped($companyId, $clientId, $installationIds, $from, $to)
+            ->selectRaw('DATE(opened_at) as bucket, COUNT(*) as aggregate')
             ->groupBy('bucket')
-            ->pluck('aggregate', 'bucket');
+            ->orderByDesc('aggregate')
+            ->orderBy('bucket')
+            ->limit(7)
+            ->get();
 
-        $values = [];
-        foreach ($keys as $key) {
-            $values[] = (int) ($raw[$key] ?? 0);
-        }
-
-        if ($labels === []) {
+        if ($raw->isEmpty()) {
             return ['labels' => ['—'], 'values' => [0]];
         }
 
-        return ['labels' => $labels, 'values' => $values];
+        return [
+            'labels' => $raw->map(fn ($row) => Carbon::parse((string) $row->bucket)->isoFormat('D MMM'))->all(),
+            'values' => $raw->map(fn ($row) => (int) $row->aggregate)->all(),
+        ];
+    }
+
+    /**
+     * @param  list<array{id: int, slug: string, name: string, level: int, color: string}>  $types
+     * @return array{labels: list<string>, values: list<int>, colors: list<string>}
+     */
+    private function seriesByType(Builder $query, array $types): array
+    {
+        $eventIds = (clone $query)->pluck('id');
+        $raw = $eventIds->isEmpty()
+            ? collect()
+            : ObservatoryReport::query()
+                ->whereIn('event_id', $eventIds->all())
+                ->selectRaw('observatory_report_type_id as bucket, COUNT(*) as aggregate')
+                ->groupBy('bucket')
+                ->pluck('aggregate', 'bucket');
+
+        $labels = [];
+        $values = [];
+        $colors = [];
+        foreach ($types as $type) {
+            $labels[] = $type['name'];
+            $values[] = (int) ($raw[$type['id']] ?? 0);
+            $colors[] = $type['color'];
+        }
+
+        return ['labels' => $labels, 'values' => $values, 'colors' => $colors];
     }
 
     /**
@@ -174,5 +259,56 @@ final class BuildObservatoryBoardService
         }
 
         return ['labels' => $labels, 'values' => $values];
+    }
+
+    /** @return array{0: Carbon, 1: Carbon} */
+    private function range(?string $from, ?string $to, string $grain): array
+    {
+        $end = ($to !== null && $to !== '') ? Carbon::parse($to)->startOfDay() : now()->startOfDay();
+        if ($from !== null && $from !== '') {
+            $start = Carbon::parse($from)->startOfDay();
+        } elseif ($grain === 'year') {
+            $start = $end->copy()->startOfYear();
+        } elseif ($grain === 'month') {
+            $start = $end->copy()->startOfMonth();
+        } else {
+            $start = $end->copy()->subDays(13);
+        }
+
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        return [$start, $end];
+    }
+
+    /**
+     * @return array{0: list<string>, 1: list<string>, 2: string}
+     */
+    private function buckets(Carbon $start, Carbon $end, string $grain): array
+    {
+        $labels = [];
+        $keys = [];
+
+        if ($grain === 'year') {
+            $cursor = $start->copy()->startOfMonth();
+            $last = $end->copy()->startOfMonth();
+            while ($cursor->lte($last)) {
+                $keys[] = $cursor->format('Y-m');
+                $labels[] = $cursor->isoFormat('MMM');
+                $cursor->addMonth();
+            }
+
+            return [$labels, $keys, "DATE_FORMAT(created_at, '%Y-%m')"];
+        }
+
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $keys[] = $cursor->toDateString();
+            $labels[] = $cursor->isoFormat('D MMM');
+            $cursor->addDay();
+        }
+
+        return [$labels, $keys, 'DATE(created_at)'];
     }
 }

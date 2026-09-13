@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Enums\InstallationKind;
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use App\Http\Controllers\Controller;
@@ -13,6 +12,8 @@ use App\Http\Requests\Observatory\StorePublicObservatoryReportRequest;
 use App\Models\Client;
 use App\Models\Installation;
 use App\Models\ObservatoryReport;
+use App\Models\ObservatoryReportType;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\SubmitObservatoryReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -29,10 +30,11 @@ final class ObservatoryIntakeController extends Controller
     public function show(string $slug): View
     {
         $row = $this->client($slug);
+        app(EnsureObservatoryReportTypesService::class)->execute($row);
 
         return view('modules.observatory.public.intake', [
             'client' => $row,
-            'kinds' => ObservatoryReportKind::options(),
+            'kinds' => ObservatoryReportType::optionsFor((int) $row->id),
             'roles' => ObservatoryReporterRole::publicOptions(),
             'maps' => [
                 'api_key' => config('google-maps.api_key'),

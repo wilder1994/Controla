@@ -9,18 +9,19 @@ use App\Enums\ObservatoryEventStatus;
 use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
+use App\Models\ObservatoryReportType;
 
 final class BuildObservatoryMapService
 {
     /**
      * @param  list<int>|null  $installationIds
-     * @return array{google_maps: array{api_key: ?string, center: mixed, zoom: mixed}, sites: list<array<string, mixed>>, points: list<array<string, mixed>>}
+     * @return array<string, mixed>
      */
     public function execute(?int $companyId, ?int $clientId, ?array $installationIds, string $eventShowRoute): array
     {
         $sites = Installation::query()
             ->withoutGlobalScopes()
-            ->with(['client:id,name,security_company_id', 'observatoryEvents.reports'])
+            ->with(['client:id,name,security_company_id', 'observatoryEvents.reports.reportType'])
             ->where('kind', InstallationKind::Colegio->value)
             ->where('is_active', true)
             ->whereNotNull('latitude')
@@ -34,15 +35,36 @@ final class BuildObservatoryMapService
             ->orderBy('name')
             ->get();
 
+        $types = ObservatoryReportType::query()
+            ->when($clientId !== null, fn ($q) => $q->where('client_id', $clientId))
+            ->when($companyId !== null && $clientId === null, fn ($q) => $q->whereHas(
+                'client',
+                fn ($c) => $c->where('security_company_id', $companyId),
+            ))
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (ObservatoryReportType $type): array => [
+                'id' => (int) $type->id,
+                'slug' => $type->slug,
+                'name' => $type->name,
+                'level' => (int) $type->level,
+                'color' => $type->color,
+            ])
+            ->all();
+
         return [
             'google_maps' => $this->googleMaps(),
+            'types' => $types,
             'sites' => $sites->map(function (Installation $site) use ($eventShowRoute): array {
                 $events = $site->observatoryEvents;
                 $open = $events->filter(
                     fn (ObservatoryEvent $event): bool => $event->status !== ObservatoryEventStatus::Cerrado,
                 );
+                $openReports = $open->flatMap->reports;
+                $worst = $this->worstType($openReports);
                 $status = $this->worstStatus($events);
-
                 $focus = $open->sortByDesc('id')->first() ?? $events->sortByDesc('id')->first();
 
                 return [
@@ -55,10 +77,16 @@ final class BuildObservatoryMapService
                     'open_count' => $open->count(),
                     'status' => $status?->value,
                     'status_label' => $status?->label() ?? 'Sin reportes',
+                    'color' => $worst['color'],
+                    'kind' => $worst['name'],
+                    'kind_slug' => $worst['slug'],
                     'show_url' => $focus instanceof ObservatoryEvent
                         ? route($eventShowRoute, $focus)
                         : null,
-                    'heat_weight' => max(1, $open->count()),
+                    'heat_weight' => max(1, $openReports->count()),
+                    'risk_weight' => max(1, (int) $openReports->sum(fn (ObservatoryReport $report): int => $report->typeLevel())),
+                    'type_slugs' => $openReports->map(fn (ObservatoryReport $report): string => $report->typeSlug())->unique()->values()->all(),
+                    'summary' => $this->typeSummary($openReports),
                 ];
             })->values()->all(),
             'points' => $sites->flatMap(function (Installation $site) use ($eventShowRoute) {
@@ -78,6 +106,9 @@ final class BuildObservatoryMapService
                             'status_label' => $event->statusLabel(),
                             'title' => $site->name,
                             'kind' => $report->kindLabel(),
+                            'kind_slug' => $report->typeSlug(),
+                            'color' => $report->typeColor(),
+                            'level' => $report->typeLevel(),
                             'show_url' => route($eventShowRoute, $event),
                         ];
                     })->filter();
@@ -87,11 +118,11 @@ final class BuildObservatoryMapService
     }
 
     /**
-     * @return array{google_maps: array{api_key: ?string, center: mixed, zoom: mixed}, sites: list<array<string, mixed>>, points: list<array<string, mixed>>}
+     * @return array<string, mixed>
      */
     public function forEvent(ObservatoryEvent $event): array
     {
-        $event->loadMissing(['installation', 'reports']);
+        $event->loadMissing(['installation', 'reports.reportType']);
         $site = $event->installation;
         $status = $event->status instanceof ObservatoryEventStatus ? $event->status->value : null;
 
@@ -110,6 +141,9 @@ final class BuildObservatoryMapService
                 'status_label' => $event->statusLabel(),
                 'title' => $site?->name ?? $event->folio(),
                 'kind' => $report->kindLabel(),
+                'kind_slug' => $report->typeSlug(),
+                'color' => $report->typeColor(),
+                'level' => $report->typeLevel(),
                 'show_url' => null,
             ];
         })->filter()->values()->all();
@@ -121,6 +155,7 @@ final class BuildObservatoryMapService
                     : null,
                 16,
             ),
+            'types' => [],
             'sites' => [],
             'points' => $points,
         ];
@@ -150,5 +185,48 @@ final class BuildObservatoryMapService
         }
 
         return null;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ObservatoryReport>  $reports
+     * @return array{name: string, slug: string, color: string}
+     */
+    private function worstType($reports): array
+    {
+        $worst = $reports
+            ->sortByDesc(fn (ObservatoryReport $report): int => $report->typeLevel())
+            ->first();
+
+        if (! $worst instanceof ObservatoryReport) {
+            return ['name' => 'Sin reportes', 'slug' => '', 'color' => '#94a3b8'];
+        }
+
+        return [
+            'name' => $worst->kindLabel(),
+            'slug' => $worst->typeSlug(),
+            'color' => $worst->typeColor(),
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ObservatoryReport>  $reports
+     * @return list<array{name: string, slug: string, count: int, color: string}>
+     */
+    private function typeSummary($reports): array
+    {
+        return $reports
+            ->groupBy(fn (ObservatoryReport $report): string => $report->typeSlug() ?: 'otro')
+            ->map(function ($rows) {
+                $first = $rows->first();
+
+                return [
+                    'name' => $first instanceof ObservatoryReport ? $first->kindLabel() : '—',
+                    'slug' => $first instanceof ObservatoryReport ? $first->typeSlug() : '',
+                    'count' => $rows->count(),
+                    'color' => $first instanceof ObservatoryReport ? $first->typeColor() : '#94a3b8',
+                ];
+            })
+            ->values()
+            ->all();
     }
 }

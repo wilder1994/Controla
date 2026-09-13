@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api;
 
-use App\Enums\ObservatoryReportKind;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class StoreObservatoryApiReportRequest extends FormRequest
 {
@@ -20,7 +18,7 @@ final class StoreObservatoryApiReportRequest extends FormRequest
     {
         return [
             'installation_id' => ['required', 'integer'],
-            'kind' => ['required', 'string', Rule::enum(ObservatoryReportKind::class)],
+            'kind' => ['required', 'string', 'max:80'],
             'body' => ['required', 'string', 'min:10', 'max:2000'],
             'is_anonymous' => ['sometimes', 'boolean'],
             'reporter_name' => ['nullable', 'string', 'max:120'],

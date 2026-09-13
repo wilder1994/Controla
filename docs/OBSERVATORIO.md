@@ -2,7 +2,7 @@
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 12 septiembre 2026
+**Última actualización:** 13 septiembre 2026
 
 ## Piezas
 
@@ -108,9 +108,19 @@ Para el software de Secretaría (u otro sistema). Token Sanctum (`POST /api/auth
 
 El POST usa las mismas reglas de unión (1 h, mismo colegio y tipo). Anónimo oculta nombre y teléfono.
 
-## Mapa (v1)
+## Tipos (catálogo del cliente)
 
-En Observatorio de empresa y cliente: pines de colegios + pines de cada reporte. Color por estado (ámbar nuevo, índigo en atención, gris cerrado/sin reportes). Botón **Calor** = ubicación de cada reporte abierto (no el centroide del colegio). Requiere `GOOGLE_MAPS_API_KEY`.
+Solo el **admin del cliente** crea y edita: nombre + nivel 1–3 + color. La empresa los ve (filtro por cliente). Semilla: Amenaza N3, Riña N2, Hurto N2, Otro N1. El link `/o/{slug}`, el panel, la PWA y la minuta usan esos tipos.
+
+Puntaje del colegio = suma de niveles de sus reportes. Tablero: líneas por tipo (día/mes/año) y días pico.
+
+## Mapa
+
+Círculo = colegio (color del tipo abierto más grave). Gota = reporte (color del tipo). Modos: Pines · Calor sede (cantidad) · Calor riesgo (nivel). Requiere `GOOGLE_MAPS_API_KEY`.
+
+## Módulo
+
+En la ficha del cliente, checkbox **Observatorio**. Si no está chuleado, no aparece en el sidebar del cliente. Empresa siempre ve `/company/observatory`.
 
 ## Pliego (Anexo 7.5)
 
@@ -119,10 +129,10 @@ Texto literal: fuentes diversas + origen; **no** nombra Policía ni Línea 123. 
 | Pedido | Estado |
 |--------|--------|
 | Maestro, mapa, pines, calor, intake, folio, bitácora, tablero, API | Hecho |
+| Priorización configurable | Hecho: catálogo tipo + nivel + color |
 | Filtros/capas territoriales | Pendiente: comunas urbanas Cali (IDESC / [datos.cali.gov.co](https://datos.cali.gov.co/dataset/servicio-wms-comunas-de-cali)). No cubren el Valle |
-| Priorización configurable | Pendiente |
-| Salida de resultados (export) | Pendiente |
+| Salida de resultados (export) | Pendiente (PPTX) |
 
 ## Siguiente
 
-Capas y filtro por comuna (Cali). Luego prioridad configurable y export. Sin conector 123.
+Capas y filtro por comuna (Cali). Luego export PPTX. Sin conector 123.

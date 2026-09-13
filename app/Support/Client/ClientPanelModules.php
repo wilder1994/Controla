@@ -14,6 +14,8 @@ final class ClientPanelModules
 
     public const DOORS = 'doors';
 
+    public const OBSERVATORY = 'observatory';
+
     /** @return list<string> */
     public static function optional(): array
     {
@@ -22,6 +24,7 @@ final class ClientPanelModules
             self::PETS,
             self::AUTHORIZATIONS,
             self::DOORS,
+            self::OBSERVATORY,
         ];
     }
 
@@ -33,6 +36,7 @@ final class ClientPanelModules
             self::PETS => 'Mascotas',
             self::AUTHORIZATIONS => 'Autorizaciones',
             self::DOORS => 'Puertas',
+            self::OBSERVATORY => 'Observatorio',
         ];
     }
 
@@ -44,6 +48,7 @@ final class ClientPanelModules
             self::PETS => 'Censo de mascotas por nodo.',
             self::AUTHORIZATIONS => 'Autorizaciones del censo.',
             self::DOORS => 'Portería. Solo si el cliente ya tiene puertas creadas.',
+            self::OBSERVATORY => 'Tablero y reportes escolares. Si no está chuleado, el cliente no lo ve.',
         ];
     }
 
@@ -55,6 +60,7 @@ final class ClientPanelModules
             self::PETS => true,
             self::AUTHORIZATIONS => true,
             self::DOORS => true,
+            self::OBSERVATORY => false,
         ];
     }
 

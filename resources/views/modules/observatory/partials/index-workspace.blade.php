@@ -5,9 +5,13 @@
     $to = $to ?? '';
     $status = $status ?? '';
     $vista = in_array($vista ?? 'tablero', ['tablero', 'eventos'], true) ? ($vista ?? 'tablero') : 'tablero';
+    $grain = in_array($grain ?? 'day', ['day', 'month', 'year'], true) ? ($grain ?? 'day') : 'day';
+    $filterClientId = $filterClientId ?? '';
+    $filterClients = $filterClients ?? collect();
     $board = $board ?? [
         'total' => 0, 'nuevo' => 0, 'en_atencion' => 0, 'cerrado' => 0, 'closed_rate' => 0,
-        'top' => [], 'trend' => ['labels' => ['—'], 'values' => [0]],
+        'top' => [], 'trend' => ['labels' => ['—'], 'series' => []],
+        'peaks' => ['labels' => ['—'], 'values' => [0]],
         'kinds' => ['labels' => [], 'values' => []], 'sources' => ['labels' => [], 'values' => []],
     ];
     $showClientColumn = $showClientColumn ?? false;
@@ -31,8 +35,8 @@
     $charts = [
         'accent' => $accent,
         'closed_rate' => (int) ($board['closed_rate'] ?? 0),
-        'trend' => $board['trend'] ?? ['labels' => ['—'], 'values' => [0]],
-        'kinds' => $board['kinds'] ?? ['labels' => [], 'values' => []],
+        'trend' => $board['trend'] ?? ['labels' => ['—'], 'series' => []],
+        'peaks' => $board['peaks'] ?? ['labels' => ['—'], 'values' => [0]],
         'sources' => $board['sources'] ?? ['labels' => [], 'values' => []],
     ];
 @endphp
@@ -44,39 +48,48 @@
     .obs-kpi {
         position: relative;
         overflow: hidden;
-        border-radius: 0.85rem;
+        border-radius: 0.7rem;
         border: 1px solid rgb(30 41 59);
         background: linear-gradient(180deg, rgb(15 23 42 / 0.95), rgb(2 6 23 / 0.8));
-        padding: 0.9rem 1rem 0.85rem;
-        transition: border-color .15s ease, transform .15s ease;
+        padding: 0.65rem 0.8rem 0.6rem;
+        transition: border-color .15s ease;
     }
-    .obs-kpi:hover { border-color: rgb(51 65 85); transform: translateY(-1px); }
-    .obs-kpi.is-on { border-color: rgb(245 158 11 / 0.45); box-shadow: 0 0 0 1px rgb(245 158 11 / 0.15); }
+    .obs-kpi.is-on { border-color: rgb(245 158 11 / 0.45); }
     .obs-kpi::before {
         content: "";
         position: absolute; inset: 0 auto 0 0; width: 3px;
         background: var(--obs-tone, #64748b);
     }
     .obs-card {
-        border-radius: 0.9rem;
+        border-radius: 0.75rem;
         border: 1px solid rgb(30 41 59);
         background: linear-gradient(180deg, rgb(15 23 42 / 0.92), rgb(2 6 23 / 0.88));
         min-width: 0;
     }
-    .obs-card-h { padding: 0.85rem 1rem 0; }
-    .obs-card-h p { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; margin: 0; }
-    .obs-card-h h3 { margin: .15rem 0 0; font-size: .95rem; font-weight: 600; color: #e2e8f0; }
-    .obs-chart { height: 12.5rem; padding: .5rem 1rem 1rem; }
-    .obs-chart-lg { height: 20rem; }
-    .obs-chart-md { height: 16rem; }
-    .obs-gauge { height: 11.5rem; }
+    .obs-card-h { padding: 0.55rem 0.75rem 0; }
+    .obs-card-h p { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; margin: 0; }
+    .obs-card-h h3 { margin: .1rem 0 0; font-size: .85rem; font-weight: 600; color: #e2e8f0; }
+    .obs-chart { height: 9.5rem; padding: .35rem .75rem .65rem; }
+    .obs-chart-lg { height: 13.5rem; }
+    .obs-gauge { height: 8.5rem; }
 </style>
 @endpush
 
-<div class="obs-board space-y-4" @if ($vista === 'tablero') x-data="observatoryBoard(@js($charts))" @endif>
+<div class="obs-board space-y-3" @if ($vista === 'tablero') x-data="observatoryBoard(@js($charts))" @endif>
     <form method="GET" action="{{ $action }}"
-          class="rounded-xl border border-slate-800 bg-slate-900/70 p-3 flex flex-col lg:flex-row lg:items-end gap-3">
+          class="rounded-xl border border-slate-800 bg-slate-900/70 p-2.5 flex flex-col xl:flex-row xl:items-end gap-2">
         <input type="hidden" name="vista" value="{{ $vista }}">
+        @if ($showClientColumn && $filterClients->isNotEmpty())
+            <div class="min-w-[12rem]">
+                <label for="client_id" class="block text-[11px] text-slate-500 mb-1">Cliente</label>
+                <select id="client_id" name="client_id" class="w-full h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                    <option value="">Todos</option>
+                    @foreach ($filterClients as $row)
+                        <option value="{{ $row->id }}" @selected((string) $filterClientId === (string) $row->id)>{{ $row->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
         <div>
             <label for="from" class="block text-[11px] text-slate-500 mb-1">Desde</label>
             <input type="date" id="from" name="from" value="{{ $from }}"
@@ -86,6 +99,14 @@
             <label for="to" class="block text-[11px] text-slate-500 mb-1">Hasta</label>
             <input type="date" id="to" name="to" value="{{ $to }}"
                    class="h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+        </div>
+        <div>
+            <label for="grain" class="block text-[11px] text-slate-500 mb-1">Líneas</label>
+            <select id="grain" name="grain" class="h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                <option value="day" @selected($grain === 'day')>Por día</option>
+                <option value="month" @selected($grain === 'month')>Por mes</option>
+                <option value="year" @selected($grain === 'year')>Por año</option>
+            </select>
         </div>
         <div class="flex-1 min-w-0">
             <label for="q" class="block text-[11px] text-slate-500 mb-1">Buscar</label>
@@ -104,7 +125,7 @@
     </form>
 
     @if ($vista === 'tablero')
-        <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 xl:grid-cols-4 gap-2">
             @foreach ([
                 [null, 'Eventos', $board['total'], $status === '', '#94a3b8'],
                 ['nuevo', 'Nuevos', $board['nuevo'], $status === 'nuevo', '#f59e0b'],
@@ -112,34 +133,33 @@
                 ['cerrado', 'Cerrados', $board['cerrado'], $status === 'cerrado', '#34d399'],
             ] as [$value, $label, $count, $on, $tone])
                 <a href="{{ $kpiUrl($value) }}" class="obs-kpi {{ $on ? 'is-on' : '' }}" style="--obs-tone: {{ $tone }}">
-                    <p class="text-[11px] uppercase tracking-wide text-slate-500">{{ $label }}</p>
-                    <p class="mt-1 text-3xl font-semibold tabular-nums text-white">{{ $count }}</p>
-                    <p class="mt-1 text-[11px] text-slate-500">{{ $on && $vista === 'eventos' ? 'Filtro activo' : 'Clic para ver folios' }}</p>
+                    <p class="text-[10px] uppercase tracking-wide text-slate-500">{{ $label }}</p>
+                    <p class="mt-0.5 text-2xl font-semibold tabular-nums text-white">{{ $count }}</p>
                 </a>
             @endforeach
         </div>
 
-        <div class="grid gap-3 xl:grid-cols-[minmax(0,7fr)_minmax(16rem,3fr)] xl:items-stretch">
+        <div class="grid gap-2 xl:grid-cols-[minmax(0,7fr)_minmax(13rem,3fr)] xl:items-stretch">
             @include('modules.observatory.partials.map', [
                 'map' => $map,
-                'mapCanvasClass' => 'h-80 xl:h-full xl:min-h-[24rem]',
+                'mapCanvasClass' => 'h-64 xl:h-full xl:min-h-[20rem]',
             ])
             @include('modules.observatory.partials.pin-legend')
         </div>
 
-        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-stretch">
-            <section class="obs-card p-3 flex flex-col min-h-0">
-                <p class="text-xs uppercase tracking-wide text-slate-500 shrink-0">Colegios con más eventos</p>
-                <div class="mt-2 space-y-2 overflow-y-auto max-h-[20rem] xl:max-h-none xl:flex-1 sidebar-scroll">
+        <div class="grid gap-2 xl:grid-cols-[minmax(14rem,1fr)_minmax(0,2fr)] xl:items-stretch">
+            <section class="obs-card p-2.5 flex flex-col min-h-0">
+                <p class="text-[10px] uppercase tracking-wide text-slate-500 shrink-0">Colegios por riesgo</p>
+                <div class="mt-1.5 space-y-1.5 overflow-y-auto max-h-48 xl:max-h-none xl:flex-1 sidebar-scroll">
                     @forelse ($board['top'] as $row)
-                        <div class="flex items-start justify-between gap-3 text-sm">
+                        <div class="flex items-start justify-between gap-2 text-sm">
                             <div class="min-w-0">
-                                <p class="text-slate-200 truncate">{{ $row['name'] }}</p>
+                                <p class="text-slate-200 truncate text-[13px]">{{ $row['name'] }}</p>
                                 @if ($showClientColumn && filled($row['client']))
-                                    <p class="text-[11px] text-slate-500 truncate">{{ $row['client'] }}</p>
+                                    <p class="text-[10px] text-slate-500 truncate">{{ $row['client'] }}</p>
                                 @endif
                             </div>
-                            <p class="font-mono text-xs text-slate-300 shrink-0">{{ $row['count'] }}</p>
+                            <p class="font-mono text-[11px] text-slate-300 shrink-0">{{ $row['score'] ?? $row['count'] }} <span class="text-slate-600">{{ $row['count'] }}</span></p>
                         </div>
                     @empty
                         <p class="text-sm text-slate-500">Aún no hay eventos en el periodo.</p>
@@ -148,27 +168,27 @@
             </section>
             <section class="obs-card">
                 <div class="obs-card-h">
-                    <p>Tendencia</p>
-                    <h3>Eventos abiertos por día</h3>
+                    <p>Tendencia por tipo</p>
+                    <h3>{{ $grain === 'year' ? 'Meses del periodo' : ($grain === 'month' ? 'Días del mes' : 'Día a día') }}</h3>
                 </div>
-                <div class="obs-chart obs-chart-lg"><canvas x-ref="trend" aria-label="Tendencia de eventos"></canvas></div>
+                <div class="obs-chart obs-chart-lg"><canvas x-ref="trend" aria-label="Tendencia por tipo"></canvas></div>
             </section>
         </div>
 
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.15fr_1.15fr_0.85fr] xl:items-stretch">
+        <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-[1.15fr_1.15fr_0.85fr] xl:items-stretch">
             <section class="obs-card">
                 <div class="obs-card-h">
-                    <p>Tipo</p>
-                    <h3>Qué se reporta</h3>
+                    <p>Picos</p>
+                    <h3>Días con más reportes</h3>
                 </div>
-                <div class="obs-chart obs-chart-md"><canvas x-ref="kinds" aria-label="Reportes por tipo"></canvas></div>
+                <div class="obs-chart"><canvas x-ref="peaks" aria-label="Días con más reportes"></canvas></div>
             </section>
             <section class="obs-card">
                 <div class="obs-card-h">
                     <p>Canal</p>
                     <h3>De dónde llega</h3>
                 </div>
-                <div class="obs-chart obs-chart-md"><canvas x-ref="sources" aria-label="Reportes por canal"></canvas></div>
+                <div class="obs-chart"><canvas x-ref="sources" aria-label="Reportes por canal"></canvas></div>
             </section>
             <section class="obs-card">
                 <div class="obs-card-h">
@@ -177,9 +197,9 @@
                 </div>
                 <div class="obs-chart obs-gauge relative">
                     <canvas x-ref="gauge" aria-label="Medidor de cierre"></canvas>
-                    <div class="absolute inset-x-0 bottom-3 text-center pointer-events-none">
-                        <p class="text-3xl font-semibold tabular-nums text-white">{{ (int) ($board['closed_rate'] ?? 0) }}%</p>
-                        <p class="text-[11px] text-slate-500">{{ ((int) ($board['total'] ?? 0)) === 0 ? 'Sin eventos en el periodo' : 'Cerrados / total' }}</p>
+                    <div class="absolute inset-x-0 bottom-2 text-center pointer-events-none">
+                        <p class="text-2xl font-semibold tabular-nums text-white">{{ (int) ($board['closed_rate'] ?? 0) }}%</p>
+                        <p class="text-[10px] text-slate-500">{{ ((int) ($board['total'] ?? 0)) === 0 ? 'Sin eventos' : 'Cerrados / total' }}</p>
                     </div>
                 </div>
             </section>

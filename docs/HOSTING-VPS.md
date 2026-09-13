@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 12 septiembre 2026
+**Última actualización:** 13 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
@@ -18,7 +18,7 @@ Flujo: push local a `origin` (`wilder1994/Controla`, `main`). El VPS solo hace `
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
-Observatorio: migrate `2026_09_11_260000`, `2026_09_12_150000` (rol) y `2026_09_12_210000` (nota de bitácora) si no están. Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Fotos en disco `public` (`observatory/photos`); hace falta `php artisan storage:link` si no existe. Este commit **no** añade migrate ni permisos: pull + composer + `npm run build` + caches. No correr el seeder.
+Observatorio: migrate `2026_09_13_120000` (tipos de hecho + `panel_modules.observatory` en clientes ya creados). Tras migrate: `php artisan db:seed --class=RoleAndPermissionSeeder` (añade `observatory.events.update` al admin del cliente). Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`.
 
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud
@@ -27,8 +27,7 @@ sudo -u wcodex-controla git pull --ff-only origin main
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && npm ci && npm run build"
 php8.3 artisan migrate --force --no-interaction
-# Solo si el commit cambia roles/permisos:
-# php8.3 artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction
+php8.3 artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction
 php8.3 artisan config:cache
 php8.3 artisan route:cache
 php8.3 artisan view:cache

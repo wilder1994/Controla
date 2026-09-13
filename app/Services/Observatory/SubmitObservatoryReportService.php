@@ -6,13 +6,13 @@ namespace App\Services\Observatory;
 
 use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
-use App\Enums\ObservatoryReportKind;
 use App\Enums\ObservatoryReporterRole;
 use App\Enums\ObservatoryReportSource;
 use App\Models\Client;
 use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
+use App\Models\ObservatoryReportType;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -39,8 +39,8 @@ final class SubmitObservatoryReportService
             ]);
         }
 
-        $kind = ObservatoryReportKind::tryFrom((string) $data['kind']);
-        if ($kind === null) {
+        $type = app(EnsureObservatoryReportTypesService::class)->resolve($client, (string) $data['kind']);
+        if ($type === null) {
             throw ValidationException::withMessages([
                 'kind' => 'Indica el tipo de situación.',
             ]);
@@ -69,8 +69,8 @@ final class SubmitObservatoryReportService
         $reporter = $data['reported_by'] ?? null;
         $reporter = $reporter instanceof User ? $reporter : null;
 
-        return DB::transaction(function () use ($client, $installation, $kind, $body, $anonymous, $data, $photoPath, $ip, $coords, $source, $role, $reporter): ObservatoryReport {
-            $event = $this->openOrAttach($client, $installation, $kind);
+        return DB::transaction(function () use ($client, $installation, $type, $body, $anonymous, $data, $photoPath, $ip, $coords, $source, $role, $reporter): ObservatoryReport {
+            $event = $this->openOrAttach($client, $installation, $type);
 
             return ObservatoryReport::query()->create([
                 'event_id' => $event->id,
@@ -78,7 +78,8 @@ final class SubmitObservatoryReportService
                 'installation_id' => $installation->id,
                 'source' => $source,
                 'reporter_role' => $role,
-                'kind' => $kind,
+                'kind' => $type->slug,
+                'observatory_report_type_id' => $type->id,
                 'body' => $body,
                 'is_anonymous' => $anonymous,
                 'reporter_name' => $anonymous ? null : $this->nullable($data['reporter_name'] ?? null),
@@ -92,7 +93,7 @@ final class SubmitObservatoryReportService
         });
     }
 
-    private function openOrAttach(Client $client, Installation $installation, ObservatoryReportKind $kind): ObservatoryEvent
+    private function openOrAttach(Client $client, Installation $installation, ObservatoryReportType $type): ObservatoryEvent
     {
         $minutes = max(1, (int) config('observatory.merge_window_minutes', 60));
         $since = now()->subMinutes($minutes);
@@ -104,9 +105,11 @@ final class SubmitObservatoryReportService
                 ObservatoryEventStatus::Nuevo->value,
                 ObservatoryEventStatus::EnAtencion->value,
             ])
-            ->whereHas('reports', function ($q) use ($kind, $since): void {
-                $q->where('kind', $kind->value)
-                    ->where('created_at', '>=', $since);
+            ->whereHas('reports', function ($q) use ($type, $since): void {
+                $q->where(function ($inner) use ($type): void {
+                    $inner->where('observatory_report_type_id', $type->id)
+                        ->orWhere('kind', $type->slug);
+                })->where('created_at', '>=', $since);
             })
             ->orderByDesc('id')
             ->lockForUpdate()
@@ -120,7 +123,7 @@ final class SubmitObservatoryReportService
             'client_id' => $client->id,
             'installation_id' => $installation->id,
             'status' => ObservatoryEventStatus::Nuevo,
-            'title' => $kind->label(),
+            'title' => $type->name,
             'opened_at' => now(),
         ]);
     }
