@@ -23,7 +23,7 @@
             @error('username')<p class="mt-1 text-xs text-red-400">{{ $message }}</p>@enderror
         </div>
         <input type="email" name="email" value="{{ old('email') }}" placeholder="Email opcional" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
-        <input type="password" name="password" required minlength="8" placeholder="Contraseña" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
+        <x-ui.input type="password" name="password" required minlength="8" placeholder="Contraseña" accent="client" />
         <button type="submit" class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500">Crear acceso</button>
     </form>
 </x-client-layout>

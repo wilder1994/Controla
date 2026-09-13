@@ -135,6 +135,7 @@ focus:ring-1
 
 - Empresa: `focus:border-indigo-500 focus:ring-indigo-500/30`
 - Plataforma: `accent="platform"` → `focus:border-violet-500 focus:ring-violet-500/30`
+- `type="password"` (también `x-text-input`): icono de ojo a la derecha (`x-ui.password-wrap`, Alpine `show`). El campo nace oculto; el botón cambia a texto y el `aria-label` a *Mostrar* / *Ocultar contraseña*. No usar `<input type="password">` suelto.
 
 ### Error (`x-ui.field-error`)
 

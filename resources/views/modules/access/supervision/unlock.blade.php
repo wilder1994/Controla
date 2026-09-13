@@ -30,16 +30,15 @@
                     @csrf
                     <div>
                         <label class="block text-sm font-medium text-slate-300">Código único de supervisor</label>
-                        <input
-                            type="password"
+                        <x-ui.password-wrap
                             name="code"
                             required
                             autofocus
                             autocomplete="off"
                             inputmode="text"
                             placeholder="••••••••"
-                            class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white placeholder-slate-600 py-3 px-4 text-lg tracking-widest text-center focus:border-indigo-500 focus:ring-indigo-500"
-                        >
+                            class="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-950 py-3 pr-10 pl-4 text-center text-lg tracking-widest text-white placeholder-slate-600 focus:border-indigo-500 focus:ring-indigo-500"
+                        />
                     </div>
 
                     <button

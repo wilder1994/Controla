@@ -2,7 +2,7 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de clientes.
 
-**Última actualización:** 11 septiembre 2026
+**Última actualización:** 12 septiembre 2026
 
 La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
@@ -25,7 +25,7 @@ Panel `/company/users`. **Crear y editar usan el mismo formulario** (`modules/co
 5. **Cargo / función**: select del catálogo `company_job_titles` (interno) o texto libre (externo). Al elegir empleado se precarga el cargo de la ficha.
 6. **Email personal**: el de la ficha (`employees.email`). Solo lectura. **No** es login. No se copia a `users.email` en altas nuevas. Envío de usuario/clave por correo: pendiente.
 7. **Cliente** e **Instalaciones** (si el rol lo pide) en la misma fila: filtro al escribir y lista con checkbox. Instalaciones se cargan al elegir cliente (`GET /company/users/installations`).
-8. Generar clave, activo.
+8. Generar clave, activo. Los campos `type="password"` (login, alta, cambio, código de supervisor) tienen icono de ojo para verla (`x-ui.password-wrap`).
 9. Clave aleatoria; `must_change_password` en la primera entrada (pantalla `/password/primera`, no Breeze `/profile`). Supervisor: además `supervisor_code` de 6 dígitos (revista Accesos, no login).
 10. La zona de Supervisión **no** se pega al usuario ni se muestra en la tabla: se elige al abrir turno.
 11. **No se elimina** la cuenta. **Desactivar** (pestaña Activos) pone `is_active = false`: sale del listado activo, no puede entrar al panel ni a la PWA, el historial queda. Pestaña **Desactivados** → Reactivar. No se puede desactivar a uno mismo.

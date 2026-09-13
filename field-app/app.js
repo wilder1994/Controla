@@ -1,3 +1,16 @@
+document.querySelectorAll('[data-pw-toggle]').forEach((btn) => {
+    const input = btn.parentElement?.querySelector('input');
+    if (!input) return;
+    btn.addEventListener('click', () => {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+        btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        btn.querySelector('.pw-eye')?.classList.toggle('hidden', show);
+        btn.querySelector('.pw-eye-off')?.classList.toggle('hidden', !show);
+    });
+});
+
 const statusEl = document.getElementById('status');
 let pingTimer = null;
 let pingWatchId = null;

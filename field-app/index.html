@@ -78,6 +78,10 @@
         .crop-stage { width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: .7rem; background: #000; touch-action: none; }
         #crop-canvas { width: 100%; height: 100%; display: block; }
         .sync-bar { font-size: .78rem; color: #fbbf24; background: #1c1917; border: 1px solid #854d0e; border-radius: .6rem; padding: .55rem .7rem; margin: 0 0 .75rem; }
+        .pw-wrap { position: relative; }
+        .pw-wrap input { padding-right: 2.4rem; }
+        .pw-toggle { position: absolute; right: 0; top: .22rem; width: 2.25rem !important; height: 2.25rem; margin: 0 !important; padding: 0; background: transparent !important; border: 0; color: var(--muted); }
+        .pw-toggle svg { width: 1rem; height: 1rem; }
     </style>
 </head>
 <body>
@@ -91,7 +95,13 @@
         <input id="login-user" type="text" placeholder="nombre.apellido.1234 o correo" autocomplete="username">
         <p class="hint">Usuario de acceso (nombre.apellido.1234). No use el correo personal de la ficha.</p>
         <label for="password">Contraseña</label>
-        <input id="password" type="password" autocomplete="current-password">
+        <div class="pw-wrap">
+            <input id="password" type="password" autocomplete="current-password">
+            <button type="button" class="pw-toggle" data-pw-toggle aria-label="Mostrar contraseña" aria-pressed="false">
+                <svg class="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12Z"/><circle cx="12" cy="12" r="2.75"/></svg>
+                <svg class="pw-eye-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.9 9.9A3 3 0 0012 15a3 3 0 002.1-.9M6.6 6.6C4.4 8 2.75 12 2.75 12s3.75 6.75 9.75 6.75c1.7 0 3.23-.4 4.55-1.05M17.4 17.4C19.6 16 21.25 12 21.25 12s-3.75-6.75-9.75-6.75c-.86 0-1.68.1-2.45.3"/></svg>
+            </button>
+        </div>
         <button type="button" id="btn-login" class="gold">Entrar</button>
     </div>
 
@@ -99,9 +109,21 @@
         <p class="sec-title">Cambiar contraseña</p>
         <p class="hint">Es la primera entrada. Defina una clave nueva.</p>
         <label for="new-password">Nueva contraseña</label>
-        <input id="new-password" type="password" autocomplete="new-password">
+        <div class="pw-wrap">
+            <input id="new-password" type="password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-pw-toggle aria-label="Mostrar contraseña" aria-pressed="false">
+                <svg class="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12Z"/><circle cx="12" cy="12" r="2.75"/></svg>
+                <svg class="pw-eye-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.9 9.9A3 3 0 0012 15a3 3 0 002.1-.9M6.6 6.6C4.4 8 2.75 12 2.75 12s3.75 6.75 9.75 6.75c1.7 0 3.23-.4 4.55-1.05M17.4 17.4C19.6 16 21.25 12 21.25 12s-3.75-6.75-9.75-6.75c-.86 0-1.68.1-2.45.3"/></svg>
+            </button>
+        </div>
         <label for="new-password-confirm">Confirmar</label>
-        <input id="new-password-confirm" type="password" autocomplete="new-password">
+        <div class="pw-wrap">
+            <input id="new-password-confirm" type="password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-pw-toggle aria-label="Mostrar contraseña" aria-pressed="false">
+                <svg class="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12Z"/><circle cx="12" cy="12" r="2.75"/></svg>
+                <svg class="pw-eye-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M9.9 9.9A3 3 0 0012 15a3 3 0 002.1-.9M6.6 6.6C4.4 8 2.75 12 2.75 12s3.75 6.75 9.75 6.75c1.7 0 3.23-.4 4.55-1.05M17.4 17.4C19.6 16 21.25 12 21.25 12s-3.75-6.75-9.75-6.75c-.86 0-1.68.1-2.45.3"/></svg>
+            </button>
+        </div>
         <button type="button" id="btn-change-password" class="gold">Guardar y continuar</button>
     </div>
 
@@ -316,7 +338,7 @@
         </div>
     </div>
 
-    <script src="offline.js?v=34"></script>
-    <script src="app.js?v=34"></script>
+    <script src="offline.js?v=38"></script>
+    <script src="app.js?v=38"></script>
 </body>
 </html>
