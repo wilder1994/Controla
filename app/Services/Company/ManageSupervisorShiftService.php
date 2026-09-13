@@ -62,6 +62,7 @@ final class ManageSupervisorShiftService
         string $source = 'app',
         ?string $clientEventId = null,
         ?int $pendingOutbox = null,
+        ?bool $screenOn = null,
     ): SupervisorShiftLocation {
         if (! $shift->isOpen()) {
             throw ValidationException::withMessages([
@@ -90,6 +91,7 @@ final class ManageSupervisorShiftService
             'accuracy' => $accuracy,
             'source' => $source,
             'client_event_id' => $clientEventId,
+            'screen_on' => $screenOn,
         ]);
     }
 

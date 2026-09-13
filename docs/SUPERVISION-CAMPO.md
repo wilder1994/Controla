@@ -4,7 +4,7 @@ Controla es la fuente de verdad. La PWA (`field-app/` y el host `controla_superv
 
 No choca con: minuta de portería (`/access/supervision`), `SupervisorReview`, `PlatformDocument`, zonas/vehículos de Accesos, `locations` (accesos) ni correspondencia.
 
-**Última actualización:** 8 septiembre 2026
+**Última actualización:** 13 septiembre 2026
 
 Árbol del cliente (instalación → puesto): [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md). La app **no** usa puntos de Accesos como puesto.
 
@@ -38,14 +38,14 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v38`. APK Android (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
+PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v39`. APK Android (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. En login y primer cambio de clave, icono de ojo para verla. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
 Fotos: no se enciende la cámara al abrir. **Trasera** / **Frontal** o **Tomar foto** piden `getUserMedia` (hace falta HTTPS o localhost). Tras capturar se apaga. Galería solo si no hay contexto seguro.
 
 1. Login (`POST /api/supervision/login`) → rito de **apertura**: turno y zona del catálogo, EPP/vehículo plegables, km + foto odómetro + selfie (cámara, no galería).
-2. Hub: ficha de perfil + **Cerrar**. Entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**, **Observatorio**, **Mis fichas**. Ping GPS cada **15 s** (`watchPosition` + intervalo; al volver a primer plano reanuda). **En línea** en el mapa = último GPS &lt; 90 s. Con la pantalla apagada Android/iOS pausan el JS y el GPS de la PWA; Tailscale no sustituye eso. Tracking con pantalla off requiere app nativa.
+2. Hub: ficha de perfil + **Cerrar**. Entradas: **Revista**, **Alarmas**, **Apoyos**, **Documentos**, **Observatorio**, **Mis fichas**. Ping GPS cada **15 s**. Cada ping manda `screen_on`. El mapa: **En línea** (GPS &lt; 90 s y pantalla encendida), **Pantalla apagada** (GPS &lt; 90 s y pantalla off) o **Sin señal** (más de 90 s sin GPS). **APK corte 2:** servicio en primer plano (notificación “Turno de supervisión activo”) sigue mandando GPS con la pantalla apagada. La PWA sigue pausando el JS al bloquear el teléfono.
 3. **Revista** (al clic): cliente, puesto, vigilante, foto. Los módulos del puesto (inventario, libros de control, etc.) se registran en borrador. **Guardar revista** (abajo) envía GPS + foto + módulos juntos. Mientras envía: botón bloqueado y texto *Guardando revista…* (mismo candado en Entrar, iniciar/cerrar turno y Registrar). Un `client_event_id` por intento: el API no duplica. Si cancela, no queda nada.
 4. Alarmas y apoyos: cada uno abre su formulario (cliente + GPS obligatorios). Documentos: sin cliente ni GPS.
 5. Cierre: km final + odómetro + selfie → sesión cerrada.
@@ -83,7 +83,7 @@ Cerrar turno sin red también se encola (fotos incluidas). No borrar datos del s
 
 Contrato de campos: `GET /api/supervision/catalog` (`FieldModuleCatalog`). Logs append-only en `supervisor_field_logs` (`supervisor_shift_review_id` si cuelga de revista). Recomendaciones: `supervisor_recommendations` (registro inmutable del turno; `GET /recommendations` lista recientes).
 
-El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno). En vivo e Historial: **dos columnas** (mapa alto + lista). Estado En vivo: en ruta / detenido con horas (`Se detuvo a las HH:mm · lleva N min`); paradas cerradas `de HH:mm a HH:mm`. Pin de moto: **En línea** (GPS &lt; 90 s) o **Sin señal**. Poll 10 s, sin Roads. Pines a ≤50 m se agrupan. La moto queda detrás (`pointer-events: none` en hover: tooltip nombre + señal). Clic en la moto o en el grupo abre la lista de eventos (sin la moto). Fichas de pin: OverlayView compacto (no InfoWindow blanco de Google). Apoyo (cian) y alarma (ámbar) tienen pin. Leyenda en la columna. Historial no pinta moto “en línea”. Turno cerrado por el sistema: texto **Cierre por el sistema** y, si el teléfono reportó cola en el GPS, **N registros en cola**. Historial: misma barra de filtros; **sin replay**. Turno cerrado: Snap to Roads (azul, cache `snapped_route`; hace falta `GOOGLE_MAPS_SERVER_API_KEY` sin restricción de sitios web). Turno aún abierto: GPS ámbar. Trail: `BuildSupervisorTrailService` (~28 m; parada 75 m y ≥120 s; minutos de detenido actual contra el reloj).
+El mapa `/company/supervision` usa **satélite** por defecto (toggle Terreno). En vivo e Historial: **dos columnas** (mapa alto + lista). Estado En vivo: en ruta / detenido con horas (`Se detuvo a las HH:mm · lleva N min`); paradas cerradas `de HH:mm a HH:mm`. Pin de moto: **En línea**, **Pantalla apagada** o **Sin señal**. Poll 10 s, sin Roads. Pines a ≤50 m se agrupan. La moto queda detrás (`pointer-events: none` en hover: tooltip nombre + señal). Clic en la moto o en el grupo abre la lista de eventos (sin la moto). Fichas de pin: OverlayView compacto (no InfoWindow blanco de Google). Apoyo (cian) y alarma (ámbar) tienen pin. Leyenda en la columna. Historial no pinta moto “en línea”. Turno cerrado por el sistema: texto **Cierre por el sistema** y, si el teléfono reportó cola en el GPS, **N registros en cola**. Historial: misma barra de filtros; **sin replay**. Turno cerrado: Snap to Roads (azul, cache `snapped_route`; hace falta `GOOGLE_MAPS_SERVER_API_KEY` sin restricción de sitios web). Turno aún abierto: GPS ámbar. Trail: `BuildSupervisorTrailService` (~28 m; parada 75 m y ≥120 s; minutos de detenido actual contra el reloj).
 
 Cierre automático (`supervision:auto-close-shifts`, cada 5 min en el scheduler): fin de **plantilla** (`starts_at`/`ends_at`) + **30 min** de gabela. Ej. 06:00–14:00 cierra a las 14:30; noche 18:00–06:00 cierra a las 06:30 del día siguiente. Sin fotos de km; nota en el turno. Sin plantilla: **3 h** desde el último GPS o `started_at`. El turno sale de En vivo. En Windows hace falta `php artisan schedule:work` (o Tarea programada con `schedule:run`).
 
@@ -137,9 +137,7 @@ Servicios: `BuildSupervisionMapService`, `BuildSupervisorTrailService`, `SnapSup
 
 ### Distribución
 
-**APK (corte 1) + PWA de respaldo.** El `.apk` se baja de Descargas y se instala (orígenes desconocidos). Habla con `https://controla.wcodex.cloud/api`. Mismo usuario/clave. No Play Store. No hay un binario por empresa.
-
-GPS con pantalla apagada = corte 2 (foreground service). Hoy, con la pantalla off, el APK se comporta como la PWA.
+**APK (corte 2) + PWA de respaldo.** El `.apk` se baja de Descargas y se instala (orígenes desconocidos). Habla con `https://controla.wcodex.cloud/api`. Mismo usuario/clave. No Play Store. No hay un binario por empresa. Con turno abierto el APK muestra una notificación persistente y el GPS sigue con la pantalla apagada (`ShiftTrackingService`, `source=apk`). La PWA no tiene ese servicio.
 
 Rebuild: `field-app/` → `npm run sync` → `JAVA_HOME` = JDK 21 → `npm run apk` → copiar `android/app/build/outputs/apk/debug/app-debug.apk` a `public/downloads/controla-supervision.apk`.
 

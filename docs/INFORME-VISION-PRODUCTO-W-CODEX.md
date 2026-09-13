@@ -3,7 +3,7 @@
 **Producto:** Controla  
 **Dueña:** W Codex Solution  
 **Estado:** decisión de producto (sin cambio de código en este corte)  
-**Fecha:** 2026-09-11  
+**Fecha:** 2026-09-13  
 **Objeto:** bitácora de cómo se vende Controla, qué se toma de SJ-SIG, cómo avanza la geometría y cómo se cubre el factor *Herramienta de Seguridad Educativa* (Anexo 7.5).
 
 Este documento es bitácora. No se implementa nada aquí: primero se registra la decisión, después se abre fase de código.
@@ -19,8 +19,7 @@ Documentos que este informe no sustituye: [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-
 | Empresa de software | **W Codex Solution** |
 | Producto comercial | **Controla** (SaaS B2B de accesos, vigilancia y supervisión de campo) |
 | Cantera / prototipo contractual | **SJ-SIG** (Laravel 13, factor 4.2.4, repo aparte) |
-| App de campo hoy | PWA `Controla_Supervision` / `field-app/` (sin BD; API de Controla) |
-| App de campo objetivo | **APK nativa** (Capacitor sobre la PWA) para GPS con pantalla apagada |
+| App de campo hoy | PWA `Controla_Supervision` / `field-app/` + **APK corte 2** (GPS con pantalla apagada) |
 
 Controla se construye para **venderse** a empresas de seguridad y, con el mismo esqueleto, a entidades (Secretaría, Alcaldía, colegios). Una licitación concreta (SJ, Educación de Cali, etc.) es un **cliente** o un **módulo**, no una marca nueva ni un segundo sistema.
 
@@ -36,7 +35,7 @@ SJ-SIG nació para un pliego. El avance útil (mapa, unidades, expediente, table
 4. **La instalación es el sitio físico.** Ahí viven mapa, código, administradores opcionales y la estructura (apto o salón).
 5. **Accesos ≠ Supervisión ≠ Observatorio.** Puertas, puestos de revista y denuncias ciudadanas no comparten tablas operativas.
 6. **Trabajar en Controla.** SJ-SIG es referencia; no se mantiene dos árboles de instalaciones.
-7. **La PWA no basta para tracking de fondo.** GPS con pantalla apagada o en segundo plano = app nativa (APK primero).
+7. **La PWA no basta para tracking de fondo.** Eso ya lo cubre el **APK corte 2** (foreground service). La PWA sigue siendo respaldo.
 
 ---
 
@@ -259,8 +258,8 @@ Decisión de valor para W Codex: las licitaciones de **vigilancia** y el mapa en
 
 | Escenario | Superficie |
 |-----------|------------|
-| Revista, fotos, cola offline, mapa con la app abierta | PWA actual ([`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md)) |
-| Punto en el mapa con pantalla off / segundo plano | **APK** (Capacitor + *foreground service* Android: notificación “Turno de supervisión activo”) |
+| Revista, fotos, cola offline, mapa con la app abierta | PWA y APK ([`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md)) |
+| Punto en el mapa con pantalla off | **APK corte 2** (Capacitor + `ShiftTrackingService`; notificación “Turno de supervisión activo”). El mapa distingue En línea / Pantalla apagada / Sin señal. |
 | Portal de denuncias escolares | Web móvil, no APK |
 | iOS | Después; el campo en Colombia es mayoritariamente Android |
 

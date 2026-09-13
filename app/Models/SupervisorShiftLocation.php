@@ -17,6 +17,7 @@ final class SupervisorShiftLocation extends Model
         'accuracy',
         'source',
         'client_event_id',
+        'screen_on',
     ];
 
     protected function casts(): array
@@ -26,6 +27,7 @@ final class SupervisorShiftLocation extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'accuracy' => 'decimal:2',
+            'screen_on' => 'boolean',
         ];
     }
 

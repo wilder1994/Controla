@@ -15,6 +15,7 @@ const statusEl = document.getElementById('status');
 let pingTimer = null;
 let pingWatchId = null;
 let pingBusy = false;
+let nativePing = false;
 let lastPingSentAt = 0;
 let catalog = [];
 let intake = null;
@@ -1352,11 +1353,37 @@ async function loadSupervisorSelfie() {
     }
 }
 
+function shiftTrackingPlugin() {
+    return window.Capacitor?.Plugins?.ShiftTracking || null;
+}
+
+function screenIsOn() {
+    return document.visibilityState === 'visible';
+}
+
+async function startNativeTracking() {
+    const plug = shiftTrackingPlugin();
+    if (!plug?.start) return false;
+    try {
+        await plug.start({ apiBase: apiBase(), token: token() || '' });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function stopNativeTracking() {
+    const plug = shiftTrackingPlugin();
+    if (!plug?.stop) return;
+    plug.stop().catch(() => {});
+}
+
 function startPing() {
     stopPing();
     if (closeQueued) return;
+    nativePing = false;
     const send = async (force = false) => {
-        if (closeQueued) return;
+        if (closeQueued || nativePing) return;
         const now = Date.now();
         if (!force && now - lastPingSentAt < 12000) return;
         if (pingBusy) return;
@@ -1374,6 +1401,8 @@ function startPing() {
                 accuracy: pos.accuracy,
                 client_event_id: ControlaOffline.uuid(),
                 pending_outbox: Number(stats.mine || 0),
+                screen_on: screenIsOn(),
+                source: 'app',
             };
             try {
                 await api('/supervision/shifts/ping', { method: 'POST', body: JSON.stringify(body) });
@@ -1387,28 +1416,38 @@ function startPing() {
             pingBusy = false;
         }
     };
-    send(true);
-    pingTimer = setInterval(() => {
-        if (document.visibilityState === 'hidden') return;
-        send();
-    }, 15000);
-    if (navigator.geolocation?.watchPosition) {
-        pingWatchId = navigator.geolocation.watchPosition(
-            (pos) => {
-                lastGeo = {
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude,
-                    accuracy: pos.coords.accuracy,
-                };
+    const boot = async () => {
+        if (isNativeApp()) {
+            nativePing = await startNativeTracking();
+        }
+        if (!nativePing) {
+            send(true);
+            pingTimer = setInterval(() => {
+                if (document.visibilityState === 'hidden') return;
                 send();
-            },
-            () => {},
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 },
-        );
-    }
+            }, 15000);
+        }
+        if (navigator.geolocation?.watchPosition) {
+            pingWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    lastGeo = {
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy,
+                    };
+                    if (!nativePing) send();
+                },
+                () => {},
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 },
+            );
+        }
+    };
+    boot();
 }
 
 function stopPing() {
+    nativePing = false;
+    stopNativeTracking();
     if (pingTimer) clearInterval(pingTimer);
     pingTimer = null;
     if (pingWatchId != null && navigator.geolocation) {

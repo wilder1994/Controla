@@ -170,7 +170,7 @@
                     <section class="lg:col-span-5 xl:col-span-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-h-[420px] lg:min-h-0 lg:h-[min(78vh,740px)] flex flex-col">
                         <h3 class="text-sm font-semibold text-white shrink-0">Supervisores en turno</h3>
                         @include('modules.company.supervision.partials.pin-legend')
-                        <p class="text-xs text-slate-500 mt-2 shrink-0">Se actualiza solo. En línea = GPS reciente.</p>
+                        <p class="text-xs text-slate-500 mt-2 shrink-0">Se actualiza solo. En línea = GPS reciente con pantalla encendida. Pantalla apagada = GPS sigue (APK). Sin señal = más de 90 s sin GPS.</p>
                         <div class="mt-3 overflow-auto flex-1" id="supervision-live-list">
                             @include('modules.company.supervision.partials.live-roster', ['rows' => $map['live']])
                         </div>
@@ -399,6 +399,24 @@
                     }[ch]));
                 }
 
+                function signalOf(row) {
+                    return row.signal || (row.online ? 'online' : 'no_signal');
+                }
+
+                function signalTextClass(row) {
+                    const s = signalOf(row);
+                    if (s === 'screen_off') return 'text-amber-400';
+                    if (s === 'online') return 'text-emerald-400';
+                    return 'text-red-400';
+                }
+
+                function signalColor(row) {
+                    const s = signalOf(row);
+                    if (s === 'screen_off') return '#fbbf24';
+                    if (s === 'online') return '#86efac';
+                    return '#fca5a5';
+                }
+
                 function liveStatus(row) {
                     if (row.parked && row.parked.minutes) return 'parado ' + row.parked.minutes + ' min';
                     if (row.lat) return 'en ruta';
@@ -419,10 +437,9 @@
                         + '<th class="text-right py-2 font-medium">Rev.</th>'
                         + '</tr></thead><tbody>'
                         + rows.map((row) => {
-                            const on = Boolean(row.online);
                             return '<tr class="border-b border-slate-800/70 align-top">'
                                 + '<td class="py-2 pr-2"><p class="font-medium text-slate-100">' + esc(row.user || 'Supervisor') + '</p>'
-                                + '<p class="text-xs mt-0.5 ' + (on ? 'text-emerald-400' : 'text-red-400') + '">' + esc(row.online_label || (on ? 'En línea' : 'Sin señal')) + '</p>'
+                                + '<p class="text-xs mt-0.5 ' + signalTextClass(row) + '">' + esc(row.online_label || (row.online ? 'En línea' : 'Sin señal')) + '</p>'
                                 + '<p class="text-xs text-slate-500 mt-0.5">Inicio ' + esc(row.started_at_label || '—') + '</p></td>'
                                 + '<td class="py-2 pr-2 text-xs text-slate-300 leading-snug">' + esc(row.status_line || liveStatus(row)) + '</td>'
                                 + '<td class="py-2 text-right text-slate-300 tabular-nums">' + Number(row.km || 0).toFixed(1) + '</td>'
@@ -932,18 +949,20 @@
                         });
                     });
                     if (opts.current && row.end) {
-                        const online = row.online !== false;
+                        const label = row.online_label || (row.online ? 'En línea' : 'Sin señal');
                         pins.push({
                             kind: 'moto',
                             lat: row.end.lat,
                             lng: row.end.lng,
                             user: row.user,
-                            online_label: row.online_label || (online ? 'En línea' : 'Sin señal'),
+                            signal: row.signal,
+                            online: row.online,
+                            online_label: label,
                             title: '',
-                            opacity: online ? 1 : 0.7,
+                            opacity: signalOf(row) === 'no_signal' ? 0.7 : 1,
                             label: {
-                                text: online ? 'En línea' : 'Sin señal',
-                                color: online ? '#86efac' : '#fca5a5',
+                                text: label,
+                                color: signalColor(row),
                                 fontSize: '11px',
                                 fontWeight: '700',
                             },

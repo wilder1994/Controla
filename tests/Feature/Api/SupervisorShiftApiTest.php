@@ -63,9 +63,15 @@ final class SupervisorShiftApiTest extends TestCase
             'latitude' => 3.4516,
             'longitude' => -76.5320,
             'pending_outbox' => 3,
+            'screen_on' => false,
+            'source' => 'apk',
         ]);
         $ping->assertOk();
-        $this->assertSame(3, (int) SupervisorShift::query()->findOrFail($open->json('shift.id'))->pending_outbox_count);
+        $shift = SupervisorShift::query()->findOrFail($open->json('shift.id'));
+        $this->assertSame(3, (int) $shift->pending_outbox_count);
+        $location = $shift->locations()->latest('id')->first();
+        $this->assertFalse((bool) $location?->screen_on);
+        $this->assertSame('apk', $location?->source);
 
         $close = $this->withToken($token)->post('/api/supervision/shifts/close', $this->supervisorShiftClosePayload());
         $close->assertOk();

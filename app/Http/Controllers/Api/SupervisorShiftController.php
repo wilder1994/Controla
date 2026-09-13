@@ -270,6 +270,8 @@ final class SupervisorShiftController extends Controller
             'accuracy' => ['nullable', 'numeric'],
             'client_event_id' => ['nullable', 'uuid'],
             'pending_outbox' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'screen_on' => ['nullable', 'boolean'],
+            'source' => ['nullable', 'in:app,apk'],
         ]);
 
         $shift = $this->shiftService->currentFor($request->user());
@@ -280,9 +282,10 @@ final class SupervisorShiftController extends Controller
             (float) $data['latitude'],
             (float) $data['longitude'],
             isset($data['accuracy']) ? (float) $data['accuracy'] : null,
-            'app',
+            (string) ($data['source'] ?? 'app'),
             isset($data['client_event_id']) ? (string) $data['client_event_id'] : null,
             isset($data['pending_outbox']) ? (int) $data['pending_outbox'] : null,
+            array_key_exists('screen_on', $data) ? (bool) $data['screen_on'] : null,
         );
 
         return response()->json(['location' => $point]);

@@ -255,7 +255,8 @@ final class BuildSupervisionMapService
             'km' => $built['km'],
             'reviews_count' => (int) ($shift->reviews_count ?? 0),
             'online' => $built['online'],
-            'online_label' => $built['online'] ? 'En línea' : 'Sin señal',
+            'signal' => $built['signal'],
+            'online_label' => $built['online_label'],
             'status_line' => $statusLine,
         ];
     }

@@ -55,6 +55,8 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Alarma');
         $response->assertSee('Hover en la moto');
         $response->assertSee('Se actualiza solo');
+        $response->assertSee('Pantalla apagada');
+        $response->assertSee('Sin señal');
         $response->assertSee('Satélite');
         $response->assertSee('Terreno');
         $response->assertSee('Palmas');
@@ -175,6 +177,59 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('"name":"Palmas del Ingenio"', false);
         $response->assertSee('"path":', false);
         $response->assertSee('en ruta');
+    }
+
+    public function test_live_feed_distinguishes_screen_off_from_no_signal(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+
+        $supervisor = $this->companySupervisor();
+        $other = $this->companySupervisor('Otro', 'Senal', '1199006600', 'otro.senal.6600');
+
+        $screenOff = SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'started_at' => now()->subHour(),
+        ]);
+        $screenOff->locations()->create([
+            'recorded_at' => now()->subSeconds(20),
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+            'source' => 'apk',
+            'screen_on' => false,
+        ]);
+
+        $lost = SupervisorShift::query()->create([
+            'security_company_id' => $other->security_company_id,
+            'user_id' => $other->id,
+            'status' => SupervisorShiftStatus::Open,
+            'started_at' => now()->subHour(),
+        ]);
+        $lost->locations()->create([
+            'recorded_at' => now()->subMinutes(5),
+            'latitude' => 3.4600,
+            'longitude' => -76.5400,
+            'source' => 'app',
+            'screen_on' => true,
+        ]);
+
+        $feed = $this->actingAs($admin)->getJson(route('company.supervision.live-feed'));
+        $feed->assertOk();
+        $rows = collect($feed->json('live'));
+        $off = $rows->firstWhere('user', $supervisor->name);
+        $none = $rows->firstWhere('user', $other->name);
+
+        $this->assertSame('screen_off', $off['signal'] ?? null);
+        $this->assertSame('Pantalla apagada', $off['online_label'] ?? null);
+        $this->assertSame('no_signal', $none['signal'] ?? null);
+        $this->assertSame('Sin señal', $none['online_label'] ?? null);
     }
 
     public function test_company_admin_can_download_supervision_pptx(): void

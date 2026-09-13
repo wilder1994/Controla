@@ -18,7 +18,15 @@
                 <tr class="border-b border-slate-800/70 align-top">
                     <td class="py-2 pr-2">
                         <p class="font-medium text-slate-100">{{ $row['user'] ?? 'Supervisor' }}</p>
-                        <p class="text-xs mt-0.5 {{ ! empty($row['online']) ? 'text-emerald-400' : 'text-red-400' }}">
+                        @php
+                            $signal = $row['signal'] ?? (! empty($row['online']) ? 'online' : 'no_signal');
+                            $signalClass = match ($signal) {
+                                'screen_off' => 'text-amber-400',
+                                'online' => 'text-emerald-400',
+                                default => 'text-red-400',
+                            };
+                        @endphp
+                        <p class="text-xs mt-0.5 {{ $signalClass }}">
                             {{ $row['online_label'] ?? 'Sin señal' }}
                         </p>
                         <p class="text-xs text-slate-500 mt-0.5">Inicio {{ $row['started_at_label'] ?? '—' }}</p>

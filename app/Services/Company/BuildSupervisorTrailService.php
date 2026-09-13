@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Models\SupervisorShiftLocation;
+use App\Support\Supervision\SupervisorPresence;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -17,7 +18,7 @@ final class BuildSupervisorTrailService
 
     private const STOP_SECONDS = 120;
 
-    public const OFFLINE_SECONDS = 90;
+    public const OFFLINE_SECONDS = SupervisorPresence::FRESH_SECONDS;
 
     /**
      * @param  Collection<int, SupervisorShiftLocation>  $locations
@@ -28,7 +29,9 @@ final class BuildSupervisorTrailService
      *     stops: list<array{lat: float, lng: float, minutes: int, from: ?string, to: ?string, current: bool, label: string}>,
      *     parked: ?array{lat: float, lng: float, minutes: int, from: ?string, to: ?string, current: bool, label: string},
      *     km: float,
-     *     online: bool
+     *     online: bool,
+     *     signal: string,
+     *     online_label: string
      * }
      */
     public function execute(Collection $locations, bool $shiftOpen = false, ?CarbonInterface $now = null): array
@@ -50,7 +53,7 @@ final class BuildSupervisorTrailService
                 'stops' => [],
                 'parked' => null,
                 'km' => 0.0,
-                'online' => false,
+                ...SupervisorPresence::from(null, null, $now),
             ];
         }
 
@@ -94,9 +97,10 @@ final class BuildSupervisorTrailService
 
         $first = $points->first();
         $last = $points->last();
-        $lastAt = $last['at'] ?? null;
-        $online = $lastAt instanceof CarbonInterface
-            && $lastAt->diffInSeconds($now, true) <= self::OFFLINE_SECONDS;
+        $lastLoc = $locations->last();
+        $screenOn = $lastLoc instanceof SupervisorShiftLocation && $lastLoc->screen_on !== null
+            ? (bool) $lastLoc->screen_on
+            : null;
 
         return [
             'path' => $path,
@@ -105,7 +109,7 @@ final class BuildSupervisorTrailService
             'stops' => $stops,
             'parked' => $parked,
             'km' => $this->km($path),
-            'online' => $online,
+            ...SupervisorPresence::from($last['at'] ?? null, $screenOn, $now),
         ];
     }
 
