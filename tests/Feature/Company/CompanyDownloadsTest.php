@@ -23,7 +23,8 @@ final class CompanyDownloadsTest extends TestCase
             ->assertSee('Descargas')
             ->assertSee('App de Supervisión')
             ->assertSee('controla_supervision.test')
-            ->assertSee('Instalar aplicación')
+            ->assertSee('Descargar APK')
+            ->assertSee('Abrir web')
             ->assertDontSee('API de Controla');
     }
 
@@ -33,5 +34,18 @@ final class CompanyDownloadsTest extends TestCase
         $guard = User::query()->where('email', 'guardia@control-acceso.test')->firstOrFail();
 
         $this->actingAs($guard)->get(route('company.downloads.index'))->assertForbidden();
+    }
+
+    public function test_company_admin_can_download_supervision_apk(): void
+    {
+        $this->seedWithPilot();
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $response = $this->actingAs($user)->get(route('company.downloads.apk'));
+        $response->assertOk();
+        $this->assertStringContainsString(
+            'controla-supervision.apk',
+            (string) $response->headers->get('content-disposition'),
+        );
     }
 }

@@ -21,4 +21,16 @@ final class SupervisionAppUrl
 
         return $app;
     }
+
+    public static function apkPath(): ?string
+    {
+        $path = public_path('downloads/controla-supervision.apk');
+
+        return is_file($path) ? $path : null;
+    }
+
+    public static function apkReady(): bool
+    {
+        return self::apkPath() !== null;
+    }
 }

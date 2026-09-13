@@ -38,7 +38,7 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v35`.
+PWA en `field-app/` (copia alineada en `Controla_Supervision`). Caché SW `controla-sup-v37`. APK Android (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
@@ -133,18 +133,15 @@ Panel: KPIs de **volumen y nivel**, no de tickets abiertos. Tira de hoy: recomen
 
 Servicios: `BuildSupervisionMapService`, `BuildSupervisorTrailService`, `SnapSupervisorTrailToRoadsService`, `ResolveSupervisorShiftDeadlineService` (gabela 30 min), `AutoCloseExpiredSupervisorShiftsService` (comando `supervision:auto-close-shifts`). El cierre manual de la PWA sigue exigiendo fotos (`CloseSupervisorShiftService`).
 
-`/company/descargas` y `/admin/descargas`: tarjeta **App de Supervisión** (QR, abrir, copiar, pasos Android/iPhone). Una sola PWA para todas las empresas; el login identifica la empresa. No es la app de residentes de Accesos.
+`/company/descargas` y `/admin/descargas`: **Descargar APK** + web de respaldo (QR). Una sola app para todas las empresas; el login identifica la empresa. No es la app de residentes de Accesos.
 
-### Distribución (alcance actual)
+### Distribución
 
-**PWA, no APK.** No hay Capacitor, Play Store ni App Store. No se genera un binario por empresa.
+**APK (corte 1) + PWA de respaldo.** El `.apk` se baja de Descargas y se instala (orígenes desconocidos). Habla con `https://controla.wcodex.cloud/api`. Mismo usuario/clave. No Play Store. No hay un binario por empresa.
 
-El supervisor abre el enlace (`SUPERVISION_PWA_URL`, por defecto `http://controla_supervision.test`) e instala desde el navegador:
+GPS con pantalla apagada = corte 2 (foreground service). Hoy, con la pantalla off, el APK se comporta como la PWA.
 
-- Android: Chrome → menú → **Instalar aplicación** o **Añadir a pantalla de inicio**.
-- iPhone: Safari → compartir → **Añadir a pantalla de inicio** (no hay “Instalar” tipo Android).
-
-Limitaciones de este corte (Laragon / piloto): HTTP y host `.test` (el teléfono no resuelve Laragon); el manifest no trae iconos 192/512, así que Chrome puede no ofrecer “Instalar”. En producción hará falta HTTPS, URL pública y esos iconos. APK/tiendas queda para un corte posterior.
+Rebuild: `field-app/` → `npm run sync` → `JAVA_HOME` = JDK 21 → `npm run apk` → copiar `android/app/build/outputs/apk/debug/app-debug.apk` a `public/downloads/controla-supervision.apk`.
 
 **Tailscale (verificado en consola 4 sep 2026, plan Gratis: MagicDNS sí, registros A custom no).** Vhosts `00-aad-controla-tailscale.conf`: API `:8084`, PWA `:8085`, alias `100.75.176.11`. Cámara: **HTTPS** `https://sjpcanaope.tail5fcfbc.ts.net/` (`tailscale serve`: `/` → 8085, `/api` → 8084). No usar `http://IP:8085` para fotos.
 

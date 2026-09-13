@@ -340,7 +340,7 @@ Al migrar client/access: duplicar patrones de este doc cambiando solo el color a
 | Vista | Estado |
 |-------|--------|
 | `admin/dashboard` | ✅ Mapa, KPIs, cartera (6 segmentos), paquetes, TOP 5, tendencia MRR |
-| `admin/downloads` | ✅ QR + enlace PWA de Supervisión |
+| `admin/downloads` | ✅ Descargar APK + web PWA de respaldo |
 | `admin/companies/index` | ✅ KPIs riesgo + totales; tabla cartera + badges |
 | `admin/companies/show` | ✅ Paquete + formulario `x-ui.*` |
 | `admin/pricing/edit` | ✅ Unitarios + matriz calculada |

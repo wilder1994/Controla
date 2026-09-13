@@ -1,5 +1,14 @@
 /.phpunit.cache
 /node_modules
+/field-app/node_modules
+/field-app/www
+/field-app/android/app/build
+/field-app/android/build
+/field-app/android/.gradle
+/field-app/android/local.properties
+/field-app/android/captures
+*.jks
+*.keystore
 /public/build
 /public/hot
 /public/images

@@ -389,3 +389,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Observatorio: pines de cualquier tipo de sede; sin sedes = mapa Colombia + 22 comunas; con sedes = zoom a pines y solo comunas ocupadas; comuna vacía se pinta. Área IDESC de la ficha bloqueada. |
 | 2026-09-12 | Observatorio: Google Maps 3.65 quitó HeatmapLayer; el calor es círculo propio. La capa IDESC se carga siempre (ruta relativa); Todas = Cali + 22; una comuna hace zoom a ese polígono. |
 | 2026-09-12 | Observatorio: export PPTX del tablero (mismos filtros; cifras, ranking, tendencia, picos y canal). |
+| 2026-09-12 | App de campo: APK debug (Capacitor) en Descargas; API fija a controla.wcodex.cloud. GPS con pantalla off = corte 2. |

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Support\Supervision\SupervisionAppUrl;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class DownloadsController extends Controller
 {
@@ -17,6 +18,18 @@ final class DownloadsController extends Controller
 
         return view('modules.company.downloads.index', [
             'pwaUrl' => SupervisionAppUrl::pwa(),
+            'apkReady' => SupervisionAppUrl::apkReady(),
+        ]);
+    }
+
+    public function apk(Request $request): BinaryFileResponse
+    {
+        abort_unless($request->user()?->can('company.dashboard'), 403);
+        $path = SupervisionAppUrl::apkPath();
+        abort_unless($path !== null, 404);
+
+        return response()->download($path, 'controla-supervision.apk', [
+            'Content-Type' => 'application/vnd.android.package-archive',
         ]);
     }
 }

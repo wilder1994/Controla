@@ -23,7 +23,8 @@ final class AdminDownloadsTest extends TestCase
             ->assertSee('Descargas')
             ->assertSee('App de Supervisión')
             ->assertSee('controla_supervision.test')
-            ->assertSee('Instalar aplicación');
+            ->assertSee('Descargar APK')
+            ->assertSee('Abrir web');
     }
 
     public function test_company_admin_cannot_open_platform_downloads(): void

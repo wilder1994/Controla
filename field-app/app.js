@@ -51,7 +51,14 @@ async function withBusy(btn, busyLabel, fn) {
     }
 }
 
+function isNativeApp() {
+    return Boolean(window.Capacitor?.isNativePlatform?.());
+}
+
 function inferApi() {
+    if (isNativeApp()) {
+        return 'https://controla.wcodex.cloud/api';
+    }
     const host = location.hostname;
     const port = location.port;
     if (port === '8085') {
@@ -1964,7 +1971,7 @@ if (token()) {
     }
 }
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && !isNativeApp()) {
     navigator.serviceWorker.register('sw.js').then((reg) => {
         if (reg.waiting) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });

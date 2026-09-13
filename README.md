@@ -345,7 +345,7 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | Ruta | Función |
 |------|---------|
 | `GET /admin/dashboard` | Dashboard analítico: mapa, KPIs, cartera, paquetes, TOP facturación, tendencia MRR |
-| `GET /admin/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; no APK) |
+| `GET /admin/descargas` | **Descargas**: APK de Supervisión + web de respaldo |
 | `GET /admin/companies` | Listado empresas + KPIs (riesgo, totales empresas/conjuntos) |
 | `GET/POST /admin/companies/create` | Alta empresa (datos fiscales, paquete, ubicación geo) |
 | `POST /admin/companies/{id}/archive` | Archivar empresa (cascada a clientes) |
@@ -416,7 +416,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/supervision/turnos/{shift}/ruta` | Historial: Snap to Roads en turno cerrado (cache `snapped_route`) |
 | `GET /company/supervision/fichas/{kind}/{id}` | Ficha HTML carta: marca de la empresa, encabezado Decreto 356, cliente/instalación/puesto |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro; solo cifras). Compositor + párrafos + GRACIAS + DeepSeek + chatbot/PQRS: pendiente, [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md) §§ Informe PPTX y Chatbot y PQRS |
-| `GET /company/descargas` | **Descargas**: PWA de Supervisión (QR + enlace; `SUPERVISION_PWA_URL`; no APK ni tiendas) |
+| `GET /company/descargas` | **Descargas**: APK (`/company/descargas/controla-supervision.apk`) + web PWA de respaldo |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |
 | `POST /company/billing/supervision` | Contratar / cambiar Supervisión (self-serve, aplica al corte) |
 | `POST /company/billing/checkout` | Checkout online (intent renew/anticipate/reactivate) |

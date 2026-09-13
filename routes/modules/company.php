@@ -205,6 +205,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/descargas', [DownloadsController::class, 'index'])
             ->middleware('permission:company.dashboard')
             ->name('downloads.index');
+        Route::get('/descargas/controla-supervision.apk', [DownloadsController::class, 'apk'])
+            ->middleware('permission:company.dashboard')
+            ->name('downloads.apk');
 
         Route::get('/users', [UserController::class, 'index'])
             ->middleware('permission:company.users.assign')

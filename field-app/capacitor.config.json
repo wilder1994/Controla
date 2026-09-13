@@ -1,0 +1,14 @@
+{
+    "appId": "cloud.wcodex.controla.supervision",
+    "appName": "Controla Supervisión",
+    "webDir": "www",
+    "android": {
+        "allowMixedContent": false
+    },
+    "server": {
+        "androidScheme": "https",
+        "allowNavigation": [
+            "controla.wcodex.cloud"
+        ]
+    }
+}

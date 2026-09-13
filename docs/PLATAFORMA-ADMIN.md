@@ -255,7 +255,7 @@ Servicios:
 | Método | Ruta | Función |
 |--------|------|---------|
 | GET | `/admin/dashboard` | Dashboard analítico (mapa, KPIs, cartera, facturación) |
-| GET | `/admin/descargas` | App de Supervisión (QR + enlace PWA; no APK) |
+| GET | `/admin/descargas` | App de Supervisión (APK + web de respaldo) |
 | POST | `/admin/companies/{company}/archive` | Archivar empresa |
 | POST | `/admin/companies/{company}/clients/{client}/release` | Retirar conjunto |
 | GET | `/admin/pricing` | Tabla de precios |
