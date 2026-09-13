@@ -186,7 +186,7 @@ Controla es maduro en **accesos, censo y supervisión de campo**. El Observatori
 | Factor | Cobertura hoy | Reutilizable | Brecha para la visita |
 |--------|---------------|--------------|------------------------|
 | 1 Maestro + búsqueda | ~95 % | Directorio con tipo, DANE de sede **escrito a mano** (si colegio; 8–12 dígitos, único), nombre repetible, personal N (admin/apoyo + cargo), área, mapa, búsqueda | Catálogo MEN / typeahead al escribir; DANE de *establecimiento* compartido entre sucursales |
-| 2 Geográfico | ~80 % | Mapa Observatorio (colegio + pin del reporte; calor). Google Maps | **Capas/filtro por comuna (Cali, IDESC)** — 0,25 del factor. PostGIS no es requisito del pliego |
+| 2 Geográfico | **Sí** | Mapa Observatorio (colegio + pin; calor; **comunas IDESC + filtro**). Google Maps | PostGIS no es requisito del pliego |
 | 3 Multifuente | **Sí** | Comunidad, panel, PWA, minuta y API; origen (canal + rol) en la ficha | Nada del pliego. No hace falta 123 |
 | 4 Comunidad | **Sí** | Intake `/o/{slug}`, anónimo, aviso menores, flujo de estados, vínculo a sede/folio | — |
 | 5 Eventos | **Sí** | Folio; agrupa 1 h; unir/sacar; bitácora; rector **Agregar** / **Cerrar folio** | — |
@@ -249,7 +249,7 @@ El texto tipo “PostgreSQL + PostGIS + Python/Node + React/Angular” es receta
 
 PostGIS **no cabe** en hosting compartido MySQL (plan Ilimitado típico). Va en VPS. **No** es requisito del Anexo 7.5: las capas de visita son GeoJSON de IDESC sobre Google Maps.
 
-**Siguiente corte (pliego, no 123):** (1) capas y filtro por comuna Cali; (2) export PPTX del tablero. MEN / typeahead: no está en el Anexo. Prioridad configurable: hecha (catálogo del cliente).
+**Siguiente corte (pliego, no 123):** export PPTX del tablero. MEN / typeahead: no está en el Anexo. Prioridad y comunas IDESC: hechas.
 
 ---
 
@@ -328,7 +328,7 @@ No se abre código en este corte. El orden acordado:
 5. ~~Censo colgando de la instalación (salón / apto).~~ **Hecho 2026-09-11.** Personas asignadas al nodo; acceso de persona (`structure_app_users`). Vigilante de portería solo si hay puertas. Supervisor firma revista en minuta con código de 6 dígitos. Alta de nodo: `code` interno automático; padre por árbol («Crear dentro de» / **+**).
 6. Paquete Expediente / SIG (indexador + tablero de entidad) — cubre pliego de vigilancia.
 7. APK de campo (GPS de fondo) — diferenciador comercial.
-8. Observatorio escolar (Anexo 7.5). v1 **hecho** salvo capas comunas y export PPTX. Prioridad = catálogo del cliente. El pliego no pide 123. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
+8. Observatorio escolar (Anexo 7.5). v1 **hecho** salvo export PPTX. Prioridad = catálogo del cliente. Comunas = IDESC Cali. El pliego no pide 123. Detalle: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
 ---
 
@@ -383,3 +383,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Tablero Observatorio: mapa + leyenda; colegios + tendencia ancha; tipo/canal más grandes; controles Pines/Calor y Mapa/Satélite fuera del lienzo de Google. |
 | 2026-09-12 | Anexo 7.5 leído en literal: no pide Policía ni 123. Visita Cali. Falta para el pliego: capas comunas IDESC, prioridad configurable, export. |
 | 2026-09-13 | Observatorio: tipos del cliente (nivel+color), puntaje, líneas, picos, calor sede/riesgo, filtro empresa por cliente, módulo opt-in. Falta comunas y PPTX. |
+| 2026-09-13 | Observatorio: capa y filtro por comuna urbana de Cali (IDESC). Queda export PPTX. |

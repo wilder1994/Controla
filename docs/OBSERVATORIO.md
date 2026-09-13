@@ -2,7 +2,7 @@
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 13 septiembre 2026
+**Última actualización:** 13 septiembre 2026 (comunas IDESC)
 
 ## Piezas
 
@@ -85,7 +85,7 @@ Empresa, `client-admin` y apoyo no ven esos botones.
 
 Pestañas **Tablero** | **Eventos** (cuelgan del header, no van dentro de la barra).
 
-- **Tablero:** filtros, **Compartir link**, API, KPIs (clic abre Eventos). Fila 1: mapa (~70%) + leyenda de pines (mismo alto). Pines/Calor y Mapa/Satélite van en una barra sobre el mapa (sin tapar controles de Google; sin fullscreen). Fila 2: colegios (lista con scroll) + tendencia ancha. Fila 3: tipo · canal (más grandes) · cierre (mismo tamaño).
+- **Tablero:** filtros (fecha, cliente en empresa, **Comuna Cali**), **Compartir link**, API, KPIs (clic abre Eventos). Fila 1: mapa (~70%) + leyenda de pines (mismo alto). Pines/Calor, Mapa/Satélite y chips de comuna van sobre el mapa (sin tapar controles de Google; sin fullscreen). Fila 2: colegios (lista con scroll + comuna) + tendencia ancha. Fila 3: picos · canal · cierre.
 - **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).
 
 ## Ficha
@@ -118,6 +118,8 @@ Puntaje del colegio = suma de niveles de sus reportes. Tablero: líneas por tipo
 
 Círculo = colegio (color del tipo abierto más grave). Gota = reporte (color del tipo). Modos: Pines · Calor sede (cantidad) · Calor riesgo (nivel). Requiere `GOOGLE_MAPS_API_KEY`.
 
+Capa y filtro: **22 comunas urbanas de Cali** (IDESC / `dapm:pdt_dpa_comunas`). Clic en el polígono o chip; combo **Comuna Cali** recorta tablero, ranking y eventos. Colegios fuera del perímetro: **Fuera de Cali**. No cubren el Valle. GeoJSON: `/geo/cali-comunas.geojson`.
+
 ## Módulo
 
 En la ficha del cliente, checkbox **Observatorio**. Si no está chuleado, no aparece en el sidebar del cliente. Empresa siempre ve `/company/observatory`.
@@ -130,9 +132,9 @@ Texto literal: fuentes diversas + origen; **no** nombra Policía ni Línea 123. 
 |--------|--------|
 | Maestro, mapa, pines, calor, intake, folio, bitácora, tablero, API | Hecho |
 | Priorización configurable | Hecho: catálogo tipo + nivel + color |
-| Filtros/capas territoriales | Pendiente: comunas urbanas Cali (IDESC / [datos.cali.gov.co](https://datos.cali.gov.co/dataset/servicio-wms-comunas-de-cali)). No cubren el Valle |
+| Filtros/capas territoriales | Hecho: comunas urbanas Cali (IDESC). No cubren el Valle |
 | Salida de resultados (export) | Pendiente (PPTX) |
 
 ## Siguiente
 
-Capas y filtro por comuna (Cali). Luego export PPTX. Sin conector 123.
+Export PPTX del tablero. Sin conector 123.

@@ -576,7 +576,57 @@ final class ObservatoryReportFlowTest extends TestCase
             ->get(route('client.observatory.events.index'))
             ->assertOk()
             ->assertSee('IE Santa Librada', false)
-            ->assertDontSee('IE Republica del Peru', false);
+            ->assertDontSee('IE Republica del Peru', false)
+            ->assertSee('IDESC Cali', false);
+    }
+
+    public function test_board_filters_colegios_by_cali_comuna(): void
+    {
+        config(['google-maps.api_key' => 'test-maps-key']);
+        [$client, $colegio, , $other] = $this->sites();
+        $colegio->update(['latitude' => '3.4372200', 'longitude' => '-76.5225000']);
+        $other->update(['latitude' => '4.6097100', 'longitude' => '-74.0817500']);
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'hurto',
+            'body' => 'Hurto en el colegio de la comuna nueve.',
+            'is_anonymous' => '1',
+            'reporter_role' => 'padre',
+        ])->assertRedirect();
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $other->id,
+            'kind' => 'rina',
+            'body' => 'Riña en un colegio fuera del perímetro urbano de Cali.',
+            'is_anonymous' => '1',
+            'reporter_role' => 'padre',
+        ])->assertRedirect();
+
+        $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $this->actingAs($company)
+            ->get(route('company.observatory.events.index', ['comuna' => '09']))
+            ->assertOk()
+            ->assertSee('IE Santa Librada', false)
+            ->assertDontSee('IE Republica del Peru', false)
+            ->assertSee('Comuna 09', false);
+
+        $this->actingAs($company)
+            ->get(route('company.observatory.events.index', ['comuna' => 'fuera', 'vista' => 'eventos']))
+            ->assertOk()
+            ->assertSee('IE Republica del Peru', false)
+            ->assertDontSee('IE Santa Librada', false);
+    }
+
+    public function test_cali_comunas_geojson_is_public(): void
+    {
+        $response = $this->get(route('geo.cali-comunas'));
+        $response->assertOk();
+        $file = $response->baseResponse->getFile();
+        $payload = json_decode((string) file_get_contents($file->getPathname()), true);
+
+        $this->assertSame('FeatureCollection', $payload['type'] ?? null);
+        $this->assertCount(22, $payload['features'] ?? []);
     }
 
     public function test_empty_board_still_renders_charts(): void

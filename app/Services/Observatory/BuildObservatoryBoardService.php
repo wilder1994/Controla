@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
 use App\Models\ObservatoryReportType;
+use App\Support\Geo\CaliComunaLayer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -104,13 +105,14 @@ final class BuildObservatoryBoardService
     }
 
     /**
-     * @return list<array{name: string, client: ?string, count: int, score: int}>
+     * @return list<array{name: string, client: ?string, count: int, score: int, comuna: string, comuna_name: ?string}>
      */
     private function ranking(Builder $query): array
     {
         $events = (clone $query)->with(['installation.client', 'reports.reportType'])->get();
 
-        $grouped = $events->groupBy('installation_id')->map(function (Collection $rows): array {
+        $layer = app(CaliComunaLayer::class);
+        $grouped = $events->groupBy('installation_id')->map(function (Collection $rows) use ($layer): array {
             $site = $rows->first()?->installation;
             $score = 0;
             foreach ($rows as $event) {
@@ -118,12 +120,17 @@ final class BuildObservatoryBoardService
                     $score += $report->typeLevel();
                 }
             }
+            $comuna = $site?->latitude !== null && $site?->longitude !== null
+                ? $layer->locate((float) $site->latitude, (float) $site->longitude)
+                : null;
 
             return [
                 'name' => $site?->name ?? '—',
                 'client' => $site?->client?->name,
                 'count' => $rows->count(),
                 'score' => $score,
+                'comuna' => $comuna['code'] ?? '',
+                'comuna_name' => $comuna['name'] ?? null,
             ];
         })->sortByDesc('score')->take(8)->values();
 

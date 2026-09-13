@@ -13,8 +13,11 @@
             x-data="observatoryMap(@js([
                 'sites' => $sites,
                 'points' => $points,
-                'center' => $maps['center'] ?? ['lat' => 4.5709, 'lng' => -74.2973],
-                'zoom' => $maps['zoom'] ?? 6,
+                'center' => $maps['center'] ?? ['lat' => 3.4372, 'lng' => -76.5225],
+                'zoom' => $maps['zoom'] ?? 12,
+                'comuna' => $map['comuna'] ?? '',
+                'comunas' => $types === [] ? [] : ($map['comunas'] ?? []),
+                'layerUrl' => $map['layer_url'] ?? null,
             ]))"
             class="relative flex-1 min-h-80 flex flex-col"
         >
@@ -50,6 +53,21 @@
                             {{ $type['name'] }}
                         </button>
                     @endforeach
+                </div>
+            @endif
+            @if (($map['comunas'] ?? []) !== [])
+                <div class="shrink-0 flex flex-wrap gap-1 px-2 py-1.5 border-b border-slate-800">
+                    @foreach ($map['comunas'] as $row)
+                        <a href="{{ request()->fullUrlWithQuery(['comuna' => (($map['comuna'] ?? '') === $row['code']) ? null : $row['code']]) }}"
+                           class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] {{ ($map['comuna'] ?? '') === $row['code'] ? 'border-white text-white' : 'border-slate-700 text-slate-300' }}">
+                            {{ $row['code'] }}
+                        </a>
+                    @endforeach
+                    <a href="{{ request()->fullUrlWithQuery(['comuna' => (($map['comuna'] ?? '') === 'fuera') ? null : 'fuera']) }}"
+                       class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] {{ ($map['comuna'] ?? '') === 'fuera' ? 'border-white text-white' : 'border-slate-700 text-slate-300' }}">
+                        Fuera
+                    </a>
+                    <span class="self-center text-[10px] text-slate-600">IDESC Cali</span>
                 </div>
             @endif
             <div x-ref="map" class="{{ $mapCanvasClass }} w-full flex-1"></div>

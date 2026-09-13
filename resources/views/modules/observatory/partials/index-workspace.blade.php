@@ -8,6 +8,8 @@
     $grain = in_array($grain ?? 'day', ['day', 'month', 'year'], true) ? ($grain ?? 'day') : 'day';
     $filterClientId = $filterClientId ?? '';
     $filterClients = $filterClients ?? collect();
+    $comuna = $comuna ?? '';
+    $comunas = $comunas ?? ($map['comunas'] ?? []);
     $board = $board ?? [
         'total' => 0, 'nuevo' => 0, 'en_atencion' => 0, 'cerrado' => 0, 'closed_rate' => 0,
         'top' => [], 'trend' => ['labels' => ['—'], 'series' => []],
@@ -101,6 +103,16 @@
                    class="h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
         </div>
         <div>
+            <label for="comuna" class="block text-[11px] text-slate-500 mb-1">Comuna Cali</label>
+            <select id="comuna" name="comuna" class="h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                <option value="">Todas</option>
+                @foreach ($comunas as $row)
+                    <option value="{{ $row['code'] }}" @selected($comuna === $row['code'])>{{ $row['name'] }}</option>
+                @endforeach
+                <option value="fuera" @selected($comuna === 'fuera')>Fuera de Cali</option>
+            </select>
+        </div>
+        <div>
             <label for="grain" class="block text-[11px] text-slate-500 mb-1">Líneas</label>
             <select id="grain" name="grain" class="h-9 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                 <option value="day" @selected($grain === 'day')>Por día</option>
@@ -157,6 +169,9 @@
                                 <p class="text-slate-200 truncate text-[13px]">{{ $row['name'] }}</p>
                                 @if ($showClientColumn && filled($row['client']))
                                     <p class="text-[10px] text-slate-500 truncate">{{ $row['client'] }}</p>
+                                @endif
+                                @if (filled($row['comuna_name'] ?? null))
+                                    <p class="text-[10px] text-slate-500 truncate">{{ $row['comuna_name'] }}</p>
                                 @endif
                             </div>
                             <p class="font-mono text-[11px] text-slate-300 shrink-0">{{ $row['score'] ?? $row['count'] }} <span class="text-slate-600">{{ $row['count'] }}</span></p>

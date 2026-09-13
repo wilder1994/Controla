@@ -10,6 +10,7 @@ use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
 use App\Models\ObservatoryReportType;
+use App\Support\Geo\CaliComunaLayer;
 
 final class BuildObservatoryMapService
 {
@@ -17,8 +18,9 @@ final class BuildObservatoryMapService
      * @param  list<int>|null  $installationIds
      * @return array<string, mixed>
      */
-    public function execute(?int $companyId, ?int $clientId, ?array $installationIds, string $eventShowRoute): array
+    public function execute(?int $companyId, ?int $clientId, ?array $installationIds, string $eventShowRoute, string $comuna = ''): array
     {
+        $layer = app(CaliComunaLayer::class);
         $sites = Installation::query()
             ->withoutGlobalScopes()
             ->with(['client:id,name,security_company_id', 'observatoryEvents.reports.reportType'])
@@ -57,7 +59,10 @@ final class BuildObservatoryMapService
         return [
             'google_maps' => $this->googleMaps(),
             'types' => $types,
-            'sites' => $sites->map(function (Installation $site) use ($eventShowRoute): array {
+            'comunas' => $layer->catalog(),
+            'comuna' => $layer->normalize($comuna),
+            'layer_url' => route('geo.cali-comunas'),
+            'sites' => $sites->map(function (Installation $site) use ($eventShowRoute, $layer): array {
                 $events = $site->observatoryEvents;
                 $open = $events->filter(
                     fn (ObservatoryEvent $event): bool => $event->status !== ObservatoryEventStatus::Cerrado,
@@ -66,6 +71,7 @@ final class BuildObservatoryMapService
                 $worst = $this->worstType($openReports);
                 $status = $this->worstStatus($events);
                 $focus = $open->sortByDesc('id')->first() ?? $events->sortByDesc('id')->first();
+                $comunaHit = $layer->locate((float) $site->latitude, (float) $site->longitude);
 
                 return [
                     'id' => (int) $site->id,
@@ -74,6 +80,8 @@ final class BuildObservatoryMapService
                     'dane_code' => $site->dane_code,
                     'lat' => (float) $site->latitude,
                     'lng' => (float) $site->longitude,
+                    'comuna' => $comunaHit['code'] ?? '',
+                    'comuna_name' => $comunaHit['name'] ?? 'Sin comuna Cali',
                     'open_count' => $open->count(),
                     'status' => $status?->value,
                     'status_label' => $status?->label() ?? 'Sin reportes',
@@ -89,18 +97,21 @@ final class BuildObservatoryMapService
                     'summary' => $this->typeSummary($openReports),
                 ];
             })->values()->all(),
-            'points' => $sites->flatMap(function (Installation $site) use ($eventShowRoute) {
-                return $site->observatoryEvents->flatMap(function (ObservatoryEvent $event) use ($site, $eventShowRoute) {
-                    return $event->reports->map(function (ObservatoryReport $report) use ($site, $event, $eventShowRoute): ?array {
+            'points' => $sites->flatMap(function (Installation $site) use ($eventShowRoute, $layer) {
+                return $site->observatoryEvents->flatMap(function (ObservatoryEvent $event) use ($site, $eventShowRoute, $layer) {
+                    return $event->reports->map(function (ObservatoryReport $report) use ($site, $event, $eventShowRoute, $layer): ?array {
                         $lat = $report->latitude ?? $site->latitude;
                         $lng = $report->longitude ?? $site->longitude;
                         if ($lat === null || $lng === null) {
                             return null;
                         }
+                        $comunaHit = $layer->locate((float) $lat, (float) $lng);
 
                         return [
                             'lat' => (float) $lat,
                             'lng' => (float) $lng,
+                            'comuna' => $comunaHit['code'] ?? '',
+                            'comuna_name' => $comunaHit['name'] ?? 'Sin comuna Cali',
                             'open' => $event->status !== ObservatoryEventStatus::Cerrado,
                             'status' => $event->status->value,
                             'status_label' => $event->statusLabel(),

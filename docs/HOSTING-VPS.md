@@ -18,7 +18,7 @@ Flujo: push local a `origin` (`wilder1994/Controla`, `main`). El VPS solo hace `
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
 
-Observatorio: migrate `2026_09_13_120000` (tipos de hecho + `panel_modules.observatory` en clientes ya creados). Tras migrate: `php artisan db:seed --class=RoleAndPermissionSeeder` (añade `observatory.events.update` al admin del cliente). Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`.
+Observatorio: migrate `2026_09_13_120000` (tipos de hecho + `panel_modules.observatory` en clientes ya creados). Tras migrate: `php artisan db:seed --class=RoleAndPermissionSeeder` (añade `observatory.events.update` al admin del cliente). Intake `/o/{slug}`. API `/api/observatory/*` + docs `/docs/observatory`. Comunas Cali: `resources/data/cali-comunas.geojson` (IDESC, sin migrate).
 
 ```bash
 SITE=/home/wcodex-controla/htdocs/controla.wcodex.cloud

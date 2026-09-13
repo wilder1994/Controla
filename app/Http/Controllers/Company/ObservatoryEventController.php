@@ -11,6 +11,7 @@ use App\Models\ObservatoryEvent;
 use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
 use App\Services\Observatory\EnsureObservatoryReportTypesService;
+use App\Support\Geo\CaliComunaLayer;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -26,8 +27,14 @@ final class ObservatoryEventController extends Controller
         $filters = $this->filters($request, $companyId);
         $board = app(BuildObservatoryBoardService::class);
         $clientId = $filters['client_id'];
+        $siteIds = app(CaliComunaLayer::class)->scopeInstallationIds(
+            $filters['comuna'],
+            $companyId,
+            $clientId,
+            null,
+        );
 
-        $events = $board->scoped($companyId, $clientId, null, $filters['from'], $filters['to'])
+        $events = $board->scoped($companyId, $clientId, $siteIds, $filters['from'], $filters['to'])
             ->with(['client', 'installation', 'latestReport.reportType'])
             ->when($filters['search'] !== '', function ($q) use ($filters) {
                 $q->where(function ($inner) use ($filters) {
@@ -52,15 +59,18 @@ final class ObservatoryEventController extends Controller
             'status' => $filters['status'],
             'vista' => $filters['vista'],
             'grain' => $filters['grain'],
+            'comuna' => $filters['comuna'],
+            'comunas' => app(CaliComunaLayer::class)->catalog(),
             'filterClientId' => $clientId,
             'filterClients' => $clients,
             'shareClients' => $clients,
-            'board' => $board->execute($companyId, $clientId, null, $filters['from'], $filters['to'], $filters['grain']),
+            'board' => $board->execute($companyId, $clientId, $siteIds, $filters['from'], $filters['to'], $filters['grain']),
             'map' => app(BuildObservatoryMapService::class)->execute(
                 $companyId,
                 $clientId,
-                null,
+                $siteIds,
                 'company.observatory.events.show',
+                $filters['comuna'],
             ),
         ]);
     }
@@ -107,7 +117,7 @@ final class ObservatoryEventController extends Controller
             ->get(['id', 'name', 'slug']);
     }
 
-    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string, grain: string, client_id: ?int} */
+    /** @return array{search: string, from: ?string, to: ?string, status: string, vista: string, grain: string, client_id: ?int, comuna: string} */
     private function filters(Request $request, int $companyId): array
     {
         $validated = $request->validate([
@@ -117,6 +127,7 @@ final class ObservatoryEventController extends Controller
             'status' => ['nullable', 'string', Rule::enum(ObservatoryEventStatus::class)],
             'vista' => ['nullable', 'string', Rule::in(['tablero', 'eventos'])],
             'grain' => ['nullable', 'string', Rule::in(['day', 'month', 'year'])],
+            'comuna' => ['nullable', 'string', 'max:12'],
             'client_id' => [
                 'nullable',
                 'integer',
@@ -133,6 +144,7 @@ final class ObservatoryEventController extends Controller
             'status' => (string) ($validated['status'] ?? ''),
             'vista' => (string) ($validated['vista'] ?? 'tablero'),
             'grain' => (string) ($validated['grain'] ?? 'day'),
+            'comuna' => app(CaliComunaLayer::class)->normalize($validated['comuna'] ?? null),
             'client_id' => $clientId > 0 ? $clientId : null,
         ];
     }

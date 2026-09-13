@@ -3,6 +3,7 @@ export function observatoryMap(cfg) {
         mode: 'pins',
         mapType: 'satellite',
         typeFilter: '',
+        comuna: cfg.comuna || '',
         map: null,
         heatmap: null,
         markers: [],
@@ -172,6 +173,59 @@ export function observatoryMap(cfg) {
             }
 
             this.applyMode();
+            this.loadComunas();
+        },
+
+        loadComunas() {
+            if (!this.map || !cfg.layerUrl) {
+                return;
+            }
+            fetch(cfg.layerUrl)
+                .then((res) => (res.ok ? res.json() : null))
+                .then((geo) => {
+                    if (!geo || !this.map?.data) {
+                        return;
+                    }
+                    this.map.data.addGeoJson(geo);
+                    this.map.data.setStyle((feature) => {
+                        const selected = feature.getProperty('code') === this.comuna;
+                        return {
+                            strokeColor: selected ? '#f8fafc' : '#94a3b8',
+                            strokeOpacity: 0.9,
+                            strokeWeight: selected ? 2.2 : 1,
+                            fillColor: '#38bdf8',
+                            fillOpacity: selected ? 0.28 : 0.07,
+                            clickable: true,
+                        };
+                    });
+                    this.map.data.addListener('click', (event) => {
+                        const code = event.feature?.getProperty('code');
+                        if (!code) {
+                            return;
+                        }
+                        this.goComuna(code);
+                    });
+                    if ((cfg.sites || []).length === 0 && (cfg.points || []).length === 0) {
+                        const bounds = new google.maps.LatLngBounds();
+                        this.map.data.forEach((feature) => {
+                            feature.getGeometry()?.forEachLatLng((ll) => bounds.extend(ll));
+                        });
+                        if (!bounds.isEmpty()) {
+                            this.map.fitBounds(bounds, 24);
+                        }
+                    }
+                })
+                .catch(() => {});
+        },
+
+        goComuna(code) {
+            const url = new URL(window.location.href);
+            if (this.comuna === code) {
+                url.searchParams.delete('comuna');
+            } else {
+                url.searchParams.set('comuna', code);
+            }
+            window.location.assign(url.toString());
         },
 
         setMode(mode) {

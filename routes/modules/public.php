@@ -7,9 +7,11 @@ use App\Http\Controllers\Public\ObservatoryIntakeController;
 use App\Http\Controllers\Public\PlansController;
 use App\Http\Controllers\Public\SignupCheckoutController;
 use App\Http\Controllers\Public\SignupController;
+use App\Support\Geo\CaliComunaLayer;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/docs/observatory', [ObservatoryApiDocsController::class, 'page'])->name('observatory.docs');
+Route::get('/geo/cali-comunas.geojson', fn () => app(CaliComunaLayer::class)->download())->name('geo.cali-comunas');
 
 Route::prefix('o/{slug}')->name('observatory.public.')->group(function () {
     Route::get('/', [ObservatoryIntakeController::class, 'show'])->name('show');
