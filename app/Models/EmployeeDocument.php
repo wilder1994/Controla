@@ -11,6 +11,7 @@ use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Enums\OtherDocumentType;
+use App\Enums\ParafiscalDocumentType;
 use App\Support\Personnel\IndexedFolder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -60,7 +61,7 @@ final class EmployeeDocument extends Model
         return $this->belongsTo(Employee::class);
     }
 
-    public function typed(): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType|null
+    public function typed(): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType|ParafiscalDocumentType|null
     {
         if (! is_string($this->document_type) || $this->document_type === '' || $this->folder === null) {
             return null;

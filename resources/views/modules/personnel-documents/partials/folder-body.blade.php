@@ -50,6 +50,7 @@
         @php
             $isCourse = $block['folder'] === \App\Enums\DocumentFolder::Cursos;
             $isOther = $block['folder'] === \App\Enums\DocumentFolder::Otros;
+            $isParafiscal = $block['folder'] === \App\Enums\DocumentFolder::Parafiscales;
             $files = array_values(array_filter($block['rows'], fn ($row) => $row['status'] === 'loaded' && $row['document']));
             $pending = array_values(array_filter(
                 $block['rows'],
@@ -70,18 +71,22 @@
                     @forelse ($files as $row)
                         @php $doc = $row['document']; @endphp
                         <div class="folder-doc-row" data-doc-search="{{ mb_strtolower($doc->label().' '.$row['type']->label()) }}">
-                            <span class="drop-icon drop-icon-pdf" aria-hidden="true">PDF</span>
+                            <span class="drop-icon {{ $isParafiscal ? 'drop-icon-xlsx' : 'drop-icon-pdf' }}" aria-hidden="true">{{ $isParafiscal ? 'XLS' : 'PDF' }}</span>
                             <div class="min-w-0">
                                 <p class="text-white">{{ $doc->label() }}</p>
                                 @if ($isCourse)
                                     <p class="text-xs text-slate-400">{{ $doc->provider ?: '—' }} · {{ $doc->taken_on?->format('d/m/Y') ?: '—' }}</p>
+                                @elseif ($isParafiscal)
+                                    <p class="text-xs text-slate-400">{{ $doc->taken_on?->format('m/Y') ?: '—' }}</p>
                                 @endif
                             </div>
                             <div class="folder-doc-actions">
-                                <button class="folder-link" type="button" data-preview="{{ route($previewRoute, $doc) }}" data-name="{{ $doc->label() }}">Ver</button>
+                                @unless ($isParafiscal)
+                                    <button class="folder-link" type="button" data-preview="{{ route($previewRoute, $doc) }}" data-name="{{ $doc->label() }}">Ver</button>
+                                @endunless
                                 <a class="folder-link" href="{{ route($downloadRoute, $doc) }}">Descargar</a>
                                 @if ($canUpload && $doc->canDelete())
-                                    <form method="post" action="{{ route($destroyRoute, $doc) }}" onsubmit="return confirm('¿Eliminar este PDF? Solo puede hacerlo durante 12 horas.');">
+                                    <form method="post" action="{{ route($destroyRoute, $doc) }}" onsubmit="return confirm({{ $isParafiscal ? '\'¿Eliminar este archivo? Solo puede hacerlo durante 12 horas.\'' : '\'¿Eliminar este PDF? Solo puede hacerlo durante 12 horas.\'' }});">
                                         @csrf
                                         @method('DELETE')
                                         <button class="folder-link is-danger" type="submit">Eliminar</button>
@@ -90,10 +95,10 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-400" data-empty-files>No hay PDF en esta carpeta.</p>
+                        <p class="text-sm text-slate-400" data-empty-files>{{ $isParafiscal ? 'No hay planillas en esta carpeta.' : 'No hay PDF en esta carpeta.' }}</p>
                     @endforelse
                 </div>
-                @if ($canUpload && ! $isOther && count($pending))
+                @if ($canUpload && ! $isOther && ! $isParafiscal && count($pending))
                     <p class="text-xs uppercase tracking-wider text-slate-500 mt-4 mb-2">Pendientes</p>
                     @foreach ($pending as $row)
                         <div class="folder-doc-row is-pending" data-doc-search="{{ mb_strtolower($row['type']->label()) }}">

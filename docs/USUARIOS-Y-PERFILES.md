@@ -180,7 +180,7 @@ Reglas:
 - Clientes Ver/Gestionar a nivel empresa abre `/company/clients` (listado y ficha). Gestionar también crea/edita. Sin esa rama el menú se veía y el listado respondía 403.
 - Observatorio o Supervisión a nivel empresa abre **todos** los clientes e instalaciones de la empresa (detalle de evento incluido).
 - Grant a un cliente abre las sedes de ese cliente; grant a una sede solo esa.
-- Empleados: `company.employees.view` / `manage` (`EmployeePolicy`). Documentos: `company.documents.view` / `manage` (subir/indexar = manage).
+- Empleados: `company.employees.view` / `manage` (`EmployeePolicy`). Documentos: `company.documents.view` / `manage` (indexar PDF y carga masiva de planilla parafiscal = manage).
 - Usuarios → Gestionar no incluye promover a admin empresa.
 
 ---
@@ -216,7 +216,7 @@ Reglas:
 | `platform.users.view` / `platform.users.manage` | Listado y CRUD global |
 | `company.users.view` / `company.users.assign` | Ver / crear-editar usuarios en panel empresa |
 | `company.employees.view` / `company.employees.manage` | Listar / mutar fichas de empleados |
-| `company.documents.view` / `company.documents.manage` | Ver carpetas / indexar y subir lotes |
+| `company.documents.view` / `company.documents.manage` | Ver carpetas / indexar lotes PDF y carga masiva de planilla parafiscal |
 | `company.billing.manage` | Facturación (solo admin empresa) |
 | `company.profile.manage` | **Mis datos** (perfil legal/geo) |
 | `company.downloads.view` | Descargas PWA/APK |

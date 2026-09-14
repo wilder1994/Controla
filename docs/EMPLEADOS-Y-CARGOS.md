@@ -120,7 +120,9 @@ No está en el Excel. En la ficha: `is_active = false` + `ceased_at`. Si tenía 
 
 ## Carpetas del personal
 
-`/company/documents`: mismas 6 carpetas de SJ-SIG (Historia laboral, Contratación, Certificados, Cursos, Afiliaciones, Otros). Carga por lote PDF + indexador (FPDI + pdf.js). Permiso `company.settings.manage`. Distinto de la Normoteca (`/admin/documents`).
+`/company/documents`: 7 carpetas (Historia laboral, Contratación, Certificados, Cursos, Afiliaciones, **Parafiscales**, Otros). Carga por lote PDF + indexador (FPDI + pdf.js), salvo Parafiscales. Distinto de la Normoteca (`/admin/documents`). Permiso ver: `company.documents.view`; indexar/subir: `company.documents.manage` (o `company.settings.manage`).
+
+**Parafiscales:** no van en Normoteca. En el listado (`/company/documents`), **Carga masiva planilla** (junto a Buscar): Excel PILA mensual. Preview: cédulas en Empleados vs avisos (cédula ausente: no se crea ficha, no bloquea). Aceptar guarda un **xlsx recortado** por colaborador (encabezado + sus filas; BJ15 = total de ese trabajador). Mismo periodo reemplaza el archivo; periodo nuevo suma otro. No hay PDF ni se conserva la planilla completa. Cliente con `show_personnel_folders` ve el recorte (descargar, no visor PDF).
 
 Miniaturas del lote: el worker de pdf.js es un `.mjs`. CloudPanel lo sirve como `application/octet-stream` y Chrome lo bloquea. El indexador lo vuelve a servir como blob `application/javascript`. El PDF se pide de una vez (`disableRange`), no por rangos. **Ampliar** sigue siendo el iframe nativo. El formulario (izq.) usa `minmax(24rem, 32rem)`; las miniaturas van a ~220px (`scale` 0.48).
 

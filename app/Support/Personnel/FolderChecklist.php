@@ -10,26 +10,29 @@ use App\Enums\DocumentFolder;
 use App\Enums\DocumentRequirement;
 use App\Enums\LaborHistoryDocumentType;
 use App\Enums\OtherDocumentType;
+use App\Enums\ParafiscalDocumentType;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
 
 final class FolderChecklist
 {
-    /** @return list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType, document: ?EmployeeDocument, status: string}> */
+    /** @return list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType|ParafiscalDocumentType, document: ?EmployeeDocument, status: string}> */
     public static function for(Employee $employee, DocumentFolder $folder): array
     {
         $files = $employee->documents
             ->filter(fn (EmployeeDocument $doc) => $doc->folder === $folder)
             ->values();
 
-        if ($folder === DocumentFolder::Otros) {
+        if ($folder === DocumentFolder::Otros || $folder === DocumentFolder::Parafiscales) {
             $rows = [];
             foreach ($files as $file) {
                 if (! $file->hasFile()) {
                     continue;
                 }
                 $rows[] = [
-                    'type' => OtherDocumentType::Otro,
+                    'type' => $folder === DocumentFolder::Parafiscales
+                        ? ParafiscalDocumentType::Planilla
+                        : OtherDocumentType::Otro,
                     'document' => $file,
                     'status' => 'loaded',
                 ];
@@ -102,6 +105,17 @@ final class FolderChecklist
             ];
         }
 
+        if ($folder === DocumentFolder::Parafiscales) {
+            $loaded = count(array_filter($rows, fn (array $row) => $row['status'] === 'loaded'));
+
+            return [
+                'total' => $loaded,
+                'loaded' => $loaded,
+                'required' => 0,
+                'required_loaded' => 0,
+            ];
+        }
+
         $catalog = array_filter($rows, fn (array $row) => ! ($row['type'] instanceof CourseDocumentType && $row['type']->isRepeatable()));
         $loaded = count(array_filter($rows, fn (array $row) => $row['status'] === 'loaded'));
         $required = count(array_filter($catalog, fn (array $row) => $row['type']->requirement() === DocumentRequirement::Required));
@@ -129,7 +143,7 @@ final class FolderChecklist
      */
     private static function legacyMatch(
         DocumentFolder $folder,
-        LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType $type,
+        LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType|ParafiscalDocumentType $type,
         $files,
     ): ?EmployeeDocument {
         if ($folder === DocumentFolder::HojaVida && $type === LaborHistoryDocumentType::HojaVida) {

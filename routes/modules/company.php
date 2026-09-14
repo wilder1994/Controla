@@ -123,6 +123,10 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         });
 
         Route::middleware('permission:company.documents.manage|company.settings.manage')->group(function () {
+            Route::get('/documents/parafiscales/preview', [PersonnelDocumentController::class, 'showParafiscalPreview'])->name('personnel-documents.parafiscales.preview');
+            Route::post('/documents/parafiscales/preview', [PersonnelDocumentController::class, 'storeParafiscalPreview'])->name('personnel-documents.parafiscales.preview.store');
+            Route::post('/documents/parafiscales/commit', [PersonnelDocumentController::class, 'commitParafiscal'])->name('personnel-documents.parafiscales.commit');
+            Route::post('/documents/parafiscales/cancel', [PersonnelDocumentController::class, 'cancelParafiscal'])->name('personnel-documents.parafiscales.cancel');
             Route::delete('/documents/file/{document}', [PersonnelDocumentController::class, 'destroy'])->name('personnel-documents.destroy');
             Route::post('/documents/{employee}/batches', [PersonnelDocumentController::class, 'storeBatch'])->name('personnel-documents.batch.create');
             Route::post('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'storeBatchIndex'])->name('personnel-documents.batch.store');

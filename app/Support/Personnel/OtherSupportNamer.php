@@ -65,7 +65,7 @@ final class OtherSupportNamer
     {
         $rows = [];
         foreach (DocumentFolder::cases() as $folder) {
-            if ($folder === DocumentFolder::Otros) {
+            if ($folder === DocumentFolder::Otros || $folder === DocumentFolder::Parafiscales) {
                 continue;
             }
 

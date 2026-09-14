@@ -8,7 +8,7 @@
         <div>
             <p class="text-xs uppercase tracking-wider text-slate-500">Personal</p>
             <h2 class="text-2xl font-semibold text-white">Carpetas de empleados</h2>
-            <p class="text-sm text-slate-400 mt-1">Indexador de HV, contratación, certificados, cursos, afiliaciones y otros. No es la Normoteca de plataforma.</p>
+            <p class="text-sm text-slate-400 mt-1">HV, contratación, certificados, cursos, afiliaciones, parafiscales y otros. No es la Normoteca de plataforma.</p>
         </div>
 
         <form method="get" class="flex flex-wrap items-end gap-2">
@@ -16,6 +16,9 @@
                 <x-ui.input name="q" :value="$q" placeholder="Nombre o cédula" />
             </div>
             <x-ui.button type="submit" variant="secondary" size="sm">Buscar</x-ui.button>
+            @if ($canUpload ?? false)
+                <x-ui.button type="button" size="sm" onclick="window.dispatchEvent(new CustomEvent('open-parafiscal-import'))">Carga masiva planilla</x-ui.button>
+            @endif
         </form>
 
         @if (! $hasPeople && ! $searching)

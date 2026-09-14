@@ -9,6 +9,7 @@ use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Enums\OtherDocumentType;
+use App\Enums\ParafiscalDocumentType;
 use InvalidArgumentException;
 
 final class IndexedFolder
@@ -18,7 +19,7 @@ final class IndexedFolder
         return $folder->isIndexed();
     }
 
-    /** @return list<LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType> */
+    /** @return list<LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType|ParafiscalDocumentType> */
     public static function types(DocumentFolder $folder): array
     {
         return match ($folder) {
@@ -27,11 +28,12 @@ final class IndexedFolder
             DocumentFolder::Afiliaciones => AffiliationDocumentType::cases(),
             DocumentFolder::Certificados => CertificateDocumentType::cases(),
             DocumentFolder::Cursos => CourseDocumentType::cases(),
+            DocumentFolder::Parafiscales => ParafiscalDocumentType::cases(),
             DocumentFolder::Otros => OtherDocumentType::cases(),
         };
     }
 
-    public static function resolve(DocumentFolder $folder, string $value): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType
+    public static function resolve(DocumentFolder $folder, string $value): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType|ParafiscalDocumentType
     {
         $type = match ($folder) {
             DocumentFolder::HojaVida => LaborHistoryDocumentType::tryFrom($value),
@@ -39,6 +41,7 @@ final class IndexedFolder
             DocumentFolder::Afiliaciones => AffiliationDocumentType::tryFrom($value),
             DocumentFolder::Certificados => CertificateDocumentType::tryFrom($value),
             DocumentFolder::Cursos => CourseDocumentType::tryFrom($value),
+            DocumentFolder::Parafiscales => ParafiscalDocumentType::tryFrom($value),
             DocumentFolder::Otros => OtherDocumentType::tryFrom($value),
         };
 

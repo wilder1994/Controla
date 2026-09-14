@@ -14,7 +14,7 @@ final class DeleteEmployeeDocumentService
     public function execute(EmployeeDocument $document): void
     {
         if (! $document->hasFile()) {
-            throw new RuntimeException('Este registro no tiene un PDF para eliminar.');
+            throw new RuntimeException('Este registro no tiene un archivo para eliminar.');
         }
 
         if (! $document->canDelete()) {

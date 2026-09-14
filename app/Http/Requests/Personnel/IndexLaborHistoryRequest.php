@@ -66,6 +66,12 @@ final class IndexLaborHistoryRequest extends FormRequest
                     }
                 }
 
+                if ($folder === DocumentFolder::Parafiscales) {
+                    $validator->errors()->add('slices.'.$index.'.folder', 'Las planillas se cargan con Carga masiva planilla, no desde el PDF.');
+
+                    continue;
+                }
+
                 if ($folder === DocumentFolder::Cursos) {
                     if (blank($slice['taken_on'] ?? null)) {
                         $validator->errors()->add('slices.'.$index.'.taken_on', 'La fecha del curso es obligatoria.');

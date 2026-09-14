@@ -6,6 +6,7 @@ namespace Tests\Feature\Company;
 
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
+use App\Enums\ParafiscalDocumentType;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
@@ -15,6 +16,9 @@ use App\Models\User;
 use App\Support\Files\SimplePdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 final class PersonnelDocumentTest extends TestCase
@@ -31,6 +35,7 @@ final class PersonnelDocumentTest extends TestCase
             ->get(route('company.personnel-documents.index'))
             ->assertOk()
             ->assertSee('Carpetas de empleados')
+            ->assertSee('Carga masiva planilla')
             ->assertSee($employee->document_number)
             ->assertSee('Ver carpeta');
     }
@@ -147,6 +152,123 @@ final class PersonnelDocumentTest extends TestCase
             ->withSession(['tenancy.active_client_id' => $client->id])
             ->get(route('client.personnel-documents.index'))
             ->assertForbidden();
+    }
+
+    public function test_company_admin_can_commit_parafiscal_planilla_and_replace_same_period(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->companyAdmin();
+        $employee = $this->pilotVigilante();
+        $missing = '999888777';
+
+        $this->actingAs($admin)
+            ->get(route('company.personnel-documents.folder', $employee))
+            ->assertOk()
+            ->assertSee('Parafiscales');
+
+        $first = $this->planillaUpload('pila-agosto.xlsx', [
+            ['document' => $employee->document_number, 'name' => 'PILOT UNO', 'totals' => [180400, 100]],
+            ['document' => $missing, 'name' => 'AUSENTE', 'totals' => [50]],
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('company.personnel-documents.parafiscales.preview.store'), ['file' => $first])
+            ->assertRedirect(route('company.personnel-documents.parafiscales.preview'));
+
+        $this->actingAs($admin)
+            ->get(route('company.personnel-documents.parafiscales.preview'))
+            ->assertOk()
+            ->assertSee($employee->document_number)
+            ->assertSee($missing)
+            ->assertSee('Aceptar y cargar');
+
+        $this->actingAs($admin)
+            ->post(route('company.personnel-documents.parafiscales.commit'))
+            ->assertRedirect(route('company.personnel-documents.index'));
+
+        $this->assertSame(0, Employee::query()->where('document_number', $missing)->count());
+
+        $docs = EmployeeDocument::query()
+            ->where('employee_id', $employee->id)
+            ->where('folder', DocumentFolder::Parafiscales)
+            ->where('document_type', ParafiscalDocumentType::Planilla->value)
+            ->get();
+        $this->assertCount(1, $docs);
+        $document = $docs->first();
+        $this->assertSame('2026-08-01', $document->taken_on?->format('Y-m-d'));
+        $absolute = storage_path('app/'.$document->disk_path);
+        $this->assertTrue(is_file($absolute));
+        $this->assertStringNotContainsString($missing, (string) file_get_contents($absolute));
+
+        $sheet = IOFactory::load($absolute)->getActiveSheet();
+        $this->assertSame(180500.0, (float) $sheet->getCell('BJ15')->getCalculatedValue());
+        $this->assertSame((float) $employee->document_number, (float) $sheet->getCell('E21')->getCalculatedValue());
+        $this->assertSame((float) $employee->document_number, (float) $sheet->getCell('E22')->getCalculatedValue());
+        $this->assertSame('', trim((string) $sheet->getCell('E23')->getFormattedValue()));
+
+        $second = $this->planillaUpload('pila-agosto-2.xlsx', [
+            ['document' => $employee->document_number, 'name' => 'PILOT UNO', 'totals' => [200000]],
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('company.personnel-documents.parafiscales.preview.store'), ['file' => $second])
+            ->assertRedirect();
+        $this->actingAs($admin)
+            ->post(route('company.personnel-documents.parafiscales.commit'))
+            ->assertRedirect(route('company.personnel-documents.index'));
+
+        $docs = EmployeeDocument::query()
+            ->where('employee_id', $employee->id)
+            ->where('folder', DocumentFolder::Parafiscales)
+            ->get();
+        $this->assertCount(1, $docs);
+        $replaced = storage_path('app/'.$docs->first()->disk_path);
+        $this->assertSame(200000.0, (float) IOFactory::load($replaced)->getActiveSheet()->getCell('BJ15')->getCalculatedValue());
+        $this->assertFalse(is_file($absolute));
+    }
+
+    /**
+     * @param  list<array{document: string, name: string, totals: list<float>}>  $people
+     */
+    private function planillaUpload(string $filename, array $people): UploadedFile
+    {
+        $book = new Spreadsheet;
+        $sheet = $book->getActiveSheet();
+        $sheet->setCellValue('B14', 'Pensión');
+        $sheet->setCellValue('H14', 'Salud');
+        $sheet->setCellValue('BJ14', 'Valor');
+        $sheet->setCellValue('B15', '2026-08');
+        $sheet->setCellValue('H15', '2026-09');
+        $sheet->setCellValue('BJ15', 0);
+        $sheet->setCellValue('D20', 'Identificación');
+        $sheet->setCellValue('I20', 'Nombre');
+        $sheet->setCellValue('BW20', 'Total Aportes');
+
+        $row = 21;
+        foreach ($people as $person) {
+            foreach ($person['totals'] as $total) {
+                $sheet->setCellValue('D'.$row, 'CC');
+                $sheet->setCellValue('E'.$row, $person['document']);
+                $sheet->setCellValue('I'.$row, $person['name']);
+                $sheet->setCellValue('BW'.$row, $total);
+                $row++;
+            }
+        }
+
+        $dir = storage_path('framework/testing');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        $path = $dir.DIRECTORY_SEPARATOR.$filename;
+        (new Xlsx($book))->save($path);
+
+        return new UploadedFile(
+            $path,
+            $filename,
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true,
+        );
     }
 
     private function companyAdmin(): User

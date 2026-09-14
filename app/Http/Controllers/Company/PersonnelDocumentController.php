@@ -9,14 +9,17 @@ use App\Enums\OtherDocumentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Personnel\IndexLaborHistoryRequest;
 use App\Http\Requests\Personnel\MarkLaborHistoryNaRequest;
+use App\Http\Requests\Personnel\PreviewParafiscalPlanillaRequest;
 use App\Http\Requests\Personnel\StoreLaborHistoryBatchRequest;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeDocumentBatch;
 use App\Repositories\EmployeeRepository;
+use App\Services\Personnel\CommitParafiscalPlanillaService;
 use App\Services\Personnel\DeleteEmployeeDocumentService;
 use App\Services\Personnel\IndexLaborHistoryPdfService;
 use App\Services\Personnel\MarkLaborHistoryNotApplicableService;
+use App\Services\Personnel\PreviewParafiscalPlanillaService;
 use App\Services\Personnel\StoreLaborHistoryBatchService;
 use App\Support\Files\StoredFileResponder;
 use App\Support\Personnel\FolderChecklist;
@@ -25,7 +28,9 @@ use App\Support\Personnel\OtherSupportNamer;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PersonnelDocumentController extends Controller
@@ -36,6 +41,8 @@ final class PersonnelDocumentController extends Controller
         private readonly IndexLaborHistoryPdfService $historyIndex,
         private readonly MarkLaborHistoryNotApplicableService $historyNa,
         private readonly DeleteEmployeeDocumentService $deleteDocument,
+        private readonly PreviewParafiscalPlanillaService $parafiscalPreview,
+        private readonly CommitParafiscalPlanillaService $parafiscalCommit,
     ) {}
 
     public function index(Request $request): View
@@ -50,7 +57,7 @@ final class PersonnelDocumentController extends Controller
             ),
             'folderTotal' => count(DocumentFolder::cases()),
             'q' => $q,
-            'canUpload' => true,
+            'canUpload' => $this->canUpload($request),
         ]);
     }
 
@@ -72,7 +79,7 @@ final class PersonnelDocumentController extends Controller
 
         return view('modules.company.personnel-documents.folder', [
             'employee' => $employee,
-            'canUpload' => true,
+            'canUpload' => $this->canUpload($request),
             'cargar' => $request->boolean('cargar'),
             'indexedChecklists' => $indexedChecklists,
         ]);
@@ -114,7 +121,9 @@ final class PersonnelDocumentController extends Controller
                 'reserved' => OtherSupportNamer::reserved($employee),
                 'existing_count' => OtherSupportNamer::loadedCount($employee),
                 'max_others' => OtherDocumentType::MAX,
-                'catalogs' => collect(DocumentFolder::cases())->map(fn (DocumentFolder $folder) => [
+                'catalogs' => collect(DocumentFolder::cases())
+                    ->filter(fn (DocumentFolder $folder) => $folder->isIndexed())
+                    ->map(fn (DocumentFolder $folder) => [
                     'value' => $folder->value,
                     'label' => $folder->label(),
                     'course_fields' => $folder === DocumentFolder::Cursos,
@@ -178,7 +187,7 @@ final class PersonnelDocumentController extends Controller
     {
         $this->assertCompany($request, $employee);
         $resolved = DocumentFolder::tryFrom($folder);
-        abort_if($resolved === null || $resolved === DocumentFolder::Otros, 404);
+        abort_if($resolved === null || $resolved === DocumentFolder::Otros || $resolved === DocumentFolder::Parafiscales, 404);
 
         $type = IndexedFolder::resolve($resolved, $request->string('document_type')->toString());
         $this->historyNa->execute($employee, $resolved, $type);
@@ -215,6 +224,81 @@ final class PersonnelDocumentController extends Controller
         }
 
         return back()->with('success', 'Documento eliminado. Puede volver a indexarlo.');
+    }
+
+    public function storeParafiscalPreview(PreviewParafiscalPlanillaRequest $request): RedirectResponse
+    {
+        $companyId = $this->companyId($request);
+        $file = $request->file('file');
+        abort_if($file === null, 422);
+
+        try {
+            $preview = $this->parafiscalPreview->previewFile($file, $companyId, (int) $request->user()->id);
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('company.personnel-documents.index')
+                ->with('error', $e->getMessage());
+        }
+
+        $this->parafiscalPreview->put($companyId, (int) $request->user()->id, $preview);
+
+        return redirect()->route('company.personnel-documents.parafiscales.preview');
+    }
+
+    public function showParafiscalPreview(Request $request): View|RedirectResponse
+    {
+        abort_unless($this->canUpload($request), 403);
+        $preview = $this->parafiscalPreview->get($this->companyId($request), (int) $request->user()->id);
+
+        if ($preview === null) {
+            return redirect()
+                ->route('company.personnel-documents.index')
+                ->with('error', 'No hay una revisión vigente. Vuelve a cargar la planilla.');
+        }
+
+        return view('modules.company.personnel-documents.parafiscal-preview', compact('preview'));
+    }
+
+    public function commitParafiscal(Request $request): RedirectResponse
+    {
+        abort_unless($this->canUpload($request), 403);
+
+        try {
+            $count = $this->parafiscalCommit->execute(
+                $this->companyId($request),
+                (int) $request->user()->id,
+            );
+        } catch (ValidationException $e) {
+            return redirect()
+                ->route('company.personnel-documents.index')
+                ->with('error', $e->validator->errors()->first() ?: 'No se pudo cargar la planilla.');
+        }
+
+        $message = $count === 1
+            ? '1 recorte de planilla guardado.'
+            : $count.' recortes de planilla guardados.';
+
+        return redirect()
+            ->route('company.personnel-documents.index')
+            ->with('success', $message);
+    }
+
+    public function cancelParafiscal(Request $request): RedirectResponse
+    {
+        abort_unless($this->canUpload($request), 403);
+        $this->parafiscalPreview->forget($this->companyId($request), (int) $request->user()->id);
+
+        return redirect()->route('company.personnel-documents.index');
+    }
+
+    private function canUpload(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user !== null && (
+            $user->can('company.documents.manage')
+            || $user->can('company.settings.manage')
+        );
     }
 
     private function companyId(Request $request): int

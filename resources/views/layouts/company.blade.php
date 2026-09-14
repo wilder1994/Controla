@@ -233,6 +233,9 @@
     @if (request()->routeIs('company.employees.index'))
         @include('modules.company.employees.partials.import-modal')
     @endif
+    @if (request()->routeIs('company.personnel-documents.index'))
+        @include('modules.company.personnel-documents.partials.parafiscal-import-modal')
+    @endif
     @if (request()->routeIs('company.clients.index'))
         @include('modules.company.clients.partials.import-modal')
     @endif
