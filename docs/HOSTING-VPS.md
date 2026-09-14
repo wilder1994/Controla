@@ -42,6 +42,8 @@ Menú móvil paneles (14 sep 2026): hamburguesa + drawer en cliente/empresa/plat
 
 Parafiscales planilla (14 sep 2026): recorte = copia del xlsx original (fondo/logo) + filas del cotizante; una carga sustituye la anterior. Overlay con %. Sin migrate. Pull + `view:cache` + `route:cache`.
 
+Plan súper admin (14 sep 2026): ficha empresa aplica Accesos+Supervisión ya / fecha / al corte; cartera de clientes con scroll. Sin migrate ni seeder. Pull + `npm run build` + `route:cache` + `view:cache` + `config:cache`.
+
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
 ```bash

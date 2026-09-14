@@ -33,7 +33,7 @@ GPS (~15 s), mapa En vivo / Historial, cierre automático (plantilla + 30 min). 
 
 `/planes`: cupo Accesos, mezcla hardware (desde 5) y Supervisión (oferta del cupo o cualquier otro del catálogo).
 
-Empresa ya cliente: cambios se **programan y aplican al corte** (Accesos, mixto y Supervisión). Quitar Supervisión no cobra; alta/cambio abre checkout.
+Empresa ya cliente: el súper admin en la ficha (`/admin/companies/{id}`) aplica Accesos + Supervisión **ya**, **en una fecha** o **al corte** (`POST …/plan`). El cobro es aparte (Pagar factura). Lo programado lo aplica el cron (`applyDueChanges`). La empresa en `/company/billing` sigue programando al corte con pago.
 
 ## App de campo y catálogos
 

@@ -106,7 +106,7 @@ final class EnterCompanyAsSupportTest extends TestCase
         $response->assertOk();
         $response->assertSee('Entrar como empresa');
         $response->assertSee('Historial de pagos');
-        $response->assertSee('Cartera de conjuntos');
+        $response->assertSee('Cartera de clientes');
         $response->assertDontSee('Ver en resumen');
     }
 

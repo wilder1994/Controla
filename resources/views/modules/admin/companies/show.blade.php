@@ -23,7 +23,8 @@
             payOpen: {{ old('action_context') === 'pay' ? 'true' : 'false' }},
             cancelOpen: {{ old('action_context') === 'cancel' ? 'true' : 'false' }},
             changeOpen: {{ old('action_context') === 'schedule' ? 'true' : 'false' }},
-            reactivateOpen: false
+            reactivateOpen: false,
+            applyWhen: @js(old('apply_when', 'now'))
         }"
     >
         @if ($company->hasPendingCancellation())
@@ -40,9 +41,15 @@
 
         @if ($company->hasScheduledPackageChange())
             <div class="rounded-lg border border-violet-800/50 bg-violet-950/30 px-4 py-3 text-sm text-violet-100">
-                Cambio de plan programado a
-                <strong>{{ $company->scheduled_package_sku }}</strong>
-                ({{ $company->scheduled_billing_cycle }})
+                Cambio de plan programado
+                @if ($company->scheduled_package_sku)
+                    · Accesos {{ \App\Enums\CompanyPackageSku::tryFrom((string) $company->scheduled_package_sku)?->label() ?? $company->scheduled_package_sku }}
+                @endif
+                @if ($company->scheduled_supervision_package_sku)
+                    · Supervisión {{ $company->scheduled_supervision_package_sku === 'none'
+                        ? 'sin Supervisión'
+                        : (\App\Enums\SupervisionPackageSku::tryFrom($company->scheduled_supervision_package_sku)?->label() ?? $company->scheduled_supervision_package_sku) }}
+                @endif
                 @if ($company->scheduled_change_at)
                     · aplica el {{ $company->scheduled_change_at->format('d/m/Y') }}
                 @endif
@@ -108,10 +115,10 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:items-stretch">
-            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-w-0 h-full flex flex-col">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:items-stretch lg:h-[min(36rem,calc(100dvh-16rem))]">
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-w-0 min-h-0 h-full flex flex-col overflow-hidden">
                 <div class="flex items-center justify-between gap-2 mb-3 shrink-0">
-                    <h3 class="text-sm font-semibold text-white">Cartera de conjuntos</h3>
+                    <h3 class="text-sm font-semibold text-white">Cartera de clientes</h3>
                     <span class="text-xs text-slate-500">
                         {{ $portfolioClients->where('lifecycle', ClientLifecycle::Active)->count() }} activos
                     </span>
@@ -120,7 +127,7 @@
                     <table class="min-w-full text-sm">
                         <thead class="text-xs uppercase tracking-wide text-slate-500 sticky top-0 bg-slate-900/95">
                             <tr>
-                                <th class="pb-2 text-left font-medium">Conjunto</th>
+                                <th class="pb-2 text-left font-medium">Cliente</th>
                                 <th class="pb-2 text-left font-medium">Lifecycle</th>
                                 <th class="pb-2 text-center font-medium">Geo</th>
                             </tr>
@@ -144,20 +151,20 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="py-6 text-center text-slate-500">Sin conjuntos en cartera.</td>
+                                    <td colspan="3" class="py-6 text-center text-slate-500">Sin clientes en cartera.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-                <p class="mt-2 text-xs text-slate-600 shrink-0">Usa «Entrar como empresa» para operar conjuntos y portería.</p>
+                <p class="mt-2 text-xs text-slate-600 shrink-0">Usa «Entrar como empresa» para operar clientes y portería.</p>
             </section>
 
-            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-4 min-w-0 h-full flex flex-col">
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-4 min-w-0 min-h-0 h-full flex flex-col overflow-hidden">
                 <div>
                     <h3 class="text-sm font-semibold text-white">Paquete y ciclo</h3>
                     <p class="text-xs text-slate-500 mt-1">
-                        Plan vigente y acciones de membresía. Los cambios de cupo se programan con pago al fin del periodo.
+                        Accesos y Supervisión. El súper admin elige el plan y desde cuándo rige. El cobro va en Pagar factura.
                     </p>
                 </div>
 
@@ -190,20 +197,65 @@
                 </div>
 
                 @can('platform.companies.manage')
-                    <form method="POST" action="{{ route('admin.companies.supervision-package.update', $company) }}" class="rounded-lg border border-amber-800/40 bg-amber-950/10 p-4 space-y-3">
+                    <form method="POST" action="{{ route('admin.companies.plan.apply', $company) }}" class="rounded-lg border border-amber-800/40 bg-amber-950/10 p-4 space-y-3">
                         @csrf
-                        @method('PUT')
-                        <div>
-                            <p class="text-xs text-slate-500">Supervisión (sitios GPS)</p>
-                            <p class="mt-1 text-sm font-medium text-white">{{ $company->supervision_package_sku?->label() ?? 'Sin Supervisión' }}</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <x-ui.label for="plan_sku">Accesos</x-ui.label>
+                                <select id="plan_sku" name="package_sku" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                                    @foreach ($packageOptions as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('package_sku', $company->package_sku?->value) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <x-ui.field-error name="package_sku" />
+                            </div>
+                            <div>
+                                <x-ui.label for="plan_cycle">Ciclo</x-ui.label>
+                                <select id="plan_cycle" name="billing_cycle" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                                    @foreach ($cycleOptions as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('billing_cycle', $company->billing_cycle?->value) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <x-ui.field-error name="billing_cycle" />
+                            </div>
+                            <div>
+                                <x-ui.label for="plan_manual">Asientos sin hardware</x-ui.label>
+                                <input type="number" min="0" name="manual_seats" id="plan_manual" value="{{ old('manual_seats', $company->package_manual_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            </div>
+                            <div>
+                                <x-ui.label for="plan_hardware">Asientos con hardware</x-ui.label>
+                                <input type="number" min="0" name="hardware_seats" id="plan_hardware" value="{{ old('hardware_seats', $company->package_hardware_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <x-ui.label for="plan_supervision">Supervisión</x-ui.label>
+                                <select id="plan_supervision" name="supervision_package_sku" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                                    <option value="">Sin Supervisión</option>
+                                    @foreach ($supervisionOptions as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('supervision_package_sku', $company->supervision_package_sku?->value) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <x-ui.field-error name="supervision_package_sku" />
+                            </div>
                         </div>
-                        <select name="supervision_package_sku" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
-                            <option value="">Sin Supervisión</option>
-                            @foreach (\App\Enums\SupervisionPackageSku::options() as $value => $label)
-                                <option value="{{ $value }}" @selected(old('supervision_package_sku', $company->supervision_package_sku?->value) === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <x-ui.button type="submit" variant="secondary" size="sm">Asignar Supervisión</x-ui.button>
+                        <fieldset class="space-y-2">
+                            <legend class="text-xs text-slate-400">Cuándo aplica</legend>
+                            <label class="flex items-center gap-2 text-sm text-slate-200">
+                                <input type="radio" name="apply_when" value="now" x-model="applyWhen">
+                                Ya — cupo nuevo al instante
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-slate-200">
+                                <input type="radio" name="apply_when" value="on_date" x-model="applyWhen">
+                                El día
+                                <input type="date" name="effective_on" value="{{ old('effective_on') }}" class="h-8 px-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-slate-200">
+                                <input type="radio" name="apply_when" value="period_end" x-model="applyWhen" @disabled(! $company->package_ends_at)>
+                                Al corte{{ $company->package_ends_at ? ' ('.$company->package_ends_at->format('d/m/Y').')' : '' }}
+                            </label>
+                            <x-ui.field-error name="apply_when" />
+                            <x-ui.field-error name="effective_on" />
+                        </fieldset>
+                        <x-ui.button type="submit" variant="secondary" size="sm">Aplicar plan</x-ui.button>
                     </form>
                 @endcan
 
@@ -219,7 +271,7 @@
                         @endif
                         @if ($isUpToDate)
                             <x-ui.button type="button" variant="secondary" size="md" @click="changeOpen = true">
-                                Programar cambio
+                                Cobrar y programar al corte
                             </x-ui.button>
                         @endif
 

@@ -2,7 +2,7 @@
 
 Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo de cartera y retención legal de datos.
 
-**Última actualización:** 5 septiembre 2026
+**Última actualización:** 14 septiembre 2026
 
 ---
 
@@ -24,6 +24,17 @@ El súper admin no tiene `security_company_id`. El panel `/company` solo vale co
 Si la sesión web caduca en una URL de empresa, al volver a entrar **no** se restaura el soporte (no hay `platform.enter_company` silencioso). Laravel ignora `url.intended` hacia `/company/*` y manda a `/admin`. Si abre `/company/supervision` (u otra ruta de empresa que no sea portería) sin contexto: redirect a `/admin` con aviso, no 403. Cookie `support_last_company_id`: botón **Entrar de nuevo** en el layout plataforma.
 
 Tests: `EnterCompanyAsSupportTest`.
+
+### Ficha empresa — plan y cartera
+
+**Cartera de clientes** (no conjuntos): alto tope junto a Paquete y ciclo; scroll interno. No pagina; tope visual ~36rem.
+
+**Paquete y ciclo:** Accesos (cupo, mixto) + Supervisión en un solo formulario. Cuándo aplica: **Ya** (cupo al instante), **el día X**, **al corte**. Si la fecha es hoy o anterior, aplica igual que Ya. Pago en **Pagar factura** (no pide comprobante en este formulario).
+
+- `POST /admin/companies/{company}/plan` (`admin.companies.plan.apply`), permiso `platform.companies.manage`.
+- Servicio `ApplyAdminPlanChangeService`. Si no es inmediato, escribe `scheduled_*`; el cron de ciclo (`applyDueChanges`) lo aplica al vencer.
+- **Cobrar y programar al corte** (`POST …/package/schedule`) sigue pidiendo comprobante.
+- Tests: `AdminPlanChangeTest`.
 
 ---
 

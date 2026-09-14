@@ -100,6 +100,10 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
             ->middleware('permission:platform.companies.manage')
             ->name('companies.membership.undo-cancel');
 
+        Route::post('/companies/{company}/plan', [CompanyController::class, 'applyPlan'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.plan.apply');
+
         Route::post('/companies/{company}/package/schedule', [CompanyController::class, 'schedulePackageChange'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.package.schedule');

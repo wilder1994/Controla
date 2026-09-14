@@ -354,11 +354,12 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `POST /admin/companies/{id}/clients/{client}/release` | Retirar conjunto y liberar cupo |
 | `GET /admin/pricing` | Tabla de precios (editar unitarios, matriz calculada) |
 | `PUT /admin/pricing` | Guardar unitarios manual/hardware |
-| `GET /admin/companies/{id}` | **Resumen** empresa: KPIs, paquete (solo lectura), Pagar / Cancelar / Programar cambio / Reactivar |
+| `GET /admin/companies/{id}` | **Resumen** empresa: KPIs, cartera de clientes, aplicar plan Accesos+Supervisión (ya / fecha / al corte), Pagar / Cancelar / Cobrar y programar al corte / Reactivar |
 | `GET /admin/companies/{id}/historial` | Historial comercial (solo lectura): pagos, facturas, timeline |
 | `POST /admin/companies/{id}/payments/manual` | Pago manual (ref + soporte PDF/imagen + intent) |
 | `POST /admin/companies/{id}/membership/cancel` | Cancelar membresía (acceso hasta fin de periodo) |
 | `POST /admin/companies/{id}/membership/undo-cancel` | Deshacer cancelación sin pago (si aún al día) |
+| `POST /admin/companies/{id}/plan` | Súper admin: aplicar Accesos + Supervisión ya, en fecha o al corte (sin comprobante) |
 | `POST /admin/companies/{id}/package/schedule` | Programar cambio de plan (pago ahora, aplica al corte) |
 | `POST /admin/companies/{id}/enter` | Entrar como empresa (soporte, sesión + banner + audit) |
 | `POST /admin/support/exit` | Salir del modo soporte → expediente empresa |

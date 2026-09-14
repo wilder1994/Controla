@@ -14,11 +14,13 @@ use App\Enums\PaymentStatus;
 use App\Enums\PlatformDocumentType;
 use App\Enums\SupervisionPackageSku;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\ApplyAdminPlanChangeRequest;
 use App\Http\Requests\Platform\CancelCompanyMembershipRequest;
 use App\Http\Requests\Platform\SchedulePackageChangeRequest;
 use App\Http\Requests\Platform\StoreCompanyFirstAdminRequest;
 use App\Http\Requests\Platform\StoreCompanyRequest;
 use App\Http\Requests\Platform\StoreManualPaymentRequest;
+use App\Http\Requests\Platform\UpdateCompanyPackageRequest;
 use App\Http\Requests\Platform\UpdateCompanyProfileRequest;
 use App\Http\Requests\Platform\UpdateCompanySupervisionPackageRequest;
 use App\Models\CommercialPayment;
@@ -26,6 +28,7 @@ use App\Models\PlatformDocument;
 use App\Models\SecurityCompany;
 use App\Models\User;
 use App\Repositories\SecurityCompanyRepository;
+use App\Services\Platform\ApplyAdminPlanChangeService;
 use App\Services\Platform\CancelCompanyMembershipService;
 use App\Services\Platform\EnterCompanyAsSupportService;
 use App\Services\Platform\RegisterCommercialPaymentService;
@@ -63,6 +66,7 @@ final class CompanyController extends Controller
         private readonly CancelCompanyMembershipService $cancelCompanyMembershipService,
         private readonly UndoCompanyMembershipCancellationService $undoCompanyMembershipCancellationService,
         private readonly ScheduleCompanyPackageChangeService $scheduleCompanyPackageChangeService,
+        private readonly ApplyAdminPlanChangeService $applyAdminPlanChangeService,
     ) {}
 
     public function index(): View
@@ -231,6 +235,7 @@ final class CompanyController extends Controller
             'company' => $company,
             'packageOptions' => $packageOptions,
             'cycleOptions' => $cycleOptions,
+            'supervisionOptions' => SupervisionPackageSku::selectableOptions((int) ($company->package_size ?: 0)),
             'quote' => $quote,
             'quoteAnnual' => $quoteAnnual,
             'portfolioClients' => $clients,
@@ -384,6 +389,52 @@ final class CompanyController extends Controller
                 $ends
                     ? "Cancelación deshecha. La membresía sigue activa hasta el {$ends}."
                     : 'Cancelación deshecha. La membresía quedó activa.',
+            );
+    }
+
+    public function applyPlan(ApplyAdminPlanChangeRequest $request, SecurityCompany $company): RedirectResponse
+    {
+        $sku = CompanyPackageSku::from($request->validated('package_sku'));
+        $cycle = BillingCycle::from($request->validated('billing_cycle'));
+        $seats = AccessSeatSplit::resolve(
+            $sku,
+            isset($request->validated()['manual_seats']) ? (int) $request->validated('manual_seats') : null,
+            isset($request->validated()['hardware_seats']) ? (int) $request->validated('hardware_seats') : null,
+        );
+        $supValue = $request->validated('supervision_package_sku');
+        $supervision = is_string($supValue) && $supValue !== ''
+            ? SupervisionPackageSku::from($supValue)
+            : null;
+        $onDate = $request->filled('effective_on')
+            ? CarbonImmutable::parse($request->validated('effective_on'))
+            : null;
+
+        try {
+            $result = $this->applyAdminPlanChangeService->execute(
+                $company,
+                $sku,
+                $cycle,
+                $seats,
+                $supervision,
+                (string) $request->validated('apply_when'),
+                $onDate,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->withInput()
+                ->with('warning', $e->getMessage());
+        }
+
+        $when = $result['effective_at']->format('d/m/Y');
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with(
+                'success',
+                $result['applied']
+                    ? "Plan aplicado. El cupo rige desde el {$when}."
+                    : "Plan programado. Aplica el {$when}.",
             );
     }
 
