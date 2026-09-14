@@ -227,6 +227,56 @@ final class PersonnelDocumentTest extends TestCase
         $this->assertFalse(is_file($absolute));
     }
 
+    public function test_parafiscal_preview_finds_cedulas_on_pila_sheet_after_aportante_header(): void
+    {
+        $this->seedWithPilot();
+        $admin = $this->companyAdmin();
+        $employee = $this->pilotVigilante();
+
+        $book = new Spreadsheet;
+        $book->getActiveSheet()->setTitle('Portada');
+        $book->getActiveSheet()->setCellValue('B8', 'Identificación del aportante');
+        $sheet = $book->createSheet();
+        $sheet->setTitle('mafars191');
+        $sheet->setCellValue('B8', 'Identificación del aportante');
+        $sheet->setCellValue('B14', 'Pensión');
+        $sheet->setCellValue('H14', 'Salud');
+        $sheet->setCellValue('BJ14', 'Valor');
+        $sheet->setCellValue('B15', '2026-08');
+        $sheet->setCellValue('H15', '2026-09');
+        $sheet->setCellValue('D20', 'Identificación');
+        $sheet->setCellValue('I20', 'Nombre');
+        $sheet->setCellValue('BW20', 'Total Aportes');
+        $sheet->setCellValue('D147', 'CC');
+        $sheet->setCellValue('E147', $employee->document_number);
+        $sheet->setCellValue('I147', 'PILOTO');
+        $sheet->setCellValue('BW147', 180400);
+
+        $dir = storage_path('framework/testing');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        $path = $dir.DIRECTORY_SEPARATOR.'pila-mafars.xlsx';
+        (new Xlsx($book))->save($path);
+        $file = new UploadedFile(
+            $path,
+            'pila-mafars.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true,
+        );
+
+        $this->actingAs($admin)
+            ->post(route('company.personnel-documents.parafiscales.preview.store'), ['file' => $file])
+            ->assertRedirect(route('company.personnel-documents.parafiscales.preview'));
+
+        $this->actingAs($admin)
+            ->get(route('company.personnel-documents.parafiscales.preview'))
+            ->assertOk()
+            ->assertSee($employee->document_number)
+            ->assertSee('Aceptar y cargar');
+    }
+
     /**
      * @param  list<array{document: string, name: string, totals: list<float>}>  $people
      */

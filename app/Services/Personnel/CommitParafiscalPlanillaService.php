@@ -44,7 +44,7 @@ final class CommitParafiscalPlanillaService
 
         $spreadsheet = IOFactory::load($absolute);
         $parsed = $this->parser->parseSpreadsheet($spreadsheet);
-        $sheet = $spreadsheet->getSheet(0);
+        $sheet = $spreadsheet->getSheet((int) $parsed['sheet_index']);
 
         $employees = Employee::query()
             ->where('security_company_id', $companyId)
