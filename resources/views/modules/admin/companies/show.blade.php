@@ -24,7 +24,20 @@
             cancelOpen: {{ old('action_context') === 'cancel' ? 'true' : 'false' }},
             changeOpen: {{ old('action_context') === 'schedule' ? 'true' : 'false' }},
             reactivateOpen: false,
-            applyWhen: @js(old('apply_when', 'now'))
+            applyWhen: @js(old('apply_when', 'now')),
+            syncPlanSeats() {
+                const sku = this.$refs.planSku?.value ?? ''
+                const parts = sku.split('_')
+                const size = Number(parts[1] || 0)
+                if (! size) return
+                if (parts[2] === 'hardware') {
+                    this.$refs.planManual.value = 0
+                    this.$refs.planHardware.value = size
+                } else {
+                    this.$refs.planManual.value = size
+                    this.$refs.planHardware.value = 0
+                }
+            }
         }"
     >
         @if ($company->hasPendingCancellation())
@@ -204,7 +217,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <x-ui.label for="plan_sku">Accesos</x-ui.label>
-                                <select id="plan_sku" name="package_sku" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                                <select id="plan_sku" name="package_sku" x-ref="planSku" required class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white" @change="syncPlanSeats()">
                                     @foreach ($packageOptions as $value => $label)
                                         <option value="{{ $value }}" @selected(old('package_sku', $company->package_sku?->value) === $value)>{{ $label }}</option>
                                     @endforeach
@@ -222,11 +235,11 @@
                             </div>
                             <div>
                                 <x-ui.label for="plan_manual">Asientos sin hardware</x-ui.label>
-                                <input type="number" min="0" name="manual_seats" id="plan_manual" value="{{ old('manual_seats', $company->package_manual_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                                <input type="number" min="0" name="manual_seats" id="plan_manual" x-ref="planManual" value="{{ old('manual_seats', $company->package_manual_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                             </div>
                             <div>
                                 <x-ui.label for="plan_hardware">Asientos con hardware</x-ui.label>
-                                <input type="number" min="0" name="hardware_seats" id="plan_hardware" value="{{ old('hardware_seats', $company->package_hardware_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
+                                <input type="number" min="0" name="hardware_seats" id="plan_hardware" x-ref="planHardware" value="{{ old('hardware_seats', $company->package_hardware_seats) }}" class="w-full h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
                             </div>
                             <div class="sm:col-span-2">
                                 <x-ui.label for="plan_supervision">Supervisión</x-ui.label>

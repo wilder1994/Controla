@@ -85,4 +85,24 @@ final class AdminPlanChangeTest extends TestCase
         $this->assertSame(SupervisionPackageSku::Sit50->value, $company->scheduled_supervision_package_sku);
         $this->assertSame($date, $company->scheduled_change_at->toDateString());
     }
+
+    public function test_mismatched_seats_redirect_with_warning(): void
+    {
+        $this->seedWithPilot();
+        $admin = User::query()->where('email', 'admin@control-acceso.test')->firstOrFail();
+        $company = SecurityCompany::query()->where('tax_id', '900123456-1')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->from(route('admin.companies.show', $company))
+            ->post(route('admin.companies.plan.apply', $company), [
+                'package_sku' => CompanyPackageSku::Pack500Manual->value,
+                'billing_cycle' => 'annual',
+                'manual_seats' => 10,
+                'hardware_seats' => 0,
+                'supervision_package_sku' => SupervisionPackageSku::Unlimited->value,
+                'apply_when' => 'now',
+            ])
+            ->assertRedirect(route('admin.companies.show', $company))
+            ->assertSessionHas('warning');
+    }
 }

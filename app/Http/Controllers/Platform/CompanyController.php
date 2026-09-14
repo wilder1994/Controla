@@ -394,22 +394,22 @@ final class CompanyController extends Controller
 
     public function applyPlan(ApplyAdminPlanChangeRequest $request, SecurityCompany $company): RedirectResponse
     {
-        $sku = CompanyPackageSku::from($request->validated('package_sku'));
-        $cycle = BillingCycle::from($request->validated('billing_cycle'));
-        $seats = AccessSeatSplit::resolve(
-            $sku,
-            isset($request->validated()['manual_seats']) ? (int) $request->validated('manual_seats') : null,
-            isset($request->validated()['hardware_seats']) ? (int) $request->validated('hardware_seats') : null,
-        );
-        $supValue = $request->validated('supervision_package_sku');
-        $supervision = is_string($supValue) && $supValue !== ''
-            ? SupervisionPackageSku::from($supValue)
-            : null;
-        $onDate = $request->filled('effective_on')
-            ? CarbonImmutable::parse($request->validated('effective_on'))
-            : null;
-
         try {
+            $sku = CompanyPackageSku::from($request->validated('package_sku'));
+            $cycle = BillingCycle::from($request->validated('billing_cycle'));
+            $seats = AccessSeatSplit::resolve(
+                $sku,
+                isset($request->validated()['manual_seats']) ? (int) $request->validated('manual_seats') : null,
+                isset($request->validated()['hardware_seats']) ? (int) $request->validated('hardware_seats') : null,
+            );
+            $supValue = $request->validated('supervision_package_sku');
+            $supervision = is_string($supValue) && $supValue !== ''
+                ? SupervisionPackageSku::from($supValue)
+                : null;
+            $onDate = $request->filled('effective_on')
+                ? CarbonImmutable::parse($request->validated('effective_on'))
+                : null;
+
             $result = $this->applyAdminPlanChangeService->execute(
                 $company,
                 $sku,
