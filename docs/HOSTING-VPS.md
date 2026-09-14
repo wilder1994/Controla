@@ -44,7 +44,7 @@ Parafiscales planilla (14 sep 2026): recorte = copia del xlsx original (fondo/lo
 
 Plan súper admin (14 sep 2026): ficha empresa aplica Accesos+Supervisión ya / fecha / al corte; cartera de clientes con scroll. Sin migrate ni seeder. Pull + `npm run build` + `route:cache` + `view:cache` + `config:cache`.
 
-Tablero SIG + pánico (14 sep 2026): migrate `operational_alerts`. Resumen cliente e instalaciones (mapa, puestos, novedades, afiliación, gráfica). Pánico sidebar/APK. Overlay poll. Pull + `migrate --force` + `npm run build` + `view:cache` + `route:cache`. Copiar PWA `public/campo` (`controla-sup-v44`). Sin seeder. Artisan como `wcodex-controla`.
+Tablero SIG + pánico (14 sep 2026): migrate `operational_alerts`. Resumen cliente e instalaciones (mapa, puestos, novedades, afiliación, gráfica). Pánico sidebar/APK. Overlay poll. Pull + `migrate --force` + `npm run build` + `view:cache` + `route:cache`. Copiar PWA `public/campo` (`controla-sup-v44`). APK v1.3 en `public/downloads/controla-supervision.apk`. Sin seeder. Artisan como `wcodex-controla`.
 
 **Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
 

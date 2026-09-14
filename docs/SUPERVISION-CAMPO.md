@@ -38,7 +38,7 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia `public/campo/` y Laragon `Controla_Supervision`). Caché SW `controla-sup-v44`. Hosting: `https://controla.wcodex.cloud/campo`. APK Android (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
+PWA en `field-app/` (copia `public/campo/` y Laragon `Controla_Supervision`). Caché SW `controla-sup-v44`. Hosting: `https://controla.wcodex.cloud/campo`. APK Android v1.3 (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. En login y primer cambio de clave, icono de ojo para verla. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
