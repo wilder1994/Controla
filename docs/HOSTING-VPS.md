@@ -44,6 +44,8 @@ Parafiscales planilla (14 sep 2026): recorte = copia del xlsx original (fondo/lo
 
 Plan súper admin (14 sep 2026): ficha empresa aplica Accesos+Supervisión ya / fecha / al corte; cartera de clientes con scroll. Sin migrate ni seeder. Pull + `npm run build` + `route:cache` + `view:cache` + `config:cache`.
 
+**Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
+
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
 ```bash
@@ -52,11 +54,9 @@ cd "$SITE"
 sudo -u wcodex-controla git pull --ff-only origin main
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
 sudo -u wcodex-controla -H bash -lc "cd '$SITE' && npm ci && npm run build"
-php8.3 artisan migrate --force --no-interaction
-php8.3 artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction
-php8.3 artisan config:cache
-php8.3 artisan route:cache
-php8.3 artisan view:cache
+sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 artisan migrate --force --no-interaction"
+sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 artisan db:seed --class=RoleAndPermissionSeeder --force --no-interaction"
+sudo -u wcodex-controla -H bash -lc "cd '$SITE' && php8.3 artisan config:cache && php8.3 artisan route:cache && php8.3 artisan view:cache"
 chown -R wcodex-controla:wcodex-controla "$SITE"
 ```
 
