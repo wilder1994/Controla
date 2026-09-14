@@ -159,7 +159,7 @@
                                 'X-Requested-With': 'XMLHttpRequest',
                                 'X-CSRF-TOKEN': token,
                             },
-                            body: JSON.stringify({ limit: 15 }),
+                            body: JSON.stringify({ limit: 5 }),
                         });
                         const body = await tick.json();
                         if (! tick.ok) {

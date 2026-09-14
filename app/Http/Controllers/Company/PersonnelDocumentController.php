@@ -317,12 +317,19 @@ final class PersonnelDocumentController extends Controller
             return response()->json($this->parafiscalCommit->tick(
                 $this->companyId($request),
                 (int) $request->user()->id,
-                max(1, min(40, $request->integer('limit', 15))),
+                max(1, min(40, $request->integer('limit', 8))),
             ));
         } catch (ValidationException $e) {
             return response()->json([
                 'done' => false,
                 'message' => $e->validator->errors()->first() ?: 'No se pudo continuar.',
+            ], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'done' => false,
+                'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Falló un lote del recorte.',
             ], 422);
         }
     }

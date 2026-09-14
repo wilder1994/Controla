@@ -73,4 +73,36 @@ final class PilaPlanillaClipperTest extends TestCase
         $zip->close();
         $this->assertGreaterThan(0, $media);
     }
+
+    public function test_clips_when_sheet_has_thousands_of_merge_cells_after_data(): void
+    {
+        $book = new Spreadsheet;
+        $sheet = $book->getActiveSheet();
+        $sheet->setCellValue('BJ15', 1);
+        $sheet->setCellValue('D20', 'Identificación');
+        $sheet->setCellValue('E22', '1144001122');
+        $source = storage_path('framework/testing/pila-clip-merges-src.xlsx');
+        (new XlsxWriter($book))->save($source);
+
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($source) === true);
+        $xml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $this->assertIsString($xml);
+        $block = '<mergeCells count="8000">';
+        for ($i = 40; $i < 8040; $i++) {
+            $block .= '<mergeCell ref="A'.$i.':B'.$i.'"/>';
+        }
+        $block .= '</mergeCells>';
+        $xml = str_replace('</worksheet>', $block.'</worksheet>', $xml);
+        $zip->deleteName('xl/worksheets/sheet1.xml');
+        $zip->addFromString('xl/worksheets/sheet1.xml', $xml);
+        $zip->close();
+
+        $dest = storage_path('framework/testing/pila-clip-merges-dest.xlsx');
+        (new PilaPlanillaClipper)->writeClip($source, 0, 20, [22], 'BJ15', 50.0, $dest);
+
+        $out = IOFactory::load($dest)->getActiveSheet();
+        $this->assertSame(50.0, (float) $out->getCell('BJ15')->getCalculatedValue());
+        $this->assertSame(1144001122.0, (float) $out->getCell('E21')->getCalculatedValue());
+    }
 }

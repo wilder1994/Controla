@@ -70,13 +70,9 @@ final class PilaPlanillaClipper
             }
         }
 
-        if (preg_match('/^(.*?<sheetData\b[^>]*>)(.*)(<\/sheetData>.*)$/is', $xml, $parts) !== 1) {
-            throw new RuntimeException('La hoja no tiene sheetData.');
-        }
-
-        preg_match_all('/<row\b[^>]*\/>|<row\b[^>]*>.*?<\/row>/is', $parts[2], $rowMatches);
+        $parts = $this->splitSheetData($xml);
         $kept = [];
-        foreach ($rowMatches[0] as $rowXml) {
+        foreach ($this->rowChunks($parts['body']) as $rowXml) {
             if (preg_match('/\br="(\d+)"/', $rowXml, $rowNum) !== 1) {
                 continue;
             }
@@ -92,10 +88,87 @@ final class PilaPlanillaClipper
             $kept[] = $this->remapRowXml($rowXml, $row, $map[$row]);
         }
 
-        $xml = $parts[1].implode('', $kept).$parts[3];
+        $xml = $parts['prefix'].implode('', $kept).$parts['suffix'];
         $xml = $this->clipMerges($xml, $headerRow, $map);
 
         return $this->replaceNumericCell($xml, $valorCell, $valorTotal);
+    }
+
+    /**
+     * @return array{prefix: string, body: string, suffix: string}
+     */
+    private function splitSheetData(string $xml): array
+    {
+        if (preg_match('/<([a-zA-Z0-9]+:)?sheetData\b[^>]*>/i', $xml, $open, PREG_OFFSET_CAPTURE) !== 1) {
+            throw new RuntimeException('La hoja no tiene sheetData.');
+        }
+
+        $openTag = $open[0][0];
+        $openAt = (int) $open[0][1];
+        $prefixEnd = $openAt + strlen($openTag);
+        if (str_contains(rtrim($openTag), '/>')) {
+            return [
+                'prefix' => substr($xml, 0, $prefixEnd),
+                'body' => '',
+                'suffix' => substr($xml, $prefixEnd),
+            ];
+        }
+
+        $prefixNs = $open[1][0] ?? '';
+        $closeTag = '</'.$prefixNs.'sheetData>';
+        $closeAt = stripos($xml, $closeTag, $prefixEnd);
+        if ($closeAt === false) {
+            $closeTag = '</sheetData>';
+            $closeAt = stripos($xml, $closeTag, $prefixEnd);
+        }
+        if ($closeAt === false) {
+            throw new RuntimeException('La hoja no tiene sheetData.');
+        }
+
+        return [
+            'prefix' => substr($xml, 0, $prefixEnd),
+            'body' => substr($xml, $prefixEnd, $closeAt - $prefixEnd),
+            'suffix' => substr($xml, $closeAt),
+        ];
+    }
+
+    /** @return list<string> */
+    private function rowChunks(string $body): array
+    {
+        $rows = [];
+        $pos = 0;
+        $length = strlen($body);
+        while ($pos < $length) {
+            $start = stripos($body, '<row', $pos);
+            if ($start === false) {
+                break;
+            }
+            $after = $body[$start + 4] ?? '';
+            if ($after !== ' ' && $after !== '>' && $after !== '/') {
+                $pos = $start + 4;
+
+                continue;
+            }
+            $gt = strpos($body, '>', $start);
+            if ($gt === false) {
+                break;
+            }
+            $open = substr($body, $start, $gt - $start + 1);
+            if (str_contains($open, '/>')) {
+                $rows[] = $open;
+                $pos = $gt + 1;
+
+                continue;
+            }
+            $end = stripos($body, '</row>', $gt);
+            if ($end === false) {
+                break;
+            }
+            $rows[] = substr($body, $start, $end + 6 - $start);
+            $pos = $end + 6;
+        }
+
+        return $rows;
     }
 
     private function remapRowXml(string $rowXml, int $from, int $to): string
@@ -112,28 +185,48 @@ final class PilaPlanillaClipper
      */
     private function clipMerges(string $xml, int $headerRow, array $map): string
     {
-        if (preg_match('/<mergeCells\b[^>]*>(.*?)<\/mergeCells>/is', $xml, $block) !== 1) {
+        if (preg_match('/<([a-zA-Z0-9]+:)?mergeCells\b[^>]*>/i', $xml, $open, PREG_OFFSET_CAPTURE) !== 1) {
             return $xml;
         }
 
-        preg_match_all('/<mergeCell\b[^>]*\/>/i', $block[1], $cells);
+        $openAt = (int) $open[0][1];
+        $openTag = $open[0][0];
+        if (str_contains(rtrim($openTag), '/>')) {
+            return $xml;
+        }
+
+        $ns = $open[1][0] ?? '';
+        $closeTag = '</'.$ns.'mergeCells>';
+        $closeAt = stripos($xml, $closeTag, $openAt + strlen($openTag));
+        if ($closeAt === false) {
+            $closeTag = '</mergeCells>';
+            $closeAt = stripos($xml, $closeTag, $openAt + strlen($openTag));
+        }
+        if ($closeAt === false) {
+            return $xml;
+        }
+
+        $inner = substr($xml, $openAt + strlen($openTag), $closeAt - $openAt - strlen($openTag));
         $kept = [];
-        foreach ($cells[0] as $cell) {
-            if (preg_match('/\bref="([^"]+)"/', $cell, $ref) !== 1) {
-                continue;
+        $pos = 0;
+        while (($refAt = stripos($inner, 'ref="', $pos)) !== false) {
+            $from = $refAt + 5;
+            $to = strpos($inner, '"', $from);
+            if ($to === false) {
+                break;
             }
-            $next = $this->remapMergeRef($ref[1], $headerRow, $map);
-            if ($next === null) {
-                continue;
+            $next = $this->remapMergeRef(substr($inner, $from, $to - $from), $headerRow, $map);
+            if ($next !== null) {
+                $kept[] = '<mergeCell ref="'.$next.'"/>';
             }
-            $kept[] = '<mergeCell ref="'.$next.'"/>';
+            $pos = $to + 1;
         }
 
         $replacement = $kept === []
             ? ''
             : '<mergeCells count="'.count($kept).'">'.implode('', $kept).'</mergeCells>';
 
-        return preg_replace('/<mergeCells\b[^>]*>.*?<\/mergeCells>/is', $replacement, $xml, 1) ?? $xml;
+        return substr($xml, 0, $openAt).$replacement.substr($xml, $closeAt + strlen($closeTag));
     }
 
     /**
