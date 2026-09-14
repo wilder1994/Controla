@@ -27,7 +27,7 @@ Tests: `EnterCompanyAsSupportTest`.
 
 ### Ficha empresa — plan y cartera
 
-**Cartera de clientes** (no conjuntos): alto tope junto a Paquete y ciclo; scroll interno. No pagina; tope visual ~36rem.
+**Cartera de clientes** (no conjuntos): alto tope y scroll interno. Paquete y ciclo no comparte ese tope (el formulario no se recorta). No pagina.
 
 **Paquete y ciclo:** Accesos (cupo, mixto) + Supervisión en un solo formulario. Cuándo aplica: **Ya** (cupo al instante), **el día X**, **al corte**. Si la fecha es hoy o anterior, aplica igual que Ya. Pago en **Pagar factura** (no pide comprobante en este formulario).
 
