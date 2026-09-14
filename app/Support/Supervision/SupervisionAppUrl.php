@@ -10,7 +10,9 @@ final class SupervisionAppUrl
     {
         $configured = trim((string) config('supervision.pwa_url'));
         if ($configured !== '') {
-            return rtrim($configured, '/');
+            $url = rtrim($configured, '/');
+
+            return str_ends_with($url, '/campo') ? $url.'/' : $url;
         }
 
         $app = rtrim((string) config('app.url'), '/');
@@ -20,7 +22,7 @@ final class SupervisionAppUrl
             return (string) preg_replace('#://controla\.#i', '://controla_supervision.', $app, 1);
         }
 
-        return $app.'/campo';
+        return $app.'/campo/';
     }
 
     public static function apkPath(): ?string

@@ -28,7 +28,7 @@ Colaborador + Clientes (13 sep 2026): `ClientController` / `ClientPolicy`. Corte
 
 Puestos + mapas (14 sep 2026): varios puestos por instalación; pines cliente/instalación en Mi empresa y Supervisión. Pull + `view:cache` + `config:cache` + `route:cache`. Sin migrate ni seeder.
 
-App de campo (14 sep 2026): PWA en `https://controla.wcodex.cloud/campo` (no hay DNS `controla_supervision.wcodex.cloud`). APK v1.1 en `public/downloads/controla-supervision.apk` (primer ingreso: usuario + clave). En VPS: `SUPERVISION_PWA_URL=https://controla.wcodex.cloud/campo` + pull + `route:cache` + `view:cache` + `config:cache`. Sin migrate ni seeder.
+App de campo (14 sep 2026): PWA en `https://controla.wcodex.cloud/campo/` (no hay DNS `controla_supervision.wcodex.cloud`). APK v1.1 en `public/downloads/controla-supervision.apk` (primer ingreso: usuario + clave). En VPS: `SUPERVISION_PWA_URL=https://controla.wcodex.cloud/campo/` + pull + `route:cache` + `view:cache` + `config:cache`. Sin migrate ni seeder.
 
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
