@@ -11,18 +11,26 @@
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100 overflow-hidden">
     <div class="h-screen flex overflow-hidden" x-data="panelSidebar">
-        <div class="relative hidden lg:block h-full shrink-0">
+        @include('partials.sidebar-backdrop')
+        <div
+            class="fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-200 ease-out lg:relative lg:z-auto lg:transform-none shrink-0"
+            :class="mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+            @keydown.escape.window="closeMobile()"
+        >
             <aside class="h-full flex flex-col bg-slate-900 border-r border-slate-800 overflow-hidden transition-[width] duration-200 ease-out"
-                   :class="open ? 'w-64' : 'w-0 border-r-0'">
+                   :class="open ? 'w-64' : 'w-64 lg:w-0 lg:border-r-0'">
                 <div class="w-64 h-full min-h-0 flex flex-col">
-                    <div class="px-6 py-5 border-b border-slate-800 shrink-0">
+                    <div class="px-6 py-5 border-b border-slate-800 shrink-0 flex items-start justify-between gap-2">
+                        <div class="min-w-0">
                         <p class="text-xs uppercase tracking-wider text-slate-500">Controla</p>
                         <h1 class="text-lg font-semibold text-white">Control de Acceso</h1>
                         @isset($activeClient)
                             <p class="text-xs text-indigo-300 mt-1 truncate" title="{{ $activeClient->name }}">{{ $activeClient->name }}</p>
                         @endisset
+                        </div>
+                        @include('partials.sidebar-mobile-close')
                     </div>
-                    <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll">
+                    <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll" @click="onNavClick($event)">
                         @foreach (config('access.navigation.access.items', []) as $item)
                             @can($item['permission'])
                             <a href="{{ route($item['route']) }}"
@@ -68,7 +76,8 @@
             @include('partials.operate-return-banner')
             <header class="bg-slate-900/80 border-b border-slate-800 backdrop-blur sticky top-0 z-20 shrink-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        @include('partials.sidebar-hamburger')
                         <span class="text-xs text-slate-500">{{ now()->format('D, d M Y') }}</span>
                     </div>
                 </div>

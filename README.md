@@ -555,7 +555,7 @@ Sistema visual unificado para el shell y formularios del panel empresa. **Guía 
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `layouts/company.blade.php` — shell `h-screen`; sidebar plegable (flecha a media altura); rail `.company-shell-rail`; slots `subtitle` / `actions` / `headerTabs` (pestañas colgantes bajo el borde del header) |
+| Layout | `layouts/company.blade.php` — shell `h-screen`; sidebar plegable en desktop (flecha); en móvil hamburguesa + drawer; rail `.company-shell-rail`; slots `subtitle` / `actions` / `headerTabs` (pestañas colgantes bajo el borde del header) |
 | Dashboard | Command Center v3: grid responsive, mapa satélite/terreno |
 | Componentes | `x-ui.button`, `x-ui.label`, `x-ui.input`, `x-ui.field-error`, `x-ui.geo-address-fields`, `x-ui.flash-toasts` |
 | Tabs | `.admin-header-tab` — contorno `slate-800` (= borde del header) para sensación de “colgar” de la barra |
@@ -571,7 +571,7 @@ Variantes de botón: `primary` (indigo), `secondary`, `success` (emerald), `plat
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `resources/views/layouts/admin.blade.php` — shell `h-screen`; sidebar violet plegable; pie (nombre + Cerrar sesión) siempre visible; nav con scroll interno |
+| Layout | `resources/views/layouts/admin.blade.php` — shell `h-screen`; sidebar violet plegable en desktop; hamburguesa en móvil; pie (nombre + Cerrar sesión) siempre visible; nav con scroll interno |
 | Dashboard | Mapa geográfico (Google Maps), KPIs, estado de cartera (6 segmentos), modalidad/cupo/ciclo, TOP 5 facturación, KPIs comerciales, tendencia MRR (Chart.js) |
 | Empresas | 3 KPIs: Riesgo (suspendidas/archivadas/eliminadas), Total empresas, Total conjuntos; tabla de cartera |
 | Analytics | `PlatformDashboardAnalytics` — agregación de métricas y marcadores del mapa |

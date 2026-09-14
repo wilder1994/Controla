@@ -12,18 +12,26 @@
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100 overflow-hidden">
     <div class="h-screen flex overflow-hidden" x-data="panelSidebar">
-        <div class="relative hidden lg:block h-full shrink-0">
+        @include('partials.sidebar-backdrop')
+        <div
+            class="fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-200 ease-out lg:relative lg:z-auto lg:transform-none shrink-0"
+            :class="mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+            @keydown.escape.window="closeMobile()"
+        >
             <aside class="h-full flex flex-col bg-slate-900 border-r border-slate-800 overflow-hidden transition-[width] duration-200 ease-out"
-                   :class="open ? 'w-64' : 'w-0 border-r-0'">
+                   :class="open ? 'w-64' : 'w-64 lg:w-0 lg:border-r-0'">
                 <div class="w-64 h-full min-h-0 flex flex-col">
-                    <div class="px-6 py-5 border-b border-slate-800 shrink-0">
+                    <div class="px-6 py-5 border-b border-slate-800 shrink-0 flex items-start justify-between gap-2">
+                        <div class="min-w-0">
                         <p class="text-xs uppercase tracking-wider text-slate-500">Controla</p>
                         <h1 class="text-lg font-semibold text-white">Panel cliente</h1>
                         @isset($activeClient)
                             <p class="text-xs text-indigo-300 mt-1 truncate" title="{{ $activeClient->name }}">{{ $activeClient->name }}</p>
                         @endisset
+                        </div>
+                        @include('partials.sidebar-mobile-close')
                     </div>
-                    <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll">
+                    <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll" @click="onNavClick($event)">
                         @foreach (config('access.navigation.client.items', []) as $item)
                             @php
                                 $module = $item['module'] ?? null;
@@ -61,12 +69,15 @@
             <header class="sticky top-0 z-10 shrink-0">
                 <div class="bg-slate-900/80 border-b border-slate-800 backdrop-blur">
                     <div class="{{ $rail }} py-3 flex items-center justify-between gap-4">
-                        <div class="min-w-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                            @include('partials.sidebar-hamburger')
+                            <div class="min-w-0">
                             @isset($header)
                                 {{ $header }}
                             @else
                                 <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Panel cliente' }}</h2>
                             @endisset
+                            </div>
                         </div>
                         @isset($actions)
                             <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">

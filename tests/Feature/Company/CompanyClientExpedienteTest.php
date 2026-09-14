@@ -197,6 +197,7 @@ final class CompanyClientExpedienteTest extends TestCase
 
         $this->actingAs($user)->withSession($session)->get(route('client.dashboard'))
             ->assertOk()
+            ->assertSee('Abrir menú', false)
             ->assertDontSee('>Vehículos</', false)
             ->assertDontSee('Autorizaciones')
             ->assertSee('Personas')

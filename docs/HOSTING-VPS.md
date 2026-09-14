@@ -38,6 +38,8 @@ Landing welcome (14 sep 2026): scroll (`min-h-screen`), H1 Accesos/supervisión/
 
 Observatorio fotos link + tipos empresa (14 sep 2026): `/o/{slug}` y panel rector con cámara/miniaturas (hasta 3, opcional). Leyenda empresa por slug. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder.
 
+Menú móvil paneles (14 sep 2026): hamburguesa + drawer en cliente/empresa/plataforma/portería. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder.
+
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
 ```bash
