@@ -37,7 +37,7 @@ Aviso de menores (Normoteca). Anónimo no guarda nombre ni teléfono. Alumno: el
 
 Si no mueven el pin, se guarda el del colegio. Sin pin de colegio ni API, las coordenadas quedan vacías.
 
-En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar / Cerrar). Rector y apoyo reportan desde **Nuevo reporte** (botón en el header del panel cliente, slot `$actions`). Empresa o admin del cliente ven el botón; al abrir, el sistema dice que con ese usuario no pueden reportar.
+En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar / Cerrar). El listado hace scroll (`max-h` 90vh); con más de 6 clientes hay buscador. Rector y apoyo reportan desde **Nuevo reporte** (botón en el header del panel cliente, slot `$actions`). Empresa o admin del cliente ven el botón; al abrir, el sistema dice que con ese usuario no pueden reportar.
 
 ## App de patrulla
 

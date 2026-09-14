@@ -30,6 +30,8 @@ Puestos + mapas (14 sep 2026): varios puestos por instalación; pines cliente/in
 
 App de campo (14 sep 2026): PWA en `https://controla.wcodex.cloud/campo/` (no hay DNS `controla_supervision.wcodex.cloud`). APK v1.1 en `public/downloads/controla-supervision.apk` (primer ingreso: usuario + clave). En VPS: `SUPERVISION_PWA_URL=https://controla.wcodex.cloud/campo/` + pull + `route:cache` + `view:cache` + `config:cache`. Sin migrate ni seeder.
 
+Observatorio Compartir link (14 sep 2026): modal con scroll y buscador si hay muchos clientes. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder.
+
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
 ```bash
