@@ -12,6 +12,7 @@ import { observatoryIntake, observatoryPhotos } from './observatory-intake';
 import { observatoryMap } from './observatory-map';
 import { postEmployeePicker } from './post-employee-picker';
 import { employeeReassignForm } from './employee-reassign-form';
+import { panelSidebar } from './panel-sidebar';
 import { opsLiveAlerts } from './ops-live-alerts';
 import './employee-document-indexer';
 

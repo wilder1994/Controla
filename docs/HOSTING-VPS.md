@@ -46,6 +46,8 @@ Plan súper admin (14 sep 2026): ficha empresa aplica Accesos+Supervisión ya / 
 
 Tablero SIG + pánico (14 sep 2026): migrate `operational_alerts`. Resumen cliente e instalaciones (mapa, puestos, novedades, afiliación, gráfica). Pánico sidebar/APK. Overlay poll. Pull + `migrate --force` + `npm run build` + `view:cache` + `route:cache`. Copiar PWA `public/campo` (`controla-sup-v44`). APK v1.3 en `public/downloads/controla-supervision.apk`. Sin seeder. Artisan como `wcodex-controla`.
 
+Alpine sidebar + overlay (14 sep 2026): `app.js` debe importar `panelSidebar` y `opsLiveAlerts` (sin el primero el tablero Observatorio no pinta mapa ni gráficas). Pull + `npm run build` + `view:cache`. Sin migrate.
+
 **Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
 
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
