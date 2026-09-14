@@ -101,8 +101,14 @@
                 @if ($report->hasCoordinates())
                     <p class="text-[11px] text-slate-500">Pin {{ number_format((float) $report->latitude, 5) }}, {{ number_format((float) $report->longitude, 5) }}</p>
                 @endif
-                @if ($report->photoUrl())
-                    <img src="{{ $report->photoUrl() }}" alt="Evidencia" class="mt-2 max-h-64 rounded-lg border border-slate-800">
+                @if ($report->photoUrls() !== [])
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach ($report->photoUrls() as $url)
+                            <a href="{{ $url }}" target="_blank" rel="noopener">
+                                <img src="{{ $url }}" alt="Evidencia" class="h-20 w-20 rounded-lg border border-slate-800 object-cover">
+                            </a>
+                        @endforeach
+                    </div>
                 @endif
                 @if ($canDetach && $event->reports->count() > 1)
                     <form method="POST" action="{{ route('client.observatory.events.reports.detach', [$event, $report]) }}" class="pt-2">

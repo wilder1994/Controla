@@ -16,7 +16,7 @@ Mis fichas: lista del supervisor y carta HTML para imprimir.
 
 Fotos: la cámara no arranca sola. Trasera/Frontal o Tomar foto. Solo HTTPS (Tailscale Serve). En HTTP no hay foto de prueba.
 
-Caché SW: `controla-sup-v42`. Hard-refresh tras cambios. Cola ajena se sube en segundo plano y no bloquea al de turno. Login y cambio de clave: icono de ojo para ver la contraseña. APK: GPS con pantalla apagada (notificación de turno).
+Caché SW: `controla-sup-v43`. Hard-refresh tras cambios. Cola ajena se sube en segundo plano y no bloquea al de turno. Login y cambio de clave: icono de ojo para ver la contraseña. APK: GPS con pantalla apagada (notificación de turno).
 
 Tailscale: cámara = `https://sjpcanaope.tail5fcfbc.ts.net/` (Serve). No `http://IP:8085`. API: puerto `8085` → `:8084/api`; host `.ts.net` → mismo origen `/api`. `.env` local sigue `http://controla.test`. En el APK la API es siempre `https://controla.wcodex.cloud/api`.
 

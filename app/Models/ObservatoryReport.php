@@ -27,6 +27,7 @@ final class ObservatoryReport extends Model
         'reporter_phone',
         'reported_by_user_id',
         'photo_path',
+        'photo_paths',
         'latitude',
         'longitude',
         'ip_hash',
@@ -38,6 +39,7 @@ final class ObservatoryReport extends Model
             'source' => ObservatoryReportSource::class,
             'reporter_role' => ObservatoryReporterRole::class,
             'is_anonymous' => 'boolean',
+            'photo_paths' => 'array',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
         ];
@@ -114,11 +116,30 @@ final class ObservatoryReport extends Model
 
     public function photoUrl(): ?string
     {
-        if (! filled($this->photo_path)) {
-            return null;
+        $urls = $this->photoUrls();
+
+        return $urls[0] ?? null;
+    }
+
+    /** @return list<string> */
+    public function photoUrls(): array
+    {
+        $paths = [];
+        if (filled($this->photo_path)) {
+            $paths[] = (string) $this->photo_path;
+        }
+        foreach ($this->photo_paths ?? [] as $path) {
+            if (filled($path)) {
+                $paths[] = (string) $path;
+            }
         }
 
-        return Storage::disk('public')->url($this->photo_path);
+        $urls = [];
+        foreach (array_values(array_unique($paths)) as $path) {
+            $urls[] = Storage::disk('public')->url($path);
+        }
+
+        return $urls;
     }
 
     public function event(): BelongsTo

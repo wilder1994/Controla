@@ -41,7 +41,7 @@ En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar /
 
 ## App de patrulla
 
-Turno abierto. Entrada **Observatorio** (aparte de la revista). Colegio, tipo, texto, foto opcional, anónimo. Colegios de la empresa en el paquete offline. `POST /api/supervision/observatory/reports`.
+Turno abierto. Entrada **Observatorio** (aparte de la revista). Colegio, tipo, texto, **mapa con pin arrastrable**, **1 a 3 fotos** (cámara, miniaturas; la primera es obligatoria), anónimo. Colegios de la empresa en el paquete offline. `POST /api/supervision/observatory/reports` con `photos[]` y lat/lng.
 
 ## Minuta
 

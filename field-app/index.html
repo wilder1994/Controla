@@ -68,6 +68,8 @@
         .photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .photo-slot span { position: relative; z-index: 1; font-size: .6rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); text-align: center; padding: .35rem; line-height: 1.2; }
         .photo-slot.has-photo span { width: 100%; background: linear-gradient(transparent, rgba(0,0,0,.78)); color: #fff; padding: .45rem .3rem .4rem; }
+        #obs-map { height: 12.5rem; margin-top: .4rem; border-radius: .75rem; overflow: hidden; background: #0b1220; border: 1px solid var(--line); }
+        #obs-map-hint { font-size: .72rem; color: #64748b; line-height: 1.4; margin: .35rem 0; }
         .risk-level { margin: .2rem 0 .65rem; padding: .45rem .65rem; border-radius: .6rem; background: var(--navy); border: 1px solid var(--line); font-weight: 700; font-size: .85rem; }
         .risk-level[data-level="low"] { color: #86efac; }
         .risk-level[data-level="medium"] { color: #fbbf24; }
@@ -286,14 +288,22 @@
                 <div id="obs-list" class="combo-list hidden"></div>
             </div>
             <p class="hint" id="obs-picked"></p>
+            <label>Dónde pasó</label>
+            <div id="obs-map" class="hidden"></div>
+            <p class="hint" id="obs-map-hint">Elija el colegio para ver el mapa. Arrastre el pin; si no lo mueve, queda en el colegio.</p>
             <label for="obs-kind">Tipo</label>
             <select id="obs-kind">
                 <option value="">Seleccione…</option>
             </select>
             <label for="obs-body">Qué pasó</label>
             <textarea id="obs-body"></textarea>
-            <label for="obs-photo">Foto (opcional)</label>
-            <input id="obs-photo" type="file" accept="image/*">
+            <label>Fotos (1 obligatoria, hasta 3)</label>
+            <div id="obs-photos" class="photo-grid">
+                <button type="button" class="photo-slot" data-photo-slot="obs-0"><span>Cámara 1</span></button>
+                <button type="button" class="photo-slot" data-photo-slot="obs-1"><span>Cámara 2</span></button>
+                <button type="button" class="photo-slot" data-photo-slot="obs-2"><span>Cámara 3</span></button>
+            </div>
+            <p class="hint">Toque el recuadro para abrir la cámara. La primera foto es obligatoria.</p>
             <label class="check"><input type="checkbox" id="obs-anonymous"><span>Enviar en anónimo</span></label>
             <p class="hint hidden" id="obs-anon-warn">En este reporte se oculta tu nombre y teléfono. Solo se muestra la denuncia.</p>
             <button type="button" class="gold" id="btn-obs-send">Enviar reporte</button>
@@ -347,7 +357,7 @@
         </div>
     </div>
 
-    <script src="offline.js?v=42"></script>
-    <script src="app.js?v=42"></script>
+    <script src="offline.js?v=43"></script>
+    <script src="app.js?v=43"></script>
 </body>
 </html>

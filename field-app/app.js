@@ -46,6 +46,11 @@ let obsKinds = {};
 let obsKindsByClient = {};
 let obsSitesCache = [];
 let obsSearchTimer = null;
+let obsMapsKey = '';
+let obsMap = null;
+let obsMarker = null;
+let obsPin = null;
+let obsMapsPromise = null;
 
 async function withBusy(btn, busyLabel, fn) {
     if (!btn || btn.dataset.busy === '1') return;
@@ -340,8 +345,12 @@ function observatoryFormFromQueue(row) {
         if (value == null || value === '') return;
         fd.append(key, typeof value === 'string' ? value : String(value));
     });
-    if (row.files?.photo) {
-        fd.append('photo', row.files.photo, 'observatory.jpg');
+    const photos = Array.isArray(row.files?.photos) ? row.files.photos : [];
+    photos.forEach((blob, i) => {
+        if (blob) fd.append('photos[]', blob, `observatory-${i + 1}.jpg`);
+    });
+    if (!photos.length && row.files?.photo) {
+        fd.append('photos[]', row.files.photo, 'observatory.jpg');
     }
     return fd;
 }
@@ -772,6 +781,24 @@ function bindAllPhotoGrids(scope) {
             input.value = '';
             input.click();
         };
+    });
+}
+
+function bindObsPhotoGrid() {
+    bindAllPhotoGrids(document.getElementById('observatory-card'));
+}
+
+function obsPhotoBlobs() {
+    return ['obs-0', 'obs-1', 'obs-2'].map((key) => modulePhotos[key]).filter(Boolean);
+}
+
+function resetObsPhotos() {
+    ['obs-0', 'obs-1', 'obs-2'].forEach((key) => {
+        delete modulePhotos[key];
+        const btn = document.querySelector(`[data-photo-slot="${key}"]`);
+        if (!btn) return;
+        btn.classList.remove('has-photo');
+        btn.querySelector('img')?.remove();
     });
 }
 
@@ -1528,6 +1555,7 @@ async function afterLogin(data = {}) {
 
 bindCameras();
 bindReviewUi();
+bindObsPhotoGrid();
 document.querySelectorAll('[data-collapse]').forEach((btn) => {
     btn.onclick = () => {
         const body = document.getElementById(btn.dataset.collapse);
@@ -1836,6 +1864,7 @@ function showObservatory() {
     document.getElementById('sheets-card')?.classList.add('hidden');
     document.getElementById('observatory-card').classList.remove('hidden');
     loadObservatoryKinds();
+    if (obsSite) placeObsPin(obsSite);
 }
 
 function fillObsKinds(kinds) {
@@ -1854,13 +1883,102 @@ function kindsForSite(site) {
     return obsKinds;
 }
 
+function rememberObsMaps(data) {
+    const key = data?.google_maps?.api_key;
+    if (key) obsMapsKey = key;
+    if (data?.google_maps?.center && !obsPin) {
+        obsPin = {
+            lat: Number(data.google_maps.center.lat),
+            lng: Number(data.google_maps.center.lng),
+        };
+    }
+}
+
+function loadGoogleMaps() {
+    if (window.google?.maps) return Promise.resolve();
+    if (!obsMapsKey) return Promise.reject(new Error('Sin mapa'));
+    if (obsMapsPromise) return obsMapsPromise;
+    obsMapsPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(obsMapsKey)}`;
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => {
+            obsMapsPromise = null;
+            reject(new Error('No se pudo cargar el mapa.'));
+        };
+        document.head.appendChild(script);
+    });
+    return obsMapsPromise;
+}
+
+async function placeObsPin(site) {
+    const hint = document.getElementById('obs-map-hint');
+    const mapEl = document.getElementById('obs-map');
+    const lat = site?.lat != null ? Number(site.lat) : (obsPin?.lat ?? lastGeo?.latitude);
+    const lng = site?.lng != null ? Number(site.lng) : (obsPin?.lng ?? lastGeo?.longitude);
+    if (lat == null || lng == null || Number.isNaN(lat) || Number.isNaN(lng)) {
+        mapEl.classList.add('hidden');
+        hint.textContent = 'Este colegio no tiene pin. El reporte queda sin mapa o con el GPS del turno.';
+        obsPin = null;
+        return;
+    }
+    obsPin = { lat, lng };
+    hint.textContent = 'Arrastre el pin o toque el mapa. Si no lo mueve, queda en el colegio.';
+    if (!obsMapsKey) {
+        mapEl.classList.add('hidden');
+        return;
+    }
+    try {
+        await loadGoogleMaps();
+    } catch {
+        mapEl.classList.add('hidden');
+        return;
+    }
+    mapEl.classList.remove('hidden');
+    const pos = { lat, lng };
+    if (!obsMap) {
+        obsMap = new google.maps.Map(mapEl, {
+            center: pos,
+            zoom: 17,
+            mapTypeId: 'hybrid',
+            disableDefaultUI: true,
+            zoomControl: true,
+        });
+        obsMap.addListener('click', (ev) => {
+            if (!ev.latLng) return;
+            obsPin = { lat: ev.latLng.lat(), lng: ev.latLng.lng() };
+            obsMarker?.setPosition(ev.latLng);
+        });
+    } else {
+        obsMap.setCenter(pos);
+    }
+    if (!obsMarker) {
+        obsMarker = new google.maps.Marker({
+            map: obsMap,
+            position: pos,
+            draggable: true,
+        });
+        obsMarker.addListener('dragend', () => {
+            const p = obsMarker.getPosition();
+            if (!p) return;
+            obsPin = { lat: p.lat(), lng: p.lng() };
+        });
+    } else {
+        obsMarker.setPosition(pos);
+    }
+    google.maps.event.trigger(obsMap, 'resize');
+    obsMap.setCenter(pos);
+}
+
 async function loadObservatoryKinds() {
     const select = document.getElementById('obs-kind');
-    if (select.options.length > 1) return;
+    if (select.options.length > 1 && obsMapsKey) return;
     try {
         const data = await api('/supervision/observatory/sites');
         obsKinds = data.kinds || {};
         if (data.kinds_by_client) obsKindsByClient = data.kinds_by_client;
+        rememberObsMaps(data);
         fillObsKinds(obsKinds);
     } catch (e) {
         setStatus(e.message, false);
@@ -1896,6 +2014,7 @@ function renderObservatoryList(rows) {
                 : '';
             fillObsKinds(kindsForSite(found));
             list.classList.add('hidden');
+            placeObsPin(found);
         };
     });
 }
@@ -1916,6 +2035,7 @@ async function searchObservatorySites() {
     try {
         const data = await api(`/supervision/observatory/sites?q=${encodeURIComponent(q)}`);
         const rows = data.sites || [];
+        rememberObsMaps(data);
         if (data.kinds_by_client) obsKindsByClient = { ...obsKindsByClient, ...data.kinds_by_client };
         if (data.kinds && Object.keys(obsKinds).length === 0) {
             obsKinds = data.kinds;
@@ -1941,36 +2061,37 @@ document.getElementById('btn-obs-send').onclick = () => withBusy(
         const body = document.getElementById('obs-body').value.trim();
         if (!kind) throw new Error('Indique el tipo.');
         if (body.length < 10) throw new Error('Describa qué pasó (mínimo 10 caracteres).');
-        const pos = await geo();
+        const photos = obsPhotoBlobs();
+        if (!photos.length) throw new Error('Tome al menos una foto.');
+        const pos = obsPin || await geo();
         const payload = {
             installation_id: obsSite.id,
             kind,
             body,
             is_anonymous: document.getElementById('obs-anonymous').checked ? 1 : 0,
-            latitude: pos?.latitude,
-            longitude: pos?.longitude,
+            latitude: pos?.lat ?? pos?.latitude,
+            longitude: pos?.lng ?? pos?.longitude,
         };
-        const photo = document.getElementById('obs-photo').files[0] || null;
         const fd = new FormData();
         Object.entries(payload).forEach(([key, value]) => {
             if (value == null || value === '') return;
             fd.append(key, String(value));
         });
-        if (photo) fd.append('photo', photo, photo.name || 'observatory.jpg');
+        photos.forEach((blob, i) => fd.append('photos[]', blob, `observatory-${i + 1}.jpg`));
         try {
             const data = await api('/supervision/observatory/reports', { method: 'POST', body: fd });
             setStatus(data.report?.folio ? `Reporte ${data.report.folio} enviado.` : 'Reporte enviado.');
         } catch (e) {
             if (!ControlaOffline.isOfflineError(e)) throw e;
             await enqueueOrThrow(
-                { type: 'observatory', body: payload, files: photo ? { photo } : {} },
+                { type: 'observatory', body: payload, files: { photos } },
                 'Observatorio guardado en el teléfono. Se enviará al reconectar.',
             );
         }
         document.getElementById('obs-body').value = '';
-        document.getElementById('obs-photo').value = '';
         document.getElementById('obs-anonymous').checked = false;
         document.getElementById('obs-anon-warn').classList.add('hidden');
+        resetObsPhotos();
         showOpsHome();
     },
 );

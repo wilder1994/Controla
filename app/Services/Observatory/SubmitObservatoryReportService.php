@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
 final class SubmitObservatoryReportService
 {
     /**
-     * @param  array{installation_id: int, kind: string, body: string, is_anonymous: bool, source: ObservatoryReportSource|string, reporter_role: ObservatoryReporterRole|string, reporter_name?: ?string, reporter_phone?: ?string, reported_by?: ?User, photo?: ?UploadedFile, latitude?: ?float, longitude?: ?float}  $data
+     * @param  array{installation_id: int, kind: string, body: string, is_anonymous: bool, source: ObservatoryReportSource|string, reporter_role: ObservatoryReporterRole|string, reporter_name?: ?string, reporter_phone?: ?string, reported_by?: ?User, photo?: ?UploadedFile, photos?: list<UploadedFile>, latitude?: ?float, longitude?: ?float}  $data
      */
     public function execute(Client $client, array $data, ?string $ip = null): ObservatoryReport
     {
@@ -66,15 +66,13 @@ final class SubmitObservatoryReportService
 
         $body = trim((string) $data['body']);
         $anonymous = (bool) $data['is_anonymous'];
-        $photo = $data['photo'] ?? null;
-        $photoPath = $photo instanceof UploadedFile
-            ? $photo->store('observatory/photos', 'public')
-            : null;
+        $photoPaths = $this->storePhotos($data);
+        $photoPath = $photoPaths[0] ?? null;
         $coords = $this->coordinates($data, $installation);
         $reporter = $data['reported_by'] ?? null;
         $reporter = $reporter instanceof User ? $reporter : null;
 
-        return DB::transaction(function () use ($client, $installation, $type, $body, $anonymous, $data, $photoPath, $ip, $coords, $source, $role, $reporter): ObservatoryReport {
+        return DB::transaction(function () use ($client, $installation, $type, $body, $anonymous, $data, $photoPath, $photoPaths, $ip, $coords, $source, $role, $reporter): ObservatoryReport {
             $event = $this->openOrAttach($client, $installation, $type);
 
             return ObservatoryReport::query()->create([
@@ -91,6 +89,7 @@ final class SubmitObservatoryReportService
                 'reporter_phone' => $anonymous ? null : $this->nullable($data['reporter_phone'] ?? null),
                 'reported_by_user_id' => $anonymous ? null : $reporter?->id,
                 'photo_path' => $photoPath,
+                'photo_paths' => $photoPaths !== [] ? $photoPaths : null,
                 'latitude' => $coords['lat'],
                 'longitude' => $coords['lng'],
                 'ip_hash' => $ip !== null ? hash('sha256', $ip) : null,
@@ -131,6 +130,35 @@ final class SubmitObservatoryReportService
             'title' => $type->name,
             'opened_at' => now(),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private function storePhotos(array $data): array
+    {
+        $files = [];
+        $photos = $data['photos'] ?? [];
+        if (is_array($photos)) {
+            foreach ($photos as $file) {
+                if ($file instanceof UploadedFile) {
+                    $files[] = $file;
+                }
+            }
+        }
+        $single = $data['photo'] ?? null;
+        if ($single instanceof UploadedFile) {
+            array_unshift($files, $single);
+        }
+        $files = array_slice($files, 0, 3);
+
+        $paths = [];
+        foreach ($files as $file) {
+            $paths[] = $file->store('observatory/photos', 'public');
+        }
+
+        return $paths;
     }
 
     /**

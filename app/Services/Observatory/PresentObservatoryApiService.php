@@ -64,6 +64,7 @@ final class PresentObservatoryApiService
             'reporter_name' => $report->is_anonymous ? null : $report->reporter_name,
             'reporter_phone' => $report->is_anonymous ? null : $report->reporter_phone,
             'photo_url' => $report->photoUrl(),
+            'photo_urls' => $report->photoUrls(),
             'latitude' => $report->latitude !== null ? (float) $report->latitude : null,
             'longitude' => $report->longitude !== null ? (float) $report->longitude : null,
             'created_at' => $report->created_at?->toIso8601String(),

@@ -68,6 +68,10 @@ final class SupervisorObservatoryController extends Controller
             ])->all(),
             'kinds' => $kinds,
             'kinds_by_client' => $kindsByClient,
+            'google_maps' => [
+                'api_key' => (string) config('google-maps.api_key', ''),
+                'center' => config('google-maps.default_center'),
+            ],
         ]);
     }
 
@@ -99,6 +103,7 @@ final class SupervisorObservatoryController extends Controller
             'reporter_role' => ObservatoryReporterRole::Supervisor,
             'reporter_name' => $anonymous ? null : $user->name,
             'reported_by' => $user,
+            'photos' => $this->photoFiles($request),
             'photo' => $request->file('photo'),
             'latitude' => $request->validated('latitude'),
             'longitude' => $request->validated('longitude'),
@@ -113,5 +118,16 @@ final class SupervisorObservatoryController extends Controller
                 'folio' => $report->event?->folio(),
             ],
         ], 201);
+    }
+
+    /** @return list<\Illuminate\Http\UploadedFile> */
+    private function photoFiles(StoreSupervisorObservatoryReportRequest $request): array
+    {
+        $files = $request->file('photos', []);
+        if (! is_array($files)) {
+            $files = $files ? [$files] : [];
+        }
+
+        return array_values(array_filter($files, fn ($file) => $file instanceof \Illuminate\Http\UploadedFile));
     }
 }

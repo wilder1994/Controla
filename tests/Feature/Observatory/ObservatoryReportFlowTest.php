@@ -764,7 +764,11 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->withToken($token)
             ->getJson('/api/supervision/observatory/sites?q=Santa')
             ->assertOk()
-            ->assertJsonPath('sites.0.id', $colegio->id);
+            ->assertJsonPath('sites.0.id', $colegio->id)
+            ->assertJsonStructure(['google_maps' => ['api_key', 'center']]);
+
+        Storage::fake('public');
+        $photo = UploadedFile::fake()->image('novedad.jpg', 80, 80);
 
         $this->withToken($token)
             ->post('/api/supervision/observatory/reports', [
@@ -774,6 +778,7 @@ final class ObservatoryReportFlowTest extends TestCase
                 'is_anonymous' => '0',
                 'latitude' => 3.4516,
                 'longitude' => -76.5320,
+                'photos' => [$photo],
             ])
             ->assertCreated()
             ->assertJsonPath('report.event_id', ObservatoryEvent::query()->value('id'));
@@ -783,6 +788,29 @@ final class ObservatoryReportFlowTest extends TestCase
         $this->assertSame('supervisor', $report->reporter_role->value);
         $this->assertSame($user->name, $report->reporter_name);
         $this->assertSame((int) $client->id, (int) $report->client_id);
+        $this->assertNotNull($report->photo_path);
+        $this->assertCount(1, $report->photoUrls());
+    }
+
+    public function test_supervisor_observatory_report_requires_a_photo(): void
+    {
+        [, $colegio] = $this->sites();
+        $user = $this->companySupervisor();
+        app(\App\Services\Tenant\AssignCompanySupervisionPackageService::class)->execute(
+            $user->securityCompany,
+            \App\Enums\SupervisionPackageSku::Sit1,
+        );
+        $token = $this->loginCompanySupervisor();
+        $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload())->assertCreated();
+
+        $this->withToken($token)
+            ->post('/api/supervision/observatory/reports', [
+                'installation_id' => $colegio->id,
+                'kind' => 'hurto',
+                'body' => 'El supervisor vio el hurto desde la patrulla.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['photos']);
     }
 
     public function test_minuta_novedad_can_copy_to_observatory_only_on_colegio_door(): void
