@@ -34,6 +34,8 @@ Observatorio Compartir link (14 sep 2026): modal con scroll y buscador si hay mu
 
 Observatorio campo (14 sep 2026): mapa pin + 1–3 fotos en PWA/APK. Migrate `2026_09_14_120000` (`photo_paths`). Pull + `migrate --force` + `view:cache` + `route:cache`. Copiar PWA `public/campo` (va en el git) y APK v1.2. Sin seeder. `npm run build` por el Blade de la ficha.
 
+Landing welcome (14 sep 2026): scroll (`min-h-screen`), H1 Accesos/supervisión/observatorio, 3 cards, marca WCodex. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder.
+
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
 ```bash

@@ -228,10 +228,12 @@ Vista `resources/views/welcome.blade.php` · `WelcomeController` redirige autent
 
 | Elemento | Detalle |
 |----------|---------|
-| Layout | `h-screen` sin scroll: header + main flexible + footer |
+| Layout | `min-h-screen` con scroll; pie al fondo |
 | Hero | `flex-1`, grid 40/60 (texto / imagen dashboard) |
+| Título | Accesos, supervisión y observatorio |
 | Tarjeta `@guest` | Precio mínimo mensual (`PriceCalculator`), pills SaaS + anual, CTA → `/planes` |
-| Cards | Portería, Censo, Multi-cliente (glass, copy largo) |
+| Cards | Accesos, Supervisión, Observatorio |
+| Marca | WCodex · Innovative Software Solutions |
 | Header | Logo + «Iniciar sesión» |
 
 | Asset | Ruta |

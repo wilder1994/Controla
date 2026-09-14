@@ -25,6 +25,11 @@ final class PublicSignupFlowTest extends TestCase
         $response->assertOk();
         $response->assertSee('Ver planes y contratar');
         $response->assertSee('Licencia SaaS');
+        $response->assertSee('Accesos, supervisión y observatorio');
+        $response->assertSee('Accesos');
+        $response->assertSee('Supervisión');
+        $response->assertSee('Observatorio');
+        $response->assertSee('WCodex');
     }
 
     public function test_public_signup_creates_user_only_on_approved_payment(): void

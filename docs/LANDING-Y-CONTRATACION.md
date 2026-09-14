@@ -2,7 +2,7 @@
 
 Flujo guest: welcome → planes → contratación → checkout simulado → cuenta activa **solo** si el pago se aprueba.
 
-**Última actualización:** agosto 2026
+**Última actualización:** septiembre 2026
 
 ---
 
@@ -12,18 +12,18 @@ Vista: `resources/views/welcome.blade.php` · Controlador: `App\Http\Controllers
 
 Usuarios autenticados son redirigidos a `/home`. Invitados ven la landing completa.
 
-### Layout (una pantalla, sin scroll)
+### Layout (`min-h-screen`, con scroll)
 
 | Zona | Detalle |
 |------|---------|
-| Contenedor | `h-screen overflow-hidden` — header, main flexible y footer fijos |
+| Contenedor | `min-h-screen overflow-x-hidden` — columna flex; pie al fondo si cabe |
 | Header | Logo Controla + botón cyan «Iniciar sesión» (`/login`) |
 | Hero | `flex-1` en el main: grid 40/60 (`lg:grid-cols-5`, texto `col-span-2`, imagen `col-span-3`) |
-| Texto hero | Eyebrow «PLATAFORMA CONTROLA» + H1 «Control de accesos inteligente» (sin párrafo largo) |
+| Texto hero | Eyebrow «PLATAFORMA CONTROLA» + H1 «Accesos, supervisión y observatorio» + párrafo corto |
 | Tarjeta comercial | Solo `@guest`: pills Licencia SaaS + descuento anual, precio mínimo, CTA «Ver planes y contratar» → `/planes`, enlace secundario login |
-| Imagen | `hero-dashboard.png` a altura del hero (`h-full object-cover`) |
-| Cards inferiores | 3 cards glass (Portería, Censo, Multi-cliente) — `shrink-0`, sin cambio de copy |
-| Footer | Copyright + WM CodeSoft |
+| Imagen | `hero-dashboard.png` (`object-cover`, altura mínima en desktop) |
+| Cards inferiores | 3 cards glass: Accesos, Supervisión, Observatorio |
+| Footer | Copyright + WCodex · Innovative Software Solutions |
 
 ### Datos dinámicos
 
