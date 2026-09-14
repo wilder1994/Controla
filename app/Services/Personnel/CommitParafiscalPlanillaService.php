@@ -60,7 +60,7 @@ final class CommitParafiscalPlanillaService
 
         $spreadsheet = IOFactory::load($absolute);
         $parsed = $this->parser->parseSpreadsheet($spreadsheet);
-        $sheet = $spreadsheet->getSheet((int) $parsed['sheet_index']);
+        $spreadsheet->disconnectWorksheets();
 
         $employees = Employee::query()
             ->where('security_company_id', $companyId)
@@ -76,13 +76,8 @@ final class CommitParafiscalPlanillaService
 
         $dir = storage_path('app/tmp/parafiscales/'.$companyId.'/'.$userId);
         File::ensureDirectoryExists($dir);
-        $templatePath = $dir.'/header-template.xlsx';
-        $built = $this->clipper->buildHeaderTemplate(
-            $sheet,
-            (int) $parsed['header_row'],
-            (int) $parsed['max_col'],
-            $templatePath,
-        );
+        $sourcePath = $dir.'/source.xlsx';
+        File::copy($absolute, $sourcePath);
 
         $items = [];
         foreach ($parsed['groups'] as $document => $group) {
@@ -91,21 +86,13 @@ final class CommitParafiscalPlanillaService
                 continue;
             }
 
-            $values = [];
-            foreach ($group['rows'] as $row) {
-                $values[] = $this->clipper->exportRow($sheet, (int) $row, (int) $parsed['max_col']);
-            }
-
             $items[] = [
                 'employee_id' => $employee->id,
                 'company_id' => $employee->security_company_id,
-                'rows' => $group['rows'],
-                'values' => $values,
+                'rows' => array_map('intval', $group['rows']),
                 'total' => (float) $group['total'],
             ];
         }
-
-        $spreadsheet->disconnectWorksheets();
 
         $pension = is_string($parsed['pension_period'] ?? null) ? $parsed['pension_period'] : null;
         $salud = is_string($parsed['salud_period'] ?? null) ? $parsed['salud_period'] : null;
@@ -113,9 +100,9 @@ final class CommitParafiscalPlanillaService
         File::put($payloadPath, json_encode($items, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
 
         $state = [
-            'template' => $templatePath,
+            'source' => $sourcePath,
             'payload' => $payloadPath,
-            'merges' => $built['merges'],
+            'sheet_index' => (int) $parsed['sheet_index'],
             'cursor' => 0,
             'saved' => 0,
             'total' => count($items),
@@ -176,18 +163,17 @@ final class CommitParafiscalPlanillaService
             $dest = storage_path('app/'.$relative);
             File::ensureDirectoryExists(dirname($dest));
 
-            $this->clipper->writeFromValues(
-                $state['template'],
+            $this->clipper->writeClip(
+                (string) $state['source'],
+                (int) $state['sheet_index'],
                 (int) $state['header_row'],
-                $item['values'],
-                $item['rows'],
-                $state['merges'] ?? [],
-                $state['valor_cell'],
+                array_map('intval', $item['rows'] ?? []),
+                (string) $state['valor_cell'],
                 (float) $item['total'],
                 $dest,
             );
 
-            $this->replacePrevious($employee, $folder, $type, (string) $state['taken_on']);
+            $this->replacePrevious($employee, $folder, $type);
 
             EmployeeDocument::query()->create([
                 'security_company_id' => $employee->security_company_id,
@@ -214,7 +200,7 @@ final class CommitParafiscalPlanillaService
         if ($done) {
             $state['status'] = 'done';
             $this->preview->forget($companyId, $userId);
-            File::delete($state['template'] ?? '');
+            File::delete($state['source'] ?? '');
             File::delete($state['payload'] ?? '');
         }
 
@@ -268,7 +254,7 @@ final class CommitParafiscalPlanillaService
     {
         $state = Cache::get($this->stateKey($companyId, $userId));
         if (is_array($state)) {
-            File::delete($state['template'] ?? '');
+            File::delete($state['source'] ?? '');
             File::delete($state['payload'] ?? '');
         }
         Cache::forget($this->stateKey($companyId, $userId));
@@ -301,13 +287,11 @@ final class CommitParafiscalPlanillaService
         Employee $employee,
         DocumentFolder $folder,
         ParafiscalDocumentType $type,
-        string $takenOn,
     ): void {
         $previous = EmployeeDocument::query()
             ->where('employee_id', $employee->id)
             ->where('folder', $folder)
             ->where('document_type', $type->value)
-            ->whereDate('taken_on', $takenOn)
             ->get();
 
         foreach ($previous as $document) {

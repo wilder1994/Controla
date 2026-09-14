@@ -4,269 +4,236 @@ declare(strict_types=1);
 
 namespace App\Services\Personnel;
 
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
-use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use Throwable;
+use RuntimeException;
+use ZipArchive;
 
 final class PilaPlanillaClipper
 {
     /**
-     * @return array{path: string, merges: array<int, list<array{0: int, 1: int}>>}
-     */
-    public function buildHeaderTemplate(Worksheet $source, int $headerRow, int $maxCol, string $absolutePath): array
-    {
-        $book = new Spreadsheet;
-        $dest = $book->getActiveSheet();
-        $dest->setTitle(mb_substr($source->getTitle(), 0, 31));
-        $this->copySetup($source, $dest);
-
-        for ($col = 1; $col <= $maxCol; $col++) {
-            $letter = Coordinate::stringFromColumnIndex($col);
-            $width = $source->getColumnDimension($letter)->getWidth();
-            if ($width > 0) {
-                $dest->getColumnDimension($letter)->setWidth($width);
-            }
-        }
-
-        for ($row = 1; $row <= $headerRow; $row++) {
-            $this->copyRow($source, $dest, $row, $row, $maxCol);
-        }
-
-        if ($source->getHighestRow() > $headerRow) {
-            $this->copyRowStyle($source, $dest, $headerRow + 1, $headerRow + 1, $maxCol);
-        }
-
-        foreach ($source->getMergeCells() as $range) {
-            [$start, $end] = Coordinate::rangeBoundaries($range);
-            $startRow = (int) $start[1];
-            $endRow = (int) $end[1];
-            if ($startRow <= $headerRow && $endRow <= $headerRow) {
-                try {
-                    $dest->mergeCells($range);
-                } catch (Throwable) {
-                }
-            }
-        }
-
-        $this->copyDrawings($source, $dest);
-
-        $directory = dirname($absolutePath);
-        if (! is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        $writer = new Xlsx($book);
-        $writer->save($absolutePath);
-        $book->disconnectWorksheets();
-
-        return [
-            'path' => $absolutePath,
-            'merges' => $this->dataRowMerges($source, $headerRow),
-        ];
-    }
-
-    /**
-     * @param  list<list<mixed>>  $rows
-     * @param  array<int, list<array{0: int, 1: int}>>  $mergesBySrcRow
+     * Copia el xlsx original (tema, media, fondo, dibujos) y deja encabezado + filas de un cotizante.
+     *
      * @param  list<int>  $srcRows
      */
-    public function writeFromValues(
-        string $templatePath,
+    public function writeClip(
+        string $sourceXlsx,
+        int $sheetIndex,
         int $headerRow,
-        array $rows,
         array $srcRows,
-        array $mergesBySrcRow,
         string $valorCell,
         float $valorTotal,
         string $absoluteDest,
     ): void {
-        $book = IOFactory::load($templatePath);
-        $dest = $book->getActiveSheet();
-        $destRow = $headerRow + 1;
-
-        $styleRow = $headerRow + 1;
-        foreach ($rows as $index => $values) {
-            $srcRow = $srcRows[$index] ?? 0;
-            if ($destRow !== $styleRow) {
-                $this->copyRowStyle($dest, $dest, $styleRow, $destRow, max(1, count($values)));
-            }
-            foreach ($values as $offset => $value) {
-                $dest->getCell(Coordinate::stringFromColumnIndex($offset + 1).$destRow)->setValue($value);
-            }
-            foreach ($mergesBySrcRow[$srcRow] ?? [] as $span) {
-                try {
-                    $dest->mergeCells(
-                        Coordinate::stringFromColumnIndex($span[0]).$destRow.':'
-                        .Coordinate::stringFromColumnIndex($span[1]).$destRow
-                    );
-                } catch (Throwable) {
-                }
-            }
-            $destRow++;
+        if (! is_file($sourceXlsx)) {
+            throw new RuntimeException('No está el Excel de origen para recortar.');
         }
-
-        $dest->setCellValue($valorCell, $valorTotal);
 
         $directory = dirname($absoluteDest);
         if (! is_dir($directory)) {
             mkdir($directory, 0775, true);
         }
 
-        $writer = new Xlsx($book);
-        $writer->save($absoluteDest);
-        $book->disconnectWorksheets();
-    }
-
-    /**
-     * @return list<mixed>
-     */
-    public function exportRow(Worksheet $source, int $row, int $maxCol): array
-    {
-        $values = [];
-        for ($col = 1; $col <= $maxCol; $col++) {
-            $values[] = $this->exportCell($source->getCell(Coordinate::stringFromColumnIndex($col).$row));
+        if (! copy($sourceXlsx, $absoluteDest)) {
+            throw new RuntimeException('No se pudo copiar la plantilla original.');
         }
 
-        return $values;
-    }
-
-    /**
-     * @return array<int, list<array{0: int, 1: int}>>
-     */
-    private function dataRowMerges(Worksheet $source, int $headerRow): array
-    {
-        $byRow = [];
-        foreach ($source->getMergeCells() as $range) {
-            [$start, $end] = Coordinate::rangeBoundaries($range);
-            $startCol = (int) $start[0];
-            $startRow = (int) $start[1];
-            $endCol = (int) $end[0];
-            $endRow = (int) $end[1];
-            if ($startRow === $endRow && $startRow > $headerRow) {
-                $byRow[$startRow][] = [$startCol, $endCol];
-            }
+        $zip = new ZipArchive;
+        if ($zip->open($absoluteDest) !== true) {
+            throw new RuntimeException('No se pudo abrir el recorte.');
         }
 
-        return $byRow;
-    }
-
-    private function copyRow(Worksheet $source, Worksheet $dest, int $srcRow, int $destRow, int $maxCol): void
-    {
-        $this->copyRowStyle($source, $dest, $srcRow, $destRow, $maxCol);
-
-        for ($col = 1; $col <= $maxCol; $col++) {
-            $from = Coordinate::stringFromColumnIndex($col).$srcRow;
-            $to = Coordinate::stringFromColumnIndex($col).$destRow;
-            $dest->getCell($to)->setValue($this->exportCell($source->getCell($from)));
-        }
-    }
-
-    private function copyRowStyle(Worksheet $source, Worksheet $dest, int $srcRow, int $destRow, int $maxCol): void
-    {
-        $height = $source->getRowDimension($srcRow)->getRowHeight();
-        if ($height > 0) {
-            $dest->getRowDimension($destRow)->setRowHeight($height);
-        }
-
-        for ($col = 1; $col <= $maxCol; $col++) {
-            $from = Coordinate::stringFromColumnIndex($col).$srcRow;
-            $to = Coordinate::stringFromColumnIndex($col).$destRow;
-            try {
-                $dest->duplicateStyle($source->getStyle($from), $to);
-            } catch (Throwable) {
-            }
-        }
-    }
-
-    private function exportCell(\PhpOffice\PhpSpreadsheet\Cell\Cell $cell): mixed
-    {
-        $value = $cell->getValue();
-        if (is_string($value) && str_starts_with($value, '=')) {
-            try {
-                return $cell->getCalculatedValue();
-            } catch (Throwable) {
-                return PilaPlanillaCells::amount($cell);
-            }
-        }
-
-        return $value;
-    }
-
-    private function copySetup(Worksheet $source, Worksheet $dest): void
-    {
         try {
-            $dest->getPageSetup()->setOrientation($source->getPageSetup()->getOrientation());
-            $dest->getPageSetup()->setPaperSize($source->getPageSetup()->getPaperSize());
-            $dest->getPageSetup()->setFitToPage($source->getPageSetup()->getFitToPage());
-            $dest->getPageSetup()->setFitToWidth($source->getPageSetup()->getFitToWidth());
-            $dest->getPageSetup()->setFitToHeight($source->getPageSetup()->getFitToHeight());
-            $dest->getPageMargins()->setTop($source->getPageMargins()->getTop());
-            $dest->getPageMargins()->setRight($source->getPageMargins()->getRight());
-            $dest->getPageMargins()->setLeft($source->getPageMargins()->getLeft());
-            $dest->getPageMargins()->setBottom($source->getPageMargins()->getBottom());
-            $footer = $source->getHeaderFooter();
-            $dest->getHeaderFooter()->setOddHeader($footer->getOddHeader());
-            $dest->getHeaderFooter()->setOddFooter($footer->getOddFooter());
-            $dest->getHeaderFooter()->setEvenHeader($footer->getEvenHeader());
-            $dest->getHeaderFooter()->setEvenFooter($footer->getEvenFooter());
-            $dest->setShowGridlines($source->getShowGridlines());
-            $freeze = $source->getFreezePane();
-            if (is_string($freeze) && $freeze !== '') {
-                $dest->freezePane($freeze);
+            $sheetPath = $this->worksheetZipPath($zip, $sheetIndex);
+            $xml = $zip->getFromName($sheetPath);
+            if (! is_string($xml) || $xml === '') {
+                throw new RuntimeException('No se leyó la hoja de cotizantes.');
             }
-            $printArea = $source->getPageSetup()->getPrintArea();
-            if (is_string($printArea) && $printArea !== '') {
-                $dest->getPageSetup()->setPrintArea($printArea);
-            }
-            $srcBook = $source->getParent();
-            $destBook = $dest->getParent();
-            if ($srcBook instanceof Spreadsheet && $destBook instanceof Spreadsheet) {
-                $destBook->getDefaultStyle()->applyFromArray($srcBook->getDefaultStyle()->exportArray());
-            }
-        } catch (Throwable) {
+
+            $clipped = $this->clipSheetXml($xml, $headerRow, $srcRows, $valorCell, $valorTotal);
+            $zip->deleteName($sheetPath);
+            $zip->addFromString($sheetPath, $clipped);
+        } finally {
+            $zip->close();
         }
     }
 
-    private function copyDrawings(Worksheet $source, Worksheet $dest): void
+    /**
+     * @param  list<int>  $srcRows
+     */
+    private function clipSheetXml(string $xml, int $headerRow, array $srcRows, string $valorCell, float $valorTotal): string
     {
-        foreach ($source->getDrawingCollection() as $drawing) {
-            try {
-                if ($drawing instanceof MemoryDrawing) {
-                    $clone = new MemoryDrawing;
-                    $clone->setName($drawing->getName());
-                    $clone->setDescription($drawing->getDescription());
-                    $clone->setCoordinates($drawing->getCoordinates());
-                    $clone->setOffsetX($drawing->getOffsetX());
-                    $clone->setOffsetY($drawing->getOffsetY());
-                    $clone->setWidth($drawing->getWidth());
-                    $clone->setHeight($drawing->getHeight());
-                    $clone->setImageResource($drawing->getImageResource());
-                    $clone->setRenderingFunction($drawing->getRenderingFunction());
-                    $clone->setMimeType($drawing->getMimeType());
-                    $clone->setWorksheet($dest);
-
-                    continue;
-                }
-
-                if ($drawing instanceof Drawing && is_string($drawing->getPath()) && $drawing->getPath() !== '') {
-                    $clone = new Drawing;
-                    $clone->setName($drawing->getName());
-                    $clone->setDescription($drawing->getDescription());
-                    $clone->setPath($drawing->getPath(), false);
-                    $clone->setCoordinates($drawing->getCoordinates());
-                    $clone->setOffsetX($drawing->getOffsetX());
-                    $clone->setOffsetY($drawing->getOffsetY());
-                    $clone->setWidth($drawing->getWidth());
-                    $clone->setHeight($drawing->getHeight());
-                    $clone->setWorksheet($dest);
-                }
-            } catch (Throwable) {
+        $map = [];
+        $destRow = $headerRow + 1;
+        foreach ($srcRows as $src) {
+            $src = (int) $src;
+            if ($src > $headerRow && ! isset($map[$src])) {
+                $map[$src] = $destRow++;
             }
         }
+
+        if (preg_match('/^(.*?<sheetData\b[^>]*>)(.*)(<\/sheetData>.*)$/is', $xml, $parts) !== 1) {
+            throw new RuntimeException('La hoja no tiene sheetData.');
+        }
+
+        preg_match_all('/<row\b[^>]*\/>|<row\b[^>]*>.*?<\/row>/is', $parts[2], $rowMatches);
+        $kept = [];
+        foreach ($rowMatches[0] as $rowXml) {
+            if (preg_match('/\br="(\d+)"/', $rowXml, $rowNum) !== 1) {
+                continue;
+            }
+            $row = (int) $rowNum[1];
+            if ($row <= $headerRow) {
+                $kept[] = $rowXml;
+
+                continue;
+            }
+            if (! isset($map[$row])) {
+                continue;
+            }
+            $kept[] = $this->remapRowXml($rowXml, $row, $map[$row]);
+        }
+
+        $xml = $parts[1].implode('', $kept).$parts[3];
+        $xml = $this->clipMerges($xml, $headerRow, $map);
+
+        return $this->replaceNumericCell($xml, $valorCell, $valorTotal);
+    }
+
+    private function remapRowXml(string $rowXml, int $from, int $to): string
+    {
+        $rowXml = preg_replace('/(<row\b[^>]*\br=")' . $from . '(")/', '${1}'.$to.'${2}', $rowXml, 1) ?? $rowXml;
+        $rowXml = preg_replace('/\br="([A-Z]{1,3})' . $from . '"/', 'r="${1}'.$to.'"', $rowXml) ?? $rowXml;
+        $rowXml = preg_replace('/<f\b[^>]*>.*?<\/f>/is', '', $rowXml) ?? $rowXml;
+
+        return $rowXml;
+    }
+
+    /**
+     * @param  array<int, int>  $map
+     */
+    private function clipMerges(string $xml, int $headerRow, array $map): string
+    {
+        if (preg_match('/<mergeCells\b[^>]*>(.*?)<\/mergeCells>/is', $xml, $block) !== 1) {
+            return $xml;
+        }
+
+        preg_match_all('/<mergeCell\b[^>]*\/>/i', $block[1], $cells);
+        $kept = [];
+        foreach ($cells[0] as $cell) {
+            if (preg_match('/\bref="([^"]+)"/', $cell, $ref) !== 1) {
+                continue;
+            }
+            $next = $this->remapMergeRef($ref[1], $headerRow, $map);
+            if ($next === null) {
+                continue;
+            }
+            $kept[] = '<mergeCell ref="'.$next.'"/>';
+        }
+
+        $replacement = $kept === []
+            ? ''
+            : '<mergeCells count="'.count($kept).'">'.implode('', $kept).'</mergeCells>';
+
+        return preg_replace('/<mergeCells\b[^>]*>.*?<\/mergeCells>/is', $replacement, $xml, 1) ?? $xml;
+    }
+
+    /**
+     * @param  array<int, int>  $map
+     */
+    private function remapMergeRef(string $ref, int $headerRow, array $map): ?string
+    {
+        if (preg_match('/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i', $ref, $m) !== 1) {
+            return null;
+        }
+
+        $startRow = (int) $m[2];
+        $endRow = (int) $m[4];
+        if ($startRow <= $headerRow && $endRow <= $headerRow) {
+            return strtoupper($m[1]).$startRow.':'.strtoupper($m[3]).$endRow;
+        }
+
+        if ($startRow === $endRow && isset($map[$startRow])) {
+            $row = $map[$startRow];
+
+            return strtoupper($m[1]).$row.':'.strtoupper($m[3]).$row;
+        }
+
+        if (isset($map[$startRow], $map[$endRow])) {
+            return strtoupper($m[1]).$map[$startRow].':'.strtoupper($m[3]).$map[$endRow];
+        }
+
+        return null;
+    }
+
+    private function replaceNumericCell(string $xml, string $address, float $value): string
+    {
+        $address = strtoupper($address);
+        $cell = '<c r="'.$address.'"><v>'.$this->xmlNumber($value).'</v></c>';
+        $replaced = preg_replace(
+            '/<c\b[^>]*\br="'.$address.'"[^>]*>.*?<\/c>/is',
+            $cell,
+            $xml,
+            1,
+            $count,
+        );
+
+        return is_string($replaced) && $count > 0 ? $replaced : $xml;
+    }
+
+    private function xmlNumber(float $value): string
+    {
+        if (abs($value - round($value)) < 0.0000001) {
+            return (string) (int) round($value);
+        }
+
+        return rtrim(rtrim(sprintf('%.8F', $value), '0'), '.');
+    }
+
+    private function worksheetZipPath(ZipArchive $zip, int $sheetIndex): string
+    {
+        $workbook = $this->zipRequired($zip, 'xl/workbook.xml');
+        if (preg_match_all('/<sheet\b[^>]*>/i', $workbook, $sheets) !== false && $sheets[0] === []) {
+            throw new RuntimeException('El libro no tiene hojas.');
+        }
+        if (! isset($sheets[0][$sheetIndex])) {
+            throw new RuntimeException('No está la hoja de cotizantes.');
+        }
+
+        $tag = $sheets[0][$sheetIndex];
+        if (preg_match('/(?:r:id|r:Id)\s*=\s*"([^"]+)"/', $tag, $rid) !== 1) {
+            throw new RuntimeException('La hoja no tiene relación.');
+        }
+
+        $rels = $this->zipRequired($zip, 'xl/_rels/workbook.xml.rels');
+        $id = preg_quote($rid[1], '/');
+        if (preg_match('/<Relationship\b[^>]*\bId="'.$id.'"[^>]*\bTarget="([^"]+)"/i', $rels, $target) !== 1
+            && preg_match('/<Relationship\b[^>]*\bTarget="([^"]+)"[^>]*\bId="'.$id.'"/i', $rels, $target) !== 1) {
+            throw new RuntimeException('No está el XML de la hoja.');
+        }
+
+        $path = ltrim(str_replace('\\', '/', html_entity_decode($target[1])), '/');
+        if (str_starts_with($path, 'xl/')) {
+            return $path;
+        }
+
+        return 'xl/'.$path;
+    }
+
+    private function zipRequired(ZipArchive $zip, string $name): string
+    {
+        $xml = $zip->getFromName($name);
+        if (is_string($xml) && $xml !== '') {
+            return $xml;
+        }
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entry = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+            if (strcasecmp($entry, $name) === 0) {
+                $xml = $zip->getFromIndex($i);
+
+                return is_string($xml) ? $xml : '';
+            }
+        }
+
+        throw new RuntimeException('Falta '.$name.' en el Excel.');
     }
 }

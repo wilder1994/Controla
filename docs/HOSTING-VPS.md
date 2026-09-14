@@ -40,7 +40,7 @@ Observatorio fotos link + tipos empresa (14 sep 2026): `/o/{slug}` y panel recto
 
 Menú móvil paneles (14 sep 2026): hamburguesa + drawer en cliente/empresa/plataforma/portería. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder.
 
-Parafiscales planilla (14 sep 2026): recorte sobre plantilla original, preview xlsx en modal, overlay con % (POST a trozos). Sin migrate. Pull + `npm run build` + `view:cache` + `route:cache`.
+Parafiscales planilla (14 sep 2026): recorte = copia del xlsx original (fondo/logo) + filas del cotizante; una carga sustituye la anterior. Overlay con %. Sin migrate. Pull + `view:cache` + `route:cache`.
 
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 

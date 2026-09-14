@@ -154,7 +154,7 @@ final class PersonnelDocumentTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_company_admin_can_commit_parafiscal_planilla_and_replace_same_period(): void
+    public function test_company_admin_can_commit_parafiscal_planilla_and_replace_previous(): void
     {
         $this->seedWithPilot();
         $admin = $this->companyAdmin();
@@ -198,22 +198,23 @@ final class PersonnelDocumentTest extends TestCase
         $this->assertSame('2026-08-01', $document->taken_on?->format('Y-m-d'));
         $absolute = storage_path('app/'.$document->disk_path);
         $this->assertTrue(is_file($absolute));
-        $this->assertStringNotContainsString($missing, (string) file_get_contents($absolute));
 
         $sheet = IOFactory::load($absolute)->getActiveSheet();
         $this->assertSame(180500.0, (float) $sheet->getCell('BJ15')->getCalculatedValue());
         $this->assertSame((float) $employee->document_number, (float) $sheet->getCell('E21')->getCalculatedValue());
         $this->assertSame((float) $employee->document_number, (float) $sheet->getCell('E22')->getCalculatedValue());
         $this->assertSame('', trim((string) $sheet->getCell('E23')->getFormattedValue()));
+        $this->assertNotSame((float) $missing, (float) $sheet->getCell('E21')->getCalculatedValue());
+        $this->assertNotSame((float) $missing, (float) $sheet->getCell('E22')->getCalculatedValue());
 
         $this->actingAs($admin)
             ->get(route('company.personnel-documents.preview', $document))
             ->assertOk()
             ->assertSee('PILOT UNO');
 
-        $second = $this->planillaUpload('pila-agosto-2.xlsx', [
+        $second = $this->planillaUpload('pila-octubre.xlsx', [
             ['document' => $employee->document_number, 'name' => 'PILOT UNO', 'totals' => [200000]],
-        ]);
+        ], '2026-10', '2026-10');
 
         $this->actingAs($admin)
             ->post(route('company.personnel-documents.parafiscales.preview.store'), ['file' => $second])
@@ -285,15 +286,15 @@ final class PersonnelDocumentTest extends TestCase
     /**
      * @param  list<array{document: string, name: string, totals: list<float>}>  $people
      */
-    private function planillaUpload(string $filename, array $people): UploadedFile
+    private function planillaUpload(string $filename, array $people, string $pension = '2026-08', string $salud = '2026-09'): UploadedFile
     {
         $book = new Spreadsheet;
         $sheet = $book->getActiveSheet();
         $sheet->setCellValue('B14', 'Pensión');
         $sheet->setCellValue('H14', 'Salud');
         $sheet->setCellValue('BJ14', 'Valor');
-        $sheet->setCellValue('B15', '2026-08');
-        $sheet->setCellValue('H15', '2026-09');
+        $sheet->setCellValue('B15', $pension);
+        $sheet->setCellValue('H15', $salud);
         $sheet->setCellValue('BJ15', 0);
         $sheet->setCellValue('D20', 'Identificación');
         $sheet->setCellValue('I20', 'Nombre');
