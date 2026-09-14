@@ -115,8 +115,9 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:items-start">
-            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-w-0 flex flex-col max-h-[min(36rem,calc(100dvh-16rem))] overflow-hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="relative min-h-0 max-h-[min(36rem,calc(100dvh-16rem))] lg:max-h-none">
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-w-0 flex flex-col overflow-hidden h-full max-h-full lg:absolute lg:inset-0">
                 <div class="flex items-center justify-between gap-2 mb-3 shrink-0">
                     <h3 class="text-sm font-semibold text-white">Cartera de clientes</h3>
                     <span class="text-xs text-slate-500">
@@ -159,8 +160,9 @@
                 </div>
                 <p class="mt-2 text-xs text-slate-600 shrink-0">Usa «Entrar como empresa» para operar clientes y portería.</p>
             </section>
+            </div>
 
-            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-4 min-w-0">
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 space-y-4 min-w-0 h-full">
                 <div>
                     <h3 class="text-sm font-semibold text-white">Paquete y ciclo</h3>
                     <p class="text-xs text-slate-500 mt-1">
