@@ -14,6 +14,7 @@
     <div class="max-w-lg mx-auto px-4 py-6">
         {{ $slot }}
     </div>
+    <x-ui.flash-toasts />
     @stack('scripts')
 </body>
 </html>

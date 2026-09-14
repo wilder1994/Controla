@@ -1,0 +1,10 @@
+{
+    "This action is unauthorized.": "No tienes permiso para esta acción.",
+    "The given data was invalid.": "Revise los datos e inténtelo de nuevo.",
+    "Unauthenticated.": "Debe iniciar sesión.",
+    "Page Expired": "La página expiró",
+    "Too Many Requests": "Demasiadas solicitudes",
+    "Server Error": "Error del servidor",
+    "Not Found": "No encontrado",
+    "Forbidden": "Acceso denegado"
+}

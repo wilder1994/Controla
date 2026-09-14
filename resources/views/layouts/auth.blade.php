@@ -59,5 +59,6 @@
                 </p>
             </div>
         </div>
+        <x-ui.flash-toasts />
     </body>
 </html>

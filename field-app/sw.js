@@ -1,4 +1,4 @@
-const CACHE = 'controla-sup-v40';
+const CACHE = 'controla-sup-v41';
 const PRECACHE = ['./', './index.html', './offline.js', './app.js', './manifest.json'];
 
 self.addEventListener('install', (event) => {

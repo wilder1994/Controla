@@ -15,6 +15,7 @@ import { employeeReassignForm } from './employee-reassign-form';
 import { panelSidebar } from './panel-sidebar';
 import './employee-document-indexer';
 
+import { initFormFeedback } from './form-feedback';
 import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
@@ -33,3 +34,4 @@ Alpine.data('postEmployeePicker', postEmployeePicker);
 Alpine.data('employeeReassignForm', employeeReassignForm);
 
 Alpine.start();
+initFormFeedback();

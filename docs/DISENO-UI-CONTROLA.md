@@ -24,8 +24,11 @@ Referencia oficial del sistema visual. **Panel empresa** (`/company`, acento ind
 | Label | `resources/views/components/ui/label.blade.php` | `<x-ui.label>` |
 | Input | `resources/views/components/ui/input.blade.php` | `<x-ui.input>` |
 | Error campo | `resources/views/components/ui/field-error.blade.php` | `<x-ui.field-error :messages="$errors->get('campo')" />` |
+| Avisos | `resources/views/components/ui/flash-toasts.blade.php` | `<x-ui.flash-toasts />` en cada layout |
 
 **Regla:** no inventar clases de botón/input en vistas nuevas del panel empresa; usar estos componentes.
+
+**Idioma y avisos (español):** `APP_LOCALE=es`. Textos en `lang/es/` (`validation`, `auth`, `passwords`) y `lang/es.json`. Los formularios llevan `novalidate` desde `resources/js/form-feedback.js`: el navegador no muestra *Please fill out this field*. El primer error, flash `success`/`warning`/`error` o el HTML5 en español sale **al centro ~2,8 s** y enfoca el campo. API JSON: `Revise los datos…` / `No tienes permiso…` (no *The given data was invalid*). App de campo: overlay `#feedback`, misma regla. Tests: `tests/Feature/Locale/SpanishMessagesTest.php`.
 
 ### Ejemplo formulario
 
@@ -355,4 +358,4 @@ focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30
 
 ---
 
-*Última actualización: agosto 2026 — shell viewport-fixed en paneles admin/company/client/access.*
+*Última actualización: 13 septiembre 2026 — avisos centrados en español (`flash-toasts` + `form-feedback.js`).*

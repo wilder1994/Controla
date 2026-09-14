@@ -102,6 +102,13 @@ function offlineReady() {
 function setStatus(text, ok = true) {
     statusEl.textContent = text;
     statusEl.className = ok ? 'ok' : 'err';
+    const wrap = document.getElementById('feedback');
+    const box = wrap?.querySelector('p');
+    if (!wrap || !box || !text) return;
+    box.textContent = String(text);
+    wrap.className = ok ? 'ok show' : 'err show';
+    clearTimeout(setStatus.timer);
+    setStatus.timer = setTimeout(() => wrap.classList.remove('show'), 2800);
 }
 
 function show(id) {
@@ -133,11 +140,20 @@ async function api(path, options = {}) {
         const parts = data.errors
             ? Object.values(data.errors).flat().filter(Boolean)
             : [];
+        const httpHint = {
+            401: 'Usuario o contraseña no coinciden.',
+            403: 'No tienes permiso para esta acción.',
+            419: 'La sesión expiró. Recarga e intenta de nuevo.',
+            422: 'Revise los datos e inténtelo de nuevo.',
+            429: 'Demasiados intentos. Espere un momento.',
+            500: 'Error del servidor. Intenta de nuevo.',
+        };
         const text = parts.join(' ')
             || data.message
             || data.login?.[0]
             || data.email?.[0]
-            || `HTTP ${res.status}`;
+            || httpHint[res.status]
+            || 'No se pudo completar. Intenta de nuevo.';
         const error = new Error(String(text).replace(/\bvalidation\.\w+\b/g, 'Revise los datos e inténtelo de nuevo.'));
         error.status = res.status;
         throw error;

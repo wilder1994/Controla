@@ -27,6 +27,8 @@
                 </header>
             @endisset
 
+            <x-ui.flash-toasts />
+
             <!-- Page Content -->
             <main>
                 {{ $slot }}

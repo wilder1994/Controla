@@ -12,11 +12,14 @@ use App\Http\Middleware\EnsureSupervisorProApi;
 use App\Http\Middleware\EnsureSupervisorUsesFieldApp;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\InitializeAccessTenancy;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -77,5 +80,38 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return $redirectExpiredPage($request);
+        });
+
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => 'Revise los datos e inténtelo de nuevo.',
+                'errors' => $e->errors(),
+            ], $e->status);
+        });
+
+        $exceptions->render(function (UnauthorizedException $e, Request $request) {
+            $message = 'No tienes permiso para esta acción.';
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 403);
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (AuthorizationException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            $message = $e->getMessage();
+            if ($message === '' || $message === 'This action is unauthorized.') {
+                $message = 'No tienes permiso para esta acción.';
+            }
+
+            return response()->json(['message' => $message], 403);
         });
     })->create();
