@@ -54,6 +54,7 @@ final class CompanyInstallationController extends Controller
         return view('modules.company.installations.index', [
             'installations' => $rows,
             'search' => $search,
+            'sigBoard' => app(\App\Services\Ops\BuildSigBoardService::class)->forCompany($companyId),
         ]);
     }
 

@@ -6,6 +6,10 @@
     </x-slot:actions>
 
     <div class="space-y-4">
+        @if (($search ?? '') === '' && isset($sigBoard))
+            @include('modules.ops.sig-board', ['sigBoard' => $sigBoard, 'compact' => true])
+        @endif
+
         <form method="GET" action="{{ route('company.installations.index') }}"
               class="rounded-lg border border-slate-800 bg-slate-900/60 p-3 flex flex-col sm:flex-row sm:items-center gap-3">
             <div class="flex-1 min-w-0">

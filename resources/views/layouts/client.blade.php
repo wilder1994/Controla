@@ -53,6 +53,11 @@
                         </a>
                         @endif
                     </nav>
+                    @include('partials.ops-live-alerts', [
+                        'opsPoll' => auth()->check() ? route('client.ops.alerts') : null,
+                        'opsPanicUrl' => auth()->check() ? route('client.ops.panic') : '',
+                        'showPanic' => true,
+                    ])
                     @include('partials.sidebar-user')
                 </div>
             </aside>

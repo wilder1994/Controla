@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\StructureRepository;
+use App\Services\Ops\BuildSigBoardService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\View\View;
 
 final class DashboardController extends Controller
 {
     public function __construct(
-        private readonly StructureRepository $structureRepository,
+        private readonly BuildSigBoardService $sigBoard,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -20,9 +20,8 @@ final class DashboardController extends Controller
     {
         abort_unless(auth()->user()?->can('client.structures.manage'), 403);
 
-        $clientId = (int) $this->tenantContext->clientId();
-        $units = $this->structureRepository->leafUnitsCount($clientId);
-
-        return view('modules.client.dashboard', compact('units'));
+        return view('modules.client.dashboard', [
+            'sigBoard' => $this->sigBoard->forTenant($this->tenantContext),
+        ]);
     }
 }

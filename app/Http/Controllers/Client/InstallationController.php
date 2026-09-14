@@ -47,6 +47,7 @@ final class InstallationController extends Controller
         return view('modules.client.installations.index', [
             'installations' => $rows,
             'search' => $search,
+            'sigBoard' => app(\App\Services\Ops\BuildSigBoardService::class)->forTenant($this->tenantContext),
         ]);
     }
 

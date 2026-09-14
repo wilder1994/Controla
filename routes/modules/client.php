@@ -26,6 +26,11 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
             ->middleware('permission:client.structures.manage')
             ->name('dashboard');
 
+        Route::get('/ops/alerts.json', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'poll'])
+            ->name('ops.alerts');
+        Route::post('/ops/panic', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'panic'])
+            ->name('ops.panic');
+
         Route::middleware('permission:client.structures.manage')->group(function () {
             Route::get('/documents', [PersonnelDocumentController::class, 'index'])->name('personnel-documents.index');
             Route::get('/documents/file/{document}/preview', [PersonnelDocumentController::class, 'preview'])->name('personnel-documents.preview');

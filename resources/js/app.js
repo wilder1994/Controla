@@ -12,7 +12,7 @@ import { observatoryIntake, observatoryPhotos } from './observatory-intake';
 import { observatoryMap } from './observatory-map';
 import { postEmployeePicker } from './post-employee-picker';
 import { employeeReassignForm } from './employee-reassign-form';
-import { panelSidebar } from './panel-sidebar';
+import { opsLiveAlerts } from './ops-live-alerts';
 import './employee-document-indexer';
 
 import { initFormFeedback } from './form-feedback';
@@ -20,6 +20,7 @@ import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 Alpine.data('panelSidebar', panelSidebar);
+Alpine.data('opsLiveAlerts', opsLiveAlerts);
 Alpine.data('companyLogoField', companyLogoField);
 Alpine.data('employeeFichaForm', employeeFichaForm);
 Alpine.data('createCompanyForm', createCompanyForm);

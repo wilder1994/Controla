@@ -84,7 +84,7 @@ final class RecordSupervisorProReviewService
             ]);
         }
 
-        return DB::transaction(function () use ($shift, $input, $client, $post, $employee) {
+        $review = DB::transaction(function () use ($shift, $input, $client, $post, $employee) {
             $company = $shift->securityCompany;
             $review = SupervisorShiftReview::query()->create([
                 'supervisor_shift_id' => $shift->id,
@@ -149,6 +149,19 @@ final class RecordSupervisorProReviewService
 
             return $review->fresh(['client', 'supervisorPost.installation', 'employee']);
         });
+
+        $fresh = $review instanceof SupervisorShiftReview ? $review : null;
+        if ($fresh?->client && $fresh->supervisorPost?->installation) {
+            app(\App\Services\Ops\RecordOperationalAlertService::class)->serviceChange(
+                $fresh->client,
+                'Revista en «'.$fresh->supervisorPost->name.'» · '.$fresh->supervisorPost->installation->name,
+                $fresh->supervisorPost->installation,
+                $fresh->supervisorPost,
+                $shift->user,
+            );
+        }
+
+        return $review;
     }
 
     private function storePhoto(UploadedFile $file, string $directory, string $name): string

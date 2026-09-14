@@ -55,6 +55,11 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             ->middleware('permission:company.dashboard')
             ->name('dashboard');
 
+        Route::get('/ops/alerts.json', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'poll'])
+            ->name('ops.alerts');
+        Route::post('/ops/panic', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'panic'])
+            ->name('ops.panic');
+
         Route::get('/billing', [BillingController::class, 'index'])
             ->middleware('permission:company.billing.manage')
             ->name('billing.index');

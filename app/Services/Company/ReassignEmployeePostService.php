@@ -61,6 +61,17 @@ final class ReassignEmployeePostService
             $employee->supervisorPosts()->sync([$post->id]);
         });
 
+        $post->load(['installation', 'client']);
+        if ($post->client instanceof Client && $post->installation instanceof Installation) {
+            app(\App\Services\Ops\RecordOperationalAlertService::class)->serviceChange(
+                $post->client,
+                $employee->fullName().' asignado a «'.$post->name.'» · '.$post->installation->name,
+                $post->installation,
+                $post,
+                auth()->user(),
+            );
+        }
+
         return $post->refresh();
     }
 }

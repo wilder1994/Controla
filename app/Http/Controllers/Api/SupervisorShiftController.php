@@ -27,6 +27,7 @@ use App\Services\Company\OpenSupervisorShiftService;
 use App\Services\Company\RecordSupervisorFieldLogService;
 use App\Services\Company\RecordSupervisorProReviewService;
 use App\Services\Company\SeedSupervisorIntakeDefaultsService;
+use App\Services\Ops\TriggerPanicService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -48,6 +49,7 @@ final class SupervisorShiftController extends Controller
         private readonly LookupSupervisorVisitService $visitLookup,
         private readonly FindUserByLogin $findUserByLogin,
         private readonly BuildSupervisorOfflinePackService $offlinePack,
+        private readonly TriggerPanicService $panic,
     ) {}
 
     public function login(Request $request): JsonResponse
@@ -374,6 +376,26 @@ final class SupervisorShiftController extends Controller
         }
 
         return $rows;
+    }
+
+    public function panic(Request $request): JsonResponse
+    {
+        abort_if($this->shiftService->currentFor($request->user()) === null, 422, 'No hay turno abierto.');
+
+        $data = $request->validate([
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'note' => ['nullable', 'string', 'max:240'],
+        ]);
+
+        $this->panic->execute(
+            $request->user(),
+            isset($data['latitude']) ? (float) $data['latitude'] : null,
+            isset($data['longitude']) ? (float) $data['longitude'] : null,
+            (string) ($data['note'] ?? ''),
+        );
+
+        return response()->json(['ok' => true], 201);
     }
 
     /**

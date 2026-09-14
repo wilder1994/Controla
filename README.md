@@ -404,7 +404,9 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 |------|---------|
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
-| `GET /company/installations` | Directorio de sedes: búsqueda, crear, ficha (código, área, admin de sede, mapa, puestos) |
+| `GET /company/installations` | Directorio de sedes + tablero SIG (mapa, puestos, novedades de servicio) si no hay búsqueda |
+| `GET /company/ops/alerts.json` | Poll de pánico/Observatorio (overlay; no incluye a quien disparó) |
+| `POST /company/ops/panic` | Pánico por usuario de empresa (no es el de portería) |
 | `GET /company/observatory/events` | Observatorio: **Tablero** (filtro cliente; pines / calor sede / calor riesgo; puntaje; líneas por tipo; leyenda/chips agrupados por slug) y **Eventos**. Tipos: solo lectura. API: `/docs/observatory` |
 | `GET /company/observatory/tablero.pptx` | Observatorio: export PPTX del tablero (mismos filtros; solo cifras) |
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
@@ -605,8 +607,10 @@ Tablas relacionadas:
 
 | Ruta | Módulo |
 |------|--------|
-| `/client/dashboard` | Resumen |
-| `/client/installations` | Directorio de sedes; la ficha incluye estructura (nodos). `/client/structures` redirige |
+| `/client/dashboard` | Resumen SIG: mapa, puestos, novedades de servicio, afiliación, gráfica de revistas |
+| `/client/installations` | Directorio de sedes + tablero SIG compacto (sin búsqueda). `/client/structures` redirige |
+| `/client/ops/alerts.json` | Poll de pánico/Observatorio (overlay) |
+| `/client/ops/panic` | Pánico por usuario (el overlay lo reciben usuarios de empresa, no el emisor) |
 | `/client/observatory/events` | Observatorio (módulo opt-in). Tablero + Eventos + **Tipos**. **Nuevo reporte**: hasta 3 fotos (cámara/miniatura, opcional). Rector cierra; apoyo reporta |
 | `/client/observatory/tablero.pptx` | Observatorio: export PPTX del tablero (mismos filtros; solo cifras) |
 | `/client/members` | Personas: tipo de documento + fecha de nacimiento; menores (Ley 1581) sin export; QR solo adultos |
@@ -805,6 +809,7 @@ API autenticada con tokens Laravel Sanctum para consumo desde app móvil futura.
 | `/api/supervision/catalog` | GET | Contrato de 8 módulos de campo |
 | `/api/supervision/posts` | GET | Puestos `supervisor_posts` del cliente (no `locations`) |
 | `/api/supervision/reviews` | POST | Revista en puesto de Supervisión (no llena minuta Accesos) |
+| `/api/supervision/panic` | POST | Pánico del supervisor (turno abierto; GPS opcional). El teléfono emisor no oye |
 | `/api/supervision/observatory/sites` | GET | Colegios de la empresa para el Observatorio |
 | `/api/supervision/observatory/reports` | POST | Reporte Observatorio desde la PWA (supervisor) |
 | `/api/supervision/offline-pack` | GET | Snapshot offline: sitios, puestos, vigilantes, catálogo |

@@ -34,6 +34,17 @@ final class ManageSupervisorPostService
 
         $this->syncEmployees($client, $post, $data['employee_ids'] ?? []);
 
+        $installation = $post->installation;
+        if ($installation instanceof Installation) {
+            app(\App\Services\Ops\RecordOperationalAlertService::class)->serviceChange(
+                $client,
+                'Alta de puesto «'.$post->name.'» en '.$installation->name,
+                $installation,
+                $post,
+                auth()->user(),
+            );
+        }
+
         return $post->refresh()->load('employees');
     }
 
@@ -71,6 +82,17 @@ final class ManageSupervisorPostService
 
         if (array_key_exists('employee_ids', $data)) {
             $this->syncEmployees($client, $post, $data['employee_ids'] ?? []);
+        }
+
+        $installation = $post->installation;
+        if ($installation instanceof Installation) {
+            app(\App\Services\Ops\RecordOperationalAlertService::class)->serviceChange(
+                $client,
+                'Cambio en puesto «'.$post->name.'» · '.$installation->name,
+                $installation,
+                $post,
+                auth()->user(),
+            );
         }
 
         return $post->refresh()->load('employees');

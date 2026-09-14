@@ -2097,6 +2097,21 @@ document.getElementById('btn-obs-send').onclick = () => withBusy(
 );
 
 document.getElementById('btn-open-observatory').onclick = () => showObservatory();
+document.getElementById('btn-panic').onclick = async () => {
+    if (!window.confirm('¿Activar pánico? Se avisa a la empresa. Este teléfono no sonará.')) return;
+    try {
+        await api('/supervision/panic', {
+            method: 'POST',
+            body: JSON.stringify({
+                latitude: lastGeo?.latitude ?? null,
+                longitude: lastGeo?.longitude ?? null,
+            }),
+        });
+        statusEl.textContent = 'Pánico enviado a la empresa.';
+    } catch (err) {
+        statusEl.textContent = err.message || 'No se pudo enviar el pánico.';
+    }
+};
 document.getElementById('btn-obs-back').onclick = showOpsHome;
 document.getElementById('btn-open-sheets').onclick = () => {
     showSheets();

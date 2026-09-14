@@ -393,3 +393,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-14 | Parafiscales: layout PILA por filas CC+cédula (hoja de cotizantes), no por la Identificación del aportante. |
 | 2026-09-14 | Parafiscales: recorte = copia del xlsx original (fondo/logo) + filas del cotizante; una carga sustituye la anterior. |
 | 2026-09-14 | Súper admin: cambio de plan Accesos+Supervisión ya / fecha / al corte. Cartera de clientes con scroll. |
+| 2026-09-14 | Tablero SIG en resumen cliente e instalaciones; pánico por usuario (empresa/APK) y overlay Observatorio sin alertar a quien reporta. |

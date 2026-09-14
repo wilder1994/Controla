@@ -72,7 +72,7 @@ final class SubmitObservatoryReportService
         $reporter = $data['reported_by'] ?? null;
         $reporter = $reporter instanceof User ? $reporter : null;
 
-        return DB::transaction(function () use ($client, $installation, $type, $body, $anonymous, $data, $photoPath, $photoPaths, $ip, $coords, $source, $role, $reporter): ObservatoryReport {
+        $report = DB::transaction(function () use ($client, $installation, $type, $body, $anonymous, $data, $photoPath, $photoPaths, $ip, $coords, $source, $role, $reporter): ObservatoryReport {
             $event = $this->openOrAttach($client, $installation, $type);
 
             return ObservatoryReport::query()->create([
@@ -95,6 +95,12 @@ final class SubmitObservatoryReportService
                 'ip_hash' => $ip !== null ? hash('sha256', $ip) : null,
             ]);
         });
+
+        $report->setRelation('client', $client);
+        $report->setRelation('installation', $installation);
+        app(\App\Services\Ops\RecordOperationalAlertService::class)->observatory($report);
+
+        return $report;
     }
 
     private function openOrAttach(Client $client, Installation $installation, ObservatoryReportType $type): ObservatoryEvent

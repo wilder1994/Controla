@@ -38,7 +38,7 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia `public/campo/` y Laragon `Controla_Supervision`). Caché SW `controla-sup-v43`. Hosting: `https://controla.wcodex.cloud/campo`. APK Android (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
+PWA en `field-app/` (copia `public/campo/` y Laragon `Controla_Supervision`). Caché SW `controla-sup-v44`. Hosting: `https://controla.wcodex.cloud/campo`. APK Android (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. En login y primer cambio de clave, icono de ojo para verla. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
@@ -80,6 +80,7 @@ Cerrar turno sin red también se encola (fotos incluidas). No borrar datos del s
 | `supports` | `POST /logs` | Formulario propio. Requiere cliente y GPS. Tipo + motivo |
 | `documents` | `POST /logs` | Del turno. Sin cliente ni GPS. Tipos + entregado/pendiente |
 | Observatorio | `POST /observatory/reports` | No es un log de revista. Colegio + tipo + texto; anónimo opcional. Colegios en el paquete offline |
+| Pánico | `POST /panic` | Turno abierto. Avisa a la empresa; este teléfono no suena |
 
 Contrato de campos: `GET /api/supervision/catalog` (`FieldModuleCatalog`). Logs append-only en `supervisor_field_logs` (`supervisor_shift_review_id` si cuelga de revista). Recomendaciones: `supervisor_recommendations` (registro inmutable del turno; `GET /recommendations` lista recientes).
 
@@ -215,6 +216,7 @@ Fuera de alcance de este corte: chatbot en la PWA de campo, app de residentes, W
 | GET | `/api/supervision/guards` | Vigilantes por cédula |
 | GET | `/api/supervision/catalog` | 8 módulos |
 | POST | `/api/supervision/reviews` | Multipart: cliente, puesto, vigilante, foto, GPS, novedad. `client_event_id` opcional (idempotente) |
+| POST | `/api/supervision/panic` | Pánico. JSON lat/lng/note. Requiere turno abierto |
 | POST | `/api/supervision/logs` | Módulos de campo. `client_event_id` opcional |
 | GET | `/api/supervision/sheets` | Fichas del supervisor autenticado |
 | GET | `/api/supervision/sheets/{kind}/{id}` | Carta HTML de la ficha |

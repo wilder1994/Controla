@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/shifts/ping', [SupervisorShiftController::class, 'ping']);
         Route::post('/shifts/close', [SupervisorShiftController::class, 'close']);
         Route::post('/reviews', [SupervisorShiftController::class, 'review']);
+        Route::post('/panic', [SupervisorShiftController::class, 'panic']);
         Route::get('/catalog', [SupervisorFieldLogController::class, 'catalog']);
         Route::post('/logs', [SupervisorFieldLogController::class, 'store']);
         Route::get('/observatory/sites', [SupervisorObservatoryController::class, 'sites']);

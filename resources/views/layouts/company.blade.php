@@ -154,6 +154,12 @@
                 </a>
                 @endcanany
             </nav>
+                    @include('partials.ops-live-alerts', [
+                        'opsPoll' => auth()->check() ? route('company.ops.alerts') : null,
+                        'opsPanicUrl' => auth()->check() ? route('company.ops.panic') : '',
+                        'showPanic' => auth()->user()?->canany(['company.supervision.view', 'observatory.view'])
+                            && auth()->user()?->hasAnyRole(['company-admin', 'colaborador']),
+                    ])
                     @include('partials.sidebar-user')
                 </div>
             </aside>

@@ -43,6 +43,8 @@ En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar /
 
 Turno abierto. Entrada **Observatorio** (aparte de la revista). Colegio, tipo, texto, **mapa con pin arrastrable**, **1 a 3 fotos** (cámara, miniaturas; la primera es obligatoria), anónimo. Colegios de la empresa en el paquete offline. `POST /api/supervision/observatory/reports` con `photos[]` y lat/lng.
 
+Un reporte nuevo abre overlay + sonido en empresa (Observatorio), admin del cliente y admin de esa instalación. **Quien reporta no oye ni ve la alerta.** Poll `GET /company/ops/alerts.json` y `/client/ops/alerts.json`. El pánico de portería no cambia. El pánico por usuario (sidebar empresa/cliente y APK) solo lo reciben usuarios de empresa con Supervisión u Observatorio; quien lo oprime tampoco oye.
+
 ## Minuta
 
 En `/access/guard_logs/create`, tipo **Novedad** y ubicación de un **colegio con puerta**: check «También al Observatorio» + tipo + anónimo. Sin puerta de colegio, no se muestra. No es el pánico.

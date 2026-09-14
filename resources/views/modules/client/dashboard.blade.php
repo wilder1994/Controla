@@ -1,18 +1,5 @@
 <x-client-layout title="Resumen">
-    <div class="space-y-6">
-        <h2 class="text-2xl font-bold text-white">Panel del cliente</h2>
-        <p class="text-slate-400 text-sm">Instalaciones, personas del censo y accesos.</p>
-        <div class="grid sm:grid-cols-3 gap-4">
-            <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-                <p class="text-xs uppercase text-slate-500">Unidades hoja</p>
-                <p class="text-3xl font-bold text-white mt-1">{{ $units }}</p>
-            </div>
-            <a href="{{ route('client.installations.index') }}" class="rounded-xl border border-teal-800/50 bg-teal-950/30 p-5 hover:bg-teal-900/30">
-                <p class="text-sm font-medium text-teal-200">Ir a Instalaciones →</p>
-            </a>
-            <a href="{{ route('client.members.index') }}" class="rounded-xl border border-indigo-800/50 bg-indigo-950/30 p-5 hover:bg-indigo-900/30">
-                <p class="text-sm font-medium text-indigo-200">Ir a Personas →</p>
-            </a>
-        </div>
-    </div>
+    <h2 class="text-2xl font-bold text-white mb-1">Panel del cliente</h2>
+    <p class="text-slate-400 text-sm mb-4">Instalaciones, puestos, novedades y salud afiliatoria.</p>
+    @include('modules.ops.sig-board', ['sigBoard' => $sigBoard, 'compact' => false])
 </x-client-layout>

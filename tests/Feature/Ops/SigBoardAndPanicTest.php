@@ -1,0 +1,90 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Ops;
+
+use App\Enums\OperationalAlertType;
+use App\Models\Client;
+use App\Models\OperationalAlert;
+use App\Models\User;
+use App\Support\Company\CompanyOperateContext;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+final class SigBoardAndPanicTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_client_dashboard_shows_sig_board(): void
+    {
+        $this->seedWithPilot();
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+
+        $this->actingAs($user)
+            ->withSession([
+                config('tenancy.session.active_client_key') => $client->id,
+                CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+                CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_CLIENTE,
+            ])
+            ->get(route('client.dashboard'))
+            ->assertOk()
+            ->assertSee('Panel del cliente')
+            ->assertSee('Novedades de servicio')
+            ->assertSee('Salud afiliatoria');
+    }
+
+    public function test_company_installations_index_shows_sig_kpis(): void
+    {
+        $this->seedWithPilot();
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('company.installations.index'))
+            ->assertOk()
+            ->assertSee('Novedades de servicio')
+            ->assertSee('Personal operativo');
+    }
+
+    public function test_panic_is_hidden_from_actor_and_from_client_admins(): void
+    {
+        $this->seedWithPilot();
+        $actor = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $other = User::factory()->create([
+            'security_company_id' => $actor->security_company_id,
+            'name' => 'Otro admin',
+            'username' => 'otro.admin.9901',
+            'is_active' => true,
+        ]);
+        $other->assignRole('company-admin');
+
+        $this->actingAs($actor)
+            ->postJson(route('company.ops.panic'), ['note' => 'Prueba'])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('operational_alerts', [
+            'type' => OperationalAlertType::Panic->value,
+            'actor_user_id' => $actor->id,
+        ]);
+
+        $this->actingAs($actor)
+            ->getJson(route('company.ops.alerts'))
+            ->assertOk()
+            ->assertJsonCount(0, 'alerts');
+
+        $this->actingAs($other)
+            ->getJson(route('company.ops.alerts'))
+            ->assertOk()
+            ->assertJsonPath('alerts.0.type', 'panic');
+
+        $clientAdmin = User::query()->where('email', 'laura.c@example.com')->first()
+            ?? User::query()->role('client-admin')->first();
+        if ($clientAdmin !== null) {
+            $this->actingAs($clientAdmin)
+                ->getJson(route('client.ops.alerts'))
+                ->assertOk()
+                ->assertJsonCount(0, 'alerts');
+        }
+    }
+}
