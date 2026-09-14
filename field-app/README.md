@@ -1,6 +1,6 @@
 # App de campo (PWA)
 
-Copia servible de `C:\laragon\www\Controla_Supervision`. Sin BD. Login: usuario (`nombre.apellido.0000`) o correo legado + contraseña. API: si el host tiene `controla_supervision` → `controla` + `/api`; si el puerto es `8085` (Tailscale) → mismo host `:8084/api`.
+Copia servible en `public/campo/` y `C:\laragon\www\Controla_Supervision`. Sin BD. Login: usuario (`nombre.apellido.0000`) o correo legado + contraseña. API: si el host tiene `controla_supervision` → `controla` + `/api`; si el puerto es `8085` (Tailscale) → mismo host `:8084/api`; en `{APP_URL}/campo` → mismo origen `/api`.
 
 Revista: cliente con Supervisión → **puesto** (`supervisor_posts`, no puertas de Accesos) → vigilante → foto → GPS. Los módulos del puesto (inventario, libros, carpetas, armamento, recomendaciones) van en borrador hasta **Guardar revista**.
 
@@ -16,10 +16,10 @@ Mis fichas: lista del supervisor y carta HTML para imprimir.
 
 Fotos: la cámara no arranca sola. Trasera/Frontal o Tomar foto. Solo HTTPS (Tailscale Serve). En HTTP no hay foto de prueba.
 
-Caché SW: `controla-sup-v39`. Hard-refresh tras cambios. Cola ajena se sube en segundo plano y no bloquea al de turno. Login y cambio de clave: icono de ojo para ver la contraseña. APK: GPS con pantalla apagada (notificación de turno).
+Caché SW: `controla-sup-v42`. Hard-refresh tras cambios. Cola ajena se sube en segundo plano y no bloquea al de turno. Login y cambio de clave: icono de ojo para ver la contraseña. APK: GPS con pantalla apagada (notificación de turno).
 
 Tailscale: cámara = `https://sjpcanaope.tail5fcfbc.ts.net/` (Serve). No `http://IP:8085`. API: puerto `8085` → `:8084/api`; host `.ts.net` → mismo origen `/api`. `.env` local sigue `http://controla.test`. En el APK la API es siempre `https://controla.wcodex.cloud/api`.
 
-Instalación: **Descargar APK** en `/company/descargas` y `/admin/descargas` (`public/downloads/controla-supervision.apk`). Login igual. Web PWA de respaldo: `controla_supervision.test`. Rebuild: `npm install` → `npm run sync` → `JAVA_HOME` = JDK 21 → `npm run apk`.
+Instalación: **Descargar APK** en `/company/descargas` y `/admin/descargas` (`public/downloads/controla-supervision.apk`). Login igual. Web PWA de respaldo: local `controla_supervision.test`; hosting `{APP_URL}/campo`. Rebuild: `npm install` → `npm run sync` → `JAVA_HOME` = JDK 21 → `npm run apk`.
 
 Ver [`docs/SUPERVISION-CAMPO.md`](../docs/SUPERVISION-CAMPO.md) · [`docs/CLIENTES-Y-ESTRUCTURA.md`](../docs/CLIENTES-Y-ESTRUCTURA.md).

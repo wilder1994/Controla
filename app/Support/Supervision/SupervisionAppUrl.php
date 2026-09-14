@@ -15,11 +15,12 @@ final class SupervisionAppUrl
 
         $app = rtrim((string) config('app.url'), '/');
         $host = (string) (parse_url($app, PHP_URL_HOST) ?: '');
-        if (str_starts_with($host, 'controla.')) {
+
+        if (str_ends_with($host, '.test') && str_starts_with($host, 'controla.')) {
             return (string) preg_replace('#://controla\.#i', '://controla_supervision.', $app, 1);
         }
 
-        return $app;
+        return $app.'/campo';
     }
 
     public static function apkPath(): ?string

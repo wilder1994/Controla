@@ -22,4 +22,11 @@ final class SupervisionAppUrlTest extends TestCase
 
         $this->assertSame('http://controla_supervision.test', SupervisionAppUrl::pwa());
     }
+
+    public function test_production_app_url_uses_campo_path(): void
+    {
+        config(['supervision.pwa_url' => '', 'app.url' => 'https://controla.wcodex.cloud']);
+
+        $this->assertSame('https://controla.wcodex.cloud/campo', SupervisionAppUrl::pwa());
+    }
 }

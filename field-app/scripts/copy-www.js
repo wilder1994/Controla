@@ -2,14 +2,21 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const dest = path.join(root, 'www');
 const files = ['index.html', 'app.js', 'offline.js', 'manifest.json', 'sw.js'];
+const dests = [
+    path.join(root, 'www'),
+    path.join(root, '..', 'public', 'campo'),
+];
 
-fs.rmSync(dest, { recursive: true, force: true });
-fs.mkdirSync(dest, { recursive: true });
-
-for (const file of files) {
-    fs.copyFileSync(path.join(root, file), path.join(dest, file));
+const laragonPwa = 'C:\\laragon\\www\\Controla_Supervision';
+if (fs.existsSync(laragonPwa)) {
+    dests.push(laragonPwa);
 }
 
-console.log('www listo');
+for (const dest of dests) {
+    fs.mkdirSync(dest, { recursive: true });
+    for (const file of files) {
+        fs.copyFileSync(path.join(root, file), path.join(dest, file));
+    }
+    console.log(dest + ' listo');
+}

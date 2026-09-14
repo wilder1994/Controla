@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\Supervision\SupervisionAppUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,7 +19,7 @@ final class SupervisorAppOnlyController extends Controller
         }
 
         return view('auth.supervisor-app-only', [
-            'pwaUrl' => (string) config('supervision.pwa_url'),
+            'pwaUrl' => SupervisionAppUrl::pwa(),
         ]);
     }
 }
