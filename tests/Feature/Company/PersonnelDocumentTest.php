@@ -206,6 +206,11 @@ final class PersonnelDocumentTest extends TestCase
         $this->assertSame((float) $employee->document_number, (float) $sheet->getCell('E22')->getCalculatedValue());
         $this->assertSame('', trim((string) $sheet->getCell('E23')->getFormattedValue()));
 
+        $this->actingAs($admin)
+            ->get(route('company.personnel-documents.preview', $document))
+            ->assertOk()
+            ->assertSee('PILOT UNO');
+
         $second = $this->planillaUpload('pila-agosto-2.xlsx', [
             ['document' => $employee->document_number, 'name' => 'PILOT UNO', 'totals' => [200000]],
         ]);

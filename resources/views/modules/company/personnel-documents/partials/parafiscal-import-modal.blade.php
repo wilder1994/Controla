@@ -3,6 +3,7 @@
         open: @js($errors->has('file')),
         dragging: false,
         fileName: '',
+        busy: false,
         setFile(file) {
             if (! file) return;
             this.fileName = file.name;
@@ -16,7 +17,7 @@
         },
     }"
     x-on:open-parafiscal-import.window="open = true"
-    x-on:keydown.escape.window="if (open) open = false"
+    x-on:keydown.escape.window="if (open && ! busy) open = false"
 >
     <div
         x-show="open"
@@ -24,17 +25,17 @@
         class="fixed inset-0 z-[80] overflow-y-auto"
         style="display: none;"
     >
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" x-on:click="open = false"></div>
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" x-on:click="if (! busy) open = false"></div>
         <div class="relative mx-auto mt-16 w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
                 <div>
                     <p class="text-sm font-semibold text-white">Carga masiva planilla</p>
                     <p class="mt-0.5 text-xs text-slate-500">Excel PILA mensual. Nada se guarda hasta que revises y aceptes. No se almacena la planilla completa.</p>
                 </div>
-                <button type="button" class="text-slate-400 hover:text-white" x-on:click="open = false">✕</button>
+                <button type="button" class="text-slate-400 hover:text-white" x-on:click="if (! busy) open = false">✕</button>
             </div>
 
-            <form method="POST" action="{{ route('company.personnel-documents.parafiscales.preview.store') }}" enctype="multipart/form-data" class="space-y-4 p-5">
+            <form method="POST" action="{{ route('company.personnel-documents.parafiscales.preview.store') }}" enctype="multipart/form-data" class="space-y-4 p-5" x-on:submit="busy = true">
                 @csrf
                 <label
                     class="flex min-h-[9rem] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 py-6 text-center transition"
@@ -89,13 +90,21 @@
                     <button
                         type="button"
                         class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-700 px-4 text-sm font-medium text-slate-200 hover:bg-slate-800"
-                        x-on:click="open = false"
+                        x-on:click="if (! busy) open = false"
+                        :disabled="busy"
                     >
                         Cancelar
                     </button>
-                    <x-ui.button type="submit" size="sm">Revisar planilla</x-ui.button>
+                    <x-ui.button type="submit" size="sm" x-bind:disabled="busy">Revisar planilla</x-ui.button>
                 </div>
             </form>
+            <div x-show="busy" x-cloak class="load-block">
+                <div class="load-block-card">
+                    <p class="text-sm font-semibold text-white">Leyendo la planilla</p>
+                    <p class="mt-1 text-xs text-slate-400">Detectando cotizantes. No cierre ni recargue.</p>
+                    <div class="load-block-bar"><span class="load-block-indeterminate"></span></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -81,9 +81,7 @@
                                 @endif
                             </div>
                             <div class="folder-doc-actions">
-                                @unless ($isParafiscal)
-                                    <button class="folder-link" type="button" data-preview="{{ route($previewRoute, $doc) }}" data-name="{{ $doc->label() }}">Ver</button>
-                                @endunless
+                                <button class="folder-link" type="button" data-preview="{{ route($previewRoute, $doc) }}" data-name="{{ $doc->label() }}">Ver</button>
                                 <a class="folder-link" href="{{ route($downloadRoute, $doc) }}">Descargar</a>
                                 @if ($canUpload && $doc->canDelete())
                                     <form method="post" action="{{ route($destroyRoute, $doc) }}" onsubmit="return confirm({{ $isParafiscal ? '\'¿Eliminar este archivo? Solo puede hacerlo durante 12 horas.\'' : '\'¿Eliminar este PDF? Solo puede hacerlo durante 12 horas.\'' }});">

@@ -86,9 +86,10 @@ final class DetectPilaPlanillaLayoutService
 
         $nameCol = $this->nameColumn($sheet, $headerRow, $firstDataRow, $lastDataRow, $idCol, $highestCol);
         $totalCol = $this->labelColumn($sheet, $headerRow, 'total aportes', $highestCol) ?? 75;
-        $valorCell = $this->valorCell($sheet, $headerRow, $highestCol);
-        $pensionCol = $this->labelColumn($sheet, $headerRow, 'pension', $highestCol);
-        $saludCol = $this->labelColumn($sheet, $headerRow, 'salud', $highestCol);
+        $aportanteRow = min($headerRow, 16);
+        $valorCell = $this->valorCell($sheet, $aportanteRow, $highestCol);
+        $pensionCol = $this->labelColumn($sheet, $aportanteRow, 'pension', $highestCol);
+        $saludCol = $this->labelColumn($sheet, $aportanteRow, 'salud', $highestCol);
 
         return new PilaPlanillaLayout(
             sheetIndex: $sheetIndex,
@@ -104,13 +105,13 @@ final class DetectPilaPlanillaLayoutService
             pensionPeriod: $pensionCol !== null
                 ? PilaPlanillaCells::periodFromCell(
                     $sheet,
-                    Coordinate::stringFromColumnIndex($pensionCol).$this->periodRow($sheet, $pensionCol, $headerRow),
+                    Coordinate::stringFromColumnIndex($pensionCol).$this->periodRow($sheet, $pensionCol, $aportanteRow),
                 )
                 : PilaPlanillaCells::periodFromCell($sheet, 'B15'),
             saludPeriod: $saludCol !== null
                 ? PilaPlanillaCells::periodFromCell(
                     $sheet,
-                    Coordinate::stringFromColumnIndex($saludCol).$this->periodRow($sheet, $saludCol, $headerRow),
+                    Coordinate::stringFromColumnIndex($saludCol).$this->periodRow($sheet, $saludCol, $aportanteRow),
                 )
                 : PilaPlanillaCells::periodFromCell($sheet, 'H15'),
         );

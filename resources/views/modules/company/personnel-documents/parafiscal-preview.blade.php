@@ -1,12 +1,12 @@
 <x-company-layout title="Revisar planilla">
     <x-slot:actions>
-        <form method="POST" action="{{ route('company.personnel-documents.parafiscales.cancel') }}">
+        <form method="POST" action="{{ route('company.personnel-documents.parafiscales.cancel') }}" id="parafiscal-cancel">
             @csrf
             <x-ui.button type="submit" variant="secondary" size="sm">Cancelar</x-ui.button>
         </form>
-        <form method="POST" action="{{ route('company.personnel-documents.parafiscales.commit') }}">
+        <form method="POST" action="{{ route('company.personnel-documents.parafiscales.commit') }}" id="parafiscal-commit">
             @csrf
-            <x-ui.button type="submit" size="sm">Aceptar y cargar</x-ui.button>
+            <x-ui.button type="submit" size="sm" id="parafiscal-commit-btn">Aceptar y cargar</x-ui.button>
         </form>
     </x-slot:actions>
 
@@ -99,4 +99,83 @@
             </div>
         @endif
     </div>
+
+    <div id="parafiscal-load" class="load-block" hidden>
+        <div class="load-block-card">
+            <p class="text-sm font-semibold text-white" id="parafiscal-load-title">Procesando planilla</p>
+            <p class="mt-1 text-xs text-slate-400" id="parafiscal-load-msg">Preparando la plantilla original…</p>
+            <div class="load-block-bar"><span id="parafiscal-load-fill"></span></div>
+            <p class="mt-2 text-lg font-semibold tabular-nums text-indigo-300" id="parafiscal-load-pct">0%</p>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const form = document.getElementById('parafiscal-commit');
+            if (! form) return;
+            const overlay = document.getElementById('parafiscal-load');
+            const fill = document.getElementById('parafiscal-load-fill');
+            const pct = document.getElementById('parafiscal-load-pct');
+            const msg = document.getElementById('parafiscal-load-msg');
+            const btn = document.getElementById('parafiscal-commit-btn');
+            const cancelBtn = document.querySelector('#parafiscal-cancel button');
+            const token = form.querySelector('[name="_token"]').value;
+            const tickUrl = @json(route('company.personnel-documents.parafiscales.tick'));
+            const indexUrl = @json(route('company.personnel-documents.index'));
+
+            function show(percent, text) {
+                overlay.hidden = false;
+                fill.style.width = percent + '%';
+                pct.textContent = percent + '%';
+                if (text) msg.textContent = text;
+            }
+
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                if (btn) btn.disabled = true;
+                if (cancelBtn) cancelBtn.disabled = true;
+                show(0, 'Preparando la plantilla original…');
+                try {
+                    const started = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': token,
+                        },
+                        body: new FormData(form),
+                    });
+                    const startJson = await started.json();
+                    if (! started.ok) {
+                        throw new Error(startJson.message || 'No se pudo iniciar la carga.');
+                    }
+                    show(1, startJson.message || 'Guardando recortes…');
+                    let done = false;
+                    while (! done) {
+                        const tick = await fetch(tickUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': token,
+                            },
+                            body: JSON.stringify({ limit: 15 }),
+                        });
+                        const body = await tick.json();
+                        if (! tick.ok) {
+                            throw new Error(body.message || 'Falló un lote del recorte.');
+                        }
+                        show(body.percent || 0, body.current + ' / ' + body.total + ' · ' + (body.message || ''));
+                        done = !! body.done;
+                    }
+                    window.location.href = indexUrl;
+                } catch (error) {
+                    overlay.hidden = true;
+                    if (btn) btn.disabled = false;
+                    if (cancelBtn) cancelBtn.disabled = false;
+                    alert(error.message || 'No se pudo cargar la planilla.');
+                }
+            });
+        })();
+    </script>
 </x-company-layout>

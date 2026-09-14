@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Support\Files\StoredFileResponder;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +18,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 final class CommitParafiscalPlanillaService
 {
+    public const STATE_TTL = 3600;
+
     public function __construct(
         private readonly PreviewParafiscalPlanillaService $preview,
         private readonly ParsePilaPlanillaService $parser,
@@ -24,6 +27,19 @@ final class CommitParafiscalPlanillaService
     ) {}
 
     public function execute(int $companyId, int $userId): int
+    {
+        $this->start($companyId, $userId);
+        $saved = 0;
+        do {
+            $tick = $this->tick($companyId, $userId, 80);
+            $saved = (int) $tick['saved'];
+        } while (! $tick['done']);
+
+        return $saved;
+    }
+
+    /** @return array{total: int} */
+    public function start(int $companyId, int $userId): array
     {
         @set_time_limit(180);
 
@@ -58,19 +74,94 @@ final class CommitParafiscalPlanillaService
             }
         }
 
-        $pension = is_string($parsed['pension_period'] ?? null) ? $parsed['pension_period'] : null;
-        $salud = is_string($parsed['salud_period'] ?? null) ? $parsed['salud_period'] : null;
-        $takenOn = $pension !== null
-            ? Carbon::createFromFormat('Y-m-d', $pension.'-01')->startOfMonth()->toDateString()
-            : now()->startOfMonth()->toDateString();
-        $display = $this->displayName($pension, $salud);
-        $type = ParafiscalDocumentType::Planilla;
-        $folder = DocumentFolder::Parafiscales;
-        $count = 0;
+        $dir = storage_path('app/tmp/parafiscales/'.$companyId.'/'.$userId);
+        File::ensureDirectoryExists($dir);
+        $templatePath = $dir.'/header-template.xlsx';
+        $built = $this->clipper->buildHeaderTemplate(
+            $sheet,
+            (int) $parsed['header_row'],
+            (int) $parsed['max_col'],
+            $templatePath,
+        );
 
+        $items = [];
         foreach ($parsed['groups'] as $document => $group) {
             $employee = $byDocument[$document] ?? null;
             if ($employee === null || $group['rows'] === []) {
+                continue;
+            }
+
+            $values = [];
+            foreach ($group['rows'] as $row) {
+                $values[] = $this->clipper->exportRow($sheet, (int) $row, (int) $parsed['max_col']);
+            }
+
+            $items[] = [
+                'employee_id' => $employee->id,
+                'company_id' => $employee->security_company_id,
+                'rows' => $group['rows'],
+                'values' => $values,
+                'total' => (float) $group['total'],
+            ];
+        }
+
+        $spreadsheet->disconnectWorksheets();
+
+        $pension = is_string($parsed['pension_period'] ?? null) ? $parsed['pension_period'] : null;
+        $salud = is_string($parsed['salud_period'] ?? null) ? $parsed['salud_period'] : null;
+        $payloadPath = $dir.'/items.json';
+        File::put($payloadPath, json_encode($items, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+
+        $state = [
+            'template' => $templatePath,
+            'payload' => $payloadPath,
+            'merges' => $built['merges'],
+            'cursor' => 0,
+            'saved' => 0,
+            'total' => count($items),
+            'header_row' => (int) $parsed['header_row'],
+            'valor_cell' => (string) $parsed['valor_cell'],
+            'display' => $this->displayName($pension, $salud),
+            'taken_on' => $pension !== null
+                ? Carbon::createFromFormat('Y-m-d', $pension.'-01')->startOfMonth()->toDateString()
+                : ($salud !== null
+                    ? Carbon::createFromFormat('Y-m-d', $salud.'-01')->startOfMonth()->toDateString()
+                    : now()->startOfMonth()->toDateString()),
+            'status' => 'running',
+            'message' => '',
+        ];
+        Cache::put($this->stateKey($companyId, $userId), $state, self::STATE_TTL);
+
+        return ['total' => (int) $state['total']];
+    }
+
+    /**
+     * @return array{current: int, total: int, saved: int, done: bool, percent: int, message: string}
+     */
+    public function tick(int $companyId, int $userId, int $limit = 20): array
+    {
+        @set_time_limit(120);
+
+        $state = Cache::get($this->stateKey($companyId, $userId));
+        if (! is_array($state)) {
+            throw ValidationException::withMessages([
+                'file' => 'No hay una carga en curso. Vuelve a revisar la planilla.',
+            ]);
+        }
+
+        $items = json_decode((string) File::get($state['payload']), true);
+        if (! is_array($items)) {
+            throw ValidationException::withMessages(['file' => 'Se perdió el recorte temporal. Vuelve a cargar.']);
+        }
+
+        $type = ParafiscalDocumentType::Planilla;
+        $folder = DocumentFolder::Parafiscales;
+        $end = min(count($items), (int) $state['cursor'] + $limit);
+
+        for ($i = (int) $state['cursor']; $i < $end; $i++) {
+            $item = $items[$i];
+            $employee = Employee::query()->find((int) $item['employee_id']);
+            if ($employee === null) {
                 continue;
             }
 
@@ -85,42 +176,108 @@ final class CommitParafiscalPlanillaService
             $dest = storage_path('app/'.$relative);
             File::ensureDirectoryExists(dirname($dest));
 
-            $this->clipper->write(
-                $sheet,
-                $parsed['header_row'],
-                $parsed['max_col'],
-                $group['rows'],
-                $parsed['valor_cell'],
-                (float) $group['total'],
+            $this->clipper->writeFromValues(
+                $state['template'],
+                (int) $state['header_row'],
+                $item['values'],
+                $item['rows'],
+                $state['merges'] ?? [],
+                $state['valor_cell'],
+                (float) $item['total'],
                 $dest,
             );
 
-            $this->replacePrevious($employee, $folder, $type, $takenOn);
+            $this->replacePrevious($employee, $folder, $type, (string) $state['taken_on']);
 
             EmployeeDocument::query()->create([
                 'security_company_id' => $employee->security_company_id,
                 'employee_id' => $employee->id,
                 'folder' => $folder,
                 'document_type' => $type->value,
-                'display_name' => $display,
+                'display_name' => $state['display'],
                 'page_from' => null,
                 'page_to' => null,
                 'pages' => null,
                 'not_applicable' => false,
-                'original_name' => $display,
+                'original_name' => $state['display'],
                 'disk_path' => $relative,
                 'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'size_bytes' => is_file($dest) ? (int) filesize($dest) : 0,
-                'taken_on' => $takenOn,
+                'taken_on' => $state['taken_on'],
                 'provider' => null,
             ]);
-            $count++;
+            $state['saved']++;
         }
 
-        $spreadsheet->disconnectWorksheets();
-        $this->preview->forget($companyId, $userId);
+        $state['cursor'] = $end;
+        $done = $end >= count($items);
+        if ($done) {
+            $state['status'] = 'done';
+            $this->preview->forget($companyId, $userId);
+            File::delete($state['template'] ?? '');
+            File::delete($state['payload'] ?? '');
+        }
 
-        return $count;
+        Cache::put($this->stateKey($companyId, $userId), $state, self::STATE_TTL);
+
+        $total = max(1, (int) $state['total']);
+
+        return [
+            'current' => (int) $state['cursor'],
+            'total' => (int) $state['total'],
+            'saved' => (int) $state['saved'],
+            'done' => $done,
+            'percent' => $done ? 100 : (int) floor(100 * $state['cursor'] / $total),
+            'message' => $done
+                ? ((int) $state['saved'] === 1 ? '1 recorte guardado.' : $state['saved'].' recortes guardados.')
+                : 'Guardando recortes…',
+        ];
+    }
+
+    /** @return array{current: int, total: int, saved: int, done: bool, percent: int, message: string, status: string} */
+    public function progress(int $companyId, int $userId): array
+    {
+        $state = Cache::get($this->stateKey($companyId, $userId));
+        if (! is_array($state)) {
+            return [
+                'current' => 0,
+                'total' => 0,
+                'saved' => 0,
+                'done' => false,
+                'percent' => 0,
+                'message' => '',
+                'status' => 'idle',
+            ];
+        }
+
+        $total = max(1, (int) $state['total']);
+        $done = ($state['status'] ?? '') === 'done';
+
+        return [
+            'current' => (int) $state['cursor'],
+            'total' => (int) $state['total'],
+            'saved' => (int) $state['saved'],
+            'done' => $done,
+            'percent' => $done ? 100 : (int) floor(100 * $state['cursor'] / $total),
+            'message' => (string) ($state['message'] ?? ''),
+            'status' => (string) ($state['status'] ?? 'running'),
+        ];
+    }
+
+    public function abort(int $companyId, int $userId): void
+    {
+        $state = Cache::get($this->stateKey($companyId, $userId));
+        if (is_array($state)) {
+            File::delete($state['template'] ?? '');
+            File::delete($state['payload'] ?? '');
+        }
+        Cache::forget($this->stateKey($companyId, $userId));
+        $this->preview->forget($companyId, $userId);
+    }
+
+    private function stateKey(int $companyId, int $userId): string
+    {
+        return "parafiscal-commit.{$companyId}.{$userId}";
     }
 
     private function displayName(?string $pension, ?string $salud): string
@@ -131,6 +288,10 @@ final class CommitParafiscalPlanillaService
 
         if ($pension !== null) {
             return 'Parafiscales pensión '.$pension.'.xlsx';
+        }
+
+        if ($salud !== null) {
+            return 'Parafiscales salud '.$salud.'.xlsx';
         }
 
         return 'Parafiscales '.now()->format('Y-m').'.xlsx';

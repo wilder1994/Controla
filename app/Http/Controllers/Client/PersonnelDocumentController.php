@@ -13,6 +13,7 @@ use App\Repositories\EmployeeRepository;
 use App\Support\Files\StoredFileResponder;
 use App\Support\Personnel\FolderChecklist;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Personnel\XlsxPreviewHtml;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -67,10 +68,17 @@ final class PersonnelDocumentController extends Controller
         ]);
     }
 
-    public function preview(EmployeeDocument $document): StreamedResponse
+    public function preview(EmployeeDocument $document): StreamedResponse|View
     {
         $file = $this->locate($document);
         abort_unless($file->hasFile(), 404);
+
+        if (XlsxPreviewHtml::isSpreadsheet($file->mime, $file->disk_path)) {
+            return view('modules.personnel-documents.xlsx-preview', [
+                'title' => $file->label(),
+                'table' => XlsxPreviewHtml::fromPath(StoredFileResponder::absolute((string) $file->disk_path)),
+            ]);
+        }
 
         return StoredFileResponder::stream($file->disk_path, $file->label(), (string) $file->mime, true);
     }

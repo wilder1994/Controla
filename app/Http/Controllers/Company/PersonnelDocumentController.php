@@ -25,7 +25,9 @@ use App\Support\Files\StoredFileResponder;
 use App\Support\Personnel\FolderChecklist;
 use App\Support\Personnel\IndexedFolder;
 use App\Support\Personnel\OtherSupportNamer;
+use App\Support\Personnel\XlsxPreviewHtml;
 use App\Support\Platform\ActingCompanyResolver;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -197,10 +199,17 @@ final class PersonnelDocumentController extends Controller
             ->with('success', $type->label().' marcado como no aplica.');
     }
 
-    public function preview(Request $request, EmployeeDocument $document): StreamedResponse
+    public function preview(Request $request, EmployeeDocument $document): StreamedResponse|View
     {
         $file = $this->locate($request, $document);
         abort_unless($file->hasFile(), 404);
+
+        if (XlsxPreviewHtml::isSpreadsheet($file->mime, $file->disk_path)) {
+            return view('modules.personnel-documents.xlsx-preview', [
+                'title' => $file->label(),
+                'table' => XlsxPreviewHtml::fromPath(StoredFileResponder::absolute((string) $file->disk_path)),
+            ]);
+        }
 
         return StoredFileResponder::stream($file->disk_path, $file->label(), (string) $file->mime, true);
     }
@@ -259,15 +268,32 @@ final class PersonnelDocumentController extends Controller
         return view('modules.company.personnel-documents.parafiscal-preview', compact('preview'));
     }
 
-    public function commitParafiscal(Request $request): RedirectResponse
+    public function commitParafiscal(Request $request): RedirectResponse|JsonResponse
     {
         abort_unless($this->canUpload($request), 403);
+        $companyId = $this->companyId($request);
+        $userId = (int) $request->user()->id;
+
+        if ($request->expectsJson()) {
+            try {
+                $started = $this->parafiscalCommit->start($companyId, $userId);
+            } catch (ValidationException $e) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => $e->validator->errors()->first() ?: 'No se pudo cargar la planilla.',
+                ], 422);
+            }
+
+            return response()->json([
+                'ok' => true,
+                'total' => $started['total'],
+                'percent' => 0,
+                'message' => 'Plantilla lista. Guardando recortes…',
+            ]);
+        }
 
         try {
-            $count = $this->parafiscalCommit->execute(
-                $this->companyId($request),
-                (int) $request->user()->id,
-            );
+            $count = $this->parafiscalCommit->execute($companyId, $userId);
         } catch (ValidationException $e) {
             return redirect()
                 ->route('company.personnel-documents.index')
@@ -283,10 +309,38 @@ final class PersonnelDocumentController extends Controller
             ->with('success', $message);
     }
 
+    public function tickParafiscal(Request $request): JsonResponse
+    {
+        abort_unless($this->canUpload($request), 403);
+
+        try {
+            return response()->json($this->parafiscalCommit->tick(
+                $this->companyId($request),
+                (int) $request->user()->id,
+                max(1, min(40, $request->integer('limit', 15))),
+            ));
+        } catch (ValidationException $e) {
+            return response()->json([
+                'done' => false,
+                'message' => $e->validator->errors()->first() ?: 'No se pudo continuar.',
+            ], 422);
+        }
+    }
+
+    public function progressParafiscal(Request $request): JsonResponse
+    {
+        abort_unless($this->canUpload($request), 403);
+
+        return response()->json($this->parafiscalCommit->progress(
+            $this->companyId($request),
+            (int) $request->user()->id,
+        ));
+    }
+
     public function cancelParafiscal(Request $request): RedirectResponse
     {
         abort_unless($this->canUpload($request), 403);
-        $this->parafiscalPreview->forget($this->companyId($request), (int) $request->user()->id);
+        $this->parafiscalCommit->abort($this->companyId($request), (int) $request->user()->id);
 
         return redirect()->route('company.personnel-documents.index');
     }

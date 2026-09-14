@@ -391,3 +391,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | App de campo: APK debug (Capacitor) en Descargas; API fija a controla.wcodex.cloud. GPS con pantalla off = corte 2. |
 | 2026-09-14 | Observatorio: `/o/{slug}` y panel rector con cámara y hasta 3 miniaturas (opcional). Tablero empresa agrupa tipos por slug. |
 | 2026-09-14 | Parafiscales: layout PILA por filas CC+cédula (hoja de cotizantes), no por la Identificación del aportante. |
+| 2026-09-14 | Parafiscales: recorte sobre plantilla original, Ver xlsx en modal, overlay con % (commit a trozos). |
