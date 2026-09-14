@@ -26,6 +26,14 @@ final class ClientPolicy
             return (int) $user->security_company_id === (int) $client->security_company_id;
         }
 
+        if (
+            $user->hasRole('colaborador')
+            && $user->can('company.clients.view')
+            && (int) $user->security_company_id === (int) $client->security_company_id
+        ) {
+            return true;
+        }
+
         return $user->canAccessClient((int) $client->id);
     }
 

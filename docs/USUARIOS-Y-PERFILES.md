@@ -27,7 +27,7 @@ Oficios (no son un collage):
 | **Supervisor** | Solo app de campo. Login usuario + clave. Extra: código 6 dígitos para revista. |
 | **Vigilante** | Solo portería del cliente asignado (con puertas). Reasignar a otro cliente con puertas: mismas credenciales. |
 
-**Colaborador** (`colaborador`): empleado de la empresa con matriz Nada / Ver / Gestionar. Módulos de empresa + opcional por cliente e instalación (Observatorio, Censo). El cargo es etiqueta. No es vigilante ni supervisor. Quien crea no puede conceder más de lo que tiene **ni asignar `company-admin`**. Facturación, Mis datos y Descargas quedan en admin empresa. Permisos Spatie van en el usuario (`user_module_grants`), no en el rol.
+**Colaborador** (`colaborador`): empleado de la empresa con matriz Nada / Ver / Gestionar. Módulos de empresa + opcional por cliente e instalación (Observatorio, Censo). El cargo es etiqueta. No es vigilante ni supervisor. Quien crea no puede conceder más de lo que tiene **ni asignar `company-admin`**. Facturación, Mis datos y Descargas quedan en admin empresa. Permisos Spatie van en el usuario (`user_module_grants`), no en el rol. **Clientes Ver/Gestionar** abre `/company/clients` (listado, ficha, alta si Gestionar): `ClientController` trata al colaborador con empresa igual que al admin; `ClientPolicy::view` acepta `company.clients.view` en la misma empresa.
 
 ---
 
@@ -163,7 +163,7 @@ Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `clien
 - `client-admin` interno: **uno o varios** clientes.
 - `client-admin` externo y `client-installation-admin`: **exactamente un** cliente.
 - `supervisor`: **sin** `client_ids` (alcance empresa).
-- `colaborador`: clientes e instalaciones salen de los grants (empresa ancha, cliente o sede).
+- `colaborador`: clientes e instalaciones salen de los grants (empresa ancha, cliente o sede). Grant empresa **Clientes** = listado y expediente de todos los clientes de la empresa.
 
 ---
 
@@ -177,6 +177,7 @@ Tabla: `user_module_grants` (`scope` company/client/installation, `module`, `lev
 
 Reglas:
 
+- Clientes Ver/Gestionar a nivel empresa abre `/company/clients` (listado y ficha). Gestionar también crea/edita. Sin esa rama el menú se veía y el listado respondía 403.
 - Observatorio o Supervisión a nivel empresa abre **todos** los clientes e instalaciones de la empresa (detalle de evento incluido).
 - Grant a un cliente abre las sedes de ese cliente; grant a una sede solo esa.
 - Empleados: `company.employees.view` / `manage` (`EmployeePolicy`). Documentos: `company.documents.view` / `manage` (subir/indexar = manage).

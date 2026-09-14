@@ -107,7 +107,7 @@ final class ClientController extends Controller
             ]);
         }
 
-        if ($user->hasRole('company-admin') && $user->security_company_id) {
+        if ($user->hasAnyRole(['company-admin', 'colaborador']) && $user->security_company_id) {
             $companyId = (int) $user->security_company_id;
 
             if ($operateMode && $status === 'all') {

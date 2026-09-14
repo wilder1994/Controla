@@ -193,6 +193,41 @@ final class CollaboratorAccessTest extends TestCase
             ->assertSee($event->folio(), false);
     }
 
+    public function test_clients_manage_opens_client_list_and_show(): void
+    {
+        $this->seedWithPilot();
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $employee = $this->makeEmployee('1098000811');
+        $user = app(\App\Services\Company\GrantEmployeeAccessService::class)->execute(
+            $employee,
+            $admin,
+            'colaborador',
+            'Clave1234!',
+            [],
+            'ana.lopes.8110',
+            $employee->jobTitle?->name,
+            app(\App\Services\User\ParseAccessGrants::class)->fromInput([
+                'company' => ['clients' => 'manage', 'installations' => 'manage'],
+            ], (int) $employee->security_company_id),
+        );
+        $user->update(['must_change_password' => false]);
+
+        $client = Client::query()->where('security_company_id', $employee->security_company_id)->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('company.clients.index'))
+            ->assertOk()
+            ->assertSee($client->name, false);
+
+        $this->actingAs($user)
+            ->get(route('company.clients.show', $client))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->get(route('company.clients.create'))
+            ->assertOk();
+    }
+
     public function test_employees_grant_opens_employee_list(): void
     {
         $this->seedWithPilot();

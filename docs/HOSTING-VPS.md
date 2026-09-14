@@ -22,7 +22,9 @@ Este deploy **no** hace `migrate:fresh`. Las `add_*` unificadas en `create_*` so
 
 Observatorio: migrate `2026_09_13_120000` (tipos + módulo). Tras ese migrate: `RoleAndPermissionSeeder` (permiso `observatory.events.update`). Intake `/o/{slug}` (solo colegios). API `/api/observatory/*`. Comunas: `resources/data/cali-comunas.geojson`, el mapa las pide en `/geo/cali-comunas.geojson` (relativo). **No** cargar `libraries=visualization`: Maps JS 3.65 quitó HeatmapLayer. PPTX: `GET /company/observatory/tablero.pptx` y `/client/observatory/tablero.pptx` (mismo permiso `observatory.view`; `route:cache` + `view:cache`). Cortes UX: `npm run build` + `view:cache`. Sin migrate ni seeder.
 
-Avisos en español (13 sep 2026): `lang/es/*`, toast centrado, PWA `controla-sup-v41`. Este corte **no** añade migrate ni roles: pull + `npm run build` + `view:cache` + `config:cache`. No hace falta `RoleAndPermissionSeeder`.
+Avisos en español (13 sep 2026): `lang/es/*`, toast centrado, PWA `controla-sup-v41`.
+
+Colaborador + Clientes (13 sep 2026): `ClientController` / `ClientPolicy`. Corte PHP: pull + `view:cache` + `config:cache`. Sin migrate, seeder ni `npm run build`.
 
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
