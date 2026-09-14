@@ -38,7 +38,7 @@ Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehi
 
 ## App de campo
 
-PWA en `field-app/` (copia `public/campo/` y Laragon `Controla_Supervision`). Caché SW `controla-sup-v44`. Hosting: `https://controla.wcodex.cloud/campo`. APK Android v1.3 (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
+PWA en `field-app/` (copia `public/campo/` y Laragon `Controla_Supervision`). Caché SW `controla-sup-v45`. Hosting: `https://controla.wcodex.cloud/campo`. APK Android v1.4 (Capacitor) en `field-app/android/`; el binario se publica en `public/downloads/controla-supervision.apk`.
 
 Login: **usuario** (`nombre.apellido.####`, igual que el resto de usuarios de empresa) o el correo de cuentas antiguas, más contraseña. En login y primer cambio de clave, icono de ojo para verla. Alta: **Usuarios** → nombre y cédula del empleado → generar usuario y clave; primera entrada pide cambiar clave. El correo corporativo **no** es el login: está en la zona y se resuelve al abrir turno. API **siempre** Controla: host `controla_supervision` → mismo esquema + host `controla` + `/api`; puerto `8085` → mismo host `:8084/api`. No hay campo de API. Instalación: **Descargas** en empresa (`/company/descargas`) y plataforma (`/admin/descargas`); QR + enlace (`SUPERVISION_PWA_URL`). Hard-refresh tras cambios de PWA.
 
@@ -138,7 +138,7 @@ Servicios: `BuildSupervisionMapService`, `BuildSupervisorTrailService`, `SnapSup
 
 ### Distribución
 
-**APK (corte 2) + PWA de respaldo.** El `.apk` se baja de Descargas y se instala (orígenes desconocidos). Habla con `https://controla.wcodex.cloud/api`. Mismo usuario/clave. No Play Store. No hay un binario por empresa. Con turno abierto el APK muestra una notificación persistente y el GPS sigue con la pantalla apagada (`ShiftTrackingService`, `source=apk`). La PWA no tiene ese servicio. Web de respaldo: `{APP_URL}/campo` (no un subdominio `controla_supervision` en el VPS).
+**APK (corte 2) + PWA de respaldo.** El `.apk` se baja de Descargas y se instala (orígenes desconocidos). Habla con `https://controla.wcodex.cloud/api`. Mismo usuario/clave. No Play Store. No hay un binario por empresa. Con turno abierto el APK muestra una notificación persistente y el GPS sigue con la pantalla apagada (`ShiftTrackingService`, `source=apk`). El plugin pide ubicación y notificaciones **y espera** el resultado; si faltan, no arranca el servicio (evita el cierre en Android 14+) y la app sigue con ping del WebView. La PWA no tiene ese servicio. Web de respaldo: `{APP_URL}/campo` (no un subdominio `controla_supervision` en el VPS).
 
 Rebuild: `field-app/` → `npm run sync` → `JAVA_HOME` = JDK 21 → `npm run apk` → copiar `android/app/build/outputs/apk/debug/app-debug.apk` a `public/downloads/controla-supervision.apk`.
 

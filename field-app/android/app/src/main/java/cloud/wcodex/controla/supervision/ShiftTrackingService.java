@@ -41,10 +41,15 @@ public class ShiftTrackingService extends Service implements LocationListener {
         super.onCreate();
         ensureChannel();
         Notification notice = buildNotice();
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(NOTICE_ID, notice, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-        } else {
-            startForeground(NOTICE_ID, notice);
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTICE_ID, notice, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } else {
+                startForeground(NOTICE_ID, notice);
+            }
+        } catch (Exception e) {
+            stopSelf();
+            return;
         }
         startLocations();
         ticker = Executors.newSingleThreadScheduledExecutor();

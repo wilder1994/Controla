@@ -1411,6 +1411,7 @@ async function startNativeTracking() {
         await plug.start({ apiBase: apiBase(), token: token() || '' });
         return true;
     } catch (e) {
+        setStatus(e?.message || 'GPS nativo no disponible. Sigue el ping de la app.', false);
         return false;
     }
 }
