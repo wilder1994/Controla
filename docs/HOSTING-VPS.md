@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 13 septiembre 2026
+**Última actualización:** 14 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
