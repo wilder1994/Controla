@@ -277,10 +277,11 @@
         <x-ui.field-error :messages="$errors->get('origin')" />
     </div>
     <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias sedes del mismo cliente. En la ficha sale en Administrador o Apoyo (cargo · nombre). No crea usuarios ni cambia Ajustes.</p>
-    <p x-show="isCollaborator" class="text-xs text-slate-500">El cargo es solo etiqueta. Los permisos salen de la matriz: Nada, Ver o Gestionar. No mezclar con vigilante ni supervisor.</p>
+    <p x-show="isCollaborator" class="text-xs text-slate-500">El cargo es solo etiqueta. Los permisos salen de la matriz: Nada, Ver o Gestionar. Atención de pánicos requiere Supervisión u Observatorio. No mezclar con vigilante ni supervisor.</p>
 
     <div x-show="isCollaborator" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3">
         <p class="text-xs font-medium text-slate-300">Módulos de empresa</p>
+        <p class="text-[11px] text-slate-500">Atención de pánicos solo aplica si también tiene Supervisión u Observatorio. Ver o Gestionar habilita atender.</p>
         <template x-for="mod in companyModules" :key="mod.key">
             <div class="flex flex-wrap items-center justify-between gap-2 py-1">
                 <span class="text-sm text-slate-200" x-text="mod.label"></span>

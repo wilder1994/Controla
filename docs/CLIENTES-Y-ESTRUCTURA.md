@@ -24,7 +24,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 
 La ficha corta por **objeto**, no por línea comercial. **Instalación y puesto** se editan una sola vez. Las **puertas** son otra tarjeta, solo si hay Accesos. Operar portería / operar cliente también exigen Accesos. Supervisión de campo se opera en la app y en `/company/supervision`, no en un segundo árbol.
 
-Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_access`) son los KPIs de portería. El **panel cliente** (`/client/dashboard`) y **Instalaciones** muestran el tablero SIG: mapa, puestos, novedades de servicio, salud afiliatoria y gráfica de revistas. Tarjetas: **Instalaciones y puestos** (`?vista=sitio`, si Accesos o Supervisión) y **Puertas** (`?vista=puertas`, solo Accesos). `?vista=accesos` y `?vista=supervision` redirigen al sitio.
+Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_access`) son los KPIs de portería. El **panel cliente** (`/client/dashboard`) y **Instalaciones** muestran el tablero SIG: mapa, puestos, novedades de servicio, salud afiliatoria y gráfica de revistas. El pánico por usuario lo atiende la empresa en **Atención de pánicos** (`/company/panics`, permiso `ops.panic.attend`); no es el de portería. Tarjetas: **Instalaciones y puestos** (`?vista=sitio`, si Accesos o Supervisión) y **Puertas** (`?vista=puertas`, solo Accesos). `?vista=accesos` y `?vista=supervision` redirigen al sitio.
 
 ---
 

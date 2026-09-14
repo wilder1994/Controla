@@ -398,7 +398,7 @@ Config acceso: `config/subscription.php` · detalle: [`docs/PLATAFORMA-ADMIN.md`
 
 ### Panel Empresa (`/company`)
 
-Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · **Observatorio** · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
+Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · **Observatorio** · Supervisión · **Atención de pánicos** · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos).
 
 | Ruta | Función |
 |------|---------|
@@ -407,6 +407,9 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/installations` | Directorio de sedes + tablero SIG (mapa, puestos, novedades de servicio) si no hay búsqueda |
 | `GET /company/ops/alerts.json` | Poll de pánico/Observatorio (overlay; no incluye a quien disparó) |
 | `POST /company/ops/panic` | Pánico por usuario de empresa (no es el de portería) |
+| `GET /company/panics` | Atención de pánicos: fichas abiertas/cerradas (`ops.panic.attend`) |
+| `POST /company/panics/claim` | Tomar un pánico y abrir la ficha |
+| `GET /company/panics/{id}/ficha` | Carta imprimible / PDF |
 | `GET /company/observatory/events` | Observatorio: **Tablero** (filtro cliente; pines / calor sede / calor riesgo; puntaje; líneas por tipo; leyenda/chips agrupados por slug) y **Eventos**. Tipos: solo lectura. API: `/docs/observatory` |
 | `GET /company/observatory/tablero.pptx` | Observatorio: export PPTX del tablero (mismos filtros; solo cifras) |
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |

@@ -60,6 +60,19 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::post('/ops/panic', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'panic'])
             ->name('ops.panic');
 
+        Route::middleware('permission:ops.panic.attend')->group(function () {
+            Route::get('/panics', [\App\Http\Controllers\Company\PanicAttentionController::class, 'index'])
+                ->name('panics.index');
+            Route::post('/panics/claim', [\App\Http\Controllers\Company\PanicAttentionController::class, 'claim'])
+                ->name('panics.claim');
+            Route::get('/panics/{panic}', [\App\Http\Controllers\Company\PanicAttentionController::class, 'show'])
+                ->name('panics.show');
+            Route::get('/panics/{panic}/ficha', [\App\Http\Controllers\Company\PanicAttentionController::class, 'print'])
+                ->name('panics.print');
+            Route::put('/panics/{panic}', [\App\Http\Controllers\Company\PanicAttentionController::class, 'update'])
+                ->name('panics.update');
+        });
+
         Route::get('/billing', [BillingController::class, 'index'])
             ->middleware('permission:company.billing.manage')
             ->name('billing.index');

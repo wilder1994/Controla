@@ -102,6 +102,12 @@
                     <span>Supervisión</span>
                 </a>
                 @endcan
+                @can('ops.panic.attend')
+                <a href="{{ route('company.panics.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.panics.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Atención de pánicos</span>
+                </a>
+                @endcan
                 @can('company.downloads.view')
                 <a href="{{ route('company.downloads.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.downloads.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
@@ -157,6 +163,9 @@
                     @include('partials.ops-live-alerts', [
                         'opsPoll' => auth()->check() ? route('company.ops.alerts') : null,
                         'opsPanicUrl' => auth()->check() ? route('company.ops.panic') : '',
+                        'opsClaimUrl' => auth()->check() && auth()->user()?->can('ops.panic.attend')
+                            ? route('company.panics.claim')
+                            : '',
                         'showPanic' => auth()->user()?->canany(['company.supervision.view', 'observatory.view'])
                             && auth()->user()?->hasAnyRole(['company-admin', 'colaborador']),
                     ])

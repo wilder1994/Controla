@@ -36,6 +36,11 @@ final class GrantableModules
                     'view' => ['company.supervision.view'],
                     'manage' => ['company.supervision.view'],
                 ],
+                'panics' => [
+                    'label' => 'Atención de pánicos',
+                    'view' => ['ops.panic.attend'],
+                    'manage' => ['ops.panic.attend'],
+                ],
                 'employees' => [
                     'label' => 'Empleados',
                     'view' => ['company.employees.view'],

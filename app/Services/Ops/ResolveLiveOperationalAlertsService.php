@@ -11,7 +11,7 @@ use App\Models\User;
 final class ResolveLiveOperationalAlertsService
 {
     /**
-     * @return list<array{id: int, type: string, title: string, body: string}>
+     * @return list<array{id: int, type: string, title: string, body: string, latitude: ?float, longitude: ?float, can_attend: bool}>
      */
     public function pending(User $user, int $afterId = 0): array
     {
@@ -33,7 +33,8 @@ final class ResolveLiveOperationalAlertsService
             return [];
         }
 
-        return $query->get()
+        return $query->with('attention')
+            ->get()
             ->filter(fn (OperationalAlert $alert) => $this->visibleTo($user, $alert))
             ->values()
             ->map(fn (OperationalAlert $alert) => [
@@ -41,6 +42,9 @@ final class ResolveLiveOperationalAlertsService
                 'type' => $alert->type->value,
                 'title' => $alert->title,
                 'body' => $alert->body,
+                'latitude' => $alert->latitude,
+                'longitude' => $alert->longitude,
+                'can_attend' => $this->canAttend($user, $alert),
             ])
             ->all();
     }
@@ -88,5 +92,19 @@ final class ResolveLiveOperationalAlertsService
         }
 
         return false;
+    }
+
+    private function canAttend(User $user, OperationalAlert $alert): bool
+    {
+        if ($alert->type !== OperationalAlertType::Panic || ! $user->can('ops.panic.attend')) {
+            return false;
+        }
+
+        $attention = $alert->attention;
+        if ($attention === null) {
+            return true;
+        }
+
+        return $attention->isAttendedBy($user);
     }
 }

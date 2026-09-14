@@ -33,6 +33,7 @@ return [
         'company.profile.manage',
         'company.downloads.view',
         'company.supervision.view',
+        'ops.panic.attend',
         'observatory.view',
         'observatory.events.update',
 
@@ -102,6 +103,7 @@ return [
             'company.profile.manage',
             'company.downloads.view',
             'company.supervision.view',
+            'ops.panic.attend',
             'observatory.view',
             'client.structures.manage',
             'client.members.manage',
@@ -292,6 +294,7 @@ return [
                 ['label' => 'Facturación', 'route' => 'company.billing.index', 'permission' => 'company.billing.manage'],
                 ['label' => 'Clientes', 'route' => 'company.clients.index', 'permission' => 'company.clients.view'],
                 ['label' => 'Supervisión', 'route' => 'company.supervision.index', 'permission' => 'company.supervision.view'],
+                ['label' => 'Atención de pánicos', 'route' => 'company.panics.index', 'permission' => 'ops.panic.attend'],
                 ['label' => 'Descargas', 'route' => 'company.downloads.index', 'permission' => 'company.downloads.view'],
                 ['label' => 'Empleados', 'route' => 'company.employees.index', 'permission' => 'company.employees.view'],
                 ['label' => 'Documentos', 'route' => 'company.personnel-documents.index', 'permission' => 'company.documents.view'],

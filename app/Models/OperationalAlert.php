@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\OperationalAlertType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class OperationalAlert extends Model
 {
@@ -47,5 +48,10 @@ final class OperationalAlert extends Model
     public function installation(): BelongsTo
     {
         return $this->belongsTo(Installation::class);
+    }
+
+    public function attention(): HasOne
+    {
+        return $this->hasOne(PanicAttention::class);
     }
 }

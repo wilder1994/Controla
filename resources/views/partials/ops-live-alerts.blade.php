@@ -1,12 +1,13 @@
 @php
     $opsPoll = $opsPoll ?? null;
     $opsPanicUrl = $opsPanicUrl ?? '';
+    $opsClaimUrl = $opsClaimUrl ?? '';
     $showPanic = (bool) ($showPanic ?? false);
 @endphp
 @if ($opsPoll)
 <div
     x-data="opsLiveAlerts"
-    x-init="pollUrl = @js($opsPoll); panicUrl = @js($opsPanicUrl); csrf = @js(csrf_token()); init()"
+    x-init="pollUrl = @js($opsPoll); panicUrl = @js($opsPanicUrl); claimUrl = @js($opsClaimUrl); csrf = @js(csrf_token()); init()"
 >
     <template x-teleport="body">
         <div x-show="open" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center p-4">
@@ -15,7 +16,12 @@
                 <p class="text-xs uppercase tracking-widest text-red-400">Alerta</p>
                 <h3 class="mt-2 text-2xl font-semibold text-white" x-text="title"></h3>
                 <p class="mt-3 text-sm text-slate-200" x-text="body"></p>
-                <button type="button" class="mt-6 inline-flex h-10 items-center rounded-lg bg-red-600 px-5 text-sm font-medium text-white" @click="ack()">Enterado</button>
+                <div class="mt-6 flex flex-wrap justify-center gap-2">
+                    <button type="button" class="inline-flex h-10 items-center rounded-lg bg-red-600 px-5 text-sm font-medium text-white" @click="ack()">Enterado</button>
+                    <button type="button" x-show="canAttend && type === 'panic'"
+                            class="inline-flex h-10 items-center rounded-lg bg-white px-5 text-sm font-medium text-slate-900"
+                            @click="attend()">Atender</button>
+                </div>
             </div>
         </div>
     </template>

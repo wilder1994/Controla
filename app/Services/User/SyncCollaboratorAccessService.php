@@ -50,7 +50,17 @@ final class SyncCollaboratorAccessService
             );
         }
 
-        $user->syncPermissions(array_values(array_unique($permissions)));
+        $permissions = array_values(array_unique($permissions));
+        $hearsOps = in_array('company.supervision.view', $permissions, true)
+            || in_array('observatory.view', $permissions, true);
+        if (! $hearsOps) {
+            $permissions = array_values(array_filter(
+                $permissions,
+                static fn (string $name): bool => $name !== 'ops.panic.attend',
+            ));
+        }
+
+        $user->syncPermissions($permissions);
     }
 
     public function clear(User $user): void

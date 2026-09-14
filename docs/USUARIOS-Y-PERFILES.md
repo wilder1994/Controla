@@ -220,6 +220,7 @@ Reglas:
 | `company.billing.manage` | Facturación (solo admin empresa) |
 | `company.profile.manage` | **Mis datos** (perfil legal/geo) |
 | `company.downloads.view` | Descargas PWA/APK |
+| `ops.panic.attend` | Atender pánicos: módulo, ficha y botón Atender. Colaborador: Ver/Gestionar «Atención de pánicos» y además Supervisión u Observatorio. `company-admin` lo trae |
 | `company.settings.view` / `company.settings.manage` | Ajustes (cargos, tipos, catálogos) |
 | `client.users.manage` | Ver/editar administradores del cliente. **No** crear. |
 | `client.settings.manage` | Crear/editar tipos de persona. El admin de instalaciones no lo tiene (Ajustes solo ver) |
