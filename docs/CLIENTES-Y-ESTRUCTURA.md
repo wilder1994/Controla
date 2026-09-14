@@ -56,7 +56,7 @@ Los asignados (`client_user_installation_assignments`) se parten en dos bloques:
 Si `has_access` o `has_supervision`. Abre `/company/clients/{id}?vista=sitio`:
 
 1. Crea **instalaciones** (casilla «La instalación es el mismo cliente» o nombre + mapa). Toda instalación lleva georreferencia.
-2. Crea **puestos** (`supervisor_posts`: modalidad + vigilantes). Un puesto admite **varios** empleados. Un empleado solo puede estar en **un** puesto; si ya tiene uno, se reasigna desde su ficha (buscador por cédula/nombre).
+2. Crea **puestos** (`supervisor_posts`: modalidad + vigilantes). Una instalación admite **varios** puestos (el alta queda visible; el nombre no se puede repetir). Un puesto admite **varios** empleados. Un empleado solo puede estar en **un** puesto; si ya tiene uno, se reasigna desde su ficha (buscador por cédula/nombre).
 
 Esta tarjeta **no** lista revistas. Las revistas de campo viven en `/company/supervision`.
 
@@ -76,7 +76,7 @@ La app de campo (`GET /api/supervision/posts`) lista **estos puestos**, nunca `l
 
 Solo si `has_access`. Abre `/company/clients/{id}?vista=puertas`. Cuelga `locations` de instalaciones ya creadas. No se crea la instalación aquí.
 
-Solo Supervisión: ve el sitio, no puertas ni Operar. Solo Accesos: sitio + puertas + Operar. Ambas: lo mismo, un solo puesto.
+Solo Supervisión: ve el sitio, no puertas ni Operar. Solo Accesos: sitio + puertas + Operar. Ambas: el mismo árbol de instalaciones y puestos.
 
 ---
 

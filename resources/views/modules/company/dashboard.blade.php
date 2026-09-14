@@ -428,9 +428,13 @@
                         <div id="company-map" class="hidden"></div>
                         <svg id="company-map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" class="opacity-90"></svg>
                         <div id="company-map-empty" class="absolute inset-0 flex items-center justify-center text-center p-4 text-xs text-slate-500 hidden">
-                            Sin conjuntos con coordenadas
+                            Sin clientes ni instalaciones con coordenadas
                         </div>
                         <div id="company-map-bubble" class="company-map-bubble hidden" role="dialog" aria-label="Detalle del conjunto"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-1 px-3 py-2 text-[11px] text-slate-400 leading-tight">
+                        <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-indigo-500 ring-1 ring-slate-900"></span>Cliente</span>
+                        <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 ring-1 ring-slate-900"></span>Instalación</span>
                     </div>
                 </div>
             </div>
@@ -754,7 +758,7 @@
             const mapShell = document.querySelector('.company-map-shell');
             const searchEl = document.getElementById('company-map-search');
             const csrfToken = mapShell?.dataset.csrf || '';
-            const toneColor = { ok: '#34d399', warn: '#fbbf24', danger: '#f87171' };
+            const toneColor = { ok: '#34d399', warn: '#fbbf24', danger: '#f87171', site: '#22d3ee' };
             let googleMap = null;
             let googleMarkers = [];
             let googleLabels = [];
@@ -783,7 +787,22 @@
                 return 'warn';
             }
 
+            function pinFill(pin) {
+                if (pin.kind === 'installation') return '#22d3ee';
+                return toneColor[pin.tone] || '#6366f1';
+            }
+
             function bubbleHtml(pin) {
+                if (pin.kind === 'installation') {
+                    return `
+                    <button type="button" class="company-map-bubble-close" data-bubble-close aria-label="Cerrar">×</button>
+                    <p class="company-iw-title">${escapeHtml(pin.title)}</p>
+                    <span class="company-iw-badge" data-tone="warn">${escapeHtml(pin.client_name || 'Instalación')}</span>
+                    <div class="company-iw-actions">
+                        <a class="company-iw-ver" href="${escapeHtml(pin.url)}">Ver ficha</a>
+                    </div>
+                    `;
+                }
                 return `
                     <button type="button" class="company-map-bubble-close" data-bubble-close aria-label="Cerrar">×</button>
                     <p class="company-iw-title">${escapeHtml(pin.title)}</p>
@@ -908,14 +927,16 @@
                 html += '<path d="M8 70 Q25 40 40 55 T70 35 T95 50" fill="none" stroke="#334155" stroke-width="0.4"/>';
                 norm.forEach(pin => {
                     const c = toneColor[pin.tone] || '#6366f1';
-                    html += `<circle cx="${pin.nx}" cy="${pin.ny}" r="3.2" fill="${c}" stroke="#0f172a" stroke-width="0.6" data-pin-id="${pin.id}" style="cursor:pointer"/>`;
+                    const fill = pin.kind === 'installation' ? '#22d3ee' : c;
+                    const key = pin.key || String(pin.id);
+                    html += `<circle cx="${pin.nx}" cy="${pin.ny}" r="3.2" fill="${fill}" stroke="#0f172a" stroke-width="0.6" data-pin-key="${escapeHtml(key)}" style="cursor:pointer"/>`;
                     html += `<text class="company-svg-label" x="${pin.nx}" y="${pin.ny - 4.5}" text-anchor="middle">${escapeHtml(shortLabel(pin.title))}</text>`;
                 });
                 svgEl.innerHTML = html;
-                svgEl.querySelectorAll('circle[data-pin-id]').forEach(node => {
-                    const id = Number(node.getAttribute('data-pin-id'));
-                    const pin = pins.find(p => p.id === id);
-                    const point = norm.find(p => p.id === id);
+                svgEl.querySelectorAll('circle[data-pin-key]').forEach(node => {
+                    const key = node.getAttribute('data-pin-key');
+                    const pin = pins.find(p => (p.key || String(p.id)) === key);
+                    const point = norm.find(p => (p.key || String(p.id)) === key);
                     if (pin && point) {
                         node.addEventListener('click', (e) => {
                             e.stopPropagation();
@@ -931,7 +952,8 @@
                 const q = (query || '').trim().toLowerCase();
                 return !q
                     ? mapMarkers
-                    : mapMarkers.filter(p => (p.title || '').toLowerCase().includes(q));
+                    : mapMarkers.filter(p => (p.title || '').toLowerCase().includes(q)
+                        || (p.client_name || '').toLowerCase().includes(q));
             }
 
             function clearGoogleOverlays() {
@@ -961,7 +983,7 @@
                         icon: {
                             path: google.maps.SymbolPath.CIRCLE,
                             scale: 8,
-                            fillColor: toneColor[pin.tone] || '#6366f1',
+                            fillColor: pinFill(pin),
                             fillOpacity: 1,
                             strokeColor: '#0f172a',
                             strokeWeight: 2,

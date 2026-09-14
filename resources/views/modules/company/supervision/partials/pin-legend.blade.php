@@ -10,7 +10,8 @@
     <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-sky-400 ring-1 ring-slate-900"></span>Apoyo</span>
     <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400 ring-1 ring-slate-900"></span>Alarma</span>
     <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-purple-400 ring-1 ring-slate-900"></span>Parada</span>
-    <span class="inline-flex items-center gap-1.5 col-span-2"><span class="inline-block h-2.5 w-2.5 rounded-full bg-indigo-500 ring-1 ring-slate-900"></span>Cliente (puesto)</span>
+    <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-indigo-500 ring-1 ring-slate-900"></span>Cliente</span>
+    <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-cyan-400 ring-1 ring-slate-900"></span>Instalación</span>
     <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-300 ring-1 ring-slate-900"></span>En línea</span>
     <span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400 ring-1 ring-slate-900"></span>Pantalla apagada</span>
     <span class="inline-flex items-center gap-1.5 col-span-2"><span class="inline-block h-2.5 w-2.5 rounded-full bg-red-300 ring-1 ring-slate-900"></span>Sin señal (más de 90 s sin GPS)</span>

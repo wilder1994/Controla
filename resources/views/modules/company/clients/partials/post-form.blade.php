@@ -1,5 +1,5 @@
 @php
-    $post = $post ?? null;
+    $post = ($post ?? null) instanceof \App\Models\SupervisorPost ? $post : null;
     $vista = $vista ?? 'sitio';
     $accent = $accent ?? 'indigo';
     $postModalities = $postModalities ?? [];
@@ -54,7 +54,7 @@
 
     <div>
         <label class="block text-[11px] text-slate-500 mb-1">{{ $isEdit ? 'Nombre' : 'Nuevo puesto' }}</label>
-        <input type="text" name="name" value="{{ old('name', $post?->name) }}" required placeholder="Portería principal" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5 text-xs text-white">
+        <input type="text" name="name" value="{{ old('name', $post?->name) }}" required placeholder="{{ $namePlaceholder ?? 'Portería principal' }}" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5 text-xs text-white">
     </div>
 
     <div>

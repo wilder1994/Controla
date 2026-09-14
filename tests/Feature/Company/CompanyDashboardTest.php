@@ -24,6 +24,8 @@ final class CompanyDashboardTest extends TestCase
         $response->assertOk();
         $response->assertSee('Mi empresa');
         $response->assertSee('Mapa de conjuntos');
+        $response->assertSee('Cliente');
+        $response->assertSee('Instalación');
         $response->assertSee('Cartera de clientes');
         $response->assertSee('Plan activo');
         $response->assertSee('Activos');

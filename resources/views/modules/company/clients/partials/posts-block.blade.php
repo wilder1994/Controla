@@ -52,10 +52,12 @@
 @if ($canManageTree)
     @include('modules.company.clients.partials.post-form', [
         'client' => $client,
+        'post' => null,
         'installation' => $installation,
         'vista' => $vista,
         'accent' => $accent,
         'postModalities' => $postModalities,
         'returnTo' => $returnTo,
+        'namePlaceholder' => 'Puesto '.($installation->supervisorPosts->count() + 1),
     ])
 @endif

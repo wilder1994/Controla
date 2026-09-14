@@ -4,6 +4,7 @@
     $reviewsJson = json_encode($map['reviews'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $eventsJson = json_encode($map['events'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $clientsJson = json_encode($map['clients'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    $installationsJson = json_encode($map['installations'] ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $googleMapsJson = json_encode($map['google_maps'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $activeTab = in_array($tab ?? '', ['live', 'history', 'summary', 'sheets'], true) ? $tab : 'live';
     $tabQuery = array_filter([
@@ -337,6 +338,7 @@
                 let reviews = {!! $reviewsJson !!};
                 let events = {!! $eventsJson !!};
                 const clients = {!! $clientsJson !!};
+                const installations = {!! $installationsJson !!};
                 const googleMaps = {!! $googleMapsJson !!};
                 const activeTab = @json($activeTab);
                 const liveFeedUrl = @json(route('company.supervision.live-feed', $tabQuery));
@@ -476,7 +478,7 @@
                     return 6371000 * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
                 }
 
-                const PIN_PRIORITY = ['flag', 'start', 'alarm', 'support', 'review', 'stop', 'client', 'moto'];
+                const PIN_PRIORITY = ['flag', 'start', 'alarm', 'support', 'review', 'stop', 'client', 'installation', 'moto'];
 
                 function listPins(items) {
                     return (items || []).filter((pin) => pin.kind !== 'moto');
@@ -543,6 +545,7 @@
                         review: 'Revista',
                         stop: 'Parada',
                         client: 'Cliente',
+                        installation: 'Instalación',
                         alarm: 'Alarma',
                         support: 'Apoyo',
                     })[kind] || kind;
@@ -570,6 +573,7 @@
                     if (pin.kind === 'start') return '#22c55e';
                     if (pin.kind === 'flag') return '#ef4444';
                     if (pin.kind === 'moto') return '#e2e8f0';
+                    if (pin.kind === 'installation') return '#22d3ee';
                     return '#818cf8';
                 }
 
@@ -596,6 +600,10 @@
                     if (pin.kind === 'start' || pin.kind === 'flag') {
                         headline = pin.user || kind;
                         meta = pin.title || '';
+                    }
+                    if (pin.kind === 'installation') {
+                        headline = pin.title || kind;
+                        meta = row.client || '';
                     }
                     const notes = row.notes ? '<p style="margin:6px 0 0;color:#94a3b8">' + esc(row.notes) + '</p>' : '';
                     const link = row.sheet_url
@@ -867,9 +875,10 @@
                         bindPinOpen(marker, pin);
                         return;
                     }
-                    if (pin.kind === 'client') {
+                    if (pin.kind === 'client' || pin.kind === 'installation') {
+                        const color = pin.kind === 'installation' ? '#22d3ee' : '#6366f1';
                         const marker = addOverlay(new google.maps.Marker({
-                            map, position: pos, title: pin.title, zIndex: 1, icon: circleIcon('#6366f1', 8),
+                            map, position: pos, title: pin.title, zIndex: 1, icon: circleIcon(color, 8),
                         }));
                         addOverlay(new google.maps.Marker({
                             map, position: pos, clickable: false, zIndex: 1,
@@ -898,13 +907,24 @@
                 }
 
                 function collectClientPins() {
-                    return clients.filter((row) => row.lat != null && row.lng != null).map((row) => ({
+                    const clientPins = clients.filter((row) => row.lat != null && row.lng != null).map((row) => ({
                         kind: 'client',
                         lat: row.lat,
                         lng: row.lng,
                         title: row.name,
                         label: row.name.length > 18 ? row.name.slice(0, 16) + '…' : row.name,
+                        row: { client: row.name },
                     }));
+                    const sitePins = installations.filter((row) => row.lat != null && row.lng != null).map((row) => ({
+                        kind: 'installation',
+                        lat: row.lat,
+                        lng: row.lng,
+                        title: row.name,
+                        label: row.name.length > 18 ? row.name.slice(0, 16) + '…' : row.name,
+                        row: { client: row.client || row.name, sheet_url: row.url || '' },
+                    }));
+
+                    return clientPins.concat(sitePins);
                 }
 
                 function collectReviewPins(shiftId) {

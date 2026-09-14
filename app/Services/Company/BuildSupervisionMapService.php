@@ -135,25 +135,53 @@ final class BuildSupervisionMapService
             ->where('security_company_id', $company->id)
             ->where('has_supervision', true)
             ->where('is_active', true)
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
+            ->with(['installations' => fn ($q) => $q
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->orderBy('name')])
             ->orderBy('name')
-            ->get(['id', 'name', 'latitude', 'longitude'])
-            ->map(fn (Client $client) => [
-                'id' => $client->id,
-                'name' => $client->name,
-                'lat' => (float) $client->latitude,
-                'lng' => (float) $client->longitude,
-            ])
-            ->values()
-            ->all();
+            ->get(['id', 'name', 'latitude', 'longitude']);
+
+        $clientPins = [];
+        $installationPins = [];
+        foreach ($clients as $client) {
+            $clientKey = $this->coordKey($client->latitude, $client->longitude);
+            if ($clientKey !== null) {
+                $clientPins[] = [
+                    'id' => $client->id,
+                    'name' => $client->name,
+                    'lat' => (float) $client->latitude,
+                    'lng' => (float) $client->longitude,
+                ];
+            }
+
+            foreach ($client->installations as $installation) {
+                $siteKey = $this->coordKey($installation->latitude, $installation->longitude);
+                if ($siteKey === null) {
+                    continue;
+                }
+                if ($installation->is_client_site && $siteKey === $clientKey) {
+                    continue;
+                }
+
+                $installationPins[] = [
+                    'id' => $installation->id,
+                    'name' => $installation->name,
+                    'client' => $client->name,
+                    'lat' => (float) $installation->latitude,
+                    'lng' => (float) $installation->longitude,
+                    'url' => route('company.installations.show', $installation),
+                ];
+            }
+        }
 
         return [
             'live' => $live,
             'history' => $history,
             'reviews' => $reviews,
             'events' => $events,
-            'clients' => $clients,
+            'clients' => $clientPins,
+            'installations' => $installationPins,
             'from' => $fromAt->toDateString(),
             'to' => $toAt->toDateString(),
             'google_maps' => [
@@ -327,5 +355,14 @@ final class BuildSupervisionMapService
             'at' => $at?->toIso8601String(),
             'at_label' => $at?->timezone(config('app.timezone'))->format('d/m H:i'),
         ];
+    }
+
+    private function coordKey(mixed $lat, mixed $lng): ?string
+    {
+        if ($lat === null || $lng === null) {
+            return null;
+        }
+
+        return number_format((float) $lat, 5, '.', '').','.number_format((float) $lng, 5, '.', '');
     }
 }

@@ -26,6 +26,8 @@ Avisos en español (13 sep 2026): `lang/es/*`, toast centrado, PWA `controla-sup
 
 Colaborador + Clientes (13 sep 2026): `ClientController` / `ClientPolicy`. Corte PHP: pull + `view:cache` + `config:cache`. Sin migrate, seeder ni `npm run build`.
 
+Puestos + mapas (14 sep 2026): varios puestos por instalación; pines cliente/instalación en Mi empresa y Supervisión. Pull + `view:cache` + `config:cache` + `route:cache`. Sin migrate ni seeder.
+
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
 ```bash

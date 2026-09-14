@@ -68,6 +68,20 @@ final class CompanyClientSiteTreeTest extends TestCase
             ->where('name', 'Puesto bodega')
             ->firstOrFail();
         $this->assertSame(12, $post->modality->value);
+
+        $this->actingAs($user)
+            ->get(route('company.clients.show', [$client, 'vista' => 'sitio']))
+            ->assertOk()
+            ->assertSee('Agregar puesto');
+
+        $this->actingAs($user)->post(route('company.clients.posts.store', $client), [
+            'installation_id' => $installation->id,
+            'name' => 'Puesto sur',
+            'modality' => 24,
+            'vista' => 'sitio',
+        ])->assertRedirect(route('company.clients.show', [$client, 'vista' => 'sitio']));
+
+        $this->assertSame(2, SupervisorPost::query()->where('installation_id', $installation->id)->count());
     }
 
     public function test_access_only_client_can_create_shared_post(): void
@@ -102,6 +116,7 @@ final class CompanyClientSiteTreeTest extends TestCase
             ->assertOk()
             ->assertSee('Puesto compartido')
             ->assertSee('24 h')
+            ->assertSee('Agregar puesto')
             ->assertDontSee('Agregar puerta');
 
         $this->actingAs($user)

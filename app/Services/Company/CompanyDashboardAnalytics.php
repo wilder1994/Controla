@@ -11,6 +11,7 @@ use App\Models\Client;
 use App\Models\Correspondence;
 use App\Models\GuardLog;
 use App\Models\GuardShift;
+use App\Models\Installation;
 use App\Models\SecurityCompany;
 use App\Models\SupervisorReview;
 use App\Models\User;
@@ -48,6 +49,9 @@ final class CompanyDashboardAnalytics
         $panicsOpen = $this->panicsOpen($activeClientIds);
         $workforce = $this->workforce($companyId, $openShifts);
 
+        $activeClients->load([
+            'installations' => fn ($q) => $q->whereNotNull('latitude')->whereNotNull('longitude'),
+        ]);
         $mapMarkers = $this->mapMarkers($activeClients, $reviewsToday, $openShifts);
         $maxClients = (int) ($company->max_clients ?: 0);
         $activeCount = $activeClients->count();
@@ -96,7 +100,10 @@ final class CompanyDashboardAnalytics
             'open_shifts_table' => $this->openShiftsTable($openShifts, $reviewsToday),
             'portfolio' => [
                 'with_geo' => $activeClients->filter(
-                    fn (Client $c) => $c->latitude !== null && $c->longitude !== null
+                    fn (Client $c) => ($c->latitude !== null && $c->longitude !== null)
+                        || $c->installations->contains(
+                            fn (Installation $i) => $i->latitude !== null && $i->longitude !== null
+                        )
                 )->count(),
                 'active_total' => $activeCount,
                 'archived' => $archivedCount,
@@ -462,10 +469,7 @@ final class CompanyDashboardAnalytics
         $markers = [];
 
         foreach ($activeClients as $client) {
-            if ($client->latitude === null || $client->longitude === null) {
-                continue;
-            }
-
+            $clientKey = $this->coordKey($client->latitude, $client->longitude);
             $target = max(1, (int) ($client->revista_target_per_day ?: 1));
             $done = $reviewsToday->where('client_id', $client->id)->count();
             $hasOpenShift = $openShifts->contains(fn (GuardShift $s) => (int) $s->client_id === (int) $client->id);
@@ -476,29 +480,66 @@ final class CompanyDashboardAnalytics
                 $tone = 'warn';
             }
 
-            $markers[] = [
-                'id' => (int) $client->id,
-                'lat' => (float) $client->latitude,
-                'lng' => (float) $client->longitude,
-                'title' => $client->name,
-                'tone' => $tone,
-                'tone_label' => match ($tone) {
-                    'ok' => 'Salud OK',
-                    'warn' => 'Bajo meta',
-                    default => 'Crítico',
-                },
-                'revistas_hoy' => sprintf('%d/%d', $done, $target),
-                'turno_abierto' => $hasOpenShift,
-                'vehiculos_hoy' => $this->countAccessToday([(int) $client->id], ['visitor_vehicle', 'resident_vehicle']),
-                'visitantes_hoy' => $this->countAccessToday([(int) $client->id], ['visitor']),
-                'service_started' => $client->service_started_at?->format('d/m/Y') ?? '—',
-                'ultima_novedad' => $this->lastNovedadLabel((int) $client->id),
-                'url' => route('company.clients.show', $client),
-                'operate_url' => route('company.clients.activate', $client),
-            ];
+            if ($clientKey !== null) {
+                $markers[] = [
+                    'key' => 'client-'.$client->id,
+                    'kind' => 'client',
+                    'id' => (int) $client->id,
+                    'lat' => (float) $client->latitude,
+                    'lng' => (float) $client->longitude,
+                    'title' => $client->name,
+                    'tone' => $tone,
+                    'tone_label' => match ($tone) {
+                        'ok' => 'Salud OK',
+                        'warn' => 'Bajo meta',
+                        default => 'Crítico',
+                    },
+                    'revistas_hoy' => sprintf('%d/%d', $done, $target),
+                    'turno_abierto' => $hasOpenShift,
+                    'vehiculos_hoy' => $this->countAccessToday([(int) $client->id], ['visitor_vehicle', 'resident_vehicle']),
+                    'visitantes_hoy' => $this->countAccessToday([(int) $client->id], ['visitor']),
+                    'service_started' => $client->service_started_at?->format('d/m/Y') ?? '—',
+                    'ultima_novedad' => $this->lastNovedadLabel((int) $client->id),
+                    'url' => route('company.clients.show', $client),
+                    'operate_url' => route('company.clients.activate', $client),
+                ];
+            }
+
+            foreach ($client->installations as $installation) {
+                $siteKey = $this->coordKey($installation->latitude, $installation->longitude);
+                if ($siteKey === null) {
+                    continue;
+                }
+                if ($installation->is_client_site && $siteKey === $clientKey) {
+                    continue;
+                }
+
+                $markers[] = [
+                    'key' => 'installation-'.$installation->id,
+                    'kind' => 'installation',
+                    'id' => (int) $installation->id,
+                    'lat' => (float) $installation->latitude,
+                    'lng' => (float) $installation->longitude,
+                    'title' => $installation->name,
+                    'client_name' => $client->name,
+                    'tone' => 'site',
+                    'tone_label' => 'Instalación',
+                    'url' => route('company.installations.show', $installation),
+                    'operate_url' => null,
+                ];
+            }
         }
 
         return $markers;
+    }
+
+    private function coordKey(mixed $lat, mixed $lng): ?string
+    {
+        if ($lat === null || $lng === null) {
+            return null;
+        }
+
+        return number_format((float) $lat, 5, '.', '').','.number_format((float) $lng, 5, '.', '');
     }
 
     private function lastNovedadLabel(int $clientId): string

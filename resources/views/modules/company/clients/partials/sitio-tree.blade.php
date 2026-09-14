@@ -9,7 +9,7 @@
     <div>
         <h3 class="text-sm font-semibold text-white">Instalaciones y puestos</h3>
         <p class="mt-1 text-xs text-slate-500">
-            Sitio, modalidad y vigilantes. Un puesto por instalación; no es una puerta.
+            Sitio, modalidad y vigilantes. Una instalación tiene varios puestos; un puesto, varios vigilantes. No es una puerta.
         </p>
     </div>
 
