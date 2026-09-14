@@ -404,7 +404,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
 | `GET /company/installations` | Directorio de sedes: búsqueda, crear, ficha (código, área, admin de sede, mapa, puestos) |
-| `GET /company/observatory/events` | Observatorio: **Tablero** (filtro cliente; pines / calor sede / calor riesgo; puntaje; líneas por tipo) y **Eventos**. Tipos: solo lectura. API: `/docs/observatory` |
+| `GET /company/observatory/events` | Observatorio: **Tablero** (filtro cliente; pines / calor sede / calor riesgo; puntaje; líneas por tipo; leyenda/chips agrupados por slug) y **Eventos**. Tipos: solo lectura. API: `/docs/observatory` |
 | `GET /company/observatory/tablero.pptx` | Observatorio: export PPTX del tablero (mismos filtros; solo cifras) |
 | `GET /company/clients/{id}` | Ficha: **Cliente** (ficha + tarjetas) \| **Resumen** (KPIs/charts de portería, si `has_access`) |
 | `POST /company/clients` | Alta de ficha (sin bloqueo por cupo; asientos al marcar líneas). **No** crea instalaciones, accesos ni puestos |
@@ -606,7 +606,7 @@ Tablas relacionadas:
 |------|--------|
 | `/client/dashboard` | Resumen |
 | `/client/installations` | Directorio de sedes; la ficha incluye estructura (nodos). `/client/structures` redirige |
-| `/client/observatory/events` | Observatorio (módulo opt-in en la ficha). Tablero + Eventos + **Tipos** (admin cliente: nombre/nivel/color). **Nuevo reporte** en el header. Rector cierra; apoyo reporta |
+| `/client/observatory/events` | Observatorio (módulo opt-in). Tablero + Eventos + **Tipos**. **Nuevo reporte**: hasta 3 fotos (cámara/miniatura, opcional). Rector cierra; apoyo reporta |
 | `/client/observatory/tablero.pptx` | Observatorio: export PPTX del tablero (mismos filtros; solo cifras) |
 | `/client/members` | Personas: tipo de documento + fecha de nacimiento; menores (Ley 1581) sin export; QR solo adultos |
 | `/client/pets` | Directorio de mascotas por unidad |

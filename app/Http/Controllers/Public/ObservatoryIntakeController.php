@@ -15,6 +15,7 @@ use App\Models\ObservatoryReport;
 use App\Models\ObservatoryReportType;
 use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\SubmitObservatoryReportService;
+use App\Support\Observatory\ObservatoryPhotoInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -89,6 +90,7 @@ final class ObservatoryIntakeController extends Controller
                 'reporter_role' => (string) $request->validated('reporter_role'),
                 'reporter_name' => $request->validated('reporter_name'),
                 'reporter_phone' => $request->validated('reporter_phone'),
+                'photos' => ObservatoryPhotoInput::files($request),
                 'photo' => $request->file('photo'),
                 'latitude' => $request->validated('latitude'),
                 'longitude' => $request->validated('longitude'),

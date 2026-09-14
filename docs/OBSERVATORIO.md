@@ -2,7 +2,7 @@
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 13 septiembre 2026
+**Última actualización:** 14 septiembre 2026
 
 ## Piezas
 
@@ -30,7 +30,7 @@ Anónimo (todas las superficies): aviso «se oculta tu nombre y teléfono; solo 
 Ejemplo: `/o/palmas-del-ingenio`. Solo sedes `kind=colegio` y activas. Tres pasos, móvil, sin app:
 
 1. Colegio (nombre o DANE)
-2. Qué pasó + tipo (amenaza / riña / hurto / otro) + mapa satélite (pin en el colegio; se arrastra) + foto opcional
+2. Qué pasó + tipo (amenaza / riña / hurto / otro) + mapa satélite (pin en el colegio; se arrastra) + hasta 3 fotos (cámara y miniatura; opcional)
 3. Quién eres (alumno / padre / vecino) + anónimo o identificado + «Recordarme en este teléfono»
 
 Aviso de menores (Normoteca). Anónimo no guarda nombre ni teléfono. Alumno: el nombre de ese reporte no se guarda en el teléfono (Ley 1581). Padre/vecino: si marcan recordarme, el siguiente ingreso en **ese** celular salta a rellenar colegio/hecho. Otro celular empieza de nuevo.
@@ -111,7 +111,7 @@ El POST usa las mismas reglas de unión (1 h, mismo colegio y tipo). Anónimo oc
 
 ## Tipos (catálogo del cliente)
 
-Solo el **admin del cliente** crea y edita: nombre + nivel 1–3 + color. La empresa los ve (filtro por cliente). Semilla: Amenaza N3, Riña N2, Hurto N2, Otro N1. El link `/o/{slug}`, el panel, la PWA y la minuta usan esos tipos.
+Solo el **admin del cliente** crea y edita: nombre + nivel 1–3 + color. La empresa los ve (filtro por cliente). Semilla: Amenaza N3, Riña N2, Hurto N2, Otro N1. El link `/o/{slug}`, el panel, la PWA y la minuta usan esos tipos. En el tablero empresa (Todos), leyenda, chips y gráficos agrupan por slug para no repetir el mismo tipo de cada cliente.
 
 Puntaje del colegio = suma de niveles de sus reportes. Tablero: líneas por tipo (día/mes/año) y días pico.
 

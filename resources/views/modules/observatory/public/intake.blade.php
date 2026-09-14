@@ -96,10 +96,7 @@
                 </div>
                 <p x-show="!mapsKey || !hasPin" class="text-[11px] text-slate-500">Sin mapa: se usa el pin del colegio si existe.</p>
             </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1" for="photo">Foto (opcional)</label>
-                <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="w-full text-sm text-slate-400">
-            </div>
+            @include('modules.observatory.partials.photo-slots')
             <div class="flex gap-2">
                 <button type="button" class="h-11 px-4 rounded-lg border border-slate-700 text-sm text-slate-300" @click="goStep(1)">Atrás</button>
                 <button type="button" class="flex-1 h-11 rounded-lg bg-teal-600 text-sm font-semibold text-white disabled:opacity-40" :disabled="!kind" @click="step = 3">Continuar</button>

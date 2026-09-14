@@ -24,7 +24,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('client.observatory.reports.store') }}" enctype="multipart/form-data" class="mt-6 max-w-xl space-y-4" x-data="{ anonymous: {{ old('is_anonymous') ? 'true' : 'false' }} }">
+        <form method="POST" action="{{ route('client.observatory.reports.store') }}" enctype="multipart/form-data" class="mt-6 max-w-xl space-y-4" x-data="observatoryPhotos({ anonymous: {{ old('is_anonymous') ? 'true' : 'false' }} })">
             @csrf
             <div>
                 <label class="block text-xs text-slate-400 mb-1" for="installation_id">Sede</label>
@@ -48,10 +48,7 @@
                 <label class="block text-xs text-slate-400 mb-1" for="body">Qué pasó</label>
                 <textarea id="body" name="body" rows="5" required minlength="10" maxlength="2000" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">{{ old('body') }}</textarea>
             </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1" for="photo">Foto (opcional)</label>
-                <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="w-full text-sm text-slate-400">
-            </div>
+            @include('modules.observatory.partials.photo-slots')
             <label class="flex items-start gap-2 text-sm text-slate-300">
                 <input type="hidden" name="is_anonymous" value="0">
                 <input type="checkbox" name="is_anonymous" value="1" x-model="anonymous" @checked(old('is_anonymous')) class="mt-0.5 rounded border-slate-600 bg-slate-950 text-teal-600">

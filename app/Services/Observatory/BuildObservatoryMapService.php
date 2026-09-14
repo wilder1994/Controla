@@ -35,24 +35,7 @@ final class BuildObservatoryMapService
             ->orderBy('name')
             ->get();
 
-        $types = ObservatoryReportType::query()
-            ->when($clientId !== null, fn ($q) => $q->where('client_id', $clientId))
-            ->when($companyId !== null && $clientId === null, fn ($q) => $q->whereHas(
-                'client',
-                fn ($c) => $c->where('security_company_id', $companyId),
-            ))
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (ObservatoryReportType $type): array => [
-                'id' => (int) $type->id,
-                'slug' => $type->slug,
-                'name' => $type->name,
-                'level' => (int) $type->level,
-                'color' => $type->color,
-            ])
-            ->all();
+        $types = ObservatoryReportType::catalogForScope($companyId, $clientId);
 
         return [
             'google_maps' => $this->googleMaps(),

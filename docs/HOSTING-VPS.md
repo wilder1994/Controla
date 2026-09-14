@@ -36,6 +36,8 @@ Observatorio campo (14 sep 2026): mapa pin + 1–3 fotos en PWA/APK. Migrate `20
 
 Landing welcome (14 sep 2026): scroll (`min-h-screen`), H1 Accesos/supervisión/observatorio, 3 cards, marca WCodex. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder.
 
+Observatorio fotos link + tipos empresa (14 sep 2026): `/o/{slug}` y panel rector con cámara/miniaturas (hasta 3, opcional). Leyenda empresa por slug. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder.
+
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.
 
 ```bash

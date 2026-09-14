@@ -81,27 +81,11 @@ final class BuildObservatoryBoardService
     }
 
     /**
-     * @return list<array{id: int, slug: string, name: string, level: int, color: string}>
+     * @return list<array{id: int, ids: list<int>, slug: string, name: string, level: int, color: string}>
      */
     private function types(?int $companyId, ?int $clientId): array
     {
-        $query = ObservatoryReportType::query()
-            ->when($clientId !== null, fn ($q) => $q->where('client_id', $clientId))
-            ->when($companyId !== null && $clientId === null, fn ($q) => $q->whereHas(
-                'client',
-                fn ($c) => $c->where('security_company_id', $companyId),
-            ))
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name');
-
-        return $query->get()->map(fn (ObservatoryReportType $type): array => [
-            'id' => (int) $type->id,
-            'slug' => $type->slug,
-            'name' => $type->name,
-            'level' => (int) $type->level,
-            'color' => $type->color,
-        ])->all();
+        return ObservatoryReportType::catalogForScope($companyId, $clientId);
     }
 
     /**
@@ -172,7 +156,11 @@ final class BuildObservatoryBoardService
         foreach ($types as $type) {
             $values = [];
             foreach ($keys as $key) {
-                $values[] = (int) ($lookup[$key.'|'.$type['id']] ?? 0);
+                $count = 0;
+                foreach ($type['ids'] ?? [$type['id']] as $typeId) {
+                    $count += (int) ($lookup[$key.'|'.$typeId] ?? 0);
+                }
+                $values[] = $count;
             }
             $series[] = [
                 'label' => $type['name'],
@@ -235,8 +223,12 @@ final class BuildObservatoryBoardService
         $values = [];
         $colors = [];
         foreach ($types as $type) {
+            $count = 0;
+            foreach ($type['ids'] ?? [$type['id']] as $typeId) {
+                $count += (int) ($raw[$typeId] ?? 0);
+            }
             $labels[] = $type['name'];
-            $values[] = (int) ($raw[$type['id']] ?? 0);
+            $values[] = $count;
             $colors[] = $type['color'];
         }
 

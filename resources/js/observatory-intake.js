@@ -22,6 +22,22 @@ function loadGoogleMaps(apiKey) {
     return window.__observatoryIntakeMapsLoader;
 }
 
+export function observatoryPhotos(cfg = {}) {
+    return {
+        anonymous: Boolean(cfg.anonymous),
+        previews: [null, null, null],
+        setPhoto(event, index) {
+            const file = event.target.files?.[0];
+            if (this.previews[index]) {
+                URL.revokeObjectURL(this.previews[index]);
+            }
+            const next = [...this.previews];
+            next[index] = file ? URL.createObjectURL(file) : null;
+            this.previews = next;
+        },
+    };
+}
+
 export function observatoryIntake(cfg) {
     return {
         step: cfg.installationId ? 2 : 1,
@@ -46,6 +62,7 @@ export function observatoryIntake(cfg) {
         mapsKey: cfg.mapsKey || '',
         map: null,
         marker: null,
+        previews: [null, null, null],
 
         init() {
             this.restoreIdentity();
@@ -138,6 +155,16 @@ export function observatoryIntake(cfg) {
             this.longitude = row.lng != null ? String(row.lng) : '';
             this.sites = [];
             this.query = row.name;
+        },
+
+        setPhoto(event, index) {
+            const file = event.target.files?.[0];
+            if (this.previews[index]) {
+                URL.revokeObjectURL(this.previews[index]);
+            }
+            const next = [...this.previews];
+            next[index] = file ? URL.createObjectURL(file) : null;
+            this.previews = next;
         },
 
         goStep(n) {

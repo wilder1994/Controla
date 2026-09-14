@@ -10,7 +10,9 @@ use App\Models\Client;
 use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
+use App\Models\ObservatoryReportType;
 use App\Models\User;
+use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -29,7 +31,9 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('Reportar', false)
             ->assertSee($client->name, false)
             ->assertSee('Quién eres', false)
-            ->assertSee('Alumno', false);
+            ->assertSee('Alumno', false)
+            ->assertSee('Foto 1', false)
+            ->assertSee('capture="environment"', false);
 
         $this->getJson(route('observatory.public.sites', ['slug' => $client->slug, 'q' => 'Santa']))
             ->assertOk()
@@ -220,6 +224,30 @@ final class ObservatoryReportFlowTest extends TestCase
         $report = ObservatoryReport::query()->firstOrFail();
         $this->assertNotNull($report->photo_path);
         Storage::disk('public')->assertExists($report->photo_path);
+    }
+
+    public function test_optional_photos_array_stores_up_to_three(): void
+    {
+        Storage::fake('public');
+        [$client, $colegio] = $this->sites();
+
+        $this->post(route('observatory.public.store', $client->slug), [
+            'installation_id' => $colegio->id,
+            'kind' => 'hurto',
+            'body' => 'Tres fotos del muro y la reja del colegio.',
+            'is_anonymous' => '1',
+            'reporter_role' => 'vecino',
+            'photos' => [
+                UploadedFile::fake()->image('uno.jpg'),
+                UploadedFile::fake()->image('dos.jpg'),
+            ],
+        ])->assertRedirect();
+
+        $report = ObservatoryReport::query()->firstOrFail();
+        $this->assertCount(2, $report->photoUrls());
+        foreach ($report->photoUrls() as $url) {
+            $this->assertNotSame('', $url);
+        }
     }
 
     public function test_company_and_client_admin_view_but_cannot_change_status(): void
@@ -658,6 +686,26 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('API', false)
             ->assertSee('Compartir link', false)
             ->assertSee('Tipos y nivel', false);
+    }
+
+    public function test_company_board_lists_each_type_slug_once(): void
+    {
+        [$client] = $this->sites();
+        $torres = Client::query()->where('slug', 'torres-loma')->firstOrFail();
+        $ensure = app(EnsureObservatoryReportTypesService::class);
+        $ensure->execute($client);
+        $ensure->execute($torres);
+
+        $this->assertGreaterThan(1, ObservatoryReportType::query()->where('slug', 'amenaza')->count());
+
+        $company = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $html = $this->actingAs($company)
+            ->get(route('company.observatory.events.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(1, substr_count($html, 'setTypeFilter("amenaza")'));
+        $this->assertSame(1, substr_count($html, '>Amenaza</span>'));
     }
 
     public function test_public_report_requires_role_and_keeps_it_when_anonymous(): void

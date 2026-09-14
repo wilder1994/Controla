@@ -389,3 +389,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-12 | Observatorio: Google Maps 3.65 quitó HeatmapLayer; el calor es círculo propio. La capa IDESC se carga siempre (ruta relativa); Todas = Cali + 22; una comuna hace zoom a ese polígono. |
 | 2026-09-12 | Observatorio: export PPTX del tablero (mismos filtros; cifras, ranking, tendencia, picos y canal). |
 | 2026-09-12 | App de campo: APK debug (Capacitor) en Descargas; API fija a controla.wcodex.cloud. GPS con pantalla off = corte 2. |
+| 2026-09-14 | Observatorio: `/o/{slug}` y panel rector con cámara y hasta 3 miniaturas (opcional). Tablero empresa agrupa tipos por slug. |

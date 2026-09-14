@@ -21,6 +21,7 @@ use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\ExportObservatoryBoardService;
 use App\Services\Observatory\MergeObservatoryEventsService;
 use App\Services\Observatory\SubmitObservatoryReportService;
+use App\Support\Observatory\ObservatoryPhotoInput;
 use App\Services\Observatory\UnhookObservatoryReportService;
 use App\Services\Observatory\UpdateObservatoryEventStatusService;
 use App\Support\Auth\AssignableRoles;
@@ -184,6 +185,7 @@ final class ObservatoryEventController extends Controller
                 'reporter_role' => $role,
                 'reporter_name' => $anonymous ? null : $user->name,
                 'reported_by' => $user,
+                'photos' => ObservatoryPhotoInput::files($request),
                 'photo' => $request->file('photo'),
                 'latitude' => $request->validated('latitude'),
                 'longitude' => $request->validated('longitude'),
