@@ -1475,6 +1475,8 @@ async function afterLogin(data = {}) {
     const name = data.user?.name;
     setStatus(name ? `Hola ${name}` : 'Sesión activa');
     if (data.must_change_password) {
+        const temp = document.getElementById('temp-username');
+        if (temp) temp.textContent = data.user?.username || '';
         show('change-password');
         return;
     }
@@ -1549,12 +1551,15 @@ document.getElementById('btn-change-password').onclick = () => withBusy(
     document.getElementById('btn-change-password'),
     'Guardando…',
     async () => {
+        const username = document.getElementById('new-username').value.trim();
         const password = document.getElementById('new-password').value;
         const confirm = document.getElementById('new-password-confirm').value;
+        if (!username) throw new Error('Escriba el nuevo usuario.');
         if (password !== confirm) throw new Error('Las contraseñas no coinciden.');
         await api('/supervision/password', {
             method: 'POST',
             body: JSON.stringify({
+                username,
                 password,
                 password_confirmation: confirm,
             }),

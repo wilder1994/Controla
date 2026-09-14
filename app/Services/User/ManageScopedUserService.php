@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\User;
 
+use App\Domain\User\AccessGrantData;
 use App\Domain\User\CreateUserData;
 use App\Domain\User\UpdateUserData;
 use App\Enums\ClientAdminOrigin;
@@ -24,6 +25,7 @@ final class ManageScopedUserService
     public function __construct(
         private readonly UserScopeResolver $scopeResolver,
         private readonly AssertVigilantePorteriaService $assertVigilantePorteria,
+        private readonly SyncCollaboratorAccessService $syncCollaboratorAccess,
     ) {}
 
     public function create(CreateUserData $data, User $actor, UserManagementContext $context): User
@@ -47,6 +49,9 @@ final class ManageScopedUserService
         $this->assertOriginRules($data->role, $origin, $data->employeeId, $context);
         $clientIds = $this->normalizeClientIds($data->clientIds, $data->role, $origin, $companyId, $context, $actor);
         $installationIds = $this->normalizeInstallationIds($data->installationIds, $data->role, $clientIds);
+        if ($data->role === 'colaborador') {
+            [$clientIds, $installationIds] = $this->idsFromGrants($data->grants, $companyId, $data->clientIds, $data->installationIds);
+        }
 
         if ($data->role === 'guardia') {
             foreach ($clientIds as $clientId) {
@@ -54,7 +59,7 @@ final class ManageScopedUserService
             }
         }
 
-        return DB::transaction(function () use ($data, $companyId, $clientIds, $origin, $installationIds): User {
+        return DB::transaction(function () use ($data, $actor, $companyId, $clientIds, $origin, $installationIds): User {
             $attributes = [
                 'name' => $data->name,
                 'username' => $data->username,
@@ -79,8 +84,9 @@ final class ManageScopedUserService
             $user->syncRoles([$data->role]);
             $this->syncClientAssignments($user, $clientIds, $data->role);
             $this->syncInstallationAssignments($user, $installationIds, $data->role, $data->sitePermission);
+            $this->syncGrants($user, $actor, $data->role, $data->grants, $companyId);
 
-            return $user->fresh(['roles', 'clients', 'assignedInstallations']);
+            return $user->fresh(['roles', 'clients', 'assignedInstallations', 'moduleGrants']);
         });
     }
 
@@ -108,6 +114,15 @@ final class ManageScopedUserService
             $clientIds,
         );
 
+        if ($role === 'colaborador') {
+            [$clientIds, $installationIds] = $this->idsFromGrants(
+                $data->grants ?? [],
+                (int) $companyId,
+                $data->clientIds ?? [],
+                $data->installationIds ?? [],
+            );
+        }
+
         if ($role === 'guardia') {
             foreach ($clientIds as $clientId) {
                 $this->assertVigilantePorteria->assert(
@@ -118,17 +133,7 @@ final class ManageScopedUserService
             }
         }
 
-        $previousPrimary = $target->primary_client_id !== null ? (int) $target->primary_client_id : null;
-        $newPrimary = $clientIds[0] ?? null;
-        $clientChanged = $role === 'guardia' && $previousPrimary !== null && $newPrimary !== null && $previousPrimary !== $newPrimary;
-
-        if ($clientChanged && ($data->password === null || $data->password === '')) {
-            throw ValidationException::withMessages([
-                'password' => 'Al reasignar el vigilante a otro cliente debes definir una nueva contraseña.',
-            ]);
-        }
-
-        return DB::transaction(function () use ($target, $data, $role, $clientIds, $companyId, $clientChanged, $installationIds): User {
+        return DB::transaction(function () use ($target, $data, $actor, $role, $clientIds, $companyId, $installationIds): User {
             $attributes = [
                 'name' => $data->name,
                 'email' => filled($data->email) ? $data->email : null,
@@ -146,9 +151,6 @@ final class ManageScopedUserService
 
             if ($data->password !== null && $data->password !== '') {
                 $attributes['password'] = $data->password;
-                if ($clientChanged) {
-                    $attributes['must_change_password'] = false;
-                }
             }
 
             $becomingSupervisor = $role === 'supervisor' && ! $target->hasRole('supervisor');
@@ -175,8 +177,9 @@ final class ManageScopedUserService
                 $role,
                 $data->sitePermission ?? $target->installationAssignments()->value('site_permission') ?? 'admin',
             );
+            $this->syncGrants($target, $actor, $role, $data->grants ?? [], $companyId);
 
-            return $target->fresh(['roles', 'clients', 'assignedInstallations']);
+            return $target->fresh(['roles', 'clients', 'assignedInstallations', 'moduleGrants']);
         });
     }
 
@@ -232,7 +235,7 @@ final class ManageScopedUserService
     {
         $allowed = match ($context) {
             UserManagementContext::Platform => AssignableRoles::forPlatform(),
-            UserManagementContext::Company => AssignableRoles::forCompany(),
+            UserManagementContext::Company => AssignableRoles::forCompanyActor($actor),
             UserManagementContext::Client => AssignableRoles::forClient(),
         };
 
@@ -451,12 +454,57 @@ final class ManageScopedUserService
         }
     }
 
+    /**
+     * @param  list<AccessGrantData>  $grants
+     */
+    private function syncGrants(User $user, User $actor, string $role, array $grants, ?int $companyId): void
+    {
+        if ($role !== 'colaborador') {
+            $this->syncCollaboratorAccess->clear($user);
+
+            return;
+        }
+
+        $actor->loadMissing('moduleGrants');
+        $this->syncCollaboratorAccess->sync($user, $actor, $grants, (int) $companyId);
+    }
+
+    /**
+     * @param  list<AccessGrantData>  $grants
+     * @param  list<int>  $clientIds
+     * @param  list<int>  $installationIds
+     * @return array{0: list<int>, 1: list<int>}
+     */
+    private function idsFromGrants(array $grants, int $companyId, array $clientIds, array $installationIds): array
+    {
+        $clients = array_map('intval', $clientIds);
+        $sites = array_map('intval', $installationIds);
+
+        foreach ($grants as $grant) {
+            if ($grant->scope === \App\Enums\AccessGrantScope::Client) {
+                $clients[] = $grant->scopeId;
+            }
+            if ($grant->scope === \App\Enums\AccessGrantScope::Installation) {
+                $sites[] = $grant->scopeId;
+                $clientId = (int) Installation::query()->whereKey($grant->scopeId)->value('client_id');
+                if ($clientId > 0) {
+                    $clients[] = $clientId;
+                }
+            }
+        }
+
+        return [
+            array_values(array_unique(array_filter($clients))),
+            array_values(array_unique(array_filter($sites))),
+        ];
+    }
+
     /** @param list<int> $installationIds */
     private function syncInstallationAssignments(User $user, array $installationIds, string $role, string $sitePermission = 'admin'): void
     {
         ClientUserInstallationAssignment::query()->where('user_id', $user->id)->delete();
 
-        if (! AssignableRoles::isInstallationAdmin($role)) {
+        if (! AssignableRoles::isInstallationAdmin($role) && $role !== 'colaborador') {
             return;
         }
 
@@ -474,7 +522,14 @@ final class ManageScopedUserService
     /** @param list<int> $clientIds */
     private function syncClientAssignments(User $user, array $clientIds, string $role): void
     {
-        if (! in_array($role, AssignableRoles::requiringClientAssignment(), true)) {
+        if (! in_array($role, AssignableRoles::requiringClientAssignment(), true) && $role !== 'colaborador') {
+            ClientUserAssignment::query()->where('user_id', $user->id)->delete();
+            $user->update(['primary_client_id' => null]);
+
+            return;
+        }
+
+        if ($role === 'colaborador' && $clientIds === []) {
             ClientUserAssignment::query()->where('user_id', $user->id)->delete();
             $user->update(['primary_client_id' => null]);
 

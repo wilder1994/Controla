@@ -19,7 +19,7 @@ class EnsurePasswordIsChanged
         if (auth()->check() && auth()->user()->must_change_password) {
             if (! in_array($request->route()?->getName(), $this->except)) {
                 return redirect()->route('password.first')
-                    ->with('warning', 'Debes cambiar tu contraseña antes de continuar.');
+                    ->with('warning', 'Debes cambiar tu usuario y tu contraseña antes de continuar.');
             }
         }
 

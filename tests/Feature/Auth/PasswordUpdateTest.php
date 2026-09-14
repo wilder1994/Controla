@@ -41,7 +41,7 @@ class PasswordUpdateTest extends TestCase
         $this->actingAs($user)
             ->get(route('password.first'))
             ->assertOk()
-            ->assertSee('Cambia tu contraseña');
+            ->assertSee('Primer ingreso');
     }
 
     public function test_forced_password_screen_redirects_home_when_flag_is_clear(): void
@@ -78,6 +78,7 @@ class PasswordUpdateTest extends TestCase
     public function test_forced_password_change_clears_flag_and_leaves_first_password_screen(): void
     {
         $user = User::factory()->create([
+            'username' => 'ana.perez.4821',
             'must_change_password' => true,
         ]);
 
@@ -85,6 +86,7 @@ class PasswordUpdateTest extends TestCase
             ->actingAs($user)
             ->from(route('password.first'))
             ->put('/password', [
+                'username' => 'ana.perez.1234',
                 'current_password' => 'password',
                 'password' => 'new-password',
                 'password_confirmation' => 'new-password',
@@ -94,7 +96,31 @@ class PasswordUpdateTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('home'));
 
-        $this->assertFalse($user->refresh()->must_change_password);
+        $user->refresh();
+        $this->assertFalse($user->must_change_password);
+        $this->assertSame('ana.perez.1234', $user->username);
+    }
+
+    public function test_forced_first_login_requires_a_new_username(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'ana.perez.4821',
+            'must_change_password' => true,
+        ]);
+
+        $this
+            ->actingAs($user)
+            ->from(route('password.first'))
+            ->put('/password', [
+                'username' => 'ana.perez.4821',
+                'current_password' => 'password',
+                'password' => 'new-password',
+                'password_confirmation' => 'new-password',
+            ])
+            ->assertSessionHasErrorsIn('updatePassword', 'username')
+            ->assertRedirect(route('password.first'));
+
+        $this->assertTrue($user->refresh()->must_change_password);
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void

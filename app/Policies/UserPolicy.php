@@ -18,6 +18,7 @@ final class UserPolicy
     public function viewAny(User $actor): bool
     {
         return $actor->can('platform.users.view')
+            || $actor->can('company.users.view')
             || $actor->can('company.users.assign')
             || $actor->can('client.users.manage');
     }
@@ -47,6 +48,10 @@ final class UserPolicy
             return false;
         }
 
+        if ($target->hasRole('company-admin') && $actor->hasRole('colaborador')) {
+            return false;
+        }
+
         return $actor->can('platform.users.manage')
             || $actor->can('company.users.assign')
             || $actor->can('client.users.manage');
@@ -62,7 +67,7 @@ final class UserPolicy
 
         return match ($context) {
             UserManagementContext::Platform => in_array($role, AssignableRoles::forPlatform(), true),
-            UserManagementContext::Company => in_array($role, AssignableRoles::forCompany(), true),
+            UserManagementContext::Company => in_array($role, AssignableRoles::forCompanyActor($actor), true),
             UserManagementContext::Client => in_array($role, AssignableRoles::forClient(), true),
         };
     }

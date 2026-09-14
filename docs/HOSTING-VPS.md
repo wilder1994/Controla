@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 12 septiembre 2026
+**Última actualización:** 13 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
@@ -17,6 +17,8 @@ Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 Flujo: push local a `origin` (`wilder1994/Controla`, `main`). El VPS solo hace `git pull` + composer/npm/migrate. No FTP ni ZIP. No `migrate:fresh` ni `db:wipe` en producción.
 
 Si el commit añade roles o permisos (`config/access.php`), tras migrate corre `php artisan db:seed --class=RoleAndPermissionSeeder` (sync Spatie; no vacía datos). El resto de seeders no se corre salvo petición explícita.
+
+Este deploy **no** hace `migrate:fresh`. Las `add_*` unificadas en `create_*` solo aplican en instalación limpia. En el VPS ya corrido, `migrate` solo aplica pendientes (p. ej. `user_module_grants`). Backup selectivo de empleados/PDFs: carpeta `controla-YYYYMMDD` en el home del sitio; borrar **después** de restaurar y verificar, no en este pull.
 
 Observatorio: migrate `2026_09_13_120000` (tipos + módulo). Tras ese migrate: `RoleAndPermissionSeeder` (permiso `observatory.events.update`). Intake `/o/{slug}` (solo colegios). API `/api/observatory/*`. Comunas: `resources/data/cali-comunas.geojson`, el mapa las pide en `/geo/cali-comunas.geojson` (relativo). **No** cargar `libraries=visualization`: Maps JS 3.65 quitó HeatmapLayer. PPTX: `GET /company/observatory/tablero.pptx` y `/client/observatory/tablero.pptx` (mismo permiso `observatory.view`; `route:cache` + `view:cache`). Cortes UX: `npm run build` + `view:cache`. Sin migrate ni seeder.
 

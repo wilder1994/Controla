@@ -31,12 +31,16 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('installation_id')->constrained()->cascadeOnDelete();
             $table->string('source', 20)->default('comunidad');
+            $table->string('reporter_role', 20)->nullable();
             $table->string('kind', 20);
             $table->text('body');
             $table->boolean('is_anonymous')->default(false);
             $table->string('reporter_name', 120)->nullable();
             $table->string('reporter_phone', 30)->nullable();
+            $table->foreignId('reported_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('photo_path', 255)->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->string('ip_hash', 64)->nullable();
             $table->timestamps();
 
@@ -49,6 +53,7 @@ return new class extends Migration
             $table->string('from_status', 20);
             $table->string('to_status', 20);
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('note')->nullable();
             $table->timestamp('created_at');
         });
     }

@@ -16,7 +16,10 @@ return new class extends Migration
             $table->foreignId('structure_id')->constrained()->cascadeOnDelete();
             $table->string('first_name', 100);
             $table->string('last_name', 100);
+            $table->string('document_type', 20)->nullable();
             $table->string('document_number', 30);
+            $table->date('birth_date')->nullable();
+            $table->timestamp('minor_treatment_accepted_at')->nullable();
             $table->string('phone_primary', 20)->nullable();
             $table->string('phone_secondary', 20)->nullable();
             $table->string('email', 150)->nullable();

@@ -10,7 +10,7 @@ final class CancelMembershipRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('company.dashboard') ?? false;
+        return $this->user()?->can('company.billing.manage') ?? false;
     }
 
     /** @return array<string, mixed> */

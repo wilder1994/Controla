@@ -31,7 +31,7 @@ final class StoreUserRequest extends FormRequest
         $external = $this->isExternalPayload();
 
         $rules = array_merge(
-            $this->roleRule(AssignableRoles::forCompany()),
+            $this->roleRule(AssignableRoles::forCompanyActor($this->user())),
             $this->clientIdsRule(),
             [
                 'origin' => ['nullable', 'string', Rule::enum(ClientAdminOrigin::class)],
@@ -48,6 +48,15 @@ final class StoreUserRequest extends FormRequest
                 'installation_ids' => ['nullable', 'array'],
                 'installation_ids.*' => ['integer', 'exists:installations,id'],
                 'site_permission' => ['nullable', 'in:admin,support'],
+                'grants' => ['nullable', 'array'],
+                'grants.company' => ['nullable', 'array'],
+                'grants.company.*' => ['nullable', 'in:none,view,manage'],
+                'grants.client' => ['nullable', 'array'],
+                'grants.client.*' => ['nullable', 'array'],
+                'grants.client.*.*' => ['nullable', 'in:none,view,manage'],
+                'grants.installation' => ['nullable', 'array'],
+                'grants.installation.*' => ['nullable', 'array'],
+                'grants.installation.*.*' => ['nullable', 'in:none,view,manage'],
             ],
         );
 

@@ -14,12 +14,16 @@ final class ResolveUserHomeRoute
             return route('admin.dashboard');
         }
 
-        if ($user->hasRole('company-admin') && $user->security_company_id) {
+        if ($user->hasAnyRole(['company-admin', 'colaborador']) && $user->security_company_id) {
             return route('company.dashboard');
         }
 
         if ($user->hasAnyRole(['client-admin', 'client-installation-admin'])) {
             return route('client.dashboard');
+        }
+
+        if ($user->hasRole('supervisor')) {
+            return route('supervisor.app-only');
         }
 
         if ($user->hasAnyRole(['guardia', 'admin-accesos'])) {

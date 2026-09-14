@@ -10,18 +10,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('client_user_installation_assignments', function (Blueprint $table): void {
+        Schema::create('user_module_grants', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('installation_id')->constrained()->restrictOnDelete();
-            $table->string('site_permission', 16)->default('admin');
+            $table->string('scope', 20);
+            $table->unsignedBigInteger('scope_id');
+            $table->string('module', 40);
+            $table->string('level', 10);
             $table->timestamps();
-            $table->unique(['user_id', 'installation_id'], 'client_user_inst_assign_unique');
+            $table->unique(['user_id', 'scope', 'scope_id', 'module'], 'user_module_grants_unique');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('client_user_installation_assignments');
+        Schema::dropIfExists('user_module_grants');
     }
 };

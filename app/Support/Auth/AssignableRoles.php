@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Auth;
 
 use App\Enums\ClientAdminOrigin;
+use App\Models\User;
 
 final class AssignableRoles
 {
@@ -22,6 +23,7 @@ final class AssignableRoles
             self::CLIENT_INSTALLATION_ADMIN,
             'guardia',
             'supervisor',
+            'colaborador',
             'resident',
             'anfitrion',
             'admin-accesos',
@@ -37,7 +39,22 @@ final class AssignableRoles
             self::CLIENT_INSTALLATION_ADMIN,
             'guardia',
             'supervisor',
+            'colaborador',
         ];
+    }
+
+    /** @return list<string> */
+    public static function forCompanyActor(User $actor): array
+    {
+        $roles = self::forCompany();
+        if ($actor->hasRole('colaborador')) {
+            return array_values(array_filter(
+                $roles,
+                fn (string $role): bool => $role !== 'company-admin',
+            ));
+        }
+
+        return $roles;
     }
 
     public static function needsEmployee(string $role, ?string $origin = null): bool
@@ -62,6 +79,7 @@ final class AssignableRoles
             self::CLIENT_ADMIN,
             'supervisor',
             'guardia',
+            'colaborador',
         ];
     }
 
@@ -143,6 +161,7 @@ final class AssignableRoles
             self::CLIENT_INSTALLATION_ADMIN => 'Admin instalaciones',
             'guardia' => 'Vigilante',
             'supervisor' => 'Supervisor de vigilancia',
+            'colaborador' => 'Colaborador',
             'resident' => 'Residente portal',
             'anfitrion' => 'Anfitrión',
             'admin-accesos' => 'Admin accesos (legacy)',

@@ -2,7 +2,7 @@
 
 Intake de reportes escolares y seguimiento de eventos. No es portería ni PQRS de Supervisión.
 
-**Última actualización:** 12 septiembre 2026 (export PPTX del tablero)
+**Última actualización:** 13 septiembre 2026
 
 ## Piezas
 
@@ -66,6 +66,7 @@ El mismo admin puede **unir** otro folio del mismo colegio o **sacar** un report
 | Admin instalaciones / apoyo | `/client/observatory/events` — solo sus sedes. Solo el administrador (no el apoyo) cambia estado, une folios o saca un reporte. Ambos pueden **Nuevo reporte**. |
 | Admin del cliente | Mismo listado, todo el cliente. Ve **Nuevo reporte** pero no puede enviarlo. Sin cambiar estado ni unir. |
 | Empresa | `/company/observatory/events` — clientes de la empresa. Seguimiento, no portal, no cambia estado ni une. |
+| Colaborador con Observatorio | Mismo panel empresa. Grant a nivel empresa: todos los clientes y el **detalle** del evento. Grant a cliente o sede: ese alcance. |
 | Supervisor | PWA Observatorio |
 | Vigilante | Minuta → Observatorio si hay puerta de colegio |
 | Software de Secretaría | `/docs/observatory` + token Sanctum. Solo Observatorio de ese cliente |
@@ -128,7 +129,7 @@ En la ficha del cliente, checkbox **Observatorio**. Si no está chuleado, no apa
 
 ## Pliego (Anexo 7.5)
 
-Texto literal: fuentes diversas + origen; **no** nombra Policía ni Línea 123. Visita: Secretaría de Educación de Cali.
+Texto literal: fuentes diversas + origen. Visita: Secretaría de Educación de Cali.
 
 | Pedido | Estado |
 |--------|--------|
@@ -139,4 +140,4 @@ Texto literal: fuentes diversas + origen; **no** nombra Policía ni Línea 123. 
 
 ## Siguiente
 
-v1 del Anexo 7.5 cerrada. Sin conector 123.
+v1 del Anexo 7.5 cerrada.

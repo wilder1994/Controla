@@ -29,7 +29,7 @@ final class EnsureCompanyUser
             return $next($request);
         }
 
-        if ($user->hasRole('company-admin') && $user->security_company_id) {
+        if ($user->hasAnyRole(['company-admin', 'colaborador']) && $user->security_company_id) {
             return $next($request);
         }
 

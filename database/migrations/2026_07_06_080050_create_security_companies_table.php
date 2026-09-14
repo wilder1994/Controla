@@ -24,6 +24,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->string('logo_path')->nullable();
+            $table->text('field_sheet_intro')->nullable();
             $table->boolean('is_active')->default(true);
             $table->unsignedSmallInteger('package_size')->default(10);
             $table->unsignedSmallInteger('package_manual_seats')->default(10);

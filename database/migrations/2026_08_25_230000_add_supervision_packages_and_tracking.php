@@ -14,6 +14,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('security_company_id')->constrained()->cascadeOnDelete();
             $table->string('name', 80);
+            $table->string('email', 150)->nullable();
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
@@ -85,7 +86,12 @@ return new class extends Migration
             $table->string('km_end_selfie_path')->nullable();
             $table->timestamp('started_at');
             $table->timestamp('ended_at')->nullable();
+            $table->uuid('close_client_event_id')->nullable()->unique();
             $table->text('notes')->nullable();
+            $table->unsignedInteger('pending_outbox_count')->nullable();
+            $table->boolean('closed_by_system')->default(false);
+            $table->json('snapped_route')->nullable();
+            $table->string('snapped_route_hash', 64)->nullable();
             $table->json('ppe_checklist')->nullable();
             $table->json('vehicle_checklist')->nullable();
             $table->timestamps();
@@ -96,12 +102,14 @@ return new class extends Migration
 
         Schema::create('supervisor_shift_locations', function (Blueprint $table) {
             $table->id();
+            $table->uuid('client_event_id')->nullable()->unique();
             $table->foreignId('supervisor_shift_id')->constrained('supervisor_shifts')->cascadeOnDelete();
             $table->timestamp('recorded_at');
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->decimal('accuracy', 8, 2)->nullable();
             $table->string('source', 20)->default('app');
+            $table->boolean('screen_on')->nullable();
             $table->timestamps();
 
             $table->index(['supervisor_shift_id', 'recorded_at']);
@@ -112,6 +120,7 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('installation_id')->constrained()->restrictOnDelete();
             $table->string('name', 120);
+            $table->unsignedTinyInteger('modality')->default(12);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
@@ -121,12 +130,14 @@ return new class extends Migration
 
         Schema::create('supervisor_shift_reviews', function (Blueprint $table) {
             $table->id();
+            $table->uuid('client_event_id')->nullable()->unique();
             $table->foreignId('supervisor_shift_id')->constrained('supervisor_shifts')->cascadeOnDelete();
             $table->foreignId('client_id')->constrained()->restrictOnDelete();
             $table->foreignId('supervisor_post_id')->constrained('supervisor_posts')->restrictOnDelete();
             $table->foreignId('employee_id')->constrained('employees')->restrictOnDelete();
             $table->foreignId('guard_log_id')->nullable()->constrained('guard_logs')->nullOnDelete();
             $table->text('notes')->nullable();
+            $table->text('sheet_intro')->nullable();
             $table->boolean('has_novelty')->default(false);
             $table->string('guard_photo_path', 255)->nullable();
             $table->decimal('latitude', 10, 7)->nullable();

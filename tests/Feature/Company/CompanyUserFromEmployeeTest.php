@@ -78,6 +78,8 @@ final class CompanyUserFromEmployeeTest extends TestCase
         ]);
 
         $response->assertRedirect(route('company.users.edit', User::query()->where('employee_id', $employee->id)->first()));
+        $response->assertSessionHas('issued_login', $username);
+        $response->assertSessionHas('issued_password', $password);
         $user = User::query()->where('employee_id', $employee->id)->firstOrFail();
         $this->assertTrue($user->hasRole('supervisor'));
         $this->assertSame($username, $user->username);

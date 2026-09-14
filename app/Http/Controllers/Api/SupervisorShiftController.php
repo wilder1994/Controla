@@ -18,6 +18,7 @@ use App\Models\SupervisorShiftReview;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
 use App\Services\Auth\FindUserByLogin;
+use App\Support\Auth\LoginUsernameRules;
 use App\Services\Company\BuildSupervisorOfflinePackService;
 use App\Services\Company\CloseSupervisorShiftService;
 use App\Services\Company\LookupSupervisorVisitService;
@@ -31,6 +32,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -104,17 +106,32 @@ final class SupervisorShiftController extends Controller
 
     public function changePassword(Request $request): JsonResponse
     {
-        $request->validate([
-            'password' => ['required', 'confirmed', 'min:8'],
+        $user = $request->user();
+        $validated = $request->validate([
+            'username' => LoginUsernameRules::forChange($user),
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ], [
+            'username.regex' => 'Use el formato nombre.apellido.1234.',
+            'username.not_in' => 'El usuario debe ser distinto al temporal.',
+            'username.unique' => 'Ese usuario ya existe.',
         ]);
 
-        $user = $request->user();
+        if (Hash::check($validated['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['La nueva contraseña debe ser distinta a la actual.'],
+            ]);
+        }
+
         $user->update([
-            'password' => $request->string('password')->toString(),
+            'username' => $validated['username'],
+            'password' => $validated['password'],
             'must_change_password' => false,
         ]);
 
-        return response()->json(['ok' => true]);
+        return response()->json([
+            'ok' => true,
+            'username' => $user->username,
+        ]);
     }
 
     public function current(Request $request): JsonResponse

@@ -21,7 +21,7 @@ final class BillingCheckoutController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->can('company.dashboard'), 403);
+        abort_unless($request->user()?->can('company.billing.manage'), 403);
 
         $company = $this->resolveCompany($request);
 

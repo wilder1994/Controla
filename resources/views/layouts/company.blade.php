@@ -65,6 +65,8 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.dashboard') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Mi empresa</span>
                 </a>
+                @endcan
+                @can('company.billing.manage')
                 <a href="{{ route('company.billing.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.billing.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Facturación</span>
@@ -92,29 +94,37 @@
                     <span>Supervisión</span>
                 </a>
                 @endcan
-                @can('company.dashboard')
+                @can('company.downloads.view')
                 <a href="{{ route('company.downloads.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.downloads.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Descargas</span>
                 </a>
                 @endcan
-                @can('company.settings.manage')
+                @can('company.employees.view')
                 <a href="{{ route('company.employees.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.employees.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Empleados</span>
                 </a>
+                @endcan
+                @can('company.documents.view')
                 <a href="{{ route('company.personnel-documents.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.personnel-documents.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Documentos</span>
                 </a>
                 @endcan
-                @can('company.users.assign')
+                @canany(['company.users.view', 'company.users.assign'])
                 <a href="{{ route('company.users.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.users.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Usuarios</span>
                 </a>
+                @endcanany
+                @can('company.profile.manage')
+                <a href="{{ route('company.settings.edit') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.settings.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
+                    <span>Mis datos</span>
+                </a>
                 @endcan
-                @can('company.settings.manage')
+                @canany(['company.settings.view', 'company.settings.manage'])
                 @php
                     $onAjustes = request()->routeIs('company.job-titles.*')
                         || request()->routeIs('company.collaborator-types.*')
@@ -130,15 +140,11 @@
                         || request()->routeIs('company.supervision-alarm-types.*')
                         || request()->routeIs('company.supervision-support-types.*');
                 @endphp
-                <a href="{{ route('company.settings.edit') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.settings.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
-                    <span>Mis datos</span>
-                </a>
                 <a href="{{ route('company.job-titles.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onAjustes ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Ajustes</span>
                 </a>
-                @endcan
+                @endcanany
             </nav>
                     @include('partials.sidebar-user')
                 </div>

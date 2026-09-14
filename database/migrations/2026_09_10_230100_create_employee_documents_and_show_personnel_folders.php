@@ -44,17 +44,10 @@ return new class extends Migration
             $table->unsignedInteger('page_count')->default(1);
             $table->timestamps();
         });
-
-        Schema::table('clients', function (Blueprint $table): void {
-            $table->boolean('show_personnel_folders')->default(false)->after('has_supervision');
-        });
     }
 
     public function down(): void
     {
-        Schema::table('clients', function (Blueprint $table): void {
-            $table->dropColumn('show_personnel_folders');
-        });
         Schema::dropIfExists('employee_document_batches');
         Schema::dropIfExists('employee_documents');
     }

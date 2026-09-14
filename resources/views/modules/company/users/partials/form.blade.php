@@ -1,5 +1,7 @@
 @php
+    use App\Enums\AccessGrantScope;
     use App\Support\Auth\AssignableRoles;
+    use App\Support\Auth\GrantableModules;
     $isEdit = $managedUser !== null;
     $employee = $managedUser?->employee;
     $selectedRole = old('role', $managedUser?->getRoleNames()->first() ?? 'supervisor');
@@ -12,6 +14,22 @@
         ->all();
     $selectedSitePermission = old('site_permission', $managedUser?->assignedInstallations?->first()?->pivot?->site_permission ?? 'admin');
     $selectedOrigin = old('origin', $managedUser?->admin_origin ?? 'internal');
+    $companyGrantLevels = [];
+    foreach (array_keys(GrantableModules::forScope(AccessGrantScope::Company)) as $module) {
+        $companyGrantLevels[$module] = 'none';
+    }
+    $clientGrantLevels = [];
+    $installationGrantLevels = [];
+    foreach ($managedUser?->moduleGrants ?? [] as $grant) {
+        $level = $grant->level->value;
+        if ($grant->scope === AccessGrantScope::Company) {
+            $companyGrantLevels[$grant->module] = $level;
+        } elseif ($grant->scope === AccessGrantScope::Client) {
+            $clientGrantLevels[(string) $grant->scope_id][$grant->module] = $level;
+        } else {
+            $installationGrantLevels[(string) $grant->scope_id][$grant->module] = $level;
+        }
+    }
     $formConfig = [
         'isEdit' => $isEdit,
         'searchUrl' => $isEdit ? '' : route('company.users.employee-search'),
@@ -36,6 +54,17 @@
             'id' => (string) $client->id,
             'name' => $client->name,
         ])->values()->all(),
+        'companyModules' => collect(GrantableModules::forScope(AccessGrantScope::Company))
+            ->map(fn ($row, $key) => ['key' => $key, 'label' => $row['label']])
+            ->values()
+            ->all(),
+        'scopedModules' => collect(GrantableModules::forScope(AccessGrantScope::Client))
+            ->map(fn ($row, $key) => ['key' => $key, 'label' => $row['label']])
+            ->values()
+            ->all(),
+        'companyGrants' => $companyGrantLevels,
+        'clientGrants' => $clientGrantLevels,
+        'installationGrants' => $installationGrantLevels,
     ];
 @endphp
 
@@ -64,12 +93,18 @@
             sitePermission: cfg.sitePermission || 'admin',
             installations: [],
             clients: cfg.clients || [],
+            companyModules: cfg.companyModules || [],
+            scopedModules: cfg.scopedModules || [],
+            companyGrants: cfg.companyGrants || {},
+            clientGrants: cfg.clientGrants || {},
+            installationGrants: cfg.installationGrants || {},
             clientQuery: '',
             installationQuery: '',
             get isClientFacing() { return this.role === 'client-admin' || this.role === 'client-installation-admin' },
             get isInstallationAdmin() { return this.role === 'client-installation-admin' },
             get isExternal() { return this.isInstallationAdmin || (this.role === 'client-admin' && this.origin === 'external') },
-            get needsEmployee() { return !this.isExternal && ['company-admin', 'client-admin', 'supervisor', 'guardia'].includes(this.role) },
+            get isCollaborator() { return this.role === 'colaborador' },
+            get needsEmployee() { return !this.isExternal && ['company-admin', 'client-admin', 'supervisor', 'guardia', 'colaborador'].includes(this.role) },
             get needsClients() { return cfg.rolesNeedingClients.includes(this.role) },
             get singleClient() { return cfg.singleClientRoles.includes(this.role) || this.isExternal },
             get isSupervisor() { return this.role === 'supervisor' },
@@ -90,7 +125,13 @@
                     this.loadInstallationsIfNeeded()
                 })
                 this.$watch('origin', () => this.loadInstallationsIfNeeded())
-                this.$watch('pickedClientIds', () => this.loadInstallationsIfNeeded())
+                this.$watch('pickedClientIds', (ids) => {
+                    (ids || []).forEach((id) => this.ensureScopedGrants(this.clientGrants, id))
+                    this.loadInstallationsIfNeeded()
+                })
+                this.$watch('installations', (rows) => {
+                    (rows || []).forEach((row) => this.ensureScopedGrants(this.installationGrants, String(row.id)))
+                })
                 this.loadInstallationsIfNeeded()
             },
             toggleClient(id) {
@@ -103,6 +144,7 @@
                     this.pickedClientIds = this.pickedClientIds.filter((item) => item !== value)
                 } else {
                     this.pickedClientIds = [...this.pickedClientIds, value]
+                    if (this.isCollaborator) this.ensureScopedGrants(this.clientGrants, value)
                 }
             },
             toggleInstallation(id) {
@@ -113,9 +155,22 @@
                     this.selectedInstallationIds = [...this.selectedInstallationIds, value]
                 }
             },
+            ensureScopedGrants(map, id) {
+                if (!map[id]) map[id] = { observatory: 'none', census: 'none' }
+            },
             async loadInstallationsIfNeeded() {
+                if (this.isCollaborator && this.pickedClientIds.length > 0) {
+                    const rows = []
+                    for (const clientId of this.pickedClientIds) {
+                        const res = await fetch(`${cfg.installationsUrl}?client_id=${clientId}`, { headers: { Accept: 'application/json' } })
+                        const data = await res.json()
+                        ;(data.installations || []).forEach((row) => rows.push({ ...row, id: String(row.id) }))
+                    }
+                    this.installations = rows
+                    return
+                }
                 if (! this.isInstallationAdmin || this.pickedClientIds.length !== 1) {
-                    if (! this.isInstallationAdmin) {
+                    if (! this.isInstallationAdmin && ! this.isCollaborator) {
                         this.installations = []
                         this.selectedInstallationIds = []
                     }
@@ -181,10 +236,10 @@
     <input type="hidden" name="employee_id" :value="isExternal ? '' : employeeId">
     <input type="hidden" name="origin" :value="isClientFacing ? (isInstallationAdmin ? 'external' : origin) : ''">
     <template x-for="id in pickedClientIds" :key="'c'+id">
-        <input type="hidden" name="client_ids[]" :value="id" :disabled="!needsClients">
+        <input type="hidden" name="client_ids[]" :value="id" :disabled="!needsClients && !isCollaborator">
     </template>
     <template x-for="id in selectedInstallationIds" :key="'i'+id">
-        <input type="hidden" name="installation_ids[]" :value="id" :disabled="!isInstallationAdmin">
+        <input type="hidden" name="installation_ids[]" :value="id" :disabled="!isInstallationAdmin && !isCollaborator">
     </template>
     <input type="hidden" name="site_permission" :value="sitePermission" :disabled="!isInstallationAdmin">
     @if ($isEdit && ! ($managedUser?->admin_origin === 'external' || $managedUser?->hasRole('client-installation-admin')))
@@ -222,6 +277,22 @@
         <x-ui.field-error :messages="$errors->get('origin')" />
     </div>
     <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias sedes del mismo cliente. En la ficha sale en Administrador o Apoyo (cargo · nombre). No crea usuarios ni cambia Ajustes.</p>
+    <p x-show="isCollaborator" class="text-xs text-slate-500">El cargo es solo etiqueta. Los permisos salen de la matriz: Nada, Ver o Gestionar. No mezclar con vigilante ni supervisor.</p>
+
+    <div x-show="isCollaborator" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3">
+        <p class="text-xs font-medium text-slate-300">Módulos de empresa</p>
+        <template x-for="mod in companyModules" :key="mod.key">
+            <div class="flex flex-wrap items-center justify-between gap-2 py-1">
+                <span class="text-sm text-slate-200" x-text="mod.label"></span>
+                <div class="flex gap-3 text-xs text-slate-300">
+                    <label class="inline-flex items-center gap-1"><input type="radio" :name="'grants[company]['+mod.key+']'" value="none" x-model="companyGrants[mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Nada</label>
+                    <label class="inline-flex items-center gap-1"><input type="radio" :name="'grants[company]['+mod.key+']'" value="view" x-model="companyGrants[mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Ver</label>
+                    <label class="inline-flex items-center gap-1"><input type="radio" :name="'grants[company]['+mod.key+']'" value="manage" x-model="companyGrants[mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Gestionar</label>
+                </div>
+            </div>
+        </template>
+        <x-ui.field-error :messages="$errors->get('grants')" />
+    </div>
     @if ($showMinorsNotice ?? false)
         <div x-show="isClientFacing">
             @include('partials.minors-data-notice')
@@ -324,7 +395,7 @@
         </div>
     @endif
 
-    <div x-show="needsClients" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div x-show="needsClients || isCollaborator" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
             <x-ui.label>Cliente</x-ui.label>
             <div class="mt-1 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/50">
@@ -346,7 +417,7 @@
             <p x-show="isExternal" class="mt-2 text-[11px] text-slate-500">El externo queda amarrado a un solo cliente.</p>
             <x-ui.field-error :messages="$errors->get('client_ids')" />
         </div>
-        <div x-show="isInstallationAdmin">
+        <div x-show="isInstallationAdmin || isCollaborator">
             <x-ui.label>Instalaciones</x-ui.label>
             <div class="mt-1 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/50">
                 <input type="search" x-model="installationQuery" placeholder="Filtrar…" autocomplete="off"
@@ -365,7 +436,7 @@
                 </div>
             </div>
             <p class="mt-2 text-[11px] text-slate-500">Puede operar varias del mismo cliente.</p>
-            <div class="mt-3 space-y-2">
+            <div class="mt-3 space-y-2" x-show="isInstallationAdmin">
                 <p class="text-xs font-medium text-slate-300">Permiso en esas sedes</p>
                 <label class="flex items-center gap-2 text-sm text-slate-300">
                     <input type="radio" value="admin" x-model="sitePermission" class="border-slate-600 bg-slate-950 text-indigo-600">
@@ -379,6 +450,44 @@
             <x-ui.field-error :messages="$errors->get('installation_ids')" />
             <x-ui.field-error :messages="$errors->get('site_permission')" />
         </div>
+    </div>
+
+    <div x-show="isCollaborator && pickedClientIds.length" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+        <p class="text-xs font-medium text-slate-300">Permisos por cliente</p>
+        <template x-for="id in pickedClientIds" :key="'cg'+id">
+            <div class="space-y-1">
+                <p class="text-sm text-white" x-text="(clients.find((c) => String(c.id) === String(id)) || {}).name"></p>
+                <template x-for="mod in scopedModules" :key="'cm'+id+mod.key">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xs text-slate-400" x-text="mod.label"></span>
+                        <div class="flex gap-3 text-xs text-slate-300">
+                            <label><input type="radio" :name="'grants[client]['+id+']['+mod.key+']'" value="none" x-model="clientGrants[id][mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Nada</label>
+                            <label><input type="radio" :name="'grants[client]['+id+']['+mod.key+']'" value="view" x-model="clientGrants[id][mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Ver</label>
+                            <label><input type="radio" :name="'grants[client]['+id+']['+mod.key+']'" value="manage" x-model="clientGrants[id][mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Gestionar</label>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    <div x-show="isCollaborator && installations.length" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+        <p class="text-xs font-medium text-slate-300">Permisos por instalación</p>
+        <template x-for="row in installations" :key="'ig'+row.id">
+            <div class="space-y-1">
+                <p class="text-sm text-white" x-text="row.name"></p>
+                <template x-for="mod in scopedModules" :key="'im'+row.id+mod.key">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xs text-slate-400" x-text="mod.label"></span>
+                        <div class="flex gap-3 text-xs text-slate-300">
+                            <label><input type="radio" :name="'grants[installation]['+row.id+']['+mod.key+']'" value="none" x-model="installationGrants[row.id][mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Nada</label>
+                            <label><input type="radio" :name="'grants[installation]['+row.id+']['+mod.key+']'" value="view" x-model="installationGrants[row.id][mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Ver</label>
+                            <label><input type="radio" :name="'grants[installation]['+row.id+']['+mod.key+']'" value="manage" x-model="installationGrants[row.id][mod.key]" class="border-slate-600 bg-slate-950 text-indigo-600"> Gestionar</label>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
     </div>
 
     @if (! $isEdit)
@@ -398,6 +507,7 @@
         </div>
     @else
         <div>
+            <p class="mb-2 text-xs text-slate-500">Opcional. Al reasignar un vigilante conserva el mismo usuario y contraseña.</p>
             <x-ui.label for="password">Nueva contraseña (opcional)</x-ui.label>
             <x-ui.input type="password" id="password" name="password" autocomplete="new-password" />
             <x-ui.field-error :messages="$errors->get('password')" />

@@ -106,8 +106,11 @@
     </div>
 
     <div id="change-password" class="card hidden">
-        <p class="sec-title">Cambiar contraseña</p>
-        <p class="hint">Es la primera entrada. Defina una clave nueva.</p>
+        <p class="sec-title">Primer ingreso</p>
+        <p class="hint">Cambie el usuario temporal y defina una clave nueva.</p>
+        <p class="hint">Usuario temporal: <span id="temp-username"></span></p>
+        <label for="new-username">Nuevo usuario</label>
+        <input id="new-username" type="text" autocomplete="username" placeholder="nombre.apellido.1234">
         <label for="new-password">Nueva contraseña</label>
         <div class="pw-wrap">
             <input id="new-password" type="password" autocomplete="new-password">

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\ForcePasswordChangeController;
+use App\Http\Controllers\Auth\SupervisorAppOnlyController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -55,6 +56,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('password/primera', [ForcePasswordChangeController::class, 'create'])
         ->name('password.first');
+
+    Route::get('supervision/app', SupervisorAppOnlyController::class)
+        ->middleware('password.changed')
+        ->name('supervisor.app-only');
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 

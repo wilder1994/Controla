@@ -20,9 +20,7 @@ final class RoleAndPermissionSeeder extends Seeder
 
         foreach (config('access.roles', []) as $roleName => $rolePermissions) {
             $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
-            if (! empty($rolePermissions)) {
-                $role->syncPermissions($rolePermissions);
-            }
+            $role->syncPermissions($rolePermissions);
         }
 
         foreach (Role::all() as $role) {

@@ -32,13 +32,22 @@ final class UpdateUserRequest extends FormRequest
 
         $rules = array_merge(
             $this->baseUserRules(false),
-            $this->roleRule(AssignableRoles::forCompany()),
+            $this->roleRule(AssignableRoles::forCompanyActor($this->user())),
             $this->clientIdsRule(),
             [
                 'job_title' => ['required', 'string', 'max:80'],
                 'installation_ids' => ['nullable', 'array'],
                 'installation_ids.*' => ['integer', 'exists:installations,id'],
                 'site_permission' => ['nullable', 'in:admin,support'],
+                'grants' => ['nullable', 'array'],
+                'grants.company' => ['nullable', 'array'],
+                'grants.company.*' => ['nullable', 'in:none,view,manage'],
+                'grants.client' => ['nullable', 'array'],
+                'grants.client.*' => ['nullable', 'array'],
+                'grants.client.*.*' => ['nullable', 'in:none,view,manage'],
+                'grants.installation' => ['nullable', 'array'],
+                'grants.installation.*' => ['nullable', 'array'],
+                'grants.installation.*.*' => ['nullable', 'in:none,view,manage'],
             ],
         );
 

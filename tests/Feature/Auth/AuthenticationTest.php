@@ -67,4 +67,24 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/');
     }
+
+    public function test_supervisor_web_home_is_app_only(): void
+    {
+        $this->seedWithPilot();
+        $user = $this->companySupervisor();
+        $user->update(['must_change_password' => false]);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertRedirect(route('supervisor.app-only'));
+
+        $this->actingAs($user)
+            ->get(route('company.dashboard'))
+            ->assertRedirect(route('supervisor.app-only'));
+
+        $this->actingAs($user)
+            ->get(route('supervisor.app-only'))
+            ->assertOk()
+            ->assertSee('App de campo');
+    }
 }

@@ -34,6 +34,7 @@ final class GrantEmployeeAccessService
 
     /**
      * @param  list<int>  $clientIds
+     * @param  list<\App\Domain\User\AccessGrantData>  $grants
      */
     public function execute(
         Employee $employee,
@@ -43,6 +44,7 @@ final class GrantEmployeeAccessService
         array $clientIds = [],
         ?string $username = null,
         ?string $jobTitle = null,
+        array $grants = [],
     ): User {
         $this->assertCanGrant($employee);
 
@@ -61,6 +63,7 @@ final class GrantEmployeeAccessService
                 mustChangePassword: true,
                 adminOrigin: $role === 'client-admin' ? \App\Enums\ClientAdminOrigin::Internal : null,
                 documentNumber: $employee->document_number,
+                grants: $grants,
             ),
             $actor,
             UserManagementContext::Company,

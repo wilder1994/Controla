@@ -20,6 +20,7 @@ use App\Repositories\UserRepository;
 use App\Services\Auth\AllocateLoginUsername;
 use App\Services\Company\GrantEmployeeAccessService;
 use App\Services\User\ManageScopedUserService;
+use App\Services\User\ParseAccessGrants;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Auth\UserManagementContext;
 use App\Support\Platform\ActingCompanyResolver;
@@ -74,7 +75,7 @@ final class UserController extends Controller
             ->get(['id', 'name']);
 
         return view('modules.company.users.create', [
-            'roleOptions' => AssignableRoles::forCompany(),
+            'roleOptions' => AssignableRoles::forCompanyActor($request->user()),
             'clients' => $clients,
             'jobTitles' => $jobTitles,
         ]);
@@ -116,7 +117,7 @@ final class UserController extends Controller
 
     public function installations(Request $request): JsonResponse
     {
-        $this->authorize('create', User::class);
+        $this->authorize('viewAny', User::class);
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $clientId = $request->integer('client_id');
         $client = Client::query()
@@ -147,6 +148,7 @@ final class UserController extends Controller
             $user = $this->createExternal($request, $password);
         } else {
             $employee = Employee::query()->findOrFail((int) $request->validated('employee_id'));
+            $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
             $user = $this->grantEmployeeAccessService->execute(
                 $employee,
                 $request->user(),
@@ -155,6 +157,7 @@ final class UserController extends Controller
                 array_map('intval', $request->input('client_ids', [])),
                 $request->validated('username'),
                 $request->validated('job_title'),
+                app(ParseAccessGrants::class)->fromInput($request->input('grants', []), $companyId),
             );
         }
 
@@ -183,7 +186,7 @@ final class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        $user->load(['roles', 'clients', 'employee.jobTitle', 'assignedInstallations']);
+        $user->load(['roles', 'clients', 'employee.jobTitle', 'assignedInstallations', 'moduleGrants']);
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $clients = Client::query()
             ->where('security_company_id', $companyId)
@@ -196,7 +199,7 @@ final class UserController extends Controller
 
         return view('modules.company.users.edit', [
             'managedUser' => $user,
-            'roleOptions' => AssignableRoles::forCompany(),
+            'roleOptions' => AssignableRoles::forCompanyActor($request->user()),
             'clients' => $clients,
             'jobTitles' => $jobTitles,
         ]);
@@ -223,6 +226,10 @@ final class UserController extends Controller
                 documentNumber: $external ? $request->validated('document_number') : $user->document_number,
                 installationIds: array_map('intval', $request->input('installation_ids', [])),
                 sitePermission: $request->validated('site_permission'),
+                grants: app(ParseAccessGrants::class)->fromInput(
+                    $request->input('grants', []),
+                    app(ActingCompanyResolver::class)->requireId($request->user()),
+                ),
             ),
             $request->user(),
             UserManagementContext::Company,

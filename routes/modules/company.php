@@ -56,70 +56,80 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             ->name('dashboard');
 
         Route::get('/billing', [BillingController::class, 'index'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.billing.manage')
             ->name('billing.index');
 
         Route::post('/billing/checkout', [BillingCheckoutController::class, 'store'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.billing.manage')
             ->name('billing.checkout');
 
         Route::post('/billing/membership/cancel', [BillingController::class, 'cancelMembership'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.billing.manage')
             ->name('billing.membership.cancel');
 
         Route::post('/billing/membership/undo-cancel', [BillingController::class, 'undoCancellation'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.billing.manage')
             ->name('billing.membership.undo-cancel');
 
         Route::post('/billing/package/schedule', [BillingController::class, 'schedulePackageChange'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.billing.manage')
             ->name('billing.package.schedule');
 
         Route::post('/billing/supervision', [BillingController::class, 'updateSupervisionPackage'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.billing.manage')
             ->name('billing.supervision.update');
 
         Route::get('/settings', [SettingsController::class, 'edit'])
-            ->middleware('permission:company.settings.manage')
+            ->middleware('permission:company.profile.manage')
             ->name('settings.edit');
         Route::get('/settings/logo', [SettingsController::class, 'logo'])
-            ->middleware('permission:company.settings.manage')
+            ->middleware('permission:company.profile.manage')
             ->name('settings.logo');
         Route::put('/settings', [SettingsController::class, 'update'])
-            ->middleware('permission:company.settings.manage')
+            ->middleware('permission:company.profile.manage')
             ->name('settings.update');
 
-        Route::middleware('permission:company.settings.manage')->group(function () {
+        Route::middleware('permission:company.employees.view|company.employees.manage|company.settings.manage')->group(function () {
             Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
             Route::get('/employees/template', [EmployeeController::class, 'downloadTemplate'])->name('employees.template');
+            Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->name('employees.lookup');
+            Route::get('/employees/import/preview', [EmployeeController::class, 'showImportPreview'])->name('employees.import.preview');
+            Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->whereNumber('employee')->name('employees.show');
+            Route::get('/employees/{employee}/photo', [EmployeeController::class, 'photo'])->whereNumber('employee')->name('employees.photo');
+        });
+
+        Route::middleware('permission:company.employees.manage|company.settings.manage')->group(function () {
             Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
             Route::post('/employees/catalog-starter', [EmployeeController::class, 'storeCatalogStarter'])->name('employees.catalog-starter');
             Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
             Route::post('/employees/import/preview', [EmployeeController::class, 'storeImportPreview'])->name('employees.import.preview.store');
-            Route::get('/employees/import/preview', [EmployeeController::class, 'showImportPreview'])->name('employees.import.preview');
             Route::post('/employees/import/commit', [EmployeeController::class, 'commitImport'])->name('employees.import.commit');
             Route::post('/employees/import/cancel', [EmployeeController::class, 'cancelImport'])->name('employees.import.cancel');
-            Route::get('/employees/lookup', [EmployeeController::class, 'lookup'])->name('employees.lookup');
-            Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
-            Route::get('/employees/{employee}/photo', [EmployeeController::class, 'photo'])->name('employees.photo');
-            Route::post('/employees/{employee}/photo', [EmployeeController::class, 'storePhoto'])->name('employees.photo.store');
-            Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
-            Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
-            Route::post('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
-            Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
-            Route::post('/employees/{employee}/reassign', [EmployeeController::class, 'reassign'])->name('employees.reassign');
+            Route::post('/employees/{employee}/photo', [EmployeeController::class, 'storePhoto'])->whereNumber('employee')->name('employees.photo.store');
+            Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->whereNumber('employee')->name('employees.edit');
+            Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->whereNumber('employee')->name('employees.update');
+            Route::post('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->whereNumber('employee')->name('employees.archive');
+            Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->whereNumber('employee')->name('employees.restore');
+            Route::post('/employees/{employee}/reassign', [EmployeeController::class, 'reassign'])->whereNumber('employee')->name('employees.reassign');
+        });
 
+        Route::middleware('permission:company.documents.view|company.documents.manage|company.settings.manage')->group(function () {
             Route::get('/documents', [PersonnelDocumentController::class, 'index'])->name('personnel-documents.index');
             Route::get('/documents/file/{document}/preview', [PersonnelDocumentController::class, 'preview'])->name('personnel-documents.preview');
             Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
-            Route::delete('/documents/file/{document}', [PersonnelDocumentController::class, 'destroy'])->name('personnel-documents.destroy');
-            Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->name('personnel-documents.folder');
-            Route::post('/documents/{employee}/batches', [PersonnelDocumentController::class, 'storeBatch'])->name('personnel-documents.batch.create');
-            Route::get('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'batchIndex'])->name('personnel-documents.batch.index');
-            Route::post('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'storeBatchIndex'])->name('personnel-documents.batch.store');
-            Route::get('/documents/{employee}/batches/{batch}/preview', [PersonnelDocumentController::class, 'previewBatch'])->name('personnel-documents.batch.preview');
-            Route::post('/documents/{employee}/folders/{folder}/na', [PersonnelDocumentController::class, 'markNa'])->name('personnel-documents.na');
+            Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->whereNumber('employee')->name('personnel-documents.folder');
+            Route::get('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'batchIndex'])->whereNumber('employee')->name('personnel-documents.batch.index');
+            Route::get('/documents/{employee}/batches/{batch}/preview', [PersonnelDocumentController::class, 'previewBatch'])->whereNumber('employee')->name('personnel-documents.batch.preview');
+        });
 
+        Route::middleware('permission:company.documents.manage|company.settings.manage')->group(function () {
+            Route::delete('/documents/file/{document}', [PersonnelDocumentController::class, 'destroy'])->name('personnel-documents.destroy');
+            Route::post('/documents/{employee}/batches', [PersonnelDocumentController::class, 'storeBatch'])->name('personnel-documents.batch.create');
+            Route::post('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'storeBatchIndex'])->name('personnel-documents.batch.store');
+            Route::post('/documents/{employee}/folders/{folder}/na', [PersonnelDocumentController::class, 'markNa'])->name('personnel-documents.na');
+        });
+
+        Route::middleware('permission:company.settings.view|company.settings.manage')->group(function () {
             Route::get('/job-titles', [JobTitleController::class, 'index'])->name('job-titles.index');
             Route::post('/job-titles', [JobTitleController::class, 'store'])->name('job-titles.store');
             Route::put('/job-titles/{jobTitle}', [JobTitleController::class, 'update'])->name('job-titles.update');
@@ -203,15 +213,18 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             ->name('supervision.sheets.show');
 
         Route::get('/descargas', [DownloadsController::class, 'index'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.downloads.view')
             ->name('downloads.index');
         Route::get('/descargas/controla-supervision.apk', [DownloadsController::class, 'apk'])
-            ->middleware('permission:company.dashboard')
+            ->middleware('permission:company.downloads.view')
             ->name('downloads.apk');
 
         Route::get('/users', [UserController::class, 'index'])
-            ->middleware('permission:company.users.assign')
+            ->middleware('permission:company.users.view|company.users.assign')
             ->name('users.index');
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])
+            ->middleware('permission:company.users.view|company.users.assign')
+            ->name('users.edit');
         Route::get('/users/create', [UserController::class, 'create'])
             ->middleware('permission:company.users.assign')
             ->name('users.create');
@@ -227,9 +240,6 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::post('/users', [UserController::class, 'store'])
             ->middleware('permission:company.users.assign')
             ->name('users.store');
-        Route::get('/users/{user}/edit', [UserController::class, 'edit'])
-            ->middleware('permission:company.users.assign')
-            ->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])
             ->middleware('permission:company.users.assign')
             ->name('users.update');

@@ -8,7 +8,7 @@ final class StoreLaborHistoryBatchRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('company.settings.manage') ?? false;
+        return $this->user()?->can('company.documents.manage') ?? false;
     }
 
     /** @return array<string, mixed> */

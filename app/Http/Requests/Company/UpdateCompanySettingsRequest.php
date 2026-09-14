@@ -22,7 +22,7 @@ final class UpdateCompanySettingsRequest extends FormRequest
 
         $companyId = app(ActingCompanyResolver::class)->id($user);
 
-        return $companyId !== null && $user->can('company.settings.manage');
+        return $companyId !== null && $user->can('company.profile.manage');
     }
 
     /** @return array<string, mixed> */

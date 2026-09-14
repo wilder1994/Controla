@@ -18,6 +18,7 @@ use App\Support\Supervision\WeaponInspectionPhotos;
 use Illuminate\Http\UploadedFile;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 final class SupervisorShiftApiTest extends TestCase
@@ -126,6 +127,24 @@ final class SupervisorShiftApiTest extends TestCase
             ->assertJsonPath('zones.0.name', 'Norte')
             ->assertJsonPath('shift_templates.0.name', 'Día')
             ->assertJsonStructure(['ppe', 'vehicle_check', 'zones', 'shift_templates', 'vehicles']);
+    }
+
+    public function test_supervisor_first_login_changes_username_and_password(): void
+    {
+        $this->seedWithPilot();
+        $user = $this->companySupervisor();
+        $token = $this->loginCompanySupervisor();
+
+        $this->withToken($token)->postJson('/api/supervision/password', [
+            'username' => 'luis.rojas.9911',
+            'password' => 'NuevaClave123!',
+            'password_confirmation' => 'NuevaClave123!',
+        ])->assertOk()->assertJsonPath('username', 'luis.rojas.9911');
+
+        $user->refresh();
+        $this->assertSame('luis.rojas.9911', $user->username);
+        $this->assertFalse($user->must_change_password);
+        $this->assertTrue(Hash::check('NuevaClave123!', $user->password));
     }
 
     public function test_login_fails_without_pro_package(): void

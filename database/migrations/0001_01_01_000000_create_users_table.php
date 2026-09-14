@@ -13,9 +13,10 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('username', 64)->unique();
             $table->string('job_title', 80)->nullable();
             $table->string('avatar_path')->nullable();
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('is_active')->default(true);
@@ -23,10 +24,11 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();
             $table->string('area_key', 50)->nullable()->index();
-            // FKs añadidos tras crear security_companies / clients
             $table->unsignedBigInteger('security_company_id')->nullable();
             $table->unsignedBigInteger('primary_client_id')->nullable();
             $table->string('supervisor_code', 6)->nullable();
+            $table->string('admin_origin', 16)->nullable();
+            $table->string('document_number', 30)->nullable();
             $table->timestamps();
         });
 

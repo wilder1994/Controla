@@ -12,7 +12,7 @@ No choca con: minuta de portería (`/access/supervision`), `SupervisorReview`, `
 
 ## Empresa — Ajustes
 
-Mismo bloque que Cargos/Tipos (`company.settings.manage`):
+Mismo bloque que Cargos/Tipos (`company.settings.view` / `manage`; el colaborador solo si tiene grant Ajustes). El supervisor **no** entra al panel: middleware `EnsureSupervisorUsesFieldApp` → `/supervision/app`.
 
 | Pestaña | Ruta | Tabla |
 |---------|------|--------|
@@ -202,7 +202,7 @@ Fuera de alcance de este corte: chatbot en la PWA de campo, app de residentes, W
 | Método | Ruta | Uso |
 |--------|------|-----|
 | POST | `/api/supervision/login` | Token: `login` o `email` + clave. Respuesta incluye `must_change_password` |
-| POST | `/api/supervision/password` | Primera clave (sanctum). `must_change_password` queda en false |
+| POST | `/api/supervision/password` | Primer ingreso (sanctum): `username` nuevo + clave. `must_change_password` queda en false |
 | GET | `/api/supervision/intake` | Zonas, turnos, EPP, vehículo, flota |
 | GET | `/api/supervision/shifts/current` | Turno abierto + `current_review` + actividad |
 | GET | `/api/supervision/shift-photo/start-selfie` | Selfie de apertura |
@@ -226,23 +226,19 @@ Apertura: todos los ítems EPP y vehículo en sí; si falta uno la API responde 
 
 ## Migraciones
 
-- `2026_07_06_080400_create_installations_table`
+Las columnas que eran `add_*` (username, email de zona, ruta, cola de cierre, branding, riesgos) viven en el `create_*` o en `2026_08_25_230000_add_supervision_packages_and_tracking`. Ese archivo **crea** las tablas de campo (zonas, turnos, flota, posts, revistas). Puestos↔empleados: `2026_09_10_220100_add_modality_and_employees_to_posts` (`supervisor_post_employee`).
+
+- `2026_07_06_080400_create_installations_table` (incluye `code`, `kind`, geo, rector)
 - `2026_07_06_080500_create_locations_table` (`installation_id`)
-- `2026_08_25_230000_add_supervision_packages_and_tracking` (zonas, turnos, preop, flota, turnos de campo, `supervisor_posts`, revistas con `supervisor_post_id`)
-- `2026_08_26_110000_create_supervisor_field_ops_tables` (recomendaciones y logs)
+- `2026_08_25_230000_add_supervision_packages_and_tracking`
+- `2026_08_26_110000_create_supervisor_field_ops_tables` (recomendaciones y logs, con campos de riesgo)
 - `2026_08_26_223500_create_supervisor_document_types_table`
 - `2026_08_26_224800_create_supervisor_control_book_types_table`
 - `2026_08_26_230200_create_supervisor_weapon_catalogs_table`
-- `2026_08_26_233000_add_risk_fields_to_supervisor_recommendations`
-- `2026_08_26_234500_create_supervisor_risk_types_table`
-- `2026_08_26_234800_replace_recommendation_title_with_risk_type`
-- `2026_09_05_150000_add_username_to_users_table` (`users.username`; `email` nullable)
-- `2026_09_05_151000_add_email_to_supervisor_zones_table`
-- `2026_09_07_193000_add_snapped_route_to_supervisor_shifts` (`snapped_route` JSON cacheado)
-- `2026_09_08_103900_add_auto_close_queue_to_supervisor_shifts` (`pending_outbox_count`, `closed_by_system`)
-- `2026_09_08_151600_add_field_sheet_branding_to_companies` (`field_sheet_intro` en empresa; `sheet_intro` en revista)
+- `2026_08_26_234500_create_supervisor_risk_types_table` (`supervisor_risk_type_id` en recomendaciones)
+- `2026_09_10_220100_add_modality_and_employees_to_posts`
 
-Tipos de estructura por empresa (panel, no Supervisión): `2026_09_03_144000_add_security_company_id_to_structure_types`.
+Tipos de estructura por empresa: `security_company_id` en `create_structure_types`. `users.username` y `email` nullable: `create_users`.
 
 ```bash
 php artisan migrate

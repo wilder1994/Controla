@@ -35,7 +35,10 @@ final class UserScopeResolver
             return User::query();
         }
 
-        if ($actor->hasRole('company-admin') && $actor->security_company_id) {
+        if (
+            ($actor->hasRole('company-admin') || ($actor->hasRole('colaborador') && $actor->can('company.users.view')))
+            && $actor->security_company_id
+        ) {
             $companyId = (int) $actor->security_company_id;
 
             return User::query()

@@ -40,7 +40,7 @@ final class BillingController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->can('company.dashboard'), 403);
+        abort_unless($request->user()?->can('company.billing.manage'), 403);
 
         $company = $this->resolveCompany($request);
         $company->loadMissing('subscriptionAcceptances');
@@ -125,7 +125,7 @@ final class BillingController extends Controller
 
     public function undoCancellation(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->can('company.dashboard'), 403);
+        abort_unless($request->user()?->can('company.billing.manage'), 403);
 
         $company = $this->resolveCompany($request);
 

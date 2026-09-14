@@ -22,6 +22,13 @@ return new class extends Migration
             $table->string('priority', 20);
             $table->date('due_date')->nullable();
             $table->string('title', 120);
+            $table->text('risk')->nullable();
+            $table->string('likelihood', 20)->nullable();
+            $table->string('impact', 20)->nullable();
+            $table->text('consequence')->nullable();
+            $table->text('treatment')->nullable();
+            $table->string('risk_level', 20)->nullable();
+            $table->json('photos')->nullable();
             $table->text('body');
             $table->timestamp('closed_at')->nullable();
             $table->timestamps();
@@ -33,6 +40,7 @@ return new class extends Migration
 
         Schema::create('supervisor_field_logs', function (Blueprint $table) {
             $table->id();
+            $table->uuid('client_event_id')->nullable()->unique();
             $table->foreignId('supervisor_shift_id')->constrained('supervisor_shifts')->cascadeOnDelete();
             $table->foreignId('supervisor_shift_review_id')
                 ->nullable()

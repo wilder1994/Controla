@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\AccessGrantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -82,6 +83,11 @@ class User extends Authenticatable
         return $this->belongsTo(Client::class, 'primary_client_id');
     }
 
+    public function moduleGrants(): HasMany
+    {
+        return $this->hasMany(UserModuleGrant::class);
+    }
+
     public function clientAssignments(): HasMany
     {
         return $this->hasMany(ClientUserAssignment::class);
@@ -121,6 +127,10 @@ class User extends Authenticatable
                 ->all();
         }
 
+        if ($this->hasRole('colaborador')) {
+            return $this->collaboratorClientIds();
+        }
+
         return $this->clients()
             ->pluck('clients.id')
             ->map(fn ($id) => (int) $id)
@@ -139,6 +149,10 @@ class User extends Authenticatable
      */
     public function assignedInstallationIds(): ?array
     {
+        if ($this->hasRole('colaborador')) {
+            return $this->collaboratorInstallationIds();
+        }
+
         if (! $this->hasRole('client-installation-admin')) {
             return null;
         }
@@ -170,6 +184,94 @@ class User extends Authenticatable
     {
         return $this->hasRole('client-installation-admin')
             && $this->sitePermissionOn($installationId) === 'support';
+    }
+
+    /** @return list<int> */
+    private function collaboratorClientIds(): array
+    {
+        $companyId = (int) ($this->security_company_id ?? 0);
+        $grants = $this->relationLoaded('moduleGrants') ? $this->moduleGrants : $this->moduleGrants()->get();
+
+        $wide = $grants->contains(function (UserModuleGrant $grant) use ($companyId): bool {
+            return $grant->scope === AccessGrantScope::Company
+                && (int) $grant->scope_id === $companyId
+                && in_array($grant->module, ['clients', 'installations', 'observatory', 'supervision'], true);
+        });
+
+        if ($wide && $companyId > 0) {
+            return Client::query()
+                ->where('security_company_id', $companyId)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        $ids = $grants
+            ->where('scope', AccessGrantScope::Client)
+            ->pluck('scope_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $installationIds = $grants
+            ->where('scope', AccessGrantScope::Installation)
+            ->pluck('scope_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($installationIds !== []) {
+            $fromSites = Installation::query()
+                ->whereIn('id', $installationIds)
+                ->pluck('client_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $ids = array_merge($ids, $fromSites);
+        }
+
+        return array_values(array_unique(array_filter($ids)));
+    }
+
+    /** @return list<int> */
+    private function collaboratorInstallationIds(): array
+    {
+        $companyId = (int) ($this->security_company_id ?? 0);
+        $grants = $this->relationLoaded('moduleGrants') ? $this->moduleGrants : $this->moduleGrants()->get();
+
+        $wide = $grants->contains(function (UserModuleGrant $grant) use ($companyId): bool {
+            return $grant->scope === AccessGrantScope::Company
+                && (int) $grant->scope_id === $companyId
+                && in_array($grant->module, ['clients', 'installations', 'observatory', 'supervision'], true);
+        });
+
+        if ($wide) {
+            return Installation::query()
+                ->whereHas('client', fn ($q) => $q->where('security_company_id', $companyId))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        $ids = $grants
+            ->where('scope', AccessGrantScope::Installation)
+            ->pluck('scope_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $clientIds = $grants
+            ->where('scope', AccessGrantScope::Client)
+            ->pluck('scope_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($clientIds !== []) {
+            $fromClients = Installation::query()
+                ->whereIn('client_id', $clientIds)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $ids = array_merge($ids, $fromClients);
+        }
+
+        return array_values(array_unique(array_filter($ids)));
     }
 
     public function isSupervisionManager(): bool

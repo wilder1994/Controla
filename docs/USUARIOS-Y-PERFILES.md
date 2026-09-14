@@ -2,11 +2,32 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de clientes.
 
-**Última actualización:** 12 septiembre 2026
+**Última actualización:** 13 septiembre 2026
 
 La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles.
 
 Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · **Observatorio** · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Observatorio: [`OBSERVATORIO.md`](OBSERVATORIO.md).
+
+---
+
+## Modelo de acceso (Corte 1)
+
+Tres administradores **completos** (sin collage de módulos):
+
+| Quién | Alcance |
+|--------|---------|
+| Admin empresa (`company-admin`) | Toda la empresa |
+| Admin cliente (`client-admin`) | Ese cliente. **No crea usuarios.** |
+| Admin instalaciones (`client-installation-admin`) | Sedes asignadas. Ajustes solo ver. **No crea usuarios.** |
+
+Oficios (no son un collage):
+
+| Oficio | Acceso |
+|--------|--------|
+| **Supervisor** | Solo app de campo. Login usuario + clave. Extra: código 6 dígitos para revista. |
+| **Vigilante** | Solo portería del cliente asignado (con puertas). Reasignar a otro cliente con puertas: mismas credenciales. |
+
+**Colaborador** (`colaborador`): empleado de la empresa con matriz Nada / Ver / Gestionar. Módulos de empresa + opcional por cliente e instalación (Observatorio, Censo). El cargo es etiqueta. No es vigilante ni supervisor. Quien crea no puede conceder más de lo que tiene **ni asignar `company-admin`**. Facturación, Mis datos y Descargas quedan en admin empresa. Permisos Spatie van en el usuario (`user_module_grants`), no en el rol.
 
 ---
 
@@ -21,12 +42,12 @@ Panel `/company/users`. **Crear y editar usan el mismo formulario** (`modules/co
 1. Foto circular centrada (`x-client.member-photo-picker`, campo `avatar`). Muestra avatar o icono de cámara; clic para elegir.
 2. **Rol**. Si es administrador del cliente: origen interno/externo. Admin instalaciones es siempre externo. Al crear admin cliente o instalaciones se muestra el aviso vigente de protección de datos de menores (Normoteca).
 3. Primera fila de ficha: **Nombre** y **Cédula**. Interno: ambos buscan empleados activos **sin** usuario. Externo: se escriben a mano (más cargo y correo).
-4. **Usuario de acceso** (todos los roles de empresa: admin empresa, admin del cliente, supervisor, vigilante): primer nombre + primer apellido paterno, ASCII, minúsculas, más **4 dígitos aleatorios** que cambian en cada generación (`ana.perez.4821`). No es la cédula. Único en `users.username`. Ese es el **login**.
+4. **Usuario de acceso** (todos los roles de empresa: admin empresa, colaborador, admin del cliente, supervisor, vigilante): primer nombre + primer apellido paterno, ASCII, minúsculas, más **4 dígitos aleatorios** que cambian en cada generación (`ana.perez.4821`). No es la cédula. Único en `users.username`. Ese es el **login**.
 5. **Cargo / función**: select del catálogo `company_job_titles` (interno) o texto libre (externo). Al elegir empleado se precarga el cargo de la ficha.
 6. **Email personal**: el de la ficha (`employees.email`). Solo lectura. **No** es login. No se copia a `users.email` en altas nuevas. Envío de usuario/clave por correo: pendiente.
 7. **Cliente** e **Instalaciones** (si el rol lo pide) en la misma fila: filtro al escribir y lista con checkbox. Instalaciones se cargan al elegir cliente (`GET /company/users/installations`).
 8. Generar clave, activo. Los campos `type="password"` (login, alta, cambio, código de supervisor) tienen icono de ojo para verla (`x-ui.password-wrap`).
-9. Clave aleatoria; `must_change_password` en la primera entrada (pantalla `/password/primera`, no Breeze `/profile`). Supervisor: además `supervisor_code` de 6 dígitos (revista Accesos, no login).
+9. Clave aleatoria. Tras crear, modal para **copiar usuario y contraseña** (no se vuelven a mostrar). Primera entrada: cambia **usuario y contraseña** (`/password/primera` o PWA). Supervisor: además `supervisor_code` de 6 dígitos (revista Accesos, no login).
 10. La zona de Supervisión **no** se pega al usuario ni se muestra en la tabla: se elige al abrir turno.
 11. **No se elimina** la cuenta. **Desactivar** (pestaña Activos) pone `is_active = false`: sale del listado activo, no puede entrar al panel ni a la PWA, el historial queda. Pestaña **Desactivados** → Reactivar. No se puede desactivar a uno mismo.
 
@@ -37,7 +58,8 @@ Cuentas antiguas pueden seguir entrando con `users.email` si lo tienen. Platafor
 | Quién | Dónde |
 |--------|--------|
 | Súper administrador | `/admin/users` (`platform.users.manage`) |
-| Administrador empresa | `/company/users` (`company.users.assign`) |
+| Administrador empresa | `/company/users` (`company.users.assign`). Puede crear `company-admin`. |
+| Colaborador con Usuarios → Gestionar | `/company/users` (`company.users.assign` vía grant). **No** puede crear ni editar `company-admin`. |
 | Admin del cliente / admin instalaciones | **No crean.** `/client/users` solo lista y edita externos de ese cliente. |
 
 ---
@@ -73,10 +95,11 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 | Nombre de producto | Rol Spatie (`users`) | Pertenece a | Resumen |
 |--------------------|----------------------|-------------|---------|
 | **Vigilante** | `guardia` | Empresa | Opera **portería** de una instalación **con puertas**. Debe estar asignado a un puesto de esa instalación. Sin puertas no hay usuario de portería. |
-| **Supervisor de vigilancia** | `supervisor` | Empresa | Recorre **puestos de Supervisión** (`supervisor_posts`). Login PWA: `users.username`. **No** se le pega zona. Firma revista en la **minuta de portería** con código **6 dígitos** (`supervisor_code`). Con Supervisión, la ronda de campo sigue en la app. API: `/api/supervision/login`. |
+| **Supervisor de vigilancia** | `supervisor` | Empresa | **Solo app de campo** (PWA/APK). Login: `users.username` + clave. **Sin** panel empresa ni portería. Firma revista en la **minuta** con código **6 dígitos** (`supervisor_code`). API: `/api/supervision/login`. |
 | **Administrador del cliente** | `client-admin` | Cliente | Interno (empleado, 1+ clientes) o externo (1 cliente). Panel del cliente; **no crea usuarios**. |
 | **Admin instalaciones** | `client-installation-admin` | Cliente | Siempre externo. Varias instalaciones del mismo cliente. Admin o apoyo (`site_permission`). Sin crear usuarios; Ajustes solo lectura. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
+| **Colaborador** | `colaborador` | Empresa | Matriz por módulo (`user_module_grants`). Sin facturación ni perfil de empresa. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
 
 **Prohibido en producto:** llamar “guarda/guardia” al vigilante; llamar “supervisor” al admin del cliente; inventar un segundo tipo de supervisor (p. ej. “supervisor portería” vs “supervisor empresa”). Hay **un solo** supervisor: el de vigilancia. El término de producto es **cliente**, no conjunto.
@@ -94,7 +117,7 @@ En el cliente se registran datos comerciales (`party_type`, documento, contactos
 1. Asignado a **un único** cliente a la vez (`client_user_assignments` + `primary_client_id`).
 2. El empleado debe estar en un **puesto de una instalación de ese cliente**.
 3. Esa instalación debe tener **puertas**. Sin puertas no se crea (ni se necesita) el usuario de portería.
-4. Se puede **reasignar** a otro cliente; al reasignar es **obligatorio cambiar la contraseña**.
+4. Se puede **reasignar** a otro cliente **con puertas**. Conserva el **mismo usuario y contraseña**.
 5. Se puede editar la **ficha de empleado** (nombre, cargo/función, foto) sin crear otro usuario (ej. portería ↔ ronda).
 6. El sistema debe poder responder siempre: *¿a qué cliente e instalación está asignado este vigilante?*
 
@@ -109,7 +132,7 @@ Slug técnico: `guardia`. Label UI: **Vigilante**.
 3. Al crear el usuario también se genera un **`supervisor_code`**: numérico, **6 dígitos**, **permanente** hasta regeneración deliberada. Sirve para **pasar revista en la minuta de portería**. No es el usuario de la PWA.
 4. El código de 6 dígitos es único **por empresa**.
 5. **Revista Supervisión:** en la app de campo; no se vuelve a firmar en puesto. Zona se elige al abrir turno (Norte hoy, Sur mañana, o las dos el mismo día). Ver [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
-6. No confundir con admin del cliente ni con el vigilante de turno.
+6. No entra al panel web: `/home` y el resto redirigen a «usa la app». No confundir con admin del cliente ni con el vigilante de turno.
 
 Slug técnico: `supervisor`. Label UI: **Supervisor de vigilancia**.
 
@@ -129,8 +152,9 @@ Slug técnico: `supervisor`. Label UI: **Supervisor de vigilancia**.
 
 | Panel | Roles |
 |-------|--------|
-| Plataforma | `super-admin`, `company-admin`, `client-admin`, `client-installation-admin`, `guardia`, `supervisor`, `resident`, `anfitrion`, `admin-accesos` |
-| Empresa | `company-admin`, `client-admin`, `client-installation-admin`, `guardia`, `supervisor` |
+| Plataforma | `super-admin`, `company-admin`, `client-admin`, `client-installation-admin`, `guardia`, `supervisor`, `colaborador`, `resident`, `anfitrion`, `admin-accesos` |
+| Empresa (admin empresa) | `company-admin`, `client-admin`, `client-installation-admin`, `guardia`, `supervisor`, `colaborador` |
+| Empresa (colaborador) | Igual **sin** `company-admin` (`AssignableRoles::forCompanyActor`) |
 | Cliente | `client-admin`, `client-installation-admin` (solo externos) |
 
 Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `client-installation-admin`, `guardia`, `resident`, `anfitrion`.
@@ -139,6 +163,24 @@ Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `clien
 - `client-admin` interno: **uno o varios** clientes.
 - `client-admin` externo y `client-installation-admin`: **exactamente un** cliente.
 - `supervisor`: **sin** `client_ids` (alcance empresa).
+- `colaborador`: clientes e instalaciones salen de los grants (empresa ancha, cliente o sede).
+
+---
+
+## Colaborador (`user_module_grants`)
+
+Tabla: `user_module_grants` (`scope` company/client/installation, `module`, `level` view/manage). Sync: `SyncCollaboratorAccessService`. Catálogo: `GrantableModules`.
+
+**Empresa:** Clientes, Instalaciones, Observatorio, Supervisión, Empleados, Documentos, Usuarios, Ajustes.
+
+**Cliente / instalación:** Observatorio, Censo.
+
+Reglas:
+
+- Observatorio o Supervisión a nivel empresa abre **todos** los clientes e instalaciones de la empresa (detalle de evento incluido).
+- Grant a un cliente abre las sedes de ese cliente; grant a una sede solo esa.
+- Empleados: `company.employees.view` / `manage` (`EmployeePolicy`). Documentos: `company.documents.view` / `manage` (subir/indexar = manage).
+- Usuarios → Gestionar no incluye promover a admin empresa.
 
 ---
 
@@ -156,7 +198,7 @@ Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `clien
 | `primary_client_id` | Cliente actual del vigilante (y otros roles con asignación) |
 | `admin_origin` | `internal` / `external` en administradores del cliente |
 | `document_number` | Cédula del administrador externo |
-| `must_change_password` | Primera entrada: redirige a `password.first` (`/password/primera`) hasta cambiar la clave |
+| `must_change_password` | Primera entrada: redirige a `password.first` hasta cambiar **usuario** (`nombre.apellido.####` distinto) y **clave** |
 
 ### `clients`
 
@@ -171,14 +213,19 @@ Roles que requieren asignación a cliente (`client_ids`): `client-admin`, `clien
 | Permiso | Uso |
 |---------|-----|
 | `platform.users.view` / `platform.users.manage` | Listado y CRUD global |
-| `company.users.assign` | CRUD usuarios en panel empresa |
-| `company.settings.manage` | Perfil legal/geo de la empresa |
+| `company.users.view` / `company.users.assign` | Ver / crear-editar usuarios en panel empresa |
+| `company.employees.view` / `company.employees.manage` | Listar / mutar fichas de empleados |
+| `company.documents.view` / `company.documents.manage` | Ver carpetas / indexar y subir lotes |
+| `company.billing.manage` | Facturación (solo admin empresa) |
+| `company.profile.manage` | **Mis datos** (perfil legal/geo) |
+| `company.downloads.view` | Descargas PWA/APK |
+| `company.settings.view` / `company.settings.manage` | Ajustes (cargos, tipos, catálogos) |
 | `client.users.manage` | Ver/editar administradores del cliente. **No** crear. |
 | `client.settings.manage` | Crear/editar tipos de persona. El admin de instalaciones no lo tiene (Ajustes solo ver) |
 | `observatory.view` | Ver eventos del Observatorio (empresa: sus clientes; cliente: su alcance). Misma llave para la API `/api/observatory/*` |
 | `observatory.events.update` | Cambiar estado, unir folios del mismo colegio o sacar un reporte a folio nuevo. Solo admin de instalaciones de esa sede (`site_permission=admin`), no el apoyo |
 
-Tras cambios en permisos:
+El rol `supervisor` **no** tiene permisos `access.*` (solo app). Tras cambios en permisos:
 
 ```bash
 php artisan db:seed --class=RoleAndPermissionSeeder
@@ -203,7 +250,7 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 | Ruta | Función |
 |------|---------|
 | `GET /company/users` | Listado (`status=active` \| `inactive`; pestañas en header) |
-| `GET/POST /company/users/create` | Crear usuario empresa / vigilante / supervisor / admin cliente o instalaciones |
+| `GET/POST /company/users/create` | Crear usuario empresa / colaborador / vigilante / supervisor / admin cliente o instalaciones |
 | `GET/PUT /company/users/{user}/edit` | Editar (foto, cargo, reasignación, código supervisor) |
 | `GET /company/users/employee-search` | Typeahead de empleados sin usuario |
 | `POST /company/users/credentials-preview` | Genera `username` + clave |
@@ -213,6 +260,7 @@ php artisan db:seed --class=RoleAndPermissionSeeder
 | `GET /company/settings` | **Mis datos**: perfil, ubicación, logo (arrastrar / pegar / recortar) e encabezado de fichas |
 | `PUT /company/settings` | Guardar perfil, logo y texto de encabezado |
 | `GET/POST /company/clients` | Cartera de clientes (`service_started_at`) |
+| `GET /supervision/app` | Aviso web del supervisor: usar la app de campo |
 
 ### Cliente
 
@@ -261,9 +309,10 @@ Usado en: signup paso 1, **Mis datos** (`/company/settings`), perfil/alta admin 
 | Pieza | Ubicación |
 |-------|-----------|
 | Alcance queries | `UserScopeResolver` |
-| Autorización | `UserPolicy`, `SecurityCompanyPolicy` |
+| Autorización | `UserPolicy`, `EmployeePolicy`, `SecurityCompanyPolicy` |
 | CRUD usuarios | `ManageScopedUserService` |
-| Roles / labels | `AssignableRoles` |
+| Grants colaborador | `ParseAccessGrants`, `SyncCollaboratorAccessService`, `GrantableModules` |
+| Roles / labels | `AssignableRoles` (`forCompanyActor` recorta `company-admin` al colaborador) |
 | Listado paginado | `UserRepository::paginateScoped()` |
 
 Vistas empresa (crear = editar): `modules/company/users/partials/form.blade.php`. Foto: `x-client.member-photo-picker` (`name=avatar`). Cliente: `modules/client/users/partials/form.blade.php` (solo externos). Plataforma: `modules/shared/managed-user-form.blade.php`. Perfil: `modules/shared/company-profile-form.blade.php`. Asignación de sedes: `ClientUserInstallationAssignment`.
@@ -283,6 +332,10 @@ Vistas empresa (crear = editar): `modules/company/users/partials/form.blade.php`
 ```bash
 php artisan test --filter=ScopedUserManagementTest
 php artisan test --filter=CompanyUserFromEmployeeTest
+php artisan test --filter=PasswordUpdateTest
+php artisan test --filter=AuthenticationTest
+php artisan test --filter=CollaboratorAccessTest
+php artisan test --filter=SupervisorShiftApiTest
 php artisan test --filter=PorteriaRevistaTest
 php artisan test --filter=StructureModuleTest
 ```

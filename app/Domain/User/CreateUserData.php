@@ -29,5 +29,7 @@ final readonly class CreateUserData
         public ?string $documentNumber = null,
         public array $installationIds = [],
         public string $sitePermission = 'admin',
+        /** @var list<AccessGrantData> */
+        public array $grants = [],
     ) {}
 }

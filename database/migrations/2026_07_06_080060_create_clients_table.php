@@ -36,6 +36,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->boolean('has_access')->default(false);
             $table->boolean('has_supervision')->default(false);
+            $table->boolean('show_personnel_folders')->default(false);
+            $table->json('panel_modules')->nullable();
             $table->date('service_started_at')->nullable();
             $table->unsignedTinyInteger('service_hours')->default(24);
             $table->unsignedSmallInteger('revista_target_per_day')->default(1);

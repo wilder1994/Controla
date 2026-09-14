@@ -14,7 +14,7 @@ final class DownloadsController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->can('company.dashboard'), 403);
+        abort_unless($request->user()?->can('company.downloads.view'), 403);
 
         return view('modules.company.downloads.index', [
             'pwaUrl' => SupervisionAppUrl::pwa(),
@@ -24,7 +24,7 @@ final class DownloadsController extends Controller
 
     public function apk(Request $request): BinaryFileResponse
     {
-        abort_unless($request->user()?->can('company.dashboard'), 403);
+        abort_unless($request->user()?->can('company.downloads.view'), 403);
         $path = SupervisionAppUrl::apkPath();
         abort_unless($path !== null, 404);
 

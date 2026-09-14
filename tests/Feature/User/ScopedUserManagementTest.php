@@ -120,7 +120,7 @@ final class ScopedUserManagementTest extends TestCase
         $this->assertDatabaseMissing('client_user_assignments', ['user_id' => $user->id]);
     }
 
-    public function test_reassigning_vigilante_requires_new_password(): void
+    public function test_reassigning_vigilante_keeps_username_and_password(): void
     {
         $this->seedWithPilot();
 
@@ -128,24 +128,14 @@ final class ScopedUserManagementTest extends TestCase
         $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
         $torres = Client::query()->where('slug', 'torres-loma')->firstOrFail();
         $vigilante = User::query()->where('email', 'guardia@control-acceso.test')->firstOrFail();
-
-        $denied = $this->actingAs($admin)->put(route('company.users.update', $vigilante), [
-            'name' => $vigilante->name,
-            'role' => 'guardia',
-            'job_title' => $vigilante->job_title,
-            'client_ids' => [$torres->id],
-            'is_active' => '1',
-        ]);
-
-        $denied->assertSessionHasErrors('password');
+        $username = $vigilante->username;
+        $passwordHash = $vigilante->password;
 
         $ok = $this->actingAs($admin)->put(route('company.users.update', $vigilante), [
             'name' => $vigilante->name,
             'role' => 'guardia',
             'job_title' => $vigilante->job_title,
             'client_ids' => [$torres->id],
-            'password' => 'NuevaClave123!',
-            'password_confirmation' => 'NuevaClave123!',
             'is_active' => '1',
         ]);
 
@@ -153,6 +143,8 @@ final class ScopedUserManagementTest extends TestCase
         $vigilante->refresh();
         $this->assertSame($torres->id, (int) $vigilante->primary_client_id);
         $this->assertFalse($vigilante->clients()->where('clients.id', $palmas->id)->exists());
+        $this->assertSame($username, $vigilante->username);
+        $this->assertSame($passwordHash, $vigilante->password);
     }
 
     public function test_company_admin_cannot_edit_super_admin_user(): void

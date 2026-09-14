@@ -1,6 +1,6 @@
 # Empleados, cargos y tipos (empresa)
 
-**Última actualización:** 11 septiembre 2026
+**Última actualización:** 13 septiembre 2026
 
 Maestro de colaboradores de la **empresa** de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
 
@@ -26,7 +26,7 @@ Sidebar **Empleados** (maestro) y **Documentos** (indexador de carpetas del pers
 | Carga masiva | modal en el listado → preview → aceptar |
 | Foto | Círculo en alta/edición; en la ficha se cambia al elegir archivo (`POST /company/employees/{id}/photo`) |
 
-Permiso: `company.settings.manage`. El login se da en **Usuarios** (`company.users.assign`): mismo formulario crear/editar; todos los roles con empleado; usuario `nombre.apellido.####`. El email personal es el de la ficha; el From de avisos es el correo de la **zona** de Supervisión.
+Permisos: Empleados `company.employees.view` / `manage`; Documentos `company.documents.view` / `manage` (subir e indexar = manage). El admin empresa los tiene todos. Un colaborador solo si el grant lo dice. El login se da en **Usuarios** (`company.users.assign`): mismo formulario crear/editar; todos los roles con empleado; usuario `nombre.apellido.####`. El email personal es el de la ficha; el From de avisos es el correo de la **zona** de Supervisión.
 
 El primer administrador de una empresa nueva usa **la misma ficha** (`admin.companies.first-admin.*`).
 

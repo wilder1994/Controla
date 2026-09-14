@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureSupervisionUnlocked;
 use App\Http\Middleware\EnsureSupervisorProApi;
+use App\Http\Middleware\EnsureSupervisorUsesFieldApp;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\InitializeAccessTenancy;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->encryptCookies(except: [
             \App\Support\Platform\SupportCompanyContext::LAST_COMPANY_COOKIE,
+        ]);
+        $middleware->web(append: [
+            EnsureSupervisorUsesFieldApp::class,
         ]);
         $middleware->alias([
             'active' => EnsureUserIsActive::class,

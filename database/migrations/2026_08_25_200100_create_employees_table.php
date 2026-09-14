@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('collaborator_type', 20);
             $table->string('email');
             $table->string('nationality', 80)->default('COLOMBIANA');
-            $table->string('blood_group', 8);
+            $table->string('blood_group', 16);
             $table->string('birth_department', 120)->nullable();
             $table->string('birth_city', 120)->nullable();
             $table->string('emergency_phone', 40)->nullable();
@@ -36,16 +36,49 @@ return new class extends Migration
             $table->boolean('same_cost_center')->nullable();
             $table->boolean('is_active')->default(true);
             $table->date('ceased_at')->nullable();
+            $table->string('photo_path')->nullable();
+            $table->string('education', 120)->nullable();
+            $table->string('marital_status', 80)->nullable();
+            $table->unsignedTinyInteger('children_count')->nullable();
+            $table->string('phone', 40)->nullable();
+            $table->string('residence_city', 120)->nullable();
+            $table->string('address', 180)->nullable();
+            $table->string('engagement_type', 80)->nullable();
+            $table->string('contributor_type', 80)->nullable();
+            $table->string('labor_contract_type', 80)->nullable();
+            $table->date('hired_on')->nullable();
+            $table->date('labor_contract_ends_on')->nullable();
+            $table->date('left_on')->nullable();
+            $table->string('eps_code', 40)->nullable();
+            $table->string('eps_name', 120)->nullable();
+            $table->string('afp_code', 40)->nullable();
+            $table->string('afp_name', 120)->nullable();
+            $table->string('compensation_fund', 120)->nullable();
+            $table->string('arl_name', 120)->nullable();
+            $table->string('arl_risk_level', 40)->nullable();
             $table->timestamps();
 
             $table->unique(['security_company_id', 'document_number']);
             $table->unique(['security_company_id', 'email']);
             $table->index(['security_company_id', 'is_active']);
         });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('employee_id')
+                ->nullable()
+                ->unique()
+                ->after('security_company_id')
+                ->constrained('employees')
+                ->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('employee_id');
+        });
+
         Schema::dropIfExists('employees');
     }
 };

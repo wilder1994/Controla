@@ -13,6 +13,7 @@ return new class extends Migration
         Schema::create('structures', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('installation_id')->nullable()->constrained('installations')->nullOnDelete();
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->foreignId('structure_type_id')->constrained('structure_types')->restrictOnDelete();
             $table->string('name', 100);
@@ -25,7 +26,8 @@ return new class extends Migration
 
             $table->foreign('parent_id')->references('id')->on('structures')->cascadeOnDelete();
             $table->index(['client_id', 'structure_type_id', 'is_active']);
-            $table->unique(['client_id', 'code']);
+            $table->index(['client_id', 'installation_id']);
+            $table->unique(['installation_id', 'code']);
         });
     }
 

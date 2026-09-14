@@ -23,5 +23,7 @@ final readonly class UpdateUserData
         public ?string $documentNumber = null,
         public ?array $installationIds = null,
         public ?string $sitePermission = null,
+        /** @var list<AccessGrantData>|null */
+        public ?array $grants = null,
     ) {}
 }
