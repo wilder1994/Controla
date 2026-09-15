@@ -1,3 +1,10 @@
+function bindOpsLiveRefresh(refresh) {
+    window.addEventListener('ops-surface-changed', () => refresh());
+    if (!window.Echo) {
+        window.setInterval(() => refresh(), 12000);
+    }
+}
+
 export function opsLiveSurface() {
     return {
         toast: '',
@@ -39,8 +46,7 @@ export function opsLivePage() {
             } catch {
                 this.events = [];
             }
-            window.addEventListener('ops-surface-changed', () => this.refresh());
-            window.setInterval(() => this.refresh(), 12000);
+            bindOpsLiveRefresh(() => this.refresh());
         },
         async refresh() {
             if (!this.url) {
@@ -73,8 +79,7 @@ export function sigBoardLive() {
             this.url = this.$el.dataset.liveUrl || '';
             this.board = JSON.parse(this.$el.dataset.board || '{}');
             this.drawChart();
-            window.addEventListener('ops-surface-changed', () => this.refresh());
-            window.setInterval(() => this.refresh(), 12000);
+            bindOpsLiveRefresh(() => this.refresh());
         },
         async refresh() {
             if (!this.url) {
@@ -142,8 +147,7 @@ export function companyDashboardLive() {
             } catch {
                 //
             }
-            window.addEventListener('ops-surface-changed', () => this.refresh());
-            window.setInterval(() => this.refresh(), 12000);
+            bindOpsLiveRefresh(() => this.refresh());
         },
         apply(payload) {
             this.metrics = payload.metrics || this.metrics;

@@ -66,7 +66,7 @@ Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON cada 1
 
 Para WebSocket (si no, el sondeo basta):
 
-1. En `.env` del VPS: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID` / `KEY` / `SECRET` (valores propios), `REVERB_HOST=controla.wcodex.cloud`, `REVERB_PORT=443`, `REVERB_SCHEME=https`, `REVERB_SERVER_HOST=127.0.0.1`, `REVERB_SERVER_PORT=8080`. Las `VITE_REVERB_*` iguales a host/puerto/esquema públicos; `npm run build` **después** de fijarlas.
+1. En `.env` del VPS: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID` / `KEY` / `SECRET` (valores propios), `REVERB_HOST=controla.wcodex.cloud`, `REVERB_PORT=443`, `REVERB_SCHEME=https`, `REVERB_SERVER_HOST=127.0.0.1`, `REVERB_SERVER_PORT=8080`, `REVERB_BROADCAST_HOST=127.0.0.1`, `REVERB_BROADCAST_PORT=8080`, `REVERB_BROADCAST_SCHEME=http`. Las `VITE_REVERB_*` apuntan al dominio público (`443` / `https`); `npm run build` **después** de fijarlas.
 2. Proceso: `php8.3 artisan reverb:start --no-interaction` como `wcodex-controla` (systemd o Supervisor). No hace falta `queue:work` (`ShouldBroadcastNow`).
 3. Nginx (directivas extra CloudPanel), luego `nginx -t && systemctl reload nginx`:
 
