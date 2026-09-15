@@ -2,7 +2,7 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de clientes.
 
-**Última actualización:** 13 septiembre 2026
+**Última actualización:** 15 septiembre 2026
 
 La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles. Login y formularios: mensajes en español al centro de la pantalla ([`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md)).
 
@@ -12,11 +12,11 @@ Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · **Ins
 
 ## Modelo de acceso (Corte 1)
 
-Tres administradores **completos** (sin collage de módulos):
+Tres administradores; el **admin empresa** también usa la matriz Nada / Ver / Gestionar (mismo catálogo que el colaborador). El rol `company-admin` ya no trae los módulos de empresa: salen de `user_module_grants`. Alta nueva o seeder: todos en Gestionar. Portería/censo del cliente siguen en el rol.
 
 | Quién | Alcance |
 |--------|---------|
-| Admin empresa (`company-admin`) | Toda la empresa |
+| Admin empresa (`company-admin`) | Matriz de módulos de empresa + portería/censo del rol |
 | Admin cliente (`client-admin`) | Ese cliente. **No crea usuarios.** |
 | Admin instalaciones (`client-installation-admin`) | Sedes asignadas. Ajustes solo ver. **No crea usuarios.** |
 
@@ -27,7 +27,7 @@ Oficios (no son un collage):
 | **Supervisor** | Solo app de campo. Login usuario + clave. Extra: código 6 dígitos para revista. |
 | **Vigilante** | Solo portería del cliente asignado (con puertas). Reasignar a otro cliente con puertas: mismas credenciales. |
 
-**Colaborador** (`colaborador`): empleado de la empresa con matriz Nada / Ver / Gestionar. Módulos de empresa + opcional por cliente e instalación (Observatorio, Censo). El cargo es etiqueta. No es vigilante ni supervisor. Quien crea no puede conceder más de lo que tiene **ni asignar `company-admin`**. Facturación, Mis datos y Descargas quedan en admin empresa. Permisos Spatie van en el usuario (`user_module_grants`), no en el rol. **Clientes Ver/Gestionar** abre `/company/clients` (listado, ficha, alta si Gestionar): `ClientController` trata al colaborador con empresa igual que al admin; `ClientPolicy::view` acepta `company.clients.view` en la misma empresa.
+**Colaborador** y **admin empresa**: matriz Nada / Ver / Gestionar. Catálogo empresa: Mi empresa, Facturación, Clientes, Instalaciones, Observatorio, Supervisión, Atención de pánicos, Descargas, Empleados, Documentos, Usuarios, Mis datos, Ajustes. Por cliente/instalación: Resumen SIG, Observatorio, Censo. Pánico y Observatorio no se amarran entre sí. Quien crea no puede conceder más de lo que tiene **ni el colaborador asignar `company-admin`**. Permisos Spatie de panel empresa van en el usuario (`user_module_grants`). **Clientes Ver/Gestionar** abre `/company/clients`. **Instalaciones** usa `company.installations.view` / `manage`.
 
 ---
 
@@ -99,7 +99,8 @@ Usar **siempre** estos nombres en UI y documentación de producto. Los slugs Spa
 | **Administrador del cliente** | `client-admin` | Cliente | Interno (empleado, 1+ clientes) o externo (1 cliente). Panel del cliente; **no crea usuarios**. |
 | **Admin instalaciones** | `client-installation-admin` | Cliente | Siempre externo. Varias instalaciones del mismo cliente. Admin o apoyo (`site_permission`). Sin crear usuarios; Ajustes solo lectura. |
 | **Administrador empresa** | `company-admin` | Empresa | Cartera, usuarios operativos, perfil. |
-| **Colaborador** | `colaborador` | Empresa | Matriz por módulo (`user_module_grants`). Sin facturación ni perfil de empresa. |
+| **Colaborador** | `colaborador` | Empresa | Matriz por módulo (`user_module_grants`). |
+| **Admin empresa** | `company-admin` | Empresa | Misma matriz; el rol solo deja portería/censo. |
 | **Súper administrador** | `super-admin` | Plataforma | Panel `/admin`. |
 
 **Prohibido en producto:** llamar “guarda/guardia” al vigilante; llamar “supervisor” al admin del cliente; inventar un segundo tipo de supervisor (p. ej. “supervisor portería” vs “supervisor empresa”). Hay **un solo** supervisor: el de vigilancia. El término de producto es **cliente**, no conjunto.
@@ -217,10 +218,12 @@ Reglas:
 | `company.users.view` / `company.users.assign` | Ver / crear-editar usuarios en panel empresa |
 | `company.employees.view` / `company.employees.manage` | Listar / mutar fichas de empleados |
 | `company.documents.view` / `company.documents.manage` | Ver carpetas / indexar lotes PDF y carga masiva de planilla parafiscal |
-| `company.billing.manage` | Facturación (solo admin empresa) |
+| `company.billing.manage` | Facturación (matriz) |
 | `company.profile.manage` | **Mis datos** (perfil legal/geo) |
 | `company.downloads.view` | Descargas PWA/APK |
-| `ops.panic.attend` | Atender pánicos: módulo, ficha y botón Atender. Colaborador: Ver/Gestionar «Atención de pánicos» y además Supervisión u Observatorio. `company-admin` lo trae |
+| `company.installations.view` / `manage` | Listado/ficha / alta-edición de instalaciones |
+| `ops.panic.attend` | Atender pánicos: módulo, ficha y botón Atender. Independiente de Supervisión y de Observatorio |
+| `ops.sig.view` | Resumen / tablero SIG (panel cliente) |
 | `company.settings.view` / `company.settings.manage` | Ajustes (cargos, tipos, catálogos) |
 | `client.users.manage` | Ver/editar administradores del cliente. **No** crear. |
 | `client.settings.manage` | Crear/editar tipos de persona. El admin de instalaciones no lo tiene (Ajustes solo ver) |

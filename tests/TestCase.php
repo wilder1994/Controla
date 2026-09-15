@@ -10,13 +10,14 @@ use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
 use App\Models\SecurityCompany;
-use App\Models\SupervisorPost;
 use App\Models\SupervisorChecklistItem;
+use App\Models\SupervisorPost;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
 use App\Models\User;
 use App\Services\Company\GrantEmployeeAccessService;
 use App\Services\Company\SeedSupervisorIntakeDefaultsService;
+use App\Services\User\EnsureCompanyAdminCatalog;
 use App\Support\Legal\CorpusAcceptanceRules;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\PilotDemoSeeder;
@@ -32,6 +33,13 @@ abstract class TestCase extends BaseTestCase
     {
         $this->seed(DatabaseSeeder::class);
         $this->seed(PilotDemoSeeder::class);
+    }
+
+    protected function grantCompanyAdminCatalog(User $user): void
+    {
+        app(EnsureCompanyAdminCatalog::class)->execute($user);
+        $user->refresh();
+        $user->load('roles', 'permissions');
     }
 
     protected function pilotCompany(): SecurityCompany

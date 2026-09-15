@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Company;
 
 use App\Domain\Geo\GeoAddressData;
+use App\Enums\PostModality;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\StoreCompanyInstallationRequest;
-use App\Enums\PostModality;
 use App\Models\Client;
 use App\Models\Installation;
 use App\Services\Company\ManageClientInstallationService;
+use App\Services\Ops\BuildSigBoardService;
 use App\Support\Company\InstallationSiteAdmins;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -26,7 +28,7 @@ final class CompanyInstallationController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('viewAny', Client::class);
+        abort_unless($request->user()?->can('company.installations.view'), 403);
 
         $companyId = $this->companyId($request);
         $search = $request->string('q')->trim()->toString();
@@ -54,13 +56,13 @@ final class CompanyInstallationController extends Controller
         return view('modules.company.installations.index', [
             'installations' => $rows,
             'search' => $search,
-            'sigBoard' => app(\App\Services\Ops\BuildSigBoardService::class)->forCompany($companyId),
+            'sigBoard' => app(BuildSigBoardService::class)->forCompany($companyId),
         ]);
     }
 
     public function create(Request $request): View
     {
-        $this->authorize('create', Client::class);
+        abort_unless($request->user()?->can('company.installations.manage'), 403);
 
         return view('modules.company.installations.create', $this->formData($request));
     }
@@ -69,7 +71,7 @@ final class CompanyInstallationController extends Controller
     {
         $client = $request->client();
         abort_unless($client instanceof Client, 404);
-        $this->authorize('update', $client);
+        abort_unless($request->user()?->can('company.installations.manage'), 403);
 
         try {
             $installation = $this->installations->create($client, $this->payload($request));
@@ -85,7 +87,7 @@ final class CompanyInstallationController extends Controller
     public function show(Request $request, Installation $installation): View
     {
         $this->assertCompany($request, $installation);
-        $this->authorize('view', $installation->client);
+        abort_unless($request->user()?->can('company.installations.view'), 403);
 
         $installation->load([
             'client',
@@ -101,14 +103,14 @@ final class CompanyInstallationController extends Controller
                 'zoom' => 17,
             ],
             'postModalities' => PostModality::options(),
-            'canManageTree' => $request->user()?->can('update', $installation->client) ?? false,
+            'canManageTree' => $request->user()?->can('company.installations.manage') ?? false,
         ]);
     }
 
     public function edit(Request $request, Installation $installation): View
     {
         $this->assertCompany($request, $installation);
-        $this->authorize('update', $installation->client);
+        abort_unless($request->user()?->can('company.installations.manage'), 403);
 
         return view('modules.company.installations.edit', array_merge(
             $this->formData($request),
@@ -121,7 +123,7 @@ final class CompanyInstallationController extends Controller
         $this->assertCompany($request, $installation);
         $client = $request->client();
         abort_unless($client instanceof Client && (int) $client->id === (int) $installation->client_id, 404);
-        $this->authorize('update', $client);
+        abort_unless($request->user()?->can('company.installations.manage'), 403);
 
         try {
             $this->installations->update($installation, $this->payload($request));
@@ -152,7 +154,7 @@ final class CompanyInstallationController extends Controller
         ];
     }
 
-    /** @return array{clients: \Illuminate\Support\Collection<int, Client>, siteAdmins: list<array{id: int, name: string, label: string, client_id: int}>} */
+    /** @return array{clients: Collection<int, Client>, siteAdmins: list<array{id: int, name: string, label: string, client_id: int}>} */
     private function formData(Request $request): array
     {
         $companyId = $this->companyId($request);

@@ -104,6 +104,7 @@
             get isInstallationAdmin() { return this.role === 'client-installation-admin' },
             get isExternal() { return this.isInstallationAdmin || (this.role === 'client-admin' && this.origin === 'external') },
             get isCollaborator() { return this.role === 'colaborador' },
+            get usesGrantMatrix() { return this.role === 'colaborador' || this.role === 'company-admin' },
             get needsEmployee() { return !this.isExternal && ['company-admin', 'client-admin', 'supervisor', 'guardia', 'colaborador'].includes(this.role) },
             get needsClients() { return cfg.rolesNeedingClients.includes(this.role) },
             get singleClient() { return cfg.singleClientRoles.includes(this.role) || this.isExternal },
@@ -120,8 +121,10 @@
             },
             init() {
                 if (this.isInstallationAdmin) this.origin = 'external'
+                if (this.role === 'company-admin') this.fillCompanyAdminGrants()
                 this.$watch('role', () => {
                     if (this.isInstallationAdmin) this.origin = 'external'
+                    if (this.role === 'company-admin') this.fillCompanyAdminGrants()
                     this.loadInstallationsIfNeeded()
                 })
                 this.$watch('origin', () => this.loadInstallationsIfNeeded())
@@ -156,7 +159,15 @@
                 }
             },
             ensureScopedGrants(map, id) {
-                if (!map[id]) map[id] = { observatory: 'none', census: 'none' }
+                if (!map[id]) map[id] = { sig: 'none', observatory: 'none', census: 'none' }
+            },
+            fillCompanyAdminGrants() {
+                const keys = (this.companyModules || []).map((mod) => mod.key)
+                const anySet = keys.some((key) => this.companyGrants[key] && this.companyGrants[key] !== 'none')
+                if (anySet) return
+                const next = { ...this.companyGrants }
+                keys.forEach((key) => { next[key] = 'manage' })
+                this.companyGrants = next
             },
             async loadInstallationsIfNeeded() {
                 if (this.isCollaborator && this.pickedClientIds.length > 0) {
@@ -277,11 +288,11 @@
         <x-ui.field-error :messages="$errors->get('origin')" />
     </div>
     <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias sedes del mismo cliente. En la ficha sale en Administrador o Apoyo (cargo · nombre). No crea usuarios ni cambia Ajustes.</p>
-    <p x-show="isCollaborator" class="text-xs text-slate-500">El cargo es solo etiqueta. Los permisos salen de la matriz: Nada, Ver o Gestionar. Atención de pánicos requiere Supervisión u Observatorio. No mezclar con vigilante ni supervisor.</p>
+    <p x-show="usesGrantMatrix" class="text-xs text-slate-500">Nada, Ver o Gestionar. Pánico y Observatorio son independientes: cada uno oye solo su alerta. Supervisión también oye pánico. Sin mezclar con vigilante ni supervisor de campo.</p>
 
-    <div x-show="isCollaborator" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3">
+    <div x-show="usesGrantMatrix" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3">
         <p class="text-xs font-medium text-slate-300">Módulos de empresa</p>
-        <p class="text-[11px] text-slate-500">Atención de pánicos solo aplica si también tiene Supervisión u Observatorio. Ver o Gestionar habilita atender.</p>
+        <p class="text-[11px] text-slate-500">Incluye tablero, menús y Atención de pánicos. Ver o Gestionar pánicos habilita Atender.</p>
         <template x-for="mod in companyModules" :key="mod.key">
             <div class="flex flex-wrap items-center justify-between gap-2 py-1">
                 <span class="text-sm text-slate-200" x-text="mod.label"></span>

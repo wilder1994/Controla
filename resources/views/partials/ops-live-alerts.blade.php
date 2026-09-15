@@ -12,7 +12,7 @@
     <template x-teleport="body">
         <div x-show="open" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-red-950/80"></div>
-            <div class="relative w-full max-w-lg rounded-2xl border border-red-500 bg-slate-950 p-6 text-center shadow-2xl">
+            <div class="relative w-full max-w-lg rounded-2xl border border-red-500 bg-slate-950 p-6 text-center shadow-2xl ops-alert-pulse">
                 <p class="text-xs uppercase tracking-widest text-red-400">Alerta</p>
                 <h3 class="mt-2 text-2xl font-semibold text-white" x-text="title"></h3>
                 <p class="mt-3 text-sm text-slate-200" x-text="body"></p>

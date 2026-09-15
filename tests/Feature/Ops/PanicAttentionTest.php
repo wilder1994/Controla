@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Ops;
 
 use App\Enums\PanicAttentionStatus;
+use App\Models\OperationalAlert;
 use App\Models\PanicAttention;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,12 +26,13 @@ final class PanicAttentionTest extends TestCase
             'is_active' => true,
         ]);
         $other->assignRole('company-admin');
+        $this->grantCompanyAdminCatalog($other);
 
         $this->actingAs($actor)
             ->postJson(route('company.ops.panic'), ['note' => 'Ayuda', 'latitude' => 3.45, 'longitude' => -76.53])
             ->assertCreated();
 
-        $alertId = (int) \App\Models\OperationalAlert::query()->where('actor_user_id', $actor->id)->value('id');
+        $alertId = (int) OperationalAlert::query()->where('actor_user_id', $actor->id)->value('id');
 
         $poll = $this->actingAs($other)->getJson(route('company.ops.alerts'));
         $poll->assertOk()->assertJsonPath('alerts.0.can_attend', true);
@@ -71,15 +73,17 @@ final class PanicAttentionTest extends TestCase
             'is_active' => true,
         ]);
         $attendee->assignRole('company-admin');
+        $this->grantCompanyAdminCatalog($attendee);
         $intruder = User::factory()->create([
             'security_company_id' => $actor->security_company_id,
             'username' => 'otro.panico.9904',
             'is_active' => true,
         ]);
         $intruder->assignRole('company-admin');
+        $this->grantCompanyAdminCatalog($intruder);
 
         $this->actingAs($actor)->postJson(route('company.ops.panic'), ['note' => 'Ya'])->assertCreated();
-        $alertId = (int) \App\Models\OperationalAlert::query()->where('actor_user_id', $actor->id)->latest('id')->value('id');
+        $alertId = (int) OperationalAlert::query()->where('actor_user_id', $actor->id)->latest('id')->value('id');
 
         $this->actingAs($attendee)->postJson(route('company.panics.claim'), ['alert_id' => $alertId])->assertOk();
         $attention = PanicAttention::query()->where('operational_alert_id', $alertId)->firstOrFail();
@@ -112,15 +116,17 @@ final class PanicAttentionTest extends TestCase
             'is_active' => true,
         ]);
         $first->assignRole('company-admin');
+        $this->grantCompanyAdminCatalog($first);
         $second = User::factory()->create([
             'security_company_id' => $actor->security_company_id,
             'username' => 'segundo.panico.9906',
             'is_active' => true,
         ]);
         $second->assignRole('company-admin');
+        $this->grantCompanyAdminCatalog($second);
 
         $this->actingAs($actor)->postJson(route('company.ops.panic'), [])->assertCreated();
-        $alertId = (int) \App\Models\OperationalAlert::query()->where('actor_user_id', $actor->id)->latest('id')->value('id');
+        $alertId = (int) OperationalAlert::query()->where('actor_user_id', $actor->id)->latest('id')->value('id');
 
         $this->actingAs($first)->postJson(route('company.panics.claim'), ['alert_id' => $alertId])->assertOk();
         $this->actingAs($second)->postJson(route('company.panics.claim'), ['alert_id' => $alertId])->assertStatus(409);

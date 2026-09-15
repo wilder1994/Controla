@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\ClientUserAssignment;
 use App\Models\SecurityCompany;
 use App\Models\User;
+use App\Services\User\EnsureCompanyAdminCatalog;
 use Illuminate\Database\Seeder;
 
 /**
@@ -44,6 +45,7 @@ final class PilotUsersSeeder extends Seeder
             ]
         );
         $companyAdmin->syncRoles(['company-admin']);
+        app(EnsureCompanyAdminCatalog::class)->execute($companyAdmin);
     }
 
     private function seedClientAdmin(): void

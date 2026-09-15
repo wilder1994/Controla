@@ -7,15 +7,16 @@ use App\Http\Controllers\Client\AuthorizationController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\InstallationController;
 use App\Http\Controllers\Client\MemberController;
+use App\Http\Controllers\Client\MemberTypeController;
 use App\Http\Controllers\Client\ObservatoryEventController;
 use App\Http\Controllers\Client\ObservatoryReportTypeController;
-use App\Http\Controllers\Client\MemberTypeController;
 use App\Http\Controllers\Client\PersonnelDocumentController;
 use App\Http\Controllers\Client\PetController;
 use App\Http\Controllers\Client\StructureController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\VehicleController;
 use App\Http\Controllers\Client\ZoneBookingController;
+use App\Http\Controllers\Ops\OperationalAlertController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'client.admin'])
@@ -23,12 +24,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
     ->name('client.')
     ->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->middleware('permission:client.structures.manage')
+            ->middleware('permission:client.structures.manage|ops.sig.view')
             ->name('dashboard');
 
-        Route::get('/ops/alerts.json', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'poll'])
+        Route::get('/ops/alerts.json', [OperationalAlertController::class, 'poll'])
             ->name('ops.alerts');
-        Route::post('/ops/panic', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'panic'])
+        Route::post('/ops/panic', [OperationalAlertController::class, 'panic'])
             ->name('ops.panic');
 
         Route::middleware('permission:client.structures.manage')->group(function () {

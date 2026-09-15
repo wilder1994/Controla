@@ -35,14 +35,20 @@ export function opsLiveAlerts() {
         async tick() {
             if (!this.pollUrl) return;
             try {
-                const res = await fetch(`${this.pollUrl}?after=${this.after}`, {
+                const after = (this.open && this.alertId) ? Math.max(0, this.alertId - 1) : this.after;
+                const res = await fetch(`${this.pollUrl}?after=${after}`, {
                     headers: { Accept: 'application/json' },
                     credentials: 'same-origin',
                 });
                 if (!res.ok) return;
                 const data = await res.json();
                 const alerts = Array.isArray(data.alerts) ? data.alerts : [];
-                if (!alerts.length || this.open) return;
+                if (this.open) {
+                    const current = alerts.find((row) => Number(row.id) === this.alertId);
+                    this.canAttend = Boolean(current && current.can_attend);
+                    return;
+                }
+                if (!alerts.length) return;
                 const first = alerts[0];
                 this.after = first.id;
                 localStorage.setItem('ops_alert_after', String(this.after));
@@ -52,17 +58,13 @@ export function opsLiveAlerts() {
                 this.body = first.body;
                 this.canAttend = Boolean(first.can_attend);
                 this.open = true;
-                if (this.type === 'panic') {
-                    this.startAlarm();
-                } else {
-                    this.beep();
-                }
+                this.startAlarm();
             } catch (_) {}
         },
         startAlarm() {
             this.stopAlarm();
             this.beep();
-            this.alarmTimer = setInterval(() => this.beep(), 1200);
+            this.alarmTimer = setInterval(() => this.beep(), this.type === 'panic' ? 1200 : 900);
         },
         stopAlarm() {
             if (this.alarmTimer) {
@@ -81,7 +83,7 @@ export function opsLiveAlerts() {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.value = 880;
+                osc.frequency.value = this.type === 'panic' ? 880 : 620;
                 gain.gain.value = 0.08;
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);

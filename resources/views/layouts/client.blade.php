@@ -38,12 +38,12 @@
                                 $moduleOk = $module === null || (isset($activeClient) && $activeClient->panelModuleEnabled($module));
                             @endphp
                             @if ($moduleOk)
-                            @can($item['permission'])
+                            @canany(array_values(array_filter([$item['permission'] ?? null, $item['any'] ?? null])))
                             <a href="{{ route($item['route']) }}"
                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs(str_replace('.index', '.*', $item['route'])) || request()->routeIs($item['route']) ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                                 <span>{{ $item['label'] }}</span>
                             </a>
-                            @endcan
+                            @endcanany
                             @endif
                         @endforeach
                         @if (isset($activeClient) && $activeClient->has_access && $activeClient->show_personnel_folders)

@@ -72,7 +72,7 @@ final class ResolveLiveOperationalAlertsService
             return false;
         }
 
-        return $user->can('company.supervision.view') || $user->can('observatory.view');
+        return $user->can('ops.panic.attend') || $user->can('company.supervision.view');
     }
 
     private function receivesObservatory(User $user, OperationalAlert $alert): bool

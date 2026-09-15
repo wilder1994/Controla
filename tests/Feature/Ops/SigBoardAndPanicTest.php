@@ -6,7 +6,6 @@ namespace Tests\Feature\Ops;
 
 use App\Enums\OperationalAlertType;
 use App\Models\Client;
-use App\Models\OperationalAlert;
 use App\Models\User;
 use App\Support\Company\CompanyOperateContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,6 +57,7 @@ final class SigBoardAndPanicTest extends TestCase
             'is_active' => true,
         ]);
         $other->assignRole('company-admin');
+        $this->grantCompanyAdminCatalog($other);
 
         $this->actingAs($actor)
             ->postJson(route('company.ops.panic'), ['note' => 'Prueba'])

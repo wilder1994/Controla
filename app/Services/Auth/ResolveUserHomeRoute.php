@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Auth;
 
 use App\Models\User;
+use App\Support\Auth\GrantableModules;
 
 final class ResolveUserHomeRoute
 {
@@ -15,7 +16,7 @@ final class ResolveUserHomeRoute
         }
 
         if ($user->hasAnyRole(['company-admin', 'colaborador']) && $user->security_company_id) {
-            return route('company.dashboard');
+            return GrantableModules::firstCompanyHome($user);
         }
 
         if ($user->hasAnyRole(['client-admin', 'client-installation-admin'])) {

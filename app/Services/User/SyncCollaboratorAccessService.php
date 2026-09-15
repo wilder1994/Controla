@@ -42,7 +42,7 @@ final class SyncCollaboratorAccessService
             ]);
         }
 
-        $permissions = ['company.dashboard'];
+        $permissions = [];
         foreach ($grants as $grant) {
             $permissions = array_merge(
                 $permissions,
@@ -50,17 +50,7 @@ final class SyncCollaboratorAccessService
             );
         }
 
-        $permissions = array_values(array_unique($permissions));
-        $hearsOps = in_array('company.supervision.view', $permissions, true)
-            || in_array('observatory.view', $permissions, true);
-        if (! $hearsOps) {
-            $permissions = array_values(array_filter(
-                $permissions,
-                static fn (string $name): bool => $name !== 'ops.panic.attend',
-            ));
-        }
-
-        $user->syncPermissions($permissions);
+        $user->syncPermissions(array_values(array_unique($permissions)));
     }
 
     public function clear(User $user): void

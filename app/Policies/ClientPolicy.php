@@ -22,15 +22,11 @@ final class ClientPolicy
             return true;
         }
 
-        if ($user->hasRole('company-admin')) {
-            return (int) $user->security_company_id === (int) $client->security_company_id;
+        if (! $user->can('company.clients.view')) {
+            return false;
         }
 
-        if (
-            $user->hasRole('colaborador')
-            && $user->can('company.clients.view')
-            && (int) $user->security_company_id === (int) $client->security_company_id
-        ) {
+        if ((int) $user->security_company_id === (int) $client->security_company_id) {
             return true;
         }
 

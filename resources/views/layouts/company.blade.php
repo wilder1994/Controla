@@ -85,6 +85,8 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onClientsCrud ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Clientes</span>
                 </a>
+                @endcan
+                @can('company.installations.view')
                 <a href="{{ route('company.installations.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onInstallations ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Instalaciones</span>

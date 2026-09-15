@@ -22,6 +22,7 @@ use App\Services\Platform\RecordLifecycleEvidenceService;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Tenant\AssignCompanyPackageService;
 use App\Services\Tenant\AssignCompanySupervisionPackageService;
+use App\Services\User\EnsureCompanyAdminCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -100,6 +101,7 @@ final class CompletePublicSignupService
                 'security_company_id' => $company->id,
             ]);
             $user->assignRole('company-admin');
+            app(EnsureCompanyAdminCatalog::class)->execute($user);
 
             $acceptance = SubscriptionAcceptance::query()->create([
                 'security_company_id' => $company->id,

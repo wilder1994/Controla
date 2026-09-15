@@ -1,6 +1,6 @@
 <x-company-layout title="Instalaciones">
     <x-slot:actions>
-        @can('company.clients.manage')
+        @can('company.installations.manage')
             <x-ui.button :href="route('company.installations.create')" size="sm">+ Instalación</x-ui.button>
         @endcan
     </x-slot:actions>

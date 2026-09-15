@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Services\User\EnsureCompanyAdminCatalog;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 final class RoleAndPermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         foreach (config('access.permissions', []) as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
@@ -33,5 +35,7 @@ final class RoleAndPermissionSeeder extends Seeder
 
         $superAdmin = Role::findByName('super-admin');
         $superAdmin->syncPermissions(Permission::all());
+
+        app(EnsureCompanyAdminCatalog::class)->backfillAll();
     }
 }

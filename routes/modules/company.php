@@ -7,15 +7,16 @@ use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\Company\ClientAccessPointController;
 use App\Http\Controllers\Company\ClientController;
 use App\Http\Controllers\Company\ClientInstallationController;
-use App\Http\Controllers\Company\CompanyInstallationController;
 use App\Http\Controllers\Company\ClientSupervisorPostController;
 use App\Http\Controllers\Company\CollaboratorTypeController;
+use App\Http\Controllers\Company\CompanyInstallationController;
 use App\Http\Controllers\Company\DashboardController;
 use App\Http\Controllers\Company\DownloadsController;
-use App\Http\Controllers\Company\ObservatoryEventController;
 use App\Http\Controllers\Company\EmployeeController;
-use App\Http\Controllers\Company\PersonnelDocumentController;
 use App\Http\Controllers\Company\JobTitleController;
+use App\Http\Controllers\Company\ObservatoryEventController;
+use App\Http\Controllers\Company\PanicAttentionController;
+use App\Http\Controllers\Company\PersonnelDocumentController;
 use App\Http\Controllers\Company\PorteriaController;
 use App\Http\Controllers\Company\SettingsController;
 use App\Http\Controllers\Company\StructureTypeController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Company\SupervisorWeaponBrandController;
 use App\Http\Controllers\Company\SupervisorWeaponTypeController;
 use App\Http\Controllers\Company\SupervisorZoneController;
 use App\Http\Controllers\Company\UserController;
+use App\Http\Controllers\Ops\OperationalAlertController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unscoped'])
@@ -55,21 +57,21 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             ->middleware('permission:company.dashboard')
             ->name('dashboard');
 
-        Route::get('/ops/alerts.json', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'poll'])
+        Route::get('/ops/alerts.json', [OperationalAlertController::class, 'poll'])
             ->name('ops.alerts');
-        Route::post('/ops/panic', [\App\Http\Controllers\Ops\OperationalAlertController::class, 'panic'])
+        Route::post('/ops/panic', [OperationalAlertController::class, 'panic'])
             ->name('ops.panic');
 
         Route::middleware('permission:ops.panic.attend')->group(function () {
-            Route::get('/panics', [\App\Http\Controllers\Company\PanicAttentionController::class, 'index'])
+            Route::get('/panics', [PanicAttentionController::class, 'index'])
                 ->name('panics.index');
-            Route::post('/panics/claim', [\App\Http\Controllers\Company\PanicAttentionController::class, 'claim'])
+            Route::post('/panics/claim', [PanicAttentionController::class, 'claim'])
                 ->name('panics.claim');
-            Route::get('/panics/{panic}', [\App\Http\Controllers\Company\PanicAttentionController::class, 'show'])
+            Route::get('/panics/{panic}', [PanicAttentionController::class, 'show'])
                 ->name('panics.show');
-            Route::get('/panics/{panic}/ficha', [\App\Http\Controllers\Company\PanicAttentionController::class, 'print'])
+            Route::get('/panics/{panic}/ficha', [PanicAttentionController::class, 'print'])
                 ->name('panics.print');
-            Route::put('/panics/{panic}', [\App\Http\Controllers\Company\PanicAttentionController::class, 'update'])
+            Route::put('/panics/{panic}', [PanicAttentionController::class, 'update'])
                 ->name('panics.update');
         });
 
@@ -309,22 +311,22 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             ->name('clients.import.cancel');
 
         Route::get('/installations', [CompanyInstallationController::class, 'index'])
-            ->middleware('permission:company.clients.view')
+            ->middleware('permission:company.installations.view')
             ->name('installations.index');
         Route::get('/installations/create', [CompanyInstallationController::class, 'create'])
-            ->middleware('permission:company.clients.manage')
+            ->middleware('permission:company.installations.manage')
             ->name('installations.create');
         Route::post('/installations', [CompanyInstallationController::class, 'store'])
-            ->middleware('permission:company.clients.manage')
+            ->middleware('permission:company.installations.manage')
             ->name('installations.store');
         Route::get('/installations/{installation}', [CompanyInstallationController::class, 'show'])
-            ->middleware('permission:company.clients.view')
+            ->middleware('permission:company.installations.view')
             ->name('installations.show');
         Route::get('/installations/{installation}/edit', [CompanyInstallationController::class, 'edit'])
-            ->middleware('permission:company.clients.manage')
+            ->middleware('permission:company.installations.manage')
             ->name('installations.edit');
         Route::put('/installations/{installation}', [CompanyInstallationController::class, 'update'])
-            ->middleware('permission:company.clients.manage')
+            ->middleware('permission:company.installations.manage')
             ->name('installations.update');
 
         Route::post('/clients/{client}/installations', [ClientInstallationController::class, 'store'])

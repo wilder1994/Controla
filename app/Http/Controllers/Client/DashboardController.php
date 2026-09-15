@@ -18,7 +18,7 @@ final class DashboardController extends Controller
 
     public function index(): View
     {
-        abort_unless(auth()->user()?->can('client.structures.manage'), 403);
+        abort_unless(auth()->user()?->can('client.structures.manage') || auth()->user()?->can('ops.sig.view'), 403);
 
         return view('modules.client.dashboard', [
             'sigBoard' => $this->sigBoard->forTenant($this->tenantContext),

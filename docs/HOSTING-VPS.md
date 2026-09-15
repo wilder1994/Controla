@@ -54,6 +54,8 @@ Atención de pánicos (14 sep 2026): migrate `panic_attentions` + `RoleAndPermis
 
 Traza GPS En vivo (15 sep 2026): `BuildSupervisorTrailService` filtra precisión > 150 m, saltos > ~130 km/h y picos aislados. Sin migrate, seeder ni `npm`. Pull + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
+Permisos + overlay (15 sep 2026): catálogo de matriz (dashboard, instalaciones, pánicos, SIG, etc.) para **admin y colaborador**. Pánico y Observatorio independientes. Overlay palpitante; Observatorio también en bucle. Sin migrate de tablas. Pull + `RoleAndPermissionSeeder` (crea `company.installations.*`, `ops.sig.view` y rellena grants de `company-admin`) + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
+
 **Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
 
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.

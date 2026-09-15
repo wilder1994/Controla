@@ -7,6 +7,7 @@ namespace App\Services\User;
 use App\Domain\User\AccessGrantData;
 use App\Domain\User\CreateUserData;
 use App\Domain\User\UpdateUserData;
+use App\Enums\AccessGrantScope;
 use App\Enums\ClientAdminOrigin;
 use App\Models\Client;
 use App\Models\ClientUserAssignment;
@@ -15,6 +16,7 @@ use App\Models\Installation;
 use App\Models\User;
 use App\Services\Auth\UserScopeResolver;
 use App\Support\Auth\AssignableRoles;
+use App\Support\Auth\GrantableModules;
 use App\Support\Auth\UserManagementContext;
 use App\Support\Platform\ActingCompanyResolver;
 use Illuminate\Support\Facades\DB;
@@ -459,10 +461,14 @@ final class ManageScopedUserService
      */
     private function syncGrants(User $user, User $actor, string $role, array $grants, ?int $companyId): void
     {
-        if ($role !== 'colaborador') {
+        if (! GrantableModules::usesMatrix($role)) {
             $this->syncCollaboratorAccess->clear($user);
 
             return;
+        }
+
+        if ($role === 'company-admin' && $grants === [] && $companyId) {
+            $grants = GrantableModules::defaultCompanyManageGrants((int) $companyId);
         }
 
         $actor->loadMissing('moduleGrants');
@@ -481,10 +487,10 @@ final class ManageScopedUserService
         $sites = array_map('intval', $installationIds);
 
         foreach ($grants as $grant) {
-            if ($grant->scope === \App\Enums\AccessGrantScope::Client) {
+            if ($grant->scope === AccessGrantScope::Client) {
                 $clients[] = $grant->scopeId;
             }
-            if ($grant->scope === \App\Enums\AccessGrantScope::Installation) {
+            if ($grant->scope === AccessGrantScope::Installation) {
                 $sites[] = $grant->scopeId;
                 $clientId = (int) Installation::query()->whereKey($grant->scopeId)->value('client_id');
                 if ($clientId > 0) {
