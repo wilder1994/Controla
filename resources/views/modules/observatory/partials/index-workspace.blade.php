@@ -16,6 +16,7 @@
         'peaks' => ['labels' => ['—'], 'values' => [0]],
         'kinds' => ['labels' => [], 'values' => []], 'sources' => ['labels' => [], 'values' => []],
     ];
+    $observatoryLiveUrl = $observatoryLiveUrl ?? null;
     $showClientColumn = $showClientColumn ?? false;
     $eventShowRoute = $eventShowRoute ?? 'client.observatory.events.show';
     $accent = $accent ?? 'teal';
@@ -44,12 +45,29 @@
     };
     $charts = [
         'accent' => $accent,
+        'total' => (int) ($board['total'] ?? 0),
+        'nuevo' => (int) ($board['nuevo'] ?? 0),
+        'en_atencion' => (int) ($board['en_atencion'] ?? 0),
+        'cerrado' => (int) ($board['cerrado'] ?? 0),
         'closed_rate' => (int) ($board['closed_rate'] ?? 0),
         'load_rate' => (int) ($board['load_rate'] ?? 0),
+        'top' => $board['top'] ?? [],
         'trend' => $board['trend'] ?? ['labels' => ['—'], 'series' => []],
         'peaks' => $board['peaks'] ?? ['labels' => ['—'], 'values' => [0]],
         'sources' => $board['sources'] ?? ['labels' => [], 'values' => []],
     ];
+    $liveEventRows = collect($events->items() ?? [])->map(static function ($event) use ($eventShowRoute, $showClientColumn): array {
+        return [
+            'id' => $event->id,
+            'folio' => $event->folio(),
+            'site' => $event->installation?->name,
+            'client' => $showClientColumn ? $event->client?->name : null,
+            'type' => $event->kindLabel(),
+            'status' => $event->statusLabel(),
+            'opened' => $event->opened_at?->format('d/m/Y H:i'),
+            'url' => route($eventShowRoute, $event),
+        ];
+    })->values()->all();
 @endphp
 
 @push('styles')
@@ -87,7 +105,14 @@
 </style>
 @endpush
 
-<div class="obs-board space-y-3" @if ($vista === 'tablero') x-data="observatoryBoard(@js($charts))" @endif>
+<div class="obs-board space-y-3"
+     @if ($observatoryLiveUrl)
+         x-data="opsLivePage"
+         data-live-url="{{ $observatoryLiveUrl }}"
+         data-show-client="{{ $showClientColumn ? '1' : '0' }}"
+         data-events='@json($liveEventRows)'
+     @endif>
+    <div @if ($vista === 'tablero') x-data="observatoryBoard(@js($charts))" @endif>
     <form method="GET" action="{{ $action }}"
           x-data="obsDateRange({ from: @js($from), to: @js($to) })"
           class="rounded-xl border border-slate-800 bg-slate-900/70 p-2.5 flex flex-col lg:flex-row lg:flex-wrap xl:flex-nowrap xl:items-end gap-2">
@@ -183,7 +208,8 @@
             ] as [$value, $label, $count, $on, $tone])
                 <a href="{{ $kpiUrl($value) }}" class="obs-kpi {{ $on ? 'is-on' : '' }}" style="--obs-tone: {{ $tone }}">
                     <p class="text-[10px] uppercase tracking-wide text-slate-500">{{ $label }}</p>
-                    <p class="mt-0.5 text-2xl font-semibold tabular-nums text-white">{{ $count }}</p>
+                    <p class="mt-0.5 text-2xl font-semibold tabular-nums text-white"
+                       @if ($observatoryLiveUrl) x-text="payload.{{ $value === null ? 'total' : $value }} ?? {{ (int) $count }}" @endif>{{ $count }}</p>
                 </a>
             @endforeach
         </div>
@@ -200,22 +226,41 @@
             <section class="obs-card p-2.5 flex flex-col min-h-0">
                 <p class="text-[10px] uppercase tracking-wide text-slate-500 shrink-0">Sedes por riesgo</p>
                 <div class="mt-1.5 space-y-1.5 overflow-y-auto max-h-48 xl:max-h-none xl:flex-1 sidebar-scroll">
-                    @forelse ($board['top'] as $row)
-                        <div class="flex items-start justify-between gap-2 text-sm">
-                            <div class="min-w-0">
-                                <p class="text-slate-200 truncate text-[13px]">{{ $row['name'] }}</p>
-                                @if ($showClientColumn && filled($row['client']))
-                                    <p class="text-[10px] text-slate-500 truncate">{{ $row['client'] }}</p>
-                                @endif
-                                @if (filled($row['comuna_name'] ?? null))
-                                    <p class="text-[10px] text-slate-500 truncate">{{ $row['comuna_name'] }}</p>
-                                @endif
+                    @if ($observatoryLiveUrl)
+                        <template x-for="row in (payload.top || [])" :key="row.name + '-' + (row.count ?? 0)">
+                            <div class="flex items-start justify-between gap-2 text-sm">
+                                <div class="min-w-0">
+                                    <p class="text-slate-200 truncate text-[13px]" x-text="row.name"></p>
+                                    @if ($showClientColumn)
+                                        <p class="text-[10px] text-slate-500 truncate" x-show="row.client" x-text="row.client"></p>
+                                    @endif
+                                    <p class="text-[10px] text-slate-500 truncate" x-show="row.comuna_name" x-text="row.comuna_name"></p>
+                                </div>
+                                <p class="font-mono text-[11px] text-slate-300 shrink-0">
+                                    <span x-text="row.score ?? row.count"></span>
+                                    <span class="text-slate-600" x-text="row.count"></span>
+                                </p>
                             </div>
-                            <p class="font-mono text-[11px] text-slate-300 shrink-0">{{ $row['score'] ?? $row['count'] }} <span class="text-slate-600">{{ $row['count'] }}</span></p>
-                        </div>
-                    @empty
-                        <p class="text-sm text-slate-500">Aún no hay eventos en el periodo.</p>
-                    @endforelse
+                        </template>
+                        <p class="text-sm text-slate-500" x-show="!(payload.top || []).length">Aún no hay eventos en el periodo.</p>
+                    @else
+                        @forelse ($board['top'] as $row)
+                            <div class="flex items-start justify-between gap-2 text-sm">
+                                <div class="min-w-0">
+                                    <p class="text-slate-200 truncate text-[13px]">{{ $row['name'] }}</p>
+                                    @if ($showClientColumn && filled($row['client']))
+                                        <p class="text-[10px] text-slate-500 truncate">{{ $row['client'] }}</p>
+                                    @endif
+                                    @if (filled($row['comuna_name'] ?? null))
+                                        <p class="text-[10px] text-slate-500 truncate">{{ $row['comuna_name'] }}</p>
+                                    @endif
+                                </div>
+                                <p class="font-mono text-[11px] text-slate-300 shrink-0">{{ $row['score'] ?? $row['count'] }} <span class="text-slate-600">{{ $row['count'] }}</span></p>
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-500">Aún no hay eventos en el periodo.</p>
+                        @endforelse
+                    @endif
                 </div>
             </section>
             <section class="obs-card">
@@ -273,25 +318,46 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800">
-                    @forelse ($events as $event)
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="px-4 py-3 font-mono text-xs {{ $folioClass }}">{{ $event->folio() }}</td>
-                            <td class="px-4 py-3 text-slate-200">{{ $event->installation?->name }}</td>
-                            @if ($showClientColumn)
-                                <td class="px-4 py-3 hidden md:table-cell text-slate-400">{{ $event->client?->name }}</td>
-                            @endif
-                            <td class="px-4 py-3 hidden sm:table-cell text-slate-300">{{ $event->kindLabel() }}</td>
-                            <td class="px-4 py-3 text-slate-300">{{ $event->statusLabel() }}</td>
-                            <td class="px-4 py-3 hidden lg:table-cell text-slate-400 tabular-nums">{{ $event->opened_at?->format('d/m/Y H:i') }}</td>
-                            <td class="px-4 py-3 text-right">
-                                <a href="{{ route($eventShowRoute, $event) }}" class="text-xs {{ $linkClass }}">Ver</a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
+                    @if ($observatoryLiveUrl)
+                        <template x-for="row in events" :key="row.id">
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="px-4 py-3 font-mono text-xs {{ $folioClass }}" x-text="row.folio"></td>
+                                <td class="px-4 py-3 text-slate-200" x-text="row.site"></td>
+                                @if ($showClientColumn)
+                                    <td class="px-4 py-3 hidden md:table-cell text-slate-400" x-text="row.client"></td>
+                                @endif
+                                <td class="px-4 py-3 hidden sm:table-cell text-slate-300" x-text="row.type"></td>
+                                <td class="px-4 py-3 text-slate-300" x-text="row.status"></td>
+                                <td class="px-4 py-3 hidden lg:table-cell text-slate-400 tabular-nums" x-text="row.opened"></td>
+                                <td class="px-4 py-3 text-right">
+                                    <a :href="row.url" class="text-xs {{ $linkClass }}">Ver</a>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="!events.length">
                             <td colspan="{{ $showClientColumn ? 7 : 6 }}" class="px-4 py-10 text-center text-sm text-slate-500">Aún no hay reportes.</td>
                         </tr>
-                    @endforelse
+                    @else
+                        @forelse ($events as $event)
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="px-4 py-3 font-mono text-xs {{ $folioClass }}">{{ $event->folio() }}</td>
+                                <td class="px-4 py-3 text-slate-200">{{ $event->installation?->name }}</td>
+                                @if ($showClientColumn)
+                                    <td class="px-4 py-3 hidden md:table-cell text-slate-400">{{ $event->client?->name }}</td>
+                                @endif
+                                <td class="px-4 py-3 hidden sm:table-cell text-slate-300">{{ $event->kindLabel() }}</td>
+                                <td class="px-4 py-3 text-slate-300">{{ $event->statusLabel() }}</td>
+                                <td class="px-4 py-3 hidden lg:table-cell text-slate-400 tabular-nums">{{ $event->opened_at?->format('d/m/Y H:i') }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <a href="{{ route($eventShowRoute, $event) }}" class="text-xs {{ $linkClass }}">Ver</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="{{ $showClientColumn ? 7 : 6 }}" class="px-4 py-10 text-center text-sm text-slate-500">Aún no hay reportes.</td>
+                            </tr>
+                        @endforelse
+                    @endif
                 </tbody>
             </table>
         </div>
@@ -299,4 +365,5 @@
             <div>{{ $events->links() }}</div>
         @endif
     @endif
+    </div>
 </div>

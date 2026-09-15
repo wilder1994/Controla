@@ -34,6 +34,7 @@ use App\Http\Controllers\Company\SupervisorWeaponTypeController;
 use App\Http\Controllers\Company\SupervisorZoneController;
 use App\Http\Controllers\Company\UserController;
 use App\Http\Controllers\Ops\OperationalAlertController;
+use App\Http\Controllers\Ops\SigBoardLiveController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unscoped'])
@@ -43,6 +44,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
             ->middleware('permission:observatory.view')
             ->name('observatory.events.index');
+        Route::get('/observatory/live.json', [ObservatoryEventController::class, 'live'])
+            ->middleware('permission:observatory.view')
+            ->name('observatory.live');
         Route::get('/observatory/tablero.pptx', [ObservatoryEventController::class, 'export'])
             ->middleware('permission:observatory.view')
             ->name('observatory.board.export');
@@ -56,6 +60,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->middleware('permission:company.dashboard')
             ->name('dashboard');
+        Route::get('/dashboard/live.json', [DashboardController::class, 'live'])
+            ->middleware('permission:company.dashboard')
+            ->name('dashboard.live');
+        Route::get('/sig/live.json', [SigBoardLiveController::class, 'company'])
+            ->middleware('permission:company.installations.view|company.dashboard')
+            ->name('sig.live');
 
         Route::get('/ops/alerts.json', [OperationalAlertController::class, 'poll'])
             ->name('ops.alerts');

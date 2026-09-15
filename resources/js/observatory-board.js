@@ -1,5 +1,7 @@
 import Chart from 'chart.js/auto';
 
+window.Chart = Chart;
+
 export function obsDateRange(config) {
     const fmt = (value) => {
         if (!value) {
@@ -202,8 +204,31 @@ function drawLoadGauge(canvas, value) {
 export function observatoryBoard(payload) {
     return {
         payload,
+        charts: [],
         init() {
             this.draw();
+            window.addEventListener('ops-live-data', (event) => {
+                const board = event.detail?.board;
+                if (!board) {
+                    return;
+                }
+                this.replacePayload(board);
+                const loadEl = document.querySelector('.obs-gauge-value');
+                if (loadEl && board.load_rate !== undefined) {
+                    loadEl.textContent = `${board.load_rate}%`;
+                }
+            });
+        },
+        replacePayload(board) {
+            this.charts.forEach((chart) => chart.destroy());
+            this.charts = [];
+            this.payload = { ...this.payload, ...board };
+            this.draw();
+        },
+        track(chart) {
+            this.charts.push(chart);
+
+            return chart;
         },
         draw() {
             const data = this.payload ?? {};
@@ -225,7 +250,7 @@ export function observatoryBoard(payload) {
             const rows = (series.series || []).length
                 ? series.series
                 : [{ label: 'Reportes', color: '#94a3b8', values: [0] }];
-            new Chart(el, {
+            this.track(new Chart(el, {
                 type: 'line',
                 data: {
                     labels,
@@ -243,7 +268,7 @@ export function observatoryBoard(payload) {
                     })),
                 },
                 options: lineOptions(rows.length > 1),
-            });
+            }));
         },
         bars(el, series) {
             if (!el) {
@@ -251,7 +276,7 @@ export function observatoryBoard(payload) {
             }
             const labels = series.labels?.length ? series.labels : ['—'];
             const values = series.values?.length ? series.values : [0];
-            new Chart(el, {
+            this.track(new Chart(el, {
                 type: 'bar',
                 data: {
                     labels,
@@ -266,7 +291,7 @@ export function observatoryBoard(payload) {
                     ...lineOptions(),
                     plugins: { ...lineOptions().plugins, legend: { display: false } },
                 },
-            });
+            }));
         },
         pie(el, series) {
             if (!el) {
@@ -276,7 +301,7 @@ export function observatoryBoard(payload) {
             const values = series.values?.length ? series.values : labels.map(() => 0);
             const colors = ['#14b8a6', '#818cf8', '#f59e0b', '#64748b', '#a78bfa'];
             const empty = values.every((n) => Number(n) === 0);
-            new Chart(el, {
+            this.track(new Chart(el, {
                 type: 'doughnut',
                 data: {
                     labels,
@@ -291,7 +316,7 @@ export function observatoryBoard(payload) {
                     ...doughnutOptions(empty),
                     cutout: '62%',
                 },
-            });
+            }));
         },
         gauge(el, value) {
             if (!el) {

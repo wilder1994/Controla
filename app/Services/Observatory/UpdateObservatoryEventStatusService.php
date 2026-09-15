@@ -8,6 +8,7 @@ use App\Enums\ObservatoryEventStatus;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryEventStatusLog;
 use App\Models\User;
+use App\Services\Ops\NotifyOpsSurface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -66,9 +67,8 @@ final class UpdateObservatoryEventStatusService
             }
 
             $event->save();
-            $this->writeLog($event, $current, $status, $actor, $note);
 
-            return $event->refresh();
+            return $this->writeLog($event, $current, $status, $actor, $note);
         });
     }
 
@@ -88,6 +88,14 @@ final class UpdateObservatoryEventStatusService
             'created_at' => now(),
         ]);
 
-        return $event->refresh();
+        $fresh = $event->refresh();
+        $summary = $from === $to
+            ? 'Agregó una nota al folio '.$fresh->folio()
+            : ($to === ObservatoryEventStatus::Cerrado
+                ? 'Cerró el folio '.$fresh->folio()
+                : 'Actualizó el folio '.$fresh->folio());
+        app(NotifyOpsSurface::class)->observatory($fresh, $actor, $summary);
+
+        return $fresh;
     }
 }

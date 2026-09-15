@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 14 septiembre 2026
+**Última actualización:** 15 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
@@ -61,6 +61,28 @@ Matriz cliente/sedes (15 sep 2026): admin cliente e instalaciones también elige
 Ficha folio Observatorio (15 sep 2026): grilla 2×2 (mapa, datos, novedades, bitácora). Pull + `npm run build` + `view:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 
 Carga de folios (15 sep 2026): medidor verde→rojo (`load_rate`). Arco sin recorte; leyenda bajo la aguja. Pull + `npm run build` + `view:cache`. Sin migrate. Artisan como `wcodex-controla`.
+
+Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON cada 12 s (`/company|client/observatory/live.json`, `/company|client/sig/live.json`, `/company/dashboard/live.json`). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Reverb opcional. Sin migrate ni seeder. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
+
+Para WebSocket (si no, el sondeo basta):
+
+1. En `.env` del VPS: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID` / `KEY` / `SECRET` (valores propios), `REVERB_HOST=controla.wcodex.cloud`, `REVERB_PORT=443`, `REVERB_SCHEME=https`, `REVERB_SERVER_HOST=127.0.0.1`, `REVERB_SERVER_PORT=8080`. Las `VITE_REVERB_*` iguales a host/puerto/esquema públicos; `npm run build` **después** de fijarlas.
+2. Proceso: `php8.3 artisan reverb:start --no-interaction` como `wcodex-controla` (systemd o Supervisor). No hace falta `queue:work` (`ShouldBroadcastNow`).
+3. Nginx (directivas extra CloudPanel), luego `nginx -t && systemctl reload nginx`:
+
+```nginx
+location /app {
+    proxy_http_version 1.1;
+    proxy_set_header Host $http_host;
+    proxy_set_header Scheme $scheme;
+    proxy_set_header SERVER_PORT $server_port;
+    proxy_set_header REMOTE_ADDR $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "Upgrade";
+    proxy_pass http://127.0.0.1:8080;
+}
+```
 
 **Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
 

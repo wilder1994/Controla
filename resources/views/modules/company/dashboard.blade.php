@@ -26,6 +26,25 @@
     $blockTotal = (int) ($k['blocklist_total'] ?? 0);
     $sinAsign = (int) ($workforce['without_assignment'] ?? 0);
     $shiftsCount = count($openShiftsTable);
+    $dashboardLiveUrl = route('company.dashboard.live');
+    $dashboardLivePayload = [
+        'metrics' => [
+            'clients_remaining' => $metrics['clients_remaining'] ?? ($portfolio['available'] ?? 0),
+            'supervision_remaining' => $metrics['supervision_remaining'] ?? 0,
+            'supervision_remaining_label' => $metrics['supervision_remaining_label'] ?? ($metrics['supervision_remaining'] ?? 0),
+            'package_label' => $metrics['package_label'] ?? '—',
+        ],
+        'ops' => [
+            'kpis' => $k,
+            'workforce' => $workforce,
+            'portfolio' => $portfolio,
+            'revista_monthly' => $revistaMonthly,
+            'revista_week' => $revistaWeek,
+            'access_by_client' => $accessByClient,
+            'open_shifts_table' => $openShiftsTable,
+        ],
+        'field' => $fieldSupervision,
+    ];
 @endphp
 
 <x-company-layout title="Mi empresa">
@@ -395,7 +414,10 @@
     </style>
     @endpush
 
-    <div class="company-cc">
+    <div class="company-cc"
+         x-data="companyDashboardLive"
+         data-live-url="{{ $dashboardLiveUrl }}"
+         data-payload='@json($dashboardLivePayload)'>
         {{-- Fila 1: Mapa + Cartera / Alertas --}}
         <div class="company-cc-row company-cc-row-1">
             <div class="company-cc-card">
@@ -403,7 +425,7 @@
                     <div class="min-w-0">
                         <h3 class="text-sm font-semibold text-white">Mapa de conjuntos</h3>
                         <p class="text-xs text-slate-500">
-                            {{ $portfolio['with_geo'] ?? 0 }}/{{ $portfolio['active_total'] ?? 0 }} con ubicación
+                            <span x-text="portfolio('with_geo')">{{ $portfolio['with_geo'] ?? 0 }}</span>/<span x-text="portfolio('active_total')">{{ $portfolio['active_total'] ?? 0 }}</span> con ubicación
                         </p>
                     </div>
                     <div class="company-map-head-tools">
@@ -455,19 +477,19 @@
                             </div>
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-slate-500">Activos</span>
-                                <span class="font-semibold text-white tabular-nums">{{ $portfolio['active_total'] ?? 0 }}</span>
+                                <span class="font-semibold text-white tabular-nums" x-text="portfolio('active_total')">{{ $portfolio['active_total'] ?? 0 }}</span>
                             </div>
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-slate-500">Archivados</span>
-                                <span class="font-semibold text-slate-300 tabular-nums">{{ $portfolio['archived'] ?? 0 }}</span>
+                                <span class="font-semibold text-slate-300 tabular-nums" x-text="portfolio('archived')">{{ $portfolio['archived'] ?? 0 }}</span>
                             </div>
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-slate-500">Disponibles Accesos</span>
-                                <span class="font-semibold text-indigo-300 tabular-nums">{{ $metrics['clients_remaining'] ?? $portfolio['available'] ?? 0 }}</span>
+                                <span class="font-semibold text-indigo-300 tabular-nums" x-text="metrics.clients_remaining ?? portfolio('available')">{{ $metrics['clients_remaining'] ?? $portfolio['available'] ?? 0 }}</span>
                             </div>
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-slate-500">Disponibles Supervisión</span>
-                                <span class="font-semibold text-amber-300 tabular-nums">{{ $metrics['supervision_remaining_label'] ?? $metrics['supervision_remaining'] ?? 0 }}</span>
+                                <span class="font-semibold text-amber-300 tabular-nums" x-text="metrics.supervision_remaining_label ?? metrics.supervision_remaining ?? 0">{{ $metrics['supervision_remaining_label'] ?? $metrics['supervision_remaining'] ?? 0 }}</span>
                             </div>
                             @if ($endsAt)
                                 <p class="text-xs text-slate-600 pt-1 border-t border-slate-800">
@@ -489,22 +511,22 @@
                         <div class="company-alert-grid">
                             <div class="company-alert-tile bg-indigo-500/10 border-indigo-500/30">
                                 <p class="text-xs text-indigo-300">Novedades</p>
-                                <p class="text-2xl font-semibold text-white tabular-nums leading-none">{{ $novedades }}</p>
+                                <p class="text-2xl font-semibold text-white tabular-nums leading-none" x-text="kpi('novedades_today')">{{ $novedades }}</p>
                                 <p class="text-[10px] text-slate-500">Minuta</p>
                             </div>
                             <div class="company-alert-tile bg-amber-500/10 border-amber-500/30">
                                 <p class="text-xs text-amber-300">Correspondencia</p>
-                                <p class="text-2xl font-semibold text-white tabular-nums leading-none">{{ $corrPending }}</p>
+                                <p class="text-2xl font-semibold text-white tabular-nums leading-none" x-text="kpi('pending_correspondence')">{{ $corrPending }}</p>
                                 <p class="text-[10px] text-slate-500">Pendiente</p>
                             </div>
                             <div class="company-alert-tile bg-red-500/10 border-red-500/30">
                                 <p class="text-xs text-red-300">Pánico</p>
-                                <p class="text-2xl font-semibold text-white tabular-nums leading-none">{{ $panicOpen }}</p>
+                                <p class="text-2xl font-semibold text-white tabular-nums leading-none" x-text="kpi('panics_open')">{{ $panicOpen }}</p>
                                 <p class="text-[10px] text-slate-500">Abiertos</p>
                             </div>
                             <div class="company-alert-tile bg-teal-500/10 border-teal-500/30">
                                 <p class="text-xs text-teal-300">Bloqueos</p>
-                                <p class="text-2xl font-semibold text-white tabular-nums leading-none">{{ $blockTotal }}</p>
+                                <p class="text-2xl font-semibold text-white tabular-nums leading-none" x-text="kpi('blocklist_total')">{{ $blockTotal }}</p>
                                 <p class="text-[10px] text-slate-500">Activos</p>
                             </div>
                         </div>
@@ -525,30 +547,30 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-sm">
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                         <p class="text-[10px] text-slate-500 uppercase">En ruta</p>
-                        <p class="text-lg font-semibold text-white tabular-nums">{{ $fieldSupervision['open_shifts'] }}</p>
+                        <p class="text-lg font-semibold text-white tabular-nums" x-text="fieldVal('open_shifts')">{{ $fieldSupervision['open_shifts'] }}</p>
                     </div>
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                         <p class="text-[10px] text-slate-500 uppercase">Revistas app</p>
-                        <p class="text-lg font-semibold text-amber-300 tabular-nums">{{ $fieldSupervision['reviews_today'] }}</p>
+                        <p class="text-lg font-semibold text-amber-300 tabular-nums" x-text="fieldVal('reviews_today')">{{ $fieldSupervision['reviews_today'] }}</p>
                     </div>
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                         <p class="text-[10px] text-slate-500 uppercase">Cobertura</p>
                         <p class="text-lg font-semibold text-white tabular-nums">
-                            {{ $fieldSupervision['coverage_pct'] !== null ? $fieldSupervision['coverage_pct'].'%' : '—' }}
+                            <span x-text="field && field.coverage_pct !== null ? field.coverage_pct + '%' : '—'">{{ $fieldSupervision['coverage_pct'] !== null ? $fieldSupervision['coverage_pct'].'%' : '—' }}</span>
                         </p>
-                        <p class="text-[10px] text-slate-600">{{ $fieldSupervision['sites_visited'] }}/{{ $fieldSupervision['sites_contracted'] }}</p>
+                        <p class="text-[10px] text-slate-600"><span x-text="fieldVal('sites_visited')">{{ $fieldSupervision['sites_visited'] }}</span>/<span x-text="fieldVal('sites_contracted')">{{ $fieldSupervision['sites_contracted'] }}</span></p>
                     </div>
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                         <p class="text-[10px] text-slate-500 uppercase">Recomendaciones</p>
-                        <p class="text-lg font-semibold tabular-nums {{ $fieldSupervision['recommendations_today'] > 0 ? 'text-amber-300' : 'text-white' }}">{{ $fieldSupervision['recommendations_today'] }}</p>
+                        <p class="text-lg font-semibold tabular-nums" :class="fieldVal('recommendations_today') > 0 ? 'text-amber-300' : 'text-white'" x-text="fieldVal('recommendations_today')">{{ $fieldSupervision['recommendations_today'] }}</p>
                     </div>
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                         <p class="text-[10px] text-slate-500 uppercase">Atenciones</p>
-                        <p class="text-lg font-semibold tabular-nums {{ $fieldSupervision['attention_today'] > 0 ? 'text-red-300' : 'text-white' }}">{{ $fieldSupervision['attention_today'] }}</p>
+                        <p class="text-lg font-semibold tabular-nums" :class="fieldVal('attention_today') > 0 ? 'text-red-300' : 'text-white'" x-text="fieldVal('attention_today')">{{ $fieldSupervision['attention_today'] }}</p>
                     </div>
                     <div class="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                         <p class="text-[10px] text-slate-500 uppercase">Km hoy</p>
-                        <p class="text-lg font-semibold text-white tabular-nums">{{ $fieldSupervision['km_today'] }}</p>
+                        <p class="text-lg font-semibold text-white tabular-nums" x-text="fieldVal('km_today')">{{ $fieldSupervision['km_today'] }}</p>
                     </div>
                 </div>
                 <p class="text-[11px] text-slate-600 mt-2">
@@ -571,19 +593,19 @@
                     <div class="company-workforce-list text-sm">
                         <div class="flex items-center justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                             <span class="text-slate-400">Vigilantes</span>
-                            <span class="font-semibold text-white tabular-nums">{{ $workforce['vigilantes_active'] ?? 0 }}</span>
+                            <span class="font-semibold text-white tabular-nums" x-text="workforce('vigilantes_active')">{{ $workforce['vigilantes_active'] ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                             <span class="text-slate-400">En turno</span>
-                            <span class="font-semibold text-indigo-300 tabular-nums">{{ $workforce['vigilantes_on_shift'] ?? 0 }}</span>
+                            <span class="font-semibold text-indigo-300 tabular-nums" x-text="workforce('vigilantes_on_shift')">{{ $workforce['vigilantes_on_shift'] ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                             <span class="text-slate-400">Supervisores</span>
-                            <span class="font-semibold text-white tabular-nums">{{ $workforce['supervisors_active'] ?? 0 }}</span>
+                            <span class="font-semibold text-white tabular-nums" x-text="workforce('supervisors_active')">{{ $workforce['supervisors_active'] ?? 0 }}</span>
                         </div>
                         <div class="flex items-center justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
                             <span class="text-slate-400">Sin asignación</span>
-                            <span class="font-semibold tabular-nums {{ $sinAsign > 0 ? 'text-amber-400' : 'text-white' }}">{{ $sinAsign }}</span>
+                            <span class="font-semibold tabular-nums" :class="workforce('without_assignment') > 0 ? 'text-amber-400' : 'text-white'" x-text="workforce('without_assignment')">{{ $sinAsign }}</span>
                         </div>
                     </div>
                 </div>
@@ -602,7 +624,7 @@
 
             <div class="company-cc-card">
                 <div class="company-cc-card-head">
-                    <h3 class="text-sm font-semibold text-white">Turnos abiertos · {{ $shiftsCount }}</h3>
+                    <h3 class="text-sm font-semibold text-white">Turnos abiertos · <span x-text="shifts().length">{{ $shiftsCount }}</span></h3>
                     <a href="{{ route('company.clients.index', ['modo' => 'operar']) }}" class="text-xs text-indigo-400 hover:text-indigo-300">Ver detalle</a>
                 </div>
                 <div class="company-cc-card-body-flush">
@@ -616,18 +638,17 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800">
-                            @forelse ($openShiftsTable as $row)
+                            <template x-for="(row, index) in shifts()" :key="index">
                                 <tr class="hover:bg-slate-800/30">
-                                    <td class="px-3 py-2 text-xs text-slate-300">{{ $row['puesto'] }}</td>
-                                    <td class="px-3 py-2 text-xs text-slate-400">{{ $row['vigilante'] }}</td>
-                                    <td class="px-3 py-2 text-xs text-slate-400">{{ $row['inicio'] }}</td>
-                                    <td class="px-3 py-2 text-xs {{ ($row['tone'] ?? '') === 'danger' ? 'text-red-300' : 'text-emerald-300' }}">{{ $row['ultima_revista'] }}</td>
+                                    <td class="px-3 py-2 text-xs text-slate-300" x-text="row.puesto"></td>
+                                    <td class="px-3 py-2 text-xs text-slate-400" x-text="row.vigilante"></td>
+                                    <td class="px-3 py-2 text-xs text-slate-400" x-text="row.inicio"></td>
+                                    <td class="px-3 py-2 text-xs" :class="row.tone === 'danger' ? 'text-red-300' : 'text-emerald-300'" x-text="row.ultima_revista"></td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="px-3 py-8 text-center text-xs text-slate-500">Sin turnos abiertos.</td>
-                                </tr>
-                            @endforelse
+                            </template>
+                            <tr x-show="!shifts().length">
+                                <td colspan="4" class="px-3 py-8 text-center text-xs text-slate-500">Sin turnos abiertos.</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

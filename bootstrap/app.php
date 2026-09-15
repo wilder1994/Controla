@@ -12,6 +12,7 @@ use App\Http\Middleware\EnsureSupervisorProApi;
 use App\Http\Middleware\EnsureSupervisorUsesFieldApp;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\InitializeAccessTenancy;
+use App\Support\Platform\SupportCompanyContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -29,11 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->encryptCookies(except: [
-            \App\Support\Platform\SupportCompanyContext::LAST_COMPANY_COOKIE,
+            SupportCompanyContext::LAST_COMPANY_COOKIE,
         ]);
         $middleware->web(append: [
             EnsureSupervisorUsesFieldApp::class,

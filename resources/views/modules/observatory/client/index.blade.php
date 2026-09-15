@@ -29,5 +29,6 @@
         'eventShowRoute' => 'client.observatory.events.show',
         'exportRoute' => route('client.observatory.board.export'),
         'accent' => 'teal',
+        'observatoryLiveUrl' => route('client.observatory.live', request()->query()),
     ])
 </x-client-layout>

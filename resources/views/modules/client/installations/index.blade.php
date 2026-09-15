@@ -1,7 +1,7 @@
 <x-client-layout title="Instalaciones">
     <div class="space-y-4">
         @if (($search ?? '') === '' && isset($sigBoard))
-            @include('modules.ops.sig-board', ['sigBoard' => $sigBoard, 'compact' => true])
+            @include('modules.ops.sig-board', ['sigBoard' => $sigBoard, 'compact' => true, 'sigLiveUrl' => route('client.sig.live')])
         @endif
 
         <form method="GET" action="{{ route('client.installations.index') }}"

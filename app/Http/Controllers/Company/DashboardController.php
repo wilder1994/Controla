@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SecurityCompany;
 use App\Services\Company\CompanyDashboardService;
 use App\Support\Platform\ActingCompanyResolver;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -35,5 +36,16 @@ final class DashboardController extends Controller
         $payload = $this->dashboardService->build($company);
 
         return view('modules.company.dashboard', $payload);
+    }
+
+    public function live(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user?->can('company.dashboard'), 403);
+
+        $companyId = app(ActingCompanyResolver::class)->requireId($user);
+        $company = SecurityCompany::query()->findOrFail($companyId);
+
+        return response()->json($this->dashboardService->live($company));
     }
 }

@@ -17,6 +17,7 @@ use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\VehicleController;
 use App\Http\Controllers\Client\ZoneBookingController;
 use App\Http\Controllers\Ops\OperationalAlertController;
+use App\Http\Controllers\Ops\SigBoardLiveController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'client.admin'])
@@ -26,6 +27,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->middleware('permission:client.structures.manage|ops.sig.view')
             ->name('dashboard');
+        Route::get('/sig/live.json', [SigBoardLiveController::class, 'client'])
+            ->middleware('permission:client.structures.manage|ops.sig.view')
+            ->name('sig.live');
 
         Route::get('/ops/alerts.json', [OperationalAlertController::class, 'poll'])
             ->name('ops.alerts');
@@ -49,6 +53,8 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::middleware(['permission:observatory.view', 'client.module:observatory'])->group(function () {
             Route::get('/observatory/events', [ObservatoryEventController::class, 'index'])
                 ->name('observatory.events.index');
+            Route::get('/observatory/live.json', [ObservatoryEventController::class, 'live'])
+                ->name('observatory.live');
             Route::get('/observatory/tablero.pptx', [ObservatoryEventController::class, 'export'])
                 ->name('observatory.board.export');
             Route::get('/observatory/reports/create', [ObservatoryEventController::class, 'create'])

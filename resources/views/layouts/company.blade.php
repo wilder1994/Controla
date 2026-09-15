@@ -50,6 +50,9 @@
         $companyContext = $companyContext ?? ['company_name' => null, 'is_quota_full' => true];
         $supportMode = $supportMode ?? ['active' => false, 'company_name' => null, 'company_id' => null];
     @endphp
+    @include('partials.ops-live-surface', [
+        'opsCompanyId' => $supportMode['company_id'] ?? auth()->user()?->security_company_id,
+    ])
     <div class="h-screen flex overflow-hidden" x-data="panelSidebar">
         @include('partials.sidebar-backdrop')
         <div

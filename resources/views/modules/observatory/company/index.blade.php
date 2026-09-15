@@ -22,5 +22,6 @@
         'eventShowRoute' => 'company.observatory.events.show',
         'exportRoute' => route('company.observatory.board.export'),
         'accent' => 'indigo',
+        'observatoryLiveUrl' => route('company.observatory.live', request()->query()),
     ])
 </x-company-layout>

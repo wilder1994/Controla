@@ -95,7 +95,7 @@ final class RecordOperationalAlertService
         ?float $lng = null,
         ?array $payload = null,
     ): OperationalAlert {
-        return OperationalAlert::query()->create([
+        $alert = OperationalAlert::query()->create([
             'type' => $type,
             'security_company_id' => $companyId,
             'actor_user_id' => $actorId,
@@ -108,6 +108,9 @@ final class RecordOperationalAlertService
             'longitude' => $lng,
             'payload' => $payload,
         ]);
+        app(NotifyOpsSurface::class)->fromAlert($alert);
+
+        return $alert;
     }
 
     private function placeLabel(?int $clientId, ?int $installationId): string

@@ -13,8 +13,11 @@ use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
 use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\ExportObservatoryBoardService;
+use App\Services\Observatory\PresentObservatoryLiveService;
 use App\Support\Geo\CaliComunaLayer;
 use App\Support\Platform\ActingCompanyResolver;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -76,6 +79,50 @@ final class ObservatoryEventController extends Controller
                 $filters['comuna'],
             ),
         ]);
+    }
+
+    public function live(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', ObservatoryEvent::class);
+
+        $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
+        $filters = $this->filters($request, $companyId);
+        $board = app(BuildObservatoryBoardService::class);
+        $clientId = $filters['client_id'];
+        $siteIds = app(CaliComunaLayer::class)->scopeInstallationIds(
+            $filters['comuna'],
+            $companyId,
+            $clientId,
+            null,
+        );
+
+        $events = $board->scoped($companyId, $clientId, $siteIds, $filters['from'], $filters['to'])
+            ->with(['client', 'installation', 'latestReport.reportType'])
+            ->when($filters['search'] !== '', function ($q) use ($filters) {
+                $q->where(function ($inner) use ($filters) {
+                    $inner->where('title', 'like', '%'.$filters['search'].'%')
+                        ->orWhereHas('installation', fn ($i) => $i->where('name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('dane_code', 'like', '%'.$filters['search'].'%'))
+                        ->orWhereHas('client', fn ($c) => $c->where('name', 'like', '%'.$filters['search'].'%'));
+                });
+            })
+            ->when($filters['status'] !== '', fn ($q) => $q->where('status', $filters['status']))
+            ->orderByDesc('opened_at')
+            ->paginate(20);
+
+        return response()->json(app(PresentObservatoryLiveService::class)->execute(
+            $board->execute($companyId, $clientId, $siteIds, $filters['from'], $filters['to'], $filters['grain']),
+            app(BuildObservatoryMapService::class)->execute(
+                $companyId,
+                $clientId,
+                $siteIds,
+                'company.observatory.events.show',
+                $filters['comuna'],
+            ),
+            $events,
+            'company.observatory.events.show',
+            true,
+        ));
     }
 
     public function export(Request $request): BinaryFileResponse
@@ -152,7 +199,7 @@ final class ObservatoryEventController extends Controller
         ]);
     }
 
-    /** @return \Illuminate\Database\Eloquent\Collection<int, Client> */
+    /** @return Collection<int, Client> */
     private function clients(int $companyId)
     {
         return Client::query()

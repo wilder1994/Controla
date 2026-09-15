@@ -87,4 +87,48 @@ final class SigBoardAndPanicTest extends TestCase
                 ->assertJsonCount(0, 'alerts');
         }
     }
+
+    public function test_live_json_refreshes_observatory_and_sig(): void
+    {
+        $this->seedWithPilot();
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $session = [
+            config('tenancy.session.active_client_key') => $client->id,
+            CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
+            CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_CLIENTE,
+        ];
+
+        $this->getJson(route('company.observatory.live'))->assertUnauthorized();
+
+        $this->actingAs($user)
+            ->getJson(route('company.observatory.live'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'board' => ['total', 'nuevo', 'en_atencion', 'cerrado', 'load_rate', 'top'],
+                'map' => ['sites', 'points'],
+                'events',
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('company.observatory.events.index'))
+            ->assertOk()
+            ->assertSee('data-live-url', false);
+
+        $this->actingAs($user)
+            ->getJson(route('company.sig.live'))
+            ->assertOk()
+            ->assertJsonStructure(['installations_count', 'posts_count', 'staff_count', 'feed', 'chart']);
+
+        $this->actingAs($user)
+            ->withSession($session)
+            ->getJson(route('client.sig.live'))
+            ->assertOk()
+            ->assertJsonStructure(['installations_count', 'posts_count']);
+
+        $this->actingAs($user)
+            ->withSession($session)
+            ->getJson(route('client.observatory.live'))
+            ->assertOk();
+    }
 }

@@ -11,6 +11,10 @@
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100 overflow-hidden">
+    @include('partials.ops-live-surface', [
+        'opsCompanyId' => isset($activeClient) ? $activeClient->security_company_id : auth()->user()?->security_company_id,
+        'opsClientId' => isset($activeClient) ? $activeClient->id : null,
+    ])
     <div class="h-screen flex overflow-hidden" x-data="panelSidebar">
         @include('partials.sidebar-backdrop')
         <div

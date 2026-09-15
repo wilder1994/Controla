@@ -60,4 +60,33 @@ final class CompanyDashboardService
             'fieldSupervision' => $this->fieldSupervisionStrip->forToday($company),
         ];
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function live(SecurityCompany $company): array
+    {
+        $full = $this->build($company);
+        $metrics = $full['metrics'] ?? [];
+        $ops = $full['ops'] ?? [];
+
+        return [
+            'metrics' => [
+                'clients_remaining' => $metrics['clients_remaining'] ?? ($ops['portfolio']['available'] ?? 0),
+                'supervision_remaining' => $metrics['supervision_remaining'] ?? 0,
+                'supervision_remaining_label' => $metrics['supervision_remaining_label'] ?? ($metrics['supervision_remaining'] ?? 0),
+                'package_label' => $metrics['package_label'] ?? '—',
+            ],
+            'ops' => [
+                'kpis' => $ops['kpis'] ?? [],
+                'workforce' => $ops['workforce'] ?? [],
+                'portfolio' => $ops['portfolio'] ?? [],
+                'revista_monthly' => $ops['revista_monthly'] ?? ['labels' => [], 'done' => [], 'expected' => [], 'pending' => []],
+                'revista_week' => $ops['revista_week'] ?? ['labels' => [], 'done' => [], 'expected' => [], 'pending' => []],
+                'access_by_client' => $ops['access_by_client'] ?? [],
+                'open_shifts_table' => $ops['open_shifts_table'] ?? [],
+            ],
+            'field' => $full['fieldSupervision'],
+        ];
+    }
 }

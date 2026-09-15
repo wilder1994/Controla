@@ -47,6 +47,27 @@ final class CompanyDashboardTest extends TestCase
         $response->assertDontSee('Próximamente');
     }
 
+    public function test_company_dashboard_live_json(): void
+    {
+        $this->seedWithPilot();
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $this->getJson(route('company.dashboard.live'))->assertUnauthorized();
+
+        $this->actingAs($admin)
+            ->getJson(route('company.dashboard.live'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'metrics' => ['clients_remaining', 'package_label'],
+                'ops' => ['kpis', 'workforce', 'portfolio', 'open_shifts_table', 'revista_monthly', 'revista_week'],
+            ]);
+
+        $this->actingAs($admin)
+            ->get(route('company.dashboard'))
+            ->assertOk()
+            ->assertSee('data-live-url', false);
+    }
+
     public function test_guard_cannot_access_company_dashboard(): void
     {
         $this->seedWithPilot();

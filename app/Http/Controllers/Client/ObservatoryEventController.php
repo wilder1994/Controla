@@ -13,26 +13,30 @@ use App\Models\Client;
 use App\Models\Installation;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
-use App\Models\User;
 use App\Models\ObservatoryReportType;
+use App\Models\User;
 use App\Services\Observatory\BuildObservatoryBoardService;
 use App\Services\Observatory\BuildObservatoryMapService;
 use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\ExportObservatoryBoardService;
 use App\Services\Observatory\MergeObservatoryEventsService;
+use App\Services\Observatory\PresentObservatoryLiveService;
 use App\Services\Observatory\SubmitObservatoryReportService;
-use App\Support\Observatory\ObservatoryPhotoInput;
 use App\Services\Observatory\UnhookObservatoryReportService;
 use App\Services\Observatory\UpdateObservatoryEventStatusService;
+use App\Services\Ops\NotifyOpsSurface;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Geo\CaliComunaLayer;
+use App\Support\Observatory\ObservatoryPhotoInput;
 use App\Support\Tenancy\TenantContext;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ObservatoryEventController extends Controller
 {
@@ -98,6 +102,49 @@ final class ObservatoryEventController extends Controller
                 $filters['comuna'],
             ),
         ]);
+    }
+
+    public function live(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', ObservatoryEvent::class);
+
+        $clientId = (int) $this->tenantContext->clientId();
+        abort_unless($clientId > 0, 403);
+        $filters = $this->filters($request);
+        $board = app(BuildObservatoryBoardService::class);
+        $siteIds = app(CaliComunaLayer::class)->scopeInstallationIds(
+            $filters['comuna'],
+            null,
+            $clientId,
+            $this->tenantContext->installationIds(),
+        );
+
+        $events = $board->scoped(null, $clientId, $siteIds, $filters['from'], $filters['to'])
+            ->with(['installation', 'latestReport.reportType'])
+            ->when($filters['search'] !== '', function ($q) use ($filters) {
+                $q->where(function ($inner) use ($filters) {
+                    $inner->where('title', 'like', '%'.$filters['search'].'%')
+                        ->orWhereHas('installation', fn ($i) => $i->where('name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('dane_code', 'like', '%'.$filters['search'].'%'));
+                });
+            })
+            ->when($filters['status'] !== '', fn ($q) => $q->where('status', $filters['status']))
+            ->orderByDesc('opened_at')
+            ->paginate(20);
+
+        return response()->json(app(PresentObservatoryLiveService::class)->execute(
+            $board->execute(null, $clientId, $siteIds, $filters['from'], $filters['to'], $filters['grain']),
+            app(BuildObservatoryMapService::class)->execute(
+                null,
+                $clientId,
+                $siteIds,
+                'client.observatory.events.show',
+                $filters['comuna'],
+            ),
+            $events,
+            'client.observatory.events.show',
+            false,
+        ));
     }
 
     public function export(Request $request): BinaryFileResponse
@@ -267,6 +314,12 @@ final class ObservatoryEventController extends Controller
             return back()->withErrors($e->errors());
         }
 
+        app(NotifyOpsSurface::class)->observatory(
+            $event,
+            $request->user(),
+            'Unió folios en '.$event->folio(),
+        );
+
         return redirect()
             ->route('client.observatory.events.show', $event)
             ->with('success', 'Folio '.$source->folio().' unido aquí.');
@@ -284,12 +337,18 @@ final class ObservatoryEventController extends Controller
             return back()->withErrors($e->errors());
         }
 
+        app(NotifyOpsSurface::class)->observatory(
+            $created,
+            $request->user(),
+            'Sacó un reporte a '.$created->folio(),
+        );
+
         return redirect()
             ->route('client.observatory.events.show', $event)
             ->with('success', 'Reporte pasado a '.$created->folio().'.');
     }
 
-    /** @return \Illuminate\Support\Collection<int, ObservatoryEvent> */
+    /** @return Collection<int, ObservatoryEvent> */
     private function mergeCandidates(ObservatoryEvent $event)
     {
         return ObservatoryEvent::query()

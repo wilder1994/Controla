@@ -14,6 +14,7 @@ import { postEmployeePicker } from './post-employee-picker';
 import { employeeReassignForm } from './employee-reassign-form';
 import { panelSidebar } from './panel-sidebar';
 import { opsLiveAlerts } from './ops-live-alerts';
+import { opsLiveSurface, opsLivePage, sigBoardLive, companyDashboardLive } from './ops-live-surface';
 import './employee-document-indexer';
 
 import { initFormFeedback } from './form-feedback';
@@ -22,6 +23,10 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 Alpine.data('panelSidebar', panelSidebar);
 Alpine.data('opsLiveAlerts', opsLiveAlerts);
+Alpine.data('opsLiveSurface', opsLiveSurface);
+Alpine.data('opsLivePage', opsLivePage);
+Alpine.data('sigBoardLive', sigBoardLive);
+Alpine.data('companyDashboardLive', companyDashboardLive);
 Alpine.data('companyLogoField', companyLogoField);
 Alpine.data('employeeFichaForm', employeeFichaForm);
 Alpine.data('createCompanyForm', createCompanyForm);

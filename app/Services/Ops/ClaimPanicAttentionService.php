@@ -27,7 +27,7 @@ final class ClaimPanicAttentionService
             throw new InvalidArgumentException('No hay empresa para atender el pánico.');
         }
 
-        return DB::transaction(function () use ($user, $alertId, $companyId): PanicAttention {
+        $attention = DB::transaction(function () use ($user, $alertId, $companyId): PanicAttention {
             $alert = OperationalAlert::query()
                 ->whereKey($alertId)
                 ->where('security_company_id', $companyId)
@@ -58,5 +58,16 @@ final class ClaimPanicAttentionService
                 'status' => PanicAttentionStatus::Abierto,
             ]);
         });
+
+        $attention->loadMissing('alert');
+        app(NotifyOpsSurface::class)->send(
+            $companyId,
+            $attention->alert?->client_id !== null ? (int) $attention->alert->client_id : null,
+            'panic',
+            $user->name.' atendió un pánico',
+            $user->name,
+        );
+
+        return $attention;
     }
 }
