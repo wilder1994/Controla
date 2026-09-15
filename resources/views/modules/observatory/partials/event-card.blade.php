@@ -21,7 +21,7 @@
     closeOpen: {{ $errors->has('note') && old('status') === 'cerrado' ? 'true' : 'false' }}
 }">
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div class="relative h-80 min-h-0 overflow-hidden">
+        <div class="relative h-[28rem] min-h-0 overflow-hidden">
             @if ($folioMap)
                 @include('modules.observatory.partials.map', [
                     'map' => $folioMap,
@@ -37,39 +37,41 @@
             @endif
         </div>
 
-        <div class="h-80 min-h-0 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-5 sidebar-scroll">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="font-mono text-xs text-indigo-300">{{ $event->folio() }}</p>
-                    <h3 class="mt-1 text-xl font-semibold text-white">{{ $event->installation?->name }}</h3>
-                    <p class="mt-1 text-sm text-slate-400">{{ $event->client?->name }} · {{ $event->kindLabel() }}</p>
-                    @if ($event->installation?->addressLine())
-                        <p class="mt-1 text-xs text-slate-500">{{ $event->installation->addressLine() }}</p>
-                    @endif
-                    <p class="mt-2 text-sm text-slate-300">{{ $event->title }}</p>
+        <div class="flex h-[28rem] min-h-0 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-5">
+            <div class="min-h-0 flex-1 overflow-y-auto sidebar-scroll pr-1">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="font-mono text-xs text-indigo-300">{{ $event->folio() }}</p>
+                        <h3 class="mt-1 text-xl font-semibold text-white">{{ $event->installation?->name }}</h3>
+                        <p class="mt-1 text-sm text-slate-400">{{ $event->client?->name }} · {{ $event->kindLabel() }}</p>
+                        @if ($event->installation?->addressLine())
+                            <p class="mt-1 text-xs text-slate-500">{{ $event->installation->addressLine() }}</p>
+                        @endif
+                        <p class="mt-2 text-sm text-slate-300">{{ $event->title }}</p>
+                    </div>
+                    <span class="inline-flex h-8 shrink-0 items-center rounded-lg border px-3 text-xs font-semibold {{ $tone }}">{{ $event->statusLabel() }}</span>
                 </div>
-                <span class="inline-flex h-8 items-center rounded-lg border px-3 text-xs font-semibold {{ $tone }}">{{ $event->statusLabel() }}</span>
+                <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-wide text-slate-500">Abierto</dt>
+                        <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->opened_at?->format('d/m/Y H:i') ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerrado</dt>
+                        <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->closed_at?->format('d/m/Y H:i') ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerró</dt>
+                        <dd class="mt-0.5 text-slate-200">{{ $event->closedBy?->name ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-wide text-slate-500">Reportes</dt>
+                        <dd class="mt-0.5 text-slate-200">{{ $event->reports->count() }}</dd>
+                    </div>
+                </dl>
             </div>
-            <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Abierto</dt>
-                    <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->opened_at?->format('d/m/Y H:i') ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerrado</dt>
-                    <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->closed_at?->format('d/m/Y H:i') ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerró</dt>
-                    <dd class="mt-0.5 text-slate-200">{{ $event->closedBy?->name ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Reportes</dt>
-                    <dd class="mt-0.5 text-slate-200">{{ $event->reports->count() }}</dd>
-                </div>
-            </dl>
             @if ($canUpdateStatus && $statusAction && ! $isClosed)
-                <div class="mt-4 flex flex-wrap gap-2">
+                <div class="mt-3 flex shrink-0 flex-wrap gap-2 border-t border-slate-800 pt-3">
                     <button type="button" class="h-9 px-4 rounded-lg bg-indigo-600 text-xs font-semibold text-white"
                             @click="noteOpen = true">
                         {{ $isNuevo ? 'Pasar a en atención' : 'Agregar' }}
@@ -82,7 +84,7 @@
                     @endif
                 </div>
             @elseif (! $canUpdateStatus)
-                <p class="mt-4 text-xs text-slate-500">Los estados los cierra el admin de instalaciones de esa sede.</p>
+                <p class="mt-3 shrink-0 border-t border-slate-800 pt-3 text-xs text-slate-500">Los estados los cierra el admin de instalaciones de esa sede.</p>
             @endif
         </div>
 
