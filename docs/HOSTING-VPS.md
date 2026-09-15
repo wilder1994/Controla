@@ -56,7 +56,7 @@ Traza GPS En vivo (15 sep 2026): `BuildSupervisorTrailService` filtra precisión
 
 Permisos + overlay (15 sep 2026): catálogo de matriz (dashboard, instalaciones, pánicos, SIG, etc.) para **admin y colaborador**. Pánico y Observatorio independientes. Overlay palpitante; Observatorio también en bucle. Sin migrate de tablas. Pull + `RoleAndPermissionSeeder` (crea `company.installations.*`, `ops.sig.view` y rellena grants de `company-admin`) + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
-Matriz cliente/sedes (15 sep 2026): admin cliente e instalaciones también eligen SIG / Observatorio / Censo. Pull + `RoleAndPermissionSeeder` (rellena grants de `client-admin` y `client-installation-admin`) + `view:cache` + `route:cache`. Sin migrate. Artisan como `wcodex-controla`.
+Matriz cliente/sedes (15 sep 2026): admin cliente e instalaciones también eligen SIG / Observatorio / Censo. Pull + `RoleAndPermissionSeeder` (rellena grants de `client-admin` y `client-installation-admin`; el catálogo de alcance corre en modo trusted para no bloquear al propio admin cliente) + `view:cache` + `route:cache`. Sin migrate. Artisan como `wcodex-controla`.
 
 **Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
 
