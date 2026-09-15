@@ -8,7 +8,6 @@ use App\Enums\BillingCycle;
 use App\Enums\BloodGroup;
 use App\Enums\ClientPlanTier;
 use App\Enums\CompanyPackageSku;
-use App\Enums\PostModality;
 use App\Enums\Sex;
 use App\Enums\SupervisionPackageSku;
 use App\Models\AccessLog;
@@ -189,7 +188,7 @@ final class TenantSeeder extends Seeder
                 ['installation_id' => $site->id, 'name' => $name],
                 [
                     'client_id' => $client->id,
-                    'modality' => PostModality::Hours12,
+                    'modality' => 12,
                     'is_active' => true,
                 ]
             );

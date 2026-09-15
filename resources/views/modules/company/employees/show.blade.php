@@ -66,7 +66,7 @@
                         · {{ $currentPost->client->name }}
                     @endif
                     @if ($currentPost->modality)
-                        · {{ $currentPost->modality->label() }}
+                        · {{ $currentPost->modalityLabel() }}
                     @endif
                 @else
                     Sin puesto asignado.

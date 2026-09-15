@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Company;
 
-use App\Enums\PostModality;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Installation;
 use App\Models\SupervisorPost;
+use App\Models\SupervisorPostModality;
 use Illuminate\Validation\ValidationException;
 
 final class ManageSupervisorPostService
 {
     /**
-     * @param  array{installation_id: int, name: string, modality?: int|PostModality, is_active?: bool, employee_ids?: list<int>}  $data
+     * @param  array{installation_id: int, name: string, modality?: int, is_active?: bool, employee_ids?: list<int>}  $data
      */
     public function create(Client $client, array $data): SupervisorPost
     {
@@ -23,12 +23,13 @@ final class ManageSupervisorPostService
         $installation = $this->installationOfClient($client, (int) $data['installation_id']);
         $name = trim($data['name']);
         $this->assertUniqueName($installation, $name);
+        $hours = $this->hoursForCompany((int) $client->security_company_id, (int) ($data['modality'] ?? 12));
 
         $post = SupervisorPost::query()->create([
             'client_id' => $client->id,
             'installation_id' => $installation->id,
             'name' => $name,
-            'modality' => $this->modality($data['modality'] ?? 12),
+            'modality' => $hours,
             'is_active' => (bool) ($data['is_active'] ?? true),
         ]);
 
@@ -49,7 +50,7 @@ final class ManageSupervisorPostService
     }
 
     /**
-     * @param  array{installation_id?: int, name?: string, modality?: int|PostModality, is_active?: bool, employee_ids?: list<int>}  $data
+     * @param  array{installation_id?: int, name?: string, modality?: int, is_active?: bool, employee_ids?: list<int>}  $data
      */
     public function update(SupervisorPost $post, array $data): SupervisorPost
     {
@@ -71,7 +72,11 @@ final class ManageSupervisorPostService
         }
 
         if (isset($data['modality'])) {
-            $post->modality = $this->modality($data['modality']);
+            $post->modality = $this->hoursForCompany(
+                (int) $client->security_company_id,
+                (int) $data['modality'],
+                (int) $post->modality,
+            );
         }
 
         if (array_key_exists('is_active', $data)) {
@@ -117,9 +122,22 @@ final class ManageSupervisorPostService
         }
     }
 
-    private function modality(int|PostModality $value): PostModality
+    private function hoursForCompany(int $companyId, int $hours, ?int $currentHours = null): int
     {
-        return $value instanceof PostModality ? $value : PostModality::from((int) $value);
+        app(SeedSupervisorIntakeDefaultsService::class)->execute($companyId);
+
+        $row = SupervisorPostModality::query()
+            ->where('security_company_id', $companyId)
+            ->where('hours', $hours)
+            ->first();
+
+        if ($row === null || (! $row->is_active && $currentHours !== $hours)) {
+            throw ValidationException::withMessages([
+                'modality' => 'Elige una modalidad activa del catálogo (Ajustes → Modalidades).',
+            ]);
+        }
+
+        return $hours;
     }
 
     /** @param list<int|string> $employeeIds */

@@ -67,7 +67,7 @@ final class CompanyClientSiteTreeTest extends TestCase
             ->where('client_id', $client->id)
             ->where('name', 'Puesto bodega')
             ->firstOrFail();
-        $this->assertSame(12, $post->modality->value);
+        $this->assertSame(12, $post->modality);
 
         $this->actingAs($user)
             ->get(route('company.clients.show', [$client, 'vista' => 'sitio']))
@@ -108,7 +108,7 @@ final class CompanyClientSiteTreeTest extends TestCase
             ->where('client_id', $client->id)
             ->where('name', 'Puesto compartido')
             ->firstOrFail();
-        $this->assertSame(24, $post->modality->value);
+        $this->assertSame(24, $post->modality);
         $this->assertTrue($post->employees->contains($employee));
 
         $this->actingAs($user)
@@ -144,7 +144,7 @@ final class CompanyClientSiteTreeTest extends TestCase
             ->put(route('company.clients.posts.update', [$client, $second]), [
                 'installation_id' => $second->installation_id,
                 'name' => $second->name,
-                'modality' => $second->modality->value,
+                'modality' => $second->modality,
                 'employee_ids' => [$employee->id],
                 'is_active' => '1',
                 'vista' => 'sitio',

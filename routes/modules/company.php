@@ -26,6 +26,7 @@ use App\Http\Controllers\Company\SupervisorAlarmTypeController;
 use App\Http\Controllers\Company\SupervisorChecklistItemController;
 use App\Http\Controllers\Company\SupervisorControlBookTypeController;
 use App\Http\Controllers\Company\SupervisorDocumentTypeController;
+use App\Http\Controllers\Company\SupervisorPostModalityController;
 use App\Http\Controllers\Company\SupervisorRiskTypeController;
 use App\Http\Controllers\Company\SupervisorShiftTemplateController;
 use App\Http\Controllers\Company\SupervisorSupportTypeController;
@@ -190,6 +191,11 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
             Route::post('/supervision-shifts', [SupervisorShiftTemplateController::class, 'store'])->name('supervision-shifts.store');
             Route::put('/supervision-shifts/{template}', [SupervisorShiftTemplateController::class, 'update'])->name('supervision-shifts.update');
             Route::delete('/supervision-shifts/{template}', [SupervisorShiftTemplateController::class, 'destroy'])->name('supervision-shifts.destroy');
+
+            Route::get('/supervision-post-modalities', [SupervisorPostModalityController::class, 'index'])->name('supervision-post-modalities.index');
+            Route::post('/supervision-post-modalities', [SupervisorPostModalityController::class, 'store'])->name('supervision-post-modalities.store');
+            Route::put('/supervision-post-modalities/{postModality}', [SupervisorPostModalityController::class, 'update'])->name('supervision-post-modalities.update');
+            Route::delete('/supervision-post-modalities/{postModality}', [SupervisorPostModalityController::class, 'destroy'])->name('supervision-post-modalities.destroy');
 
             Route::get('/supervision-preop', [SupervisorChecklistItemController::class, 'index'])->name('supervision-preop.index');
             Route::post('/supervision-preop', [SupervisorChecklistItemController::class, 'store'])->name('supervision-preop.store');

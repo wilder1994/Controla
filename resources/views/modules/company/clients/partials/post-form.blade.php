@@ -3,6 +3,10 @@
     $vista = $vista ?? 'sitio';
     $accent = $accent ?? 'indigo';
     $postModalities = $postModalities ?? [];
+    $selectedHours = (int) old('modality', $post?->modality ?? 12);
+    if ($selectedHours > 0 && ! isset($postModalities[$selectedHours])) {
+        $postModalities[$selectedHours] = $selectedHours.' h';
+    }
     $installations = $installations ?? collect();
     $installation = $installation ?? null;
     $returnTo = $returnTo ?? null;
@@ -61,7 +65,7 @@
         <label class="block text-[11px] text-slate-500 mb-1">Modalidad</label>
         <select name="modality" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5 text-xs text-white">
             @foreach ($postModalities as $value => $label)
-                <option value="{{ $value }}" @selected((int) old('modality', $post?->modality?->value ?? 12) === (int) $value)>{{ $label }}</option>
+                <option value="{{ $value }}" @selected($selectedHours === (int) $value)>{{ $label }}</option>
             @endforeach
         </select>
     </div>

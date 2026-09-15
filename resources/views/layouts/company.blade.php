@@ -150,6 +150,7 @@
                         || request()->routeIs('company.structure-types.*')
                         || request()->routeIs('company.supervision-zones.*')
                         || request()->routeIs('company.supervision-shifts.*')
+                        || request()->routeIs('company.supervision-post-modalities.*')
                         || request()->routeIs('company.supervision-preop.*')
                         || request()->routeIs('company.supervision-document-types.*')
                         || request()->routeIs('company.supervision-control-book-types.*')

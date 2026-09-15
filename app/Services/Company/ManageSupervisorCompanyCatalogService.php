@@ -9,6 +9,7 @@ use App\Models\SupervisorAlarmType;
 use App\Models\SupervisorChecklistItem;
 use App\Models\SupervisorControlBookType;
 use App\Models\SupervisorDocumentType;
+use App\Models\SupervisorPostModality;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorSupportType;
 use App\Models\SupervisorWeaponBrand;
@@ -236,6 +237,45 @@ final class ManageSupervisorCompanyCatalogService
         $type->delete();
     }
 
+    /** @param array{hours: int, name?: ?string, is_active?: bool} $data */
+    public function createPostModality(int $companyId, array $data): SupervisorPostModality
+    {
+        $hours = (int) $data['hours'];
+        $this->assertUniqueHours($companyId, $hours);
+
+        return SupervisorPostModality::query()->create([
+            'security_company_id' => $companyId,
+            'hours' => $hours,
+            'name' => filled($data['name'] ?? null) ? trim((string) $data['name']) : null,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'sort_order' => $this->nextOrder(SupervisorPostModality::class, $companyId),
+        ]);
+    }
+
+    /** @param array{hours?: int, name?: ?string, is_active?: bool} $data */
+    public function updatePostModality(SupervisorPostModality $modality, array $data): SupervisorPostModality
+    {
+        if (isset($data['hours'])) {
+            $hours = (int) $data['hours'];
+            $this->assertUniqueHours((int) $modality->security_company_id, $hours, $modality->id);
+            $modality->hours = $hours;
+        }
+        if (array_key_exists('name', $data)) {
+            $modality->name = filled($data['name']) ? trim((string) $data['name']) : null;
+        }
+        if (array_key_exists('is_active', $data)) {
+            $modality->is_active = (bool) $data['is_active'];
+        }
+        $modality->save();
+
+        return $modality->refresh();
+    }
+
+    public function deletePostModality(SupervisorPostModality $modality): void
+    {
+        $modality->delete();
+    }
+
     /**
      * @param  array{name: string, starts_at: string, ends_at: string, is_active?: bool}  $data
      */
@@ -354,6 +394,21 @@ final class ManageSupervisorCompanyCatalogService
         if ($exists) {
             throw ValidationException::withMessages([
                 'name' => 'Ya existe un ítem con ese nombre en este catálogo.',
+            ]);
+        }
+    }
+
+    private function assertUniqueHours(int $companyId, int $hours, ?int $ignoreId = null): void
+    {
+        $exists = SupervisorPostModality::query()
+            ->where('security_company_id', $companyId)
+            ->where('hours', $hours)
+            ->when($ignoreId !== null, fn ($q) => $q->whereKeyNot($ignoreId))
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'hours' => 'Ya existe una modalidad con esas horas.',
             ]);
         }
     }

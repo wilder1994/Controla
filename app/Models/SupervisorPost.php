@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\PostModality;
 use App\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,9 +26,30 @@ final class SupervisorPost extends Model
     protected function casts(): array
     {
         return [
-            'modality' => PostModality::class,
+            'modality' => 'integer',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function modalityLabel(): string
+    {
+        $hours = (int) ($this->modality ?? 0);
+        if ($hours < 1) {
+            return '—';
+        }
+
+        $companyId = (int) ($this->client?->security_company_id ?? 0);
+        if ($companyId > 0) {
+            $row = SupervisorPostModality::query()
+                ->where('security_company_id', $companyId)
+                ->where('hours', $hours)
+                ->first();
+            if ($row !== null) {
+                return $row->label();
+            }
+        }
+
+        return $hours.' h';
     }
 
     public function installation(): BelongsTo

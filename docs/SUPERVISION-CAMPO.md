@@ -21,6 +21,7 @@ Mismo bloque que Cargos/Tipos (`company.settings.view` / `manage`; el colaborado
 | **Estructuras** | `/company/structure-types` | `structure_types` (por empresa; alta de cliente) |
 | **Zonas** | `/company/supervision-zones` | `supervisor_zones` (rutas de Supervisión, no `common_zones`). Correo corporativo de avisos **por zona** (`email`); puede repetirse entre zonas. No se pega al usuario. |
 | **Turnos** | `/company/supervision-shifts` | `supervisor_shift_templates` (nombre + horario) |
+| **Modalidades** | `/company/supervision-post-modalities` | `supervisor_post_modalities` (horas 1–24 del puesto; semilla 8/12/24). No es el turno del supervisor |
 | **Preoperacional** | `/company/supervision-preop` | `supervisor_checklist_items` (`ppe` / `vehicle`) |
 | **Documentos** | `/company/supervision-document-types` | `supervisor_document_types` (entregados/pendientes del turno; vacío hasta que la empresa los cree) |
 | **Libros** | `/company/supervision-control-book-types` | `supervisor_control_book_types` (libros del puesto; vacío hasta que la empresa los cree) |
@@ -30,7 +31,7 @@ Mismo bloque que Cargos/Tipos (`company.settings.view` / `manage`; el colaborado
 | **Alarmas** | `/company/supervision-alarm-types` | `supervisor_alarm_types` (pánico, incendio, etc.; vacío hasta que la empresa los cree) |
 | **Apoyos** | `/company/supervision-support-types` | `supervisor_support_types` (refuerzo, escolta, etc.; vacío hasta que la empresa los cree) |
 
-Si Zonas/Turnos/Preoperacional están vacíos, se siembran defaults (Norte/Sur/Centro; Día 06:00–18:00 y Noche 18:00–06:00; EPP y vehículo de `ShiftIntakeCatalog`). **Documentos**, **Libros**, **Tipos de arma**, **Marcas**, **Riesgos**, **Alarmas** y **Apoyos** no se siembran: la empresa define los tipos. Solo los **activos** salen en la app.
+Si Zonas/Turnos/Modalidades/Preoperacional están vacíos, se siembran defaults (Norte/Sur/Centro; Día 06:00–18:00 y Noche 18:00–06:00; 8/12/24 h; EPP y vehículo de `ShiftIntakeCatalog`). **Documentos**, **Libros**, **Tipos de arma**, **Marcas**, **Riesgos**, **Alarmas** y **Apoyos** no se siembran: la empresa define los tipos. Solo los **activos** salen en la app.
 
 Flota: `supervisor_fleet_vehicles` (placa/marca la primera vez). **No** es `vehicles` de Accesos.
 

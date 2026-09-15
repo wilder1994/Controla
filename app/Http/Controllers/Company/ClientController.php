@@ -6,7 +6,8 @@ namespace App\Http\Controllers\Company;
 
 use App\Domain\Tenant\Data\CreateClientData;
 use App\Enums\PartyType;
-use App\Enums\PostModality;
+use App\Models\SupervisorPostModality;
+use App\Services\Company\SeedSupervisorIntakeDefaultsService;
 use App\Exports\ClientImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\PreviewClientImportRequest;
@@ -293,7 +294,7 @@ final class ClientController extends Controller
             'expediente' => $expediente,
             'installations' => $installations,
             'installationsCount' => $vista === 'resumen' ? $client->installations()->count() : $installations->count(),
-            'postModalities' => PostModality::options(),
+            'postModalities' => $this->postModalityOptions((int) $client->security_company_id),
             'canManageTree' => $request->user()->can('update', $client),
             'canOperate' => $client->has_access && $request->user()->can('operate', $client),
             'canUpdate' => $request->user()->can('update', $client),
@@ -466,6 +467,14 @@ final class ClientController extends Controller
     private function companyId(Request $request): int
     {
         return app(ActingCompanyResolver::class)->requireId($request->user());
+    }
+
+    /** @return array<int, string> */
+    private function postModalityOptions(int $companyId): array
+    {
+        app(SeedSupervisorIntakeDefaultsService::class)->execute($companyId);
+
+        return SupervisorPostModality::optionsForCompany($companyId);
     }
 
     private function assertCompanyOwnership(Request $request, Client $client): void

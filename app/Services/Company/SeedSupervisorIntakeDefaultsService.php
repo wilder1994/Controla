@@ -6,6 +6,7 @@ namespace App\Services\Company;
 
 use App\Enums\SupervisorChecklistKind;
 use App\Models\SupervisorChecklistItem;
+use App\Models\SupervisorPostModality;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
 use App\Support\Supervision\ShiftIntakeCatalog;
@@ -47,6 +48,18 @@ final class SeedSupervisorIntakeDefaultsService
                 'is_active' => true,
                 'sort_order' => 20,
             ]);
+        }
+
+        if (! SupervisorPostModality::query()->where('security_company_id', $companyId)->exists()) {
+            foreach ([8 => 10, 12 => 20, 24 => 30] as $hours => $order) {
+                SupervisorPostModality::query()->create([
+                    'security_company_id' => $companyId,
+                    'hours' => $hours,
+                    'name' => null,
+                    'is_active' => true,
+                    'sort_order' => $order,
+                ]);
+            }
         }
 
         $this->seedChecks($companyId, SupervisorChecklistKind::Ppe, $this->defaults->ppe());

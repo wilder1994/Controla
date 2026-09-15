@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Company;
 
 use App\Domain\Geo\GeoAddressData;
-use App\Enums\PostModality;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\StoreCompanyInstallationRequest;
 use App\Models\Client;
 use App\Models\Installation;
+use App\Models\SupervisorPostModality;
 use App\Services\Company\ManageClientInstallationService;
+use App\Services\Company\SeedSupervisorIntakeDefaultsService;
 use App\Services\Ops\BuildSigBoardService;
 use App\Support\Company\InstallationSiteAdmins;
 use App\Support\Platform\ActingCompanyResolver;
@@ -102,7 +103,7 @@ final class CompanyInstallationController extends Controller
                 'api_key' => config('google-maps.api_key'),
                 'zoom' => 17,
             ],
-            'postModalities' => PostModality::options(),
+            'postModalities' => $this->postModalityOptions((int) $installation->client->security_company_id),
             'canManageTree' => $request->user()?->can('company.installations.manage') ?? false,
         ]);
     }
@@ -181,5 +182,13 @@ final class CompanyInstallationController extends Controller
     private function companyId(Request $request): int
     {
         return app(ActingCompanyResolver::class)->requireId($request->user());
+    }
+
+    /** @return array<int, string> */
+    private function postModalityOptions(int $companyId): array
+    {
+        app(SeedSupervisorIntakeDefaultsService::class)->execute($companyId);
+
+        return SupervisorPostModality::optionsForCompany($companyId);
     }
 }
