@@ -12,8 +12,8 @@ use App\Models\EmployeeDocument;
 use App\Repositories\EmployeeRepository;
 use App\Support\Files\StoredFileResponder;
 use App\Support\Personnel\FolderChecklist;
-use App\Support\Tenancy\TenantContext;
 use App\Support\Personnel\XlsxPreviewHtml;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -36,6 +36,7 @@ final class PersonnelDocumentController extends Controller
                 $q !== '' ? $q : null,
                 24,
                 (int) $client->id,
+                $this->tenantContext->installationIds(),
             ),
             'folderTotal' => count(DocumentFolder::cases()),
             'q' => $q,
@@ -95,6 +96,7 @@ final class PersonnelDocumentController extends Controller
     {
         $client = Client::query()->findOrFail((int) $this->tenantContext->clientId());
         abort_unless($client->has_access && $client->show_personnel_folders, 403);
+        abort_unless(auth()->user()?->can('company.documents.view'), 403);
 
         return $client;
     }
@@ -102,10 +104,14 @@ final class PersonnelDocumentController extends Controller
     private function assertAssigned(Client $client, Employee $employee): void
     {
         abort_unless((int) $employee->security_company_id === (int) $client->security_company_id, 404);
-        abort_unless(
-            $employee->supervisorPosts()->where('client_id', $client->id)->exists(),
-            404,
-        );
+        abort_unless($employee->supervisorPosts()->where('client_id', $client->id)->exists(), 404);
+        $allowed = $this->tenantContext->installationIds();
+        if ($allowed !== null) {
+            abort_unless(
+                $employee->supervisorPosts()->whereIn('installation_id', $allowed)->exists(),
+                404,
+            );
+        }
     }
 
     private function locate(EmployeeDocument $document): EmployeeDocument

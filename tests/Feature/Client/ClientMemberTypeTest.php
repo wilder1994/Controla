@@ -23,7 +23,7 @@ final class ClientMemberTypeTest extends TestCase
 
         $this->actingAs($admin)
             ->withSession(['tenancy.active_client_id' => $client->id])
-            ->get(route('client.settings.member-types.index'))
+            ->get(route('client.members.index'))
             ->assertOk()
             ->assertSee('Tipos de persona')
             ->assertSee('Propietario');
@@ -34,7 +34,7 @@ final class ClientMemberTypeTest extends TestCase
                 'name' => 'Contratista',
                 'is_active' => true,
             ])
-            ->assertRedirect(route('client.settings.member-types.index'));
+            ->assertRedirect(route('client.members.index'));
 
         $type = MemberType::query()
             ->where('client_id', $client->id)
@@ -49,7 +49,7 @@ final class ClientMemberTypeTest extends TestCase
                 'name' => 'Contratista externo',
                 'is_active' => false,
             ])
-            ->assertRedirect(route('client.settings.member-types.index'));
+            ->assertRedirect(route('client.members.index'));
 
         $this->assertDatabaseHas('member_types', [
             'id' => $type->id,
@@ -71,9 +71,9 @@ final class ClientMemberTypeTest extends TestCase
 
         $this->actingAs($admin)
             ->withSession(['tenancy.active_client_id' => $client->id])
-            ->from(route('client.settings.member-types.index'))
+            ->from(route('client.members.index'))
             ->delete(route('client.settings.member-types.destroy', $type))
-            ->assertRedirect(route('client.settings.member-types.index'))
+            ->assertRedirect(route('client.members.index'))
             ->assertSessionHas('error');
 
         $this->assertDatabaseHas('member_types', ['id' => $type->id]);

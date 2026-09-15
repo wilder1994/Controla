@@ -6,8 +6,10 @@ namespace App\Repositories;
 
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
+use App\Support\Auth\ConstrainEmployeesByGrants;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 final class EmployeeRepository
 {
@@ -20,6 +22,7 @@ final class EmployeeRepository
         $query = Employee::query()
             ->with(['jobTitle', 'collaboratorType', 'user'])
             ->where('security_company_id', $companyId);
+        $this->constrainByGrants($query);
 
         if ($status === 'archived') {
             $query->where('is_active', false);
@@ -90,6 +93,7 @@ final class EmployeeRepository
         ?string $search = null,
         int $perPage = 24,
         ?int $assignedToClientId = null,
+        ?array $assignedInstallationIds = null,
     ): LengthAwarePaginator {
         $query = Employee::query()
             ->select('employees.*')
@@ -111,6 +115,11 @@ final class EmployeeRepository
         if ($assignedToClientId !== null) {
             $query->assignedToClient($assignedToClientId);
         }
+        $installationIds = $assignedInstallationIds ?? [];
+        if ($installationIds !== []) {
+            $query->assignedToInstallations($installationIds);
+        }
+        $this->constrainByGrants($query, 'documents');
 
         if ($search !== null && $search !== '') {
             $term = '%'.$search.'%';
@@ -127,5 +136,48 @@ final class EmployeeRepository
             ->orderBy('first_names')
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    public function paginateForClientPosts(
+        int $companyId,
+        int $clientId,
+        ?array $installationIds,
+        int $perPage = 25,
+        ?string $search = null,
+    ): LengthAwarePaginator {
+        $query = Employee::query()
+            ->with(['jobTitle'])
+            ->where('security_company_id', $companyId)
+            ->where('is_active', true)
+            ->assignedToClient($clientId);
+        if ($installationIds !== null && $installationIds !== []) {
+            $query->assignedToInstallations($installationIds);
+        }
+        $this->constrainByGrants($query, 'employees');
+        if ($search !== null && $search !== '') {
+            $term = '%'.$search.'%';
+            $query->where(function (Builder $q) use ($term): void {
+                $q->where('first_names', 'like', $term)
+                    ->orWhere('last_name_paternal', 'like', $term)
+                    ->orWhere('last_name_maternal', 'like', $term)
+                    ->orWhere('document_number', 'like', $term);
+            });
+        }
+
+        return $query
+            ->orderBy('last_name_paternal')
+            ->orderBy('first_names')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    private function constrainByGrants(Builder $query, string $module = 'employees'): void
+    {
+        $user = Auth::user();
+        if ($user === null) {
+            return;
+        }
+
+        app(ConstrainEmployeesByGrants::class)->apply($query, $user, $module);
     }
 }

@@ -23,7 +23,7 @@
             <div>
                 <label class="block text-xs text-slate-400 mb-1">Tipo</label>
                 @if ($memberTypes->isEmpty())
-                    <p class="text-sm text-amber-300">Crea un tipo de persona en <a href="{{ route('client.settings.member-types.index') }}" class="underline hover:text-amber-200">Ajustes</a> antes de registrar.</p>
+                    <p class="text-sm text-amber-300">Crea un tipo de persona con el botón <strong>Tipos de persona</strong> en el listado antes de registrar.</p>
                 @else
                     <select name="member_type_id" required class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-white">
                         <option value="">Seleccione tipo</option>

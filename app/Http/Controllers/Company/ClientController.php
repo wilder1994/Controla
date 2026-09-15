@@ -15,6 +15,7 @@ use App\Http\Requests\Company\UpdateClientModulesRequest;
 use App\Http\Requests\Company\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\IdentityDocumentType;
+use App\Models\Installation;
 use App\Models\Location;
 use App\Models\StructureType;
 use App\Repositories\ClientRepository;
@@ -275,9 +276,9 @@ final class ClientController extends Controller
             ? $this->buildClientExpedienteService->execute($client)
             : null;
 
-        $installations = in_array($vista, ['sitio', 'puertas'], true)
+        $installations = in_array($vista, ['cliente', 'sitio', 'puertas'], true)
             ? $client->installations()
-                ->with([
+                ->with($vista === 'cliente' ? [] : [
                     'locations' => fn ($q) => $q->orderBy('code'),
                     'supervisorPosts' => fn ($q) => $q->with(['employees.jobTitle'])->orderBy('name'),
                 ])
@@ -373,6 +374,48 @@ final class ClientController extends Controller
         return redirect()
             ->route('client.dashboard')
             ->with('success', "Operando panel del cliente: {$client->name}");
+    }
+
+    public function operateInstallation(Request $request, Client $client): RedirectResponse
+    {
+        $this->authorize('operate', $client);
+        abort_unless($client->has_access, 403);
+        abort_unless($request->user()?->can('client.structures.manage'), 403);
+
+        $installationId = (int) $request->input('installation_id');
+        if ($installationId < 1) {
+            $only = $client->installations()->orderBy('name')->limit(2)->pluck('id');
+            abort_unless($only->count() === 1, 422, 'Elige una instalación.');
+            $installationId = (int) $only->first();
+        }
+
+        $installation = Installation::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->whereKey($installationId)
+            ->firstOrFail();
+
+        $request->session()->put(config('tenancy.session.active_client_key'), $client->id);
+        CompanyOperateContext::enter((int) $client->id, CompanyOperateContext::MODE_CLIENTE, (int) $installation->id);
+
+        return redirect()
+            ->route('client.dashboard')
+            ->with('success', "Operando instalación: {$installation->name}");
+    }
+
+    public function updateServiceStart(Request $request, Client $client): RedirectResponse
+    {
+        $this->authorize('update', $client);
+        $this->assertCompanyOwnership($request, $client);
+
+        $validated = $request->validate([
+            'service_started_at' => ['nullable', 'date'],
+        ]);
+        $client->update(['service_started_at' => $validated['service_started_at'] ?? null]);
+
+        return redirect()
+            ->route('company.clients.show', $client)
+            ->with('success', 'Inicio de servicio actualizado.');
     }
 
     public function exitOperate(Request $request): RedirectResponse

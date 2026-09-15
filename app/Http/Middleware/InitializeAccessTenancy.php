@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\Client;
+use App\Support\Company\CompanyOperateContext;
 use App\Support\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -35,7 +36,10 @@ final class InitializeAccessTenancy
 
         $this->tenantContext->hydrateForUser($user, $requestedClientId);
 
-        if ($this->tenantContext->installationIds() === null) {
+        $operateInstallationId = CompanyOperateContext::installationId();
+        if ($operateInstallationId !== null) {
+            $this->tenantContext->setInstallationIds([$operateInstallationId]);
+        } elseif ($this->tenantContext->installationIds() === null) {
             $this->tenantContext->setInstallationIds($user->assignedInstallationIds());
         }
 

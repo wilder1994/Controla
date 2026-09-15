@@ -51,10 +51,12 @@
                             @endif
                         @endforeach
                         @if (isset($activeClient) && $activeClient->has_access && $activeClient->show_personnel_folders)
+                        @can('company.documents.view')
                         <a href="{{ route('client.personnel-documents.index') }}"
                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('client.personnel-documents.*') ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                             <span>Documentos</span>
                         </a>
+                        @endcan
                         @endif
                     </nav>
                     @include('partials.ops-live-alerts', [

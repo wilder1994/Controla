@@ -30,6 +30,22 @@
                         <dt class="text-xs text-slate-500">Contacto</dt>
                         <dd class="text-slate-200">{{ $client->email ?: '—' }} · {{ $client->phone ?: '—' }}</dd>
                     </div>
+                    <div>
+                        <dt class="text-xs text-slate-500">Inicio de servicio</dt>
+                        <dd class="text-slate-200">
+                            @if ($canUpdate ?? false)
+                                <form method="POST" action="{{ route('company.clients.service-start', $client) }}" class="mt-1 flex flex-wrap items-center gap-2">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="date" name="service_started_at" value="{{ old('service_started_at', $client->service_started_at?->format('Y-m-d')) }}"
+                                           class="h-9 rounded-lg border border-slate-700 bg-slate-950 px-2 text-sm text-white">
+                                    <button type="submit" class="h-9 rounded-lg border border-slate-700 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-800">Guardar fecha</button>
+                                </form>
+                            @else
+                                {{ $client->service_started_at?->format('d/m/Y') ?: '—' }}
+                            @endif
+                        </dd>
+                    </div>
                     <div class="sm:col-span-2">
                         <dt class="text-xs text-slate-500">Dirección</dt>
                         <dd class="text-slate-200">{{ $client->address ?: '—' }}{{ $client->city ? ' · '.$client->city : '' }}</dd>
@@ -63,6 +79,26 @@
                                 <p class="mt-1 text-xs text-slate-400 leading-relaxed">Abre el panel de censo y estructura.</p>
                             </button>
                         </form>
+                        @if ($installations->isNotEmpty())
+                            <form method="POST" action="{{ route('company.clients.operate-installation', $client) }}"
+                                  class="flex h-full min-h-[7.5rem] w-full flex-col items-start rounded-lg border border-slate-700 bg-slate-900/80 p-4">
+                                @csrf
+                                <p class="text-sm font-semibold text-white">Operar instalación</p>
+                                @if ($installations->count() === 1)
+                                    <p class="mt-1 text-xs text-slate-400 leading-relaxed">Entra a {{ $installations->first()->name }}.</p>
+                                    <input type="hidden" name="installation_id" value="{{ $installations->first()->id }}">
+                                @else
+                                    <p class="mt-1 text-xs text-slate-400 leading-relaxed">Elige la sede y entra a su panel.</p>
+                                    <select name="installation_id" required class="mt-2 w-full h-9 rounded-lg border border-slate-700 bg-slate-950 px-2 text-xs text-white">
+                                        <option value="">Selecciona…</option>
+                                        @foreach ($installations as $site)
+                                            <option value="{{ $site->id }}">{{ $site->name }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                                <button type="submit" class="mt-auto pt-3 text-xs font-semibold text-indigo-300 hover:text-indigo-200">Entrar</button>
+                            </form>
+                        @endif
                     @endif
                     @if ($canUpdate ?? false)
                         <a href="{{ route('company.clients.edit', $client) }}" class="{{ $actionCard }}">

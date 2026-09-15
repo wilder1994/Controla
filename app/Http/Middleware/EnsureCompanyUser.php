@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Support\Platform\SupportCompanyContext;
 use Closure;
 use Illuminate\Http\Request;
-use App\Support\Platform\SupportCompanyContext;
 use Symfony\Component\HttpFoundation\Response;
 
 final class EnsureCompanyUser
@@ -51,6 +51,8 @@ final class EnsureCompanyUser
             'company.clients.show',
             'company.clients.activate',
             'company.clients.operate-client',
+            'company.clients.operate-installation',
+            'company.clients.service-start',
         ]);
     }
 }

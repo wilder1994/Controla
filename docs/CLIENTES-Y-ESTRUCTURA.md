@@ -120,7 +120,7 @@ No se clonan tablas de Patrulla (`review_posts`, etc.). Flota de Supervisión si
 2. Empresa: alta de cliente (ficha) e **instalaciones**.
 3. Panel cliente (`/client/installations`): directorio → ficha de la sede → árbol + **Nuevo nodo**. El tipo se **hereda** del cliente (nota bajo el nombre; no hay campo Tipo ni Código).
 4. **Crear dentro de:** primera opción = esta instalación (raíz); el resto indentado en orden de árbol. El **+** de cada nodo lo deja como padre y enfoca el nombre.
-5. **Tipos de persona** en `/client/settings/member-types` (Ajustes). Catálogo **por cliente**.
+5. **Tipos de persona** en Personas (botón + modal). Catálogo **por cliente**.
 6. Personas en **un** nodo de esa instalación (elige instalación → nodo).
 7. Acceso de persona (`/client/app-users`) para app o panel.
 
@@ -180,7 +180,7 @@ Listado `/company/clients` vacío: **«Aún no tienes clientes creados en la car
 
 Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** (si `has_access`).
 
-- Cliente: ficha + **Operar portería** / **Operar cliente** (solo Accesos), **Editar**, **Instalaciones y puestos**, **Puertas** (solo Accesos), **Gestión de módulos** (qué ve el panel del cliente).
+- Cliente: ficha (incluye **inicio de servicio**) + **Operar portería** / **Operar cliente** / **Operar instalación** (una sede o selector), **Editar**, **Instalaciones y puestos**, **Puertas** (solo Accesos), **Gestión de módulos**.
 - Sitio: instalaciones + puestos (modalidad y vigilantes). Sin revistas aquí.
 - Puertas: `locations` de esas instalaciones.
 - Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.

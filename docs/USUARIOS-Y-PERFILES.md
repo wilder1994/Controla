@@ -17,8 +17,8 @@ Tres administradores; el **admin empresa** también usa la matriz Nada / Ver / G
 | Quién | Alcance |
 |--------|---------|
 | Admin empresa (`company-admin`) | Matriz de módulos de empresa + portería/censo del rol |
-| Admin cliente (`client-admin`) | Ese cliente. Matriz SIG / Observatorio / Censo. **No crea usuarios.** |
-| Admin instalaciones (`client-installation-admin`) | Sedes asignadas. Matriz SIG / Observatorio / Censo. Ajustes solo ver. **No crea usuarios.** |
+| Admin cliente (`client-admin`) | Ese cliente. Matriz por módulo (SIG, Observatorio, nodos, personas, vehículos, mascotas, autorizaciones, usuarios, app, empleados, documentos). **No crea usuarios empresa.** |
+| Admin instalaciones (`client-installation-admin`) | Sedes asignadas. Misma matriz recortada a esas sedes. Apoyo: no borra nodos ni edita ficha. **No crea usuarios empresa.** |
 
 Oficios (no son un collage):
 
@@ -27,7 +27,7 @@ Oficios (no son un collage):
 | **Supervisor** | Solo app de campo. Login usuario + clave. Extra: código 6 dígitos para revista. |
 | **Vigilante** | Solo portería del cliente asignado (con puertas). Reasignar a otro cliente con puertas: mismas credenciales. |
 
-**Colaborador** y **admin empresa**: matriz Nada / Ver / Gestionar. Catálogo empresa: Mi empresa, Facturación, Clientes, Instalaciones, Observatorio, Supervisión, Atención de pánicos, Descargas, Empleados, Documentos, Usuarios, Mis datos, Ajustes. **Admin cliente** e **admin instalaciones**: la misma matriz Nada / Ver / Gestionar sobre Resumen SIG, Observatorio y Censo (por cliente o por sede). Portería no se recorta en esa matriz. Pánico y Observatorio no se amarran entre sí. Quien crea no puede conceder más de lo que tiene **ni el colaborador asignar `company-admin`**. Permisos Spatie de esos módulos van en `user_module_grants`. **Clientes Ver/Gestionar** abre `/company/clients`. **Instalaciones** usa `company.installations.view` / `manage`.
+**Admin cliente** e **admin instalaciones**: matriz Nada / Ver / Gestionar por módulo de cliente o sede (no solo SIG / Observatorio / Censo). Portería no se recorta en esa matriz. Empleados y documentos empiezan en Nada: si se conceden, el listado es el de puestos de ese cliente o de esa instalación. Tipos de persona: botón en **Personas**, no en Ajustes.
 
 ---
 

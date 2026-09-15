@@ -46,6 +46,11 @@ final class ParseAccessGrants
                 if ($id <= 0) {
                     continue;
                 }
+                if (isset($modules['census']) && is_string($modules['census'])) {
+                    foreach (GrantableModules::censusAliasModules() as $alias) {
+                        $modules[$alias] = $modules[$alias] ?? $modules['census'];
+                    }
+                }
                 foreach (GrantableModules::keys($scope) as $module) {
                     $level = $this->levelOf($modules[$module] ?? null);
                     if ($level === null) {

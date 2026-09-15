@@ -12,7 +12,6 @@ use App\Services\Client\ManageClientMemberTypeService;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 final class MemberTypeController extends Controller
 {
@@ -21,17 +20,9 @@ final class MemberTypeController extends Controller
         private readonly TenantContext $tenantContext,
     ) {}
 
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        $this->authorize('viewAny', MemberType::class);
-
-        $types = MemberType::query()
-            ->withCount('members')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        return view('modules.client.settings.member-types', compact('types'));
+        return redirect()->route('client.members.index');
     }
 
     public function store(StoreMemberTypeRequest $request): RedirectResponse
@@ -45,7 +36,7 @@ final class MemberTypeController extends Controller
         );
 
         return redirect()
-            ->route('client.settings.member-types.index')
+            ->route('client.members.index')
             ->with('success', 'Tipo de persona creado.');
     }
 
@@ -59,7 +50,7 @@ final class MemberTypeController extends Controller
         ]);
 
         return redirect()
-            ->route('client.settings.member-types.index')
+            ->route('client.members.index')
             ->with('success', 'Tipo de persona actualizado.');
     }
 
@@ -71,12 +62,12 @@ final class MemberTypeController extends Controller
             $this->manageClientMemberTypeService->delete($memberType);
         } catch (ValidationException $e) {
             return redirect()
-                ->route('client.settings.member-types.index')
+                ->route('client.members.index')
                 ->with('error', $e->validator->errors()->first() ?: 'No se pudo eliminar el tipo.');
         }
 
         return redirect()
-            ->route('client.settings.member-types.index')
+            ->route('client.members.index')
             ->with('success', 'Tipo de persona eliminado.');
     }
 }

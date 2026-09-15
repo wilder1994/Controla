@@ -44,6 +44,8 @@ final class CompanyClientExpedienteTest extends TestCase
         $response->assertSee('Supervisión');
         $response->assertSee('Operar portería');
         $response->assertSee('Operar cliente');
+        $response->assertSee('Operar instalación');
+        $response->assertSee('Inicio de servicio');
         $response->assertSee('Editar');
         $response->assertSee('Instalaciones y puestos');
         $response->assertSee('Puertas');
@@ -95,6 +97,24 @@ final class CompanyClientExpedienteTest extends TestCase
         );
         $this->assertSame((int) $client->id, CompanyOperateContext::clientId());
         $this->assertSame(CompanyOperateContext::MODE_CLIENTE, CompanyOperateContext::mode());
+        $this->assertNull(CompanyOperateContext::installationId());
+    }
+
+    public function test_operate_installation_scopes_the_session(): void
+    {
+        $this->seedWithPilot();
+
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $site = $client->installations()->orderBy('name')->firstOrFail();
+
+        $response = $this->actingAs($user)->post(route('company.clients.operate-installation', $client), [
+            'installation_id' => $site->id,
+        ]);
+
+        $response->assertRedirect(route('client.dashboard'));
+        $this->assertSame((int) $client->id, CompanyOperateContext::clientId());
+        $this->assertSame((int) $site->id, CompanyOperateContext::installationId());
     }
 
     public function test_operate_porteria_and_exit_returns_to_expediente(): void

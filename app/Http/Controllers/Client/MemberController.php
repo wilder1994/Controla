@@ -55,6 +55,7 @@ final class MemberController extends Controller
             'nodeOptions' => $picker['nodeOptions'],
             'installationId' => $installationId,
             'structureId' => $structureId,
+            'memberTypes' => MemberType::query()->withCount('members')->orderBy('sort_order')->orderBy('name')->get(),
         ]);
     }
 

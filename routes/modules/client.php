@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Client\AppUserController;
 use App\Http\Controllers\Client\AuthorizationController;
 use App\Http\Controllers\Client\DashboardController;
+use App\Http\Controllers\Client\EmployeeController;
 use App\Http\Controllers\Client\InstallationController;
 use App\Http\Controllers\Client\MemberController;
 use App\Http\Controllers\Client\MemberTypeController;
@@ -36,12 +37,16 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::post('/ops/panic', [OperationalAlertController::class, 'panic'])
             ->name('ops.panic');
 
-        Route::middleware('permission:client.structures.manage')->group(function () {
+        Route::middleware('permission:company.documents.view')->group(function () {
             Route::get('/documents', [PersonnelDocumentController::class, 'index'])->name('personnel-documents.index');
             Route::get('/documents/file/{document}/preview', [PersonnelDocumentController::class, 'preview'])->name('personnel-documents.preview');
             Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
             Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->name('personnel-documents.folder');
         });
+
+        Route::get('/employees', [EmployeeController::class, 'index'])
+            ->middleware('permission:company.employees.view')
+            ->name('employees.index');
 
         Route::get('/installations', [InstallationController::class, 'index'])
             ->middleware('permission:client.structures.manage')
@@ -101,8 +106,6 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
 
         Route::middleware('permission:client.members.manage')->prefix('settings')->name('settings.')->group(function () {
             Route::get('/member-types', [MemberTypeController::class, 'index'])->name('member-types.index');
-        });
-        Route::middleware('permission:client.settings.manage')->prefix('settings')->name('settings.')->group(function () {
             Route::post('/member-types', [MemberTypeController::class, 'store'])->name('member-types.store');
             Route::put('/member-types/{memberType}', [MemberTypeController::class, 'update'])->name('member-types.update');
             Route::delete('/member-types/{memberType}', [MemberTypeController::class, 'destroy'])->name('member-types.destroy');

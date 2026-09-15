@@ -56,7 +56,7 @@ Traza GPS En vivo (15 sep 2026): `BuildSupervisorTrailService` filtra precisión
 
 Permisos + overlay (15 sep 2026): catálogo de matriz (dashboard, instalaciones, pánicos, SIG, etc.) para **admin y colaborador**. Pánico y Observatorio independientes. Overlay palpitante; Observatorio también en bucle. Sin migrate de tablas. Pull + `RoleAndPermissionSeeder` (crea `company.installations.*`, `ops.sig.view` y rellena grants de `company-admin`) + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
-Matriz cliente/sedes (15 sep 2026): admin cliente e instalaciones también eligen SIG / Observatorio / Censo. Pull + `RoleAndPermissionSeeder` (rellena grants de `client-admin` y `client-installation-admin`; el catálogo de alcance corre en modo trusted para no bloquear al propio admin cliente) + `view:cache` + `route:cache`. Sin migrate. Artisan como `wcodex-controla`.
+Matriz cliente/sedes (15 sep 2026): catálogo partido (nodos, personas, vehículos, etc.). Empleados/documentos recortados a puestos. Migrate `2026_09_15_150000` + `RoleAndPermissionSeeder` + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
 Ficha folio Observatorio (15 sep 2026): grilla 2×2; fila 1 mapa+datos `h-[28rem]`, acciones fijas al pie. Pull + `npm run build` + `view:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 

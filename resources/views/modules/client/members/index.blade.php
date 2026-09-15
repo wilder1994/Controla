@@ -12,6 +12,7 @@
                        class="rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white">
             </div>
             <x-slot:actions>
+                @include('modules.client.members.partials.types-modal')
                 <a href="{{ route('client.members.export') }}" class="inline-flex rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">
                     Exportar
                 </a>

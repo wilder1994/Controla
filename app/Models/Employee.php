@@ -123,6 +123,18 @@ final class Employee extends Model
         $query->whereHas('supervisorPosts', fn (Builder $posts) => $posts->where('client_id', $clientId));
     }
 
+    public function scopeAssignedToInstallations(Builder $query, array $installationIds): void
+    {
+        $ids = array_values(array_filter(array_map('intval', $installationIds)));
+        if ($ids === []) {
+            $query->whereRaw('0 = 1');
+
+            return;
+        }
+
+        $query->whereHas('supervisorPosts', fn (Builder $posts) => $posts->whereIn('installation_id', $ids));
+    }
+
     public function getFullNameAttribute(): string
     {
         return $this->fullName();

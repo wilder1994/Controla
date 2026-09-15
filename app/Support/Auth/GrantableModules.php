@@ -109,16 +109,50 @@ final class GrantableModules
                     'view' => ['observatory.view'],
                     'manage' => ['observatory.view', 'observatory.events.update'],
                 ],
-                'census' => [
-                    'label' => 'Censo / estructura',
-                    'view' => ['client.structures.manage', 'client.members.manage'],
-                    'manage' => [
-                        'client.structures.manage',
-                        'client.members.manage',
-                        'client.pets.manage',
-                        'client.vehicles.manage',
-                        'client.authorizations.manage',
-                    ],
+                'structures' => [
+                    'label' => 'Instalaciones / nodos',
+                    'view' => ['client.structures.manage'],
+                    'manage' => ['client.structures.manage'],
+                ],
+                'members' => [
+                    'label' => 'Personas',
+                    'view' => ['client.members.manage'],
+                    'manage' => ['client.members.manage', 'client.settings.manage'],
+                ],
+                'vehicles' => [
+                    'label' => 'Vehículos',
+                    'view' => ['client.vehicles.manage'],
+                    'manage' => ['client.vehicles.manage'],
+                ],
+                'pets' => [
+                    'label' => 'Mascotas',
+                    'view' => ['client.pets.manage'],
+                    'manage' => ['client.pets.manage'],
+                ],
+                'authorizations' => [
+                    'label' => 'Autorizaciones',
+                    'view' => ['client.authorizations.manage'],
+                    'manage' => ['client.authorizations.manage'],
+                ],
+                'users' => [
+                    'label' => 'Usuarios',
+                    'view' => ['client.users.manage'],
+                    'manage' => ['client.users.manage'],
+                ],
+                'app_users' => [
+                    'label' => 'Accesos (app)',
+                    'view' => ['client.app_users.manage'],
+                    'manage' => ['client.app_users.manage'],
+                ],
+                'employees' => [
+                    'label' => 'Empleados',
+                    'view' => ['company.employees.view'],
+                    'manage' => ['company.employees.view', 'company.employees.manage'],
+                ],
+                'documents' => [
+                    'label' => 'Documentos de personal',
+                    'view' => ['company.documents.view'],
+                    'manage' => ['company.documents.view', 'company.documents.manage'],
                 ],
             ],
         };
@@ -173,10 +207,25 @@ final class GrantableModules
     {
         $grants = [];
         foreach (self::keys($scope) as $module) {
+            if (in_array($module, self::optInModules(), true)) {
+                continue;
+            }
             $grants[] = new AccessGrantData($scope, $scopeId, $module, AccessGrantLevel::Manage);
         }
 
         return $grants;
+    }
+
+    /** @return list<string> */
+    public static function optInModules(): array
+    {
+        return ['employees', 'documents'];
+    }
+
+    /** @return list<string> */
+    public static function censusAliasModules(): array
+    {
+        return ['structures', 'members', 'vehicles', 'pets', 'authorizations'];
     }
 
     /** @return list<string> */

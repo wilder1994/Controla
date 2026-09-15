@@ -123,9 +123,6 @@ return [
         ],
 
         'client-admin' => [
-            'client.app_users.manage',
-            'client.users.manage',
-            'client.settings.manage',
             'access.operations',
             'access.dashboard',
             'access.manage.blocklist',
@@ -150,7 +147,6 @@ return [
         ],
 
         'client-installation-admin' => [
-            'client.app_users.manage',
             'access.operations',
             'access.dashboard',
             'access.manage.blocklist',
@@ -309,9 +305,9 @@ return [
                 ['label' => 'Instalaciones', 'route' => 'client.installations.index', 'permission' => 'client.structures.manage'],
                 ['label' => 'Observatorio', 'route' => 'client.observatory.events.index', 'permission' => 'observatory.view', 'module' => 'observatory'],
                 ['label' => 'Personas', 'route' => 'client.members.index', 'permission' => 'client.members.manage'],
+                ['label' => 'Empleados', 'route' => 'client.employees.index', 'permission' => 'company.employees.view'],
                 ['label' => 'Usuarios', 'route' => 'client.users.index', 'permission' => 'client.users.manage'],
                 ['label' => 'Accesos', 'route' => 'client.app-users.index', 'permission' => 'client.app_users.manage'],
-                ['label' => 'Ajustes', 'route' => 'client.settings.member-types.index', 'permission' => 'client.members.manage'],
                 ['label' => 'Vehículos', 'route' => 'client.vehicles.index', 'permission' => 'client.vehicles.manage', 'module' => 'vehicles'],
                 ['label' => 'Mascotas', 'route' => 'client.pets.index', 'permission' => 'client.pets.manage', 'module' => 'pets'],
                 ['label' => 'Autorizaciones', 'route' => 'client.authorizations.index', 'permission' => 'client.authorizations.manage', 'module' => 'authorizations'],

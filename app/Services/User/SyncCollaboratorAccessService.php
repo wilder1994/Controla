@@ -101,6 +101,15 @@ final class SyncCollaboratorAccessService
             return $companyWide?->level;
         }
 
+        $companyKey = $grant->scope === AccessGrantScope::Installation ? 'installations' : 'clients';
+        $viaCompany = $actor->moduleGrants
+            ->first(fn (UserModuleGrant $row) => $row->scope === AccessGrantScope::Company
+                && (int) $row->scope_id === $companyId
+                && $row->module === $companyKey);
+        if ($viaCompany !== null) {
+            return $viaCompany->level;
+        }
+
         $same = $actor->moduleGrants
             ->first(fn (UserModuleGrant $row) => $row->scope === $grant->scope
                 && (int) $row->scope_id === $grant->scopeId

@@ -171,7 +171,20 @@
                 }
             },
             ensureScopedGrants(map, id) {
-                if (!map[id]) map[id] = { sig: 'none', observatory: 'none', census: 'none' }
+                if (map[id]) return
+                const row = {}
+                ;(this.scopedModules || []).forEach((mod) => { row[mod.key] = 'none' })
+                map[id] = row
+            },
+            fillScopedManage(map, ids) {
+                const keys = (this.scopedModules || []).map((mod) => mod.key)
+                const skip = new Set(['employees', 'documents'])
+                ;(ids || []).forEach((id) => {
+                    this.ensureScopedGrants(map, id)
+                    const anySet = keys.some((key) => map[id][key] && map[id][key] !== 'none')
+                    if (anySet) return
+                    keys.forEach((key) => { map[id][key] = skip.has(key) ? 'none' : 'manage' })
+                })
             },
             fillCompanyAdminGrants() {
                 const keys = (this.companyModules || []).map((mod) => mod.key)
@@ -180,15 +193,6 @@
                 const next = { ...this.companyGrants }
                 keys.forEach((key) => { next[key] = 'manage' })
                 this.companyGrants = next
-            },
-            fillScopedManage(map, ids) {
-                const keys = (this.scopedModules || []).map((mod) => mod.key)
-                ;(ids || []).forEach((id) => {
-                    this.ensureScopedGrants(map, id)
-                    const anySet = keys.some((key) => map[id][key] && map[id][key] !== 'none')
-                    if (anySet) return
-                    keys.forEach((key) => { map[id][key] = 'manage' })
-                })
             },
             async loadInstallationsIfNeeded() {
                 if (this.isCollaborator && this.pickedClientIds.length > 0) {
@@ -487,7 +491,7 @@
 
     <div x-show="usesClientMatrix && pickedClientIds.length" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
         <p class="text-xs font-medium text-slate-300">Permisos por cliente</p>
-        <p class="text-[11px] text-slate-500">Resumen SIG, Observatorio y Censo. Portería no se recorta aquí.</p>
+        <p class="text-[11px] text-slate-500">Nada / Ver / Gestionar por módulo. Portería no se recorta aquí. Empleados y documentos quedan en Nada salvo que los marques.</p>
         <template x-for="id in pickedClientIds" :key="'cg'+id">
             <div class="space-y-1">
                 <p class="text-sm text-white" x-text="(clients.find((c) => String(c.id) === String(id)) || {}).name"></p>
@@ -507,7 +511,7 @@
 
     <div x-show="usesInstallationMatrix && (isCollaborator ? installations.length : selectedInstallationIds.length)" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
         <p class="text-xs font-medium text-slate-300">Permisos por instalación</p>
-        <p class="text-[11px] text-slate-500">Resumen SIG, Observatorio y Censo de esas sedes. Portería no se recorta aquí.</p>
+        <p class="text-[11px] text-slate-500">Nada / Ver / Gestionar por módulo de esas sedes. Portería no se recorta aquí. Empleados y documentos quedan en Nada salvo que los marques.</p>
         <template x-for="row in (isCollaborator ? installations : installations.filter((item) => selectedInstallationIds.includes(String(item.id))))" :key="'ig'+row.id">
             <div class="space-y-1">
                 <p class="text-sm text-white" x-text="row.name"></p>
