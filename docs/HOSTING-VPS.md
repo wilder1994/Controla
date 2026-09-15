@@ -60,6 +60,8 @@ Matriz cliente/sedes (15 sep 2026): admin cliente e instalaciones también elige
 
 Ficha folio Observatorio (15 sep 2026): grilla 2×2 (mapa, datos, novedades, bitácora). Pull + `npm run build` + `view:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 
+Carga de folios (15 sep 2026): medidor verde→rojo (`load_rate`). Pull + `npm run build` + `view:cache`. Sin migrate. Artisan como `wcodex-controla`.
+
 **Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
 
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.

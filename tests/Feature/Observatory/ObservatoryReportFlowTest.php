@@ -6,13 +6,16 @@ namespace Tests\Feature\Observatory;
 
 use App\Enums\InstallationKind;
 use App\Enums\ObservatoryEventStatus;
+use App\Enums\SupervisionPackageSku;
 use App\Models\Client;
 use App\Models\Installation;
+use App\Models\Location;
 use App\Models\ObservatoryEvent;
 use App\Models\ObservatoryReport;
 use App\Models\ObservatoryReportType;
 use App\Models\User;
 use App\Services\Observatory\EnsureObservatoryReportTypesService;
+use App\Services\Tenant\AssignCompanySupervisionPackageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -682,7 +685,7 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('Tendencia por tipo', false)
             ->assertSee('Días con más reportes', false)
             ->assertSee('De dónde llega', false)
-            ->assertSee('Eventos resueltos', false)
+            ->assertSee('Carga de folios', false)
             ->assertSee('API', false)
             ->assertSee('Compartir link', false)
             ->assertSee('Tipos y nivel', false);
@@ -802,9 +805,9 @@ final class ObservatoryReportFlowTest extends TestCase
     {
         [$client, $colegio] = $this->sites();
         $user = $this->companySupervisor();
-        app(\App\Services\Tenant\AssignCompanySupervisionPackageService::class)->execute(
+        app(AssignCompanySupervisionPackageService::class)->execute(
             $user->securityCompany,
-            \App\Enums\SupervisionPackageSku::Sit1,
+            SupervisionPackageSku::Sit1,
         );
         $token = $this->loginCompanySupervisor();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload())->assertCreated();
@@ -844,9 +847,9 @@ final class ObservatoryReportFlowTest extends TestCase
     {
         [, $colegio] = $this->sites();
         $user = $this->companySupervisor();
-        app(\App\Services\Tenant\AssignCompanySupervisionPackageService::class)->execute(
+        app(AssignCompanySupervisionPackageService::class)->execute(
             $user->securityCompany,
-            \App\Enums\SupervisionPackageSku::Sit1,
+            SupervisionPackageSku::Sit1,
         );
         $token = $this->loginCompanySupervisor();
         $this->withToken($token)->post('/api/supervision/shifts/open', $this->supervisorShiftOpenPayload())->assertCreated();
@@ -866,7 +869,7 @@ final class ObservatoryReportFlowTest extends TestCase
         [$client, $colegio, $conjunto] = $this->sites();
         config(['access.geo.required' => false, 'access.shifts.enforced' => false]);
 
-        $door = \App\Models\Location::query()->create([
+        $door = Location::query()->create([
             'client_id' => $client->id,
             'installation_id' => $colegio->id,
             'code' => 'COL-01',
@@ -874,7 +877,7 @@ final class ObservatoryReportFlowTest extends TestCase
             'type' => 'access_point',
             'is_active' => true,
         ]);
-        $conjuntoDoor = \App\Models\Location::query()
+        $conjuntoDoor = Location::query()
             ->withoutGlobalScopes()
             ->where('client_id', $client->id)
             ->where('installation_id', $conjunto->id)

@@ -11,7 +11,7 @@
     $comuna = $comuna ?? '';
     $comunas = $comunas ?? ($map['comunas'] ?? []);
     $board = $board ?? [
-        'total' => 0, 'nuevo' => 0, 'en_atencion' => 0, 'cerrado' => 0, 'closed_rate' => 0,
+        'total' => 0, 'nuevo' => 0, 'en_atencion' => 0, 'cerrado' => 0, 'closed_rate' => 0, 'load_rate' => 0,
         'top' => [], 'trend' => ['labels' => ['—'], 'series' => []],
         'peaks' => ['labels' => ['—'], 'values' => [0]],
         'kinds' => ['labels' => [], 'values' => []], 'sources' => ['labels' => [], 'values' => []],
@@ -45,6 +45,7 @@
     $charts = [
         'accent' => $accent,
         'closed_rate' => (int) ($board['closed_rate'] ?? 0),
+        'load_rate' => (int) ($board['load_rate'] ?? 0),
         'trend' => $board['trend'] ?? ['labels' => ['—'], 'series' => []],
         'peaks' => $board['peaks'] ?? ['labels' => ['—'], 'values' => [0]],
         'sources' => $board['sources'] ?? ['labels' => [], 'values' => []],
@@ -242,14 +243,14 @@
             </section>
             <section class="obs-card">
                 <div class="obs-card-h">
-                    <p>Cierre</p>
-                    <h3>Eventos resueltos</h3>
+                    <p>Carga</p>
+                    <h3>Carga de folios</h3>
                 </div>
                 <div class="obs-chart obs-gauge relative">
-                    <canvas x-ref="gauge" aria-label="Medidor de cierre"></canvas>
-                    <div class="absolute inset-x-0 bottom-2 text-center pointer-events-none">
-                        <p class="text-2xl font-semibold tabular-nums text-white">{{ (int) ($board['closed_rate'] ?? 0) }}%</p>
-                        <p class="text-[10px] text-slate-500">{{ ((int) ($board['total'] ?? 0)) === 0 ? 'Sin eventos' : 'Cerrados / total' }}</p>
+                    <canvas x-ref="gauge" aria-label="Carga de folios"></canvas>
+                    <div class="absolute inset-x-0 bottom-1.5 text-center pointer-events-none">
+                        <p class="text-2xl font-semibold tabular-nums text-white">{{ (int) ($board['load_rate'] ?? 0) }}%</p>
+                        <p class="text-[10px] text-slate-500">{{ ((int) ($board['total'] ?? 0)) === 0 ? 'Sin eventos' : 'Nuevo 1 · Atención 0,4 · Cerrado 0' }}</p>
                     </div>
                 </div>
             </section>

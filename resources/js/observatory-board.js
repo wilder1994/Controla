@@ -115,53 +115,87 @@ function doughnutOptions(empty) {
     };
 }
 
-const gaugeNeedle = {
-    id: 'obsGaugeNeedle',
-    afterDatasetDraw(chart, _args, opts) {
-        const meta = chart.getDatasetMeta(0);
-        const arc = meta?.data?.[0];
-        if (!arc) {
-            return;
-        }
-        const { x, y, outerRadius, innerRadius } = arc.getProps(['x', 'y', 'outerRadius', 'innerRadius'], true);
-        const value = Math.max(0, Math.min(100, Number(opts.value ?? 0)));
-        const angle = Math.PI + (Math.PI * value) / 100;
-        const r = innerRadius + (outerRadius - innerRadius) * 0.55;
-        const ctx = chart.ctx;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-        ctx.beginPath();
-        ctx.moveTo(-5, 4);
-        ctx.lineTo(r, 0);
-        ctx.lineTo(-5, -4);
-        ctx.closePath();
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(0, 0, 6, 0, Math.PI * 2);
-        ctx.fillStyle = '#cbd5e1';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(0, 0, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#0f172a';
-        ctx.fill();
-        ctx.restore();
-    },
-};
+function mixRgb(from, to, t) {
+    return from.map((c, i) => Math.round(c + (to[i] - c) * t));
+}
 
-function gaugeColor(value) {
-    if (value >= 70) {
-        return '#34d399';
+function loadColor(t) {
+    const clamped = Math.max(0, Math.min(1, t));
+    const green = [16, 185, 129];
+    const amber = [245, 158, 11];
+    const red = [239, 68, 68];
+    const rgb = clamped < 0.5
+        ? mixRgb(green, amber, clamped / 0.5)
+        : mixRgb(amber, red, (clamped - 0.5) / 0.5);
+
+    return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+}
+
+function drawLoadGauge(canvas, value) {
+    const parent = canvas.parentElement;
+    const width = Math.max(1, parent?.clientWidth ?? canvas.clientWidth);
+    const height = Math.max(1, parent?.clientHeight ?? canvas.clientHeight);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return;
     }
-    if (value >= 35) {
-        return '#14b8a6';
-    }
-    if (value > 0) {
-        return '#f59e0b';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const cx = width / 2;
+    const cy = height * 0.82;
+    const radius = Math.min(width * 0.42, height * 0.78);
+    const thickness = Math.max(10, radius * 0.18);
+    const start = Math.PI;
+    const sweep = Math.PI;
+    const steps = 96;
+
+    ctx.lineCap = 'butt';
+    ctx.lineWidth = thickness;
+    for (let i = 0; i < steps; i += 1) {
+        const t0 = i / steps;
+        const a0 = start + sweep * t0;
+        const a1 = start + sweep * ((i + 1) / steps);
+        ctx.beginPath();
+        ctx.strokeStyle = loadColor(t0);
+        ctx.arc(cx, cy, radius, a0, a1);
+        ctx.stroke();
     }
 
-    return '#475569';
+    ctx.beginPath();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#0f172a';
+    ctx.arc(cx, cy, radius - thickness / 2 - 1.5, start, start + sweep);
+    ctx.stroke();
+
+    const load = Math.max(0, Math.min(100, Number(value) || 0)) / 100;
+    const angle = start + sweep * load;
+    const needle = radius - thickness * 0.15;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(-7, 5);
+    ctx.lineTo(needle, 0);
+    ctx.lineTo(-7, -5);
+    ctx.closePath();
+    ctx.fillStyle = loadColor(load);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    ctx.fillStyle = load >= 0.7 ? '#fecaca' : '#e2e8f0';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = loadColor(load);
+    ctx.fill();
+    ctx.restore();
 }
 
 export function observatoryBoard(payload) {
@@ -175,12 +209,12 @@ export function observatoryBoard(payload) {
             const trend = data.trend ?? { labels: ['—'], series: [] };
             const peaks = data.peaks ?? { labels: ['—'], values: [0] };
             const sources = data.sources ?? { labels: [], values: [] };
-            const rate = Number(data.closed_rate ?? 0);
+            const load = Number(data.load_rate ?? 0);
 
             this.lines(this.$refs.trend, trend);
             this.bars(this.$refs.peaks, peaks);
             this.pie(this.$refs.sources, sources);
-            this.gauge(this.$refs.gauge, rate);
+            this.gauge(this.$refs.gauge, load);
         },
         lines(el, series) {
             if (!el) {
@@ -262,30 +296,12 @@ export function observatoryBoard(payload) {
             if (!el) {
                 return;
             }
-            new Chart(el, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Cerrados', 'Abiertos'],
-                    datasets: [{
-                        data: [value, 100 - value],
-                        backgroundColor: [gaugeColor(value), '#1e293b'],
-                        borderWidth: 0,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    rotation: -90,
-                    circumference: 180,
-                    cutout: '78%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false },
-                        obsGaugeNeedle: { value },
-                    },
-                },
-                plugins: [gaugeNeedle],
-            });
+            const paint = () => drawLoadGauge(el, value);
+            paint();
+            if (typeof ResizeObserver !== 'undefined') {
+                const observer = new ResizeObserver(paint);
+                observer.observe(el.parentElement ?? el);
+            }
         },
     };
 }

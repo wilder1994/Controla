@@ -45,15 +45,18 @@ final class BuildObservatoryBoardService
             ->pluck('aggregate', 'status');
 
         $total = (int) $counts->sum();
+        $nuevo = (int) ($counts[ObservatoryEventStatus::Nuevo->value] ?? 0);
+        $enAtencion = (int) ($counts[ObservatoryEventStatus::EnAtencion->value] ?? 0);
         $cerrado = (int) ($counts[ObservatoryEventStatus::Cerrado->value] ?? 0);
         $types = $this->types($companyId, $clientId);
 
         return [
             'total' => $total,
-            'nuevo' => (int) ($counts[ObservatoryEventStatus::Nuevo->value] ?? 0),
-            'en_atencion' => (int) ($counts[ObservatoryEventStatus::EnAtencion->value] ?? 0),
+            'nuevo' => $nuevo,
+            'en_atencion' => $enAtencion,
             'cerrado' => $cerrado,
             'closed_rate' => $total === 0 ? 0 : (int) round(100 * $cerrado / $total),
+            'load_rate' => self::loadRate($nuevo, $enAtencion, $total),
             'top' => $this->ranking($query),
             'trend' => $this->trendByType($companyId, $clientId, $installationIds, $from, $to, $grain, $types),
             'peaks' => $this->peakDays($companyId, $clientId, $installationIds, $from, $to),
@@ -62,6 +65,17 @@ final class BuildObservatoryBoardService
             'types' => $types,
             'grain' => $grain,
         ];
+    }
+
+    public static function loadRate(int $nuevo, int $enAtencion, int $total): int
+    {
+        if ($total <= 0) {
+            return 0;
+        }
+
+        $score = $nuevo + ($enAtencion * 0.4);
+
+        return (int) round(100 * $score / $total);
     }
 
     /**
