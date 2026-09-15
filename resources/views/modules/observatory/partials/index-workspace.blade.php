@@ -112,7 +112,7 @@
          data-show-client="{{ $showClientColumn ? '1' : '0' }}"
          data-events='@json($liveEventRows)'
      @endif>
-    <div @if ($vista === 'tablero') x-data="observatoryBoard(@js($charts))" @endif>
+    <div class="space-y-3" @if ($vista === 'tablero') x-data="observatoryBoard(@js($charts))" @endif>
     <form method="GET" action="{{ $action }}"
           x-data="obsDateRange({ from: @js($from), to: @js($to) })"
           class="rounded-xl border border-slate-800 bg-slate-900/70 p-2.5 flex flex-col lg:flex-row lg:flex-wrap xl:flex-nowrap xl:items-end gap-2">
@@ -289,15 +289,19 @@
             </section>
             <section class="obs-card">
                 <div class="obs-card-h">
-                    <p>Carga</p>
-                    <h3>Carga de folios</h3>
+                    <p>Atención</p>
+                    <h3>Atención de folios</h3>
                 </div>
                 <div class="obs-chart obs-gauge">
                     <div class="obs-gauge-plot">
-                        <canvas x-ref="gauge" aria-label="Carga de folios"></canvas>
+                        <canvas x-ref="gauge" aria-label="Atención de folios"></canvas>
                         <p class="obs-gauge-value pointer-events-none absolute inset-x-0 top-[42%] text-center text-xl font-semibold tabular-nums text-white leading-none">{{ (int) ($board['load_rate'] ?? 0) }}%</p>
                     </div>
-                    <p class="shrink-0 pt-1 text-center text-[10px] leading-tight text-slate-500">{{ ((int) ($board['total'] ?? 0)) === 0 ? 'Sin eventos' : 'Nuevo 1 · Atención 0,4 · Cerrado 0' }}</p>
+                    <div class="obs-gauge-legend shrink-0 grid grid-cols-3 gap-1 px-1 pt-1 text-[10px] leading-tight">
+                        <p class="text-red-400">Total <span class="font-semibold tabular-nums text-red-300" @if ($observatoryLiveUrl) x-text="payload.total ?? {{ (int) ($board['total'] ?? 0) }}" @endif>{{ (int) ($board['total'] ?? 0) }}</span></p>
+                        <p class="text-center text-amber-400">En trámite <span class="font-semibold tabular-nums text-amber-300" @if ($observatoryLiveUrl) x-text="payload.en_atencion ?? {{ (int) ($board['en_atencion'] ?? 0) }}" @endif>{{ (int) ($board['en_atencion'] ?? 0) }}</span></p>
+                        <p class="text-right text-emerald-400">Cerrados <span class="font-semibold tabular-nums text-emerald-300" @if ($observatoryLiveUrl) x-text="payload.cerrado ?? {{ (int) ($board['cerrado'] ?? 0) }}" @endif>{{ (int) ($board['cerrado'] ?? 0) }}</span></p>
+                    </div>
                 </div>
             </section>
         </div>

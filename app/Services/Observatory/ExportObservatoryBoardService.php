@@ -113,7 +113,7 @@ final class ExportObservatoryBoardService
         $this->text($slide, $meta['caption'], 40, 280, 880, 28, 14, self::MUTED);
         $this->text(
             $slide,
-            ((int) ($board['total'] ?? 0)).' eventos · carga '.((int) ($board['load_rate'] ?? 0)).'% · '.((int) ($board['closed_rate'] ?? 0)).'% cerrados',
+            ((int) ($board['total'] ?? 0)).' eventos · atención '.((int) ($board['load_rate'] ?? 0)).'% · '.((int) ($board['cerrado'] ?? 0)).' cerrados',
             40,
             330,
             880,
@@ -154,7 +154,7 @@ final class ExportObservatoryBoardService
 
         $this->text(
             $slide,
-            'Carga: '.((int) ($board['load_rate'] ?? 0)).'% (nuevo 1 · atención 0,4 · cerrado 0). Cierre: '.((int) ($board['closed_rate'] ?? 0)).'%. Solo cifras; sin nombres ni teléfonos.',
+            'Atención: '.((int) ($board['load_rate'] ?? 0)).'% (nuevo 1 · trámite 0,4 · cerrado 0). Cerrados: '.((int) ($board['cerrado'] ?? 0)).'. Solo cifras; sin nombres ni teléfonos.',
             40,
             280,
             880,

@@ -685,7 +685,7 @@ final class ObservatoryReportFlowTest extends TestCase
             ->assertSee('Tendencia por tipo', false)
             ->assertSee('Días con más reportes', false)
             ->assertSee('De dónde llega', false)
-            ->assertSee('Carga de folios', false)
+            ->assertSee('Atención de folios', false)
             ->assertSee('API', false)
             ->assertSee('Compartir link', false)
             ->assertSee('Tipos y nivel', false);

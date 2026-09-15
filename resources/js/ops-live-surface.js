@@ -1,8 +1,16 @@
+function echoIsConnected() {
+    const state = window.Echo?.connector?.pusher?.connection?.state;
+
+    return state === 'connected';
+}
+
 function bindOpsLiveRefresh(refresh) {
     window.addEventListener('ops-surface-changed', () => refresh());
-    if (!window.Echo) {
-        window.setInterval(() => refresh(), 12000);
-    }
+    window.setInterval(() => {
+        if (!echoIsConnected()) {
+            refresh();
+        }
+    }, 12000);
 }
 
 export function opsLiveSurface() {
