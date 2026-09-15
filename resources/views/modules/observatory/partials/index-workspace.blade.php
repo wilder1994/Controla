@@ -82,7 +82,8 @@
     .obs-card-h h3 { margin: .1rem 0 0; font-size: .85rem; font-weight: 600; color: #e2e8f0; }
     .obs-chart { height: 9.5rem; padding: .35rem .75rem .65rem; }
     .obs-chart-lg { height: 13.5rem; }
-    .obs-gauge { height: 8.5rem; }
+    .obs-gauge { height: auto; min-height: 10.5rem; display: flex; flex-direction: column; overflow: visible; }
+    .obs-gauge-plot { height: 7.25rem; position: relative; overflow: visible; }
 </style>
 @endpush
 
@@ -246,12 +247,12 @@
                     <p>Carga</p>
                     <h3>Carga de folios</h3>
                 </div>
-                <div class="obs-chart obs-gauge relative">
-                    <canvas x-ref="gauge" aria-label="Carga de folios"></canvas>
-                    <div class="absolute inset-x-0 bottom-1.5 text-center pointer-events-none">
-                        <p class="text-2xl font-semibold tabular-nums text-white">{{ (int) ($board['load_rate'] ?? 0) }}%</p>
-                        <p class="text-[10px] text-slate-500">{{ ((int) ($board['total'] ?? 0)) === 0 ? 'Sin eventos' : 'Nuevo 1 · Atención 0,4 · Cerrado 0' }}</p>
+                <div class="obs-chart obs-gauge">
+                    <div class="obs-gauge-plot">
+                        <canvas x-ref="gauge" aria-label="Carga de folios"></canvas>
+                        <p class="obs-gauge-value pointer-events-none absolute inset-x-0 top-[42%] text-center text-xl font-semibold tabular-nums text-white leading-none">{{ (int) ($board['load_rate'] ?? 0) }}%</p>
                     </div>
+                    <p class="shrink-0 pt-1 text-center text-[10px] leading-tight text-slate-500">{{ ((int) ($board['total'] ?? 0)) === 0 ? 'Sin eventos' : 'Nuevo 1 · Atención 0,4 · Cerrado 0' }}</p>
                 </div>
             </section>
         </div>
