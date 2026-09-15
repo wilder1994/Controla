@@ -398,3 +398,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-14 | APK v1.4: permisos de GPS/notificaciones antes del servicio en primer plano (no cierra al reentrar con turno abierto). |
 | 2026-09-14 | Atención de pánicos: permiso `ops.panic.attend`, ficha abierto/cerrado, descarga tipo supervisor, alarma en bucle. |
 | 2026-09-14 | Fix: `panelSidebar` + `opsLiveAlerts` juntos en `app.js`; sin el sidebar Alpine el tablero Observatorio queda en blanco. |
+| 2026-09-15 | Mapa En vivo: filtro de traza GPS (precisión, velocidad de moto, picos aislados) para que la polilínea no se vea como sismógrafo. |

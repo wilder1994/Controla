@@ -52,6 +52,8 @@ Alpine sidebar + overlay (14 sep 2026): `app.js` debe importar `panelSidebar` y 
 
 Atención de pánicos (14 sep 2026): migrate `panic_attentions` + `RoleAndPermissionSeeder` (`ops.panic.attend`). Overlay pánico en bucle hasta Enterado/Atender. Pull + `migrate --force` + seeder de roles + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
+Traza GPS En vivo (15 sep 2026): `BuildSupervisorTrailService` filtra precisión > 150 m, saltos > ~130 km/h y picos aislados. Sin migrate, seeder ni `npm`. Pull + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
+
 **Artisan cache siempre como `wcodex-controla`.** Si `view:cache` corre como root, Gestionar ficha da 500 (`Permission denied` al escribir `storage/framework/views`). Tras el cache: `chown -R wcodex-controla:wcodex-controla "$SITE"`.
 
 APK Supervisión: el VPS no lo fabrica. Va en el repo (`public/downloads/controla-supervision.apk`). Tras pull: `route:cache` + `view:cache`. Descargas: `/company/descargas` y `/admin/descargas`.

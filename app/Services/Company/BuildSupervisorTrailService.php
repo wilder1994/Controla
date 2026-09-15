@@ -18,6 +18,14 @@ final class BuildSupervisorTrailService
 
     private const STOP_SECONDS = 120;
 
+    /** Saltos mayores se descartan si el siguiente ping no los confirma (picos GPS). */
+    private const SPIKE_METERS = 140.0;
+
+    /** ~130 km/h: una moto de patrulla no cubre más en un ping. */
+    private const MAX_SPEED_MPS = 36.0;
+
+    private const MAX_ACCURACY_METERS = 150.0;
+
     public const OFFLINE_SECONDS = SupervisorPresence::FRESH_SECONDS;
 
     /**
@@ -37,11 +45,13 @@ final class BuildSupervisorTrailService
     public function execute(Collection $locations, bool $shiftOpen = false, ?CarbonInterface $now = null): array
     {
         $now ??= CarbonImmutable::now();
+        $rawLast = $locations->last();
         $points = $locations
             ->map(fn (SupervisorShiftLocation $loc) => [
                 'lat' => (float) $loc->latitude,
                 'lng' => (float) $loc->longitude,
                 'at' => $loc->recorded_at,
+                'accuracy' => $loc->accuracy !== null ? (float) $loc->accuracy : null,
             ])
             ->values();
 
@@ -57,6 +67,17 @@ final class BuildSupervisorTrailService
             ];
         }
 
+        $points = collect($this->filterGpsNoise($points->all()))->values();
+        if ($points->isEmpty()) {
+            $fallback = $locations->first();
+            $points = collect([[
+                'lat' => (float) $fallback->latitude,
+                'lng' => (float) $fallback->longitude,
+                'at' => $fallback->recorded_at,
+                'accuracy' => $fallback->accuracy !== null ? (float) $fallback->accuracy : null,
+            ]]);
+        }
+
         $path = [];
         $stops = [];
         $cluster = [];
@@ -65,12 +86,14 @@ final class BuildSupervisorTrailService
             if ($cluster === []) {
                 $cluster[] = $point;
                 $path[] = $this->point($point);
+
                 continue;
             }
 
             $anchor = $cluster[0];
             if ($this->meters($anchor['lat'], $anchor['lng'], $point['lat'], $point['lng']) <= self::STOP_METERS) {
                 $cluster[] = $point;
+
                 continue;
             }
 
@@ -97,9 +120,8 @@ final class BuildSupervisorTrailService
 
         $first = $points->first();
         $last = $points->last();
-        $lastLoc = $locations->last();
-        $screenOn = $lastLoc instanceof SupervisorShiftLocation && $lastLoc->screen_on !== null
-            ? (bool) $lastLoc->screen_on
+        $screenOn = $rawLast instanceof SupervisorShiftLocation && $rawLast->screen_on !== null
+            ? (bool) $rawLast->screen_on
             : null;
 
         return [
@@ -109,7 +131,11 @@ final class BuildSupervisorTrailService
             'stops' => $stops,
             'parked' => $parked,
             'km' => $this->km($path),
-            ...SupervisorPresence::from($last['at'] ?? null, $screenOn, $now),
+            ...SupervisorPresence::from(
+                $rawLast instanceof SupervisorShiftLocation ? $rawLast->recorded_at : ($last['at'] ?? null),
+                $screenOn,
+                $now,
+            ),
         ];
     }
 
@@ -170,6 +196,99 @@ final class BuildSupervisorTrailService
                 ? 'Se detuvo a las '.$fromLabel.' · lleva '.$minutes.' min'
                 : 'Se detuvo de '.$fromLabel.' a '.$toLabel.' ('.$minutes.' min)',
         ];
+    }
+
+    /**
+     * Descarta precisión pésima, saltos más rápidos que una moto y picos aislados
+     * (el siguiente ping vuelve hacia el punto anterior).
+     *
+     * @param  list<array{lat: float, lng: float, at: mixed, accuracy: ?float}>  $points
+     * @return list<array{lat: float, lng: float, at: mixed, accuracy: ?float}>
+     */
+    private function filterGpsNoise(array $points): array
+    {
+        $kept = [];
+        $n = count($points);
+
+        for ($i = 0; $i < $n; $i++) {
+            $cur = $points[$i];
+            if (! $this->coordsOk($cur) || $this->tooInaccurate($cur)) {
+                continue;
+            }
+            if ($kept === []) {
+                $kept[] = $cur;
+
+                continue;
+            }
+
+            $prev = $kept[array_key_last($kept)];
+            $dist = $this->meters($prev['lat'], $prev['lng'], $cur['lat'], $cur['lng']);
+            $dt = $this->secondsBetween($prev['at'] ?? null, $cur['at'] ?? null);
+
+            if ($dist <= self::SPIKE_METERS) {
+                $kept[] = $cur;
+
+                continue;
+            }
+
+            if (! $this->speedPlausible($dist, $dt)) {
+                continue;
+            }
+
+            $next = $points[$i + 1] ?? null;
+            if ($next === null) {
+                $kept[] = $cur;
+
+                continue;
+            }
+            if (! $this->coordsOk($next) || $this->tooInaccurate($next)) {
+                continue;
+            }
+
+            $dPrevNext = $this->meters($prev['lat'], $prev['lng'], $next['lat'], $next['lng']);
+            $dCurNext = $this->meters($cur['lat'], $cur['lng'], $next['lat'], $next['lng']);
+            if ($dCurNext + 40.0 < $dPrevNext) {
+                $kept[] = $cur;
+            }
+        }
+
+        return $kept;
+    }
+
+    /** @param  array{lat: float, lng: float, accuracy?: ?float}  $point */
+    private function coordsOk(array $point): bool
+    {
+        $lat = $point['lat'];
+        $lng = $point['lng'];
+        if ($lat === 0.0 && $lng === 0.0) {
+            return false;
+        }
+
+        return $lat >= -90.0 && $lat <= 90.0 && $lng >= -180.0 && $lng <= 180.0;
+    }
+
+    /** @param  array{accuracy?: ?float}  $point */
+    private function tooInaccurate(array $point): bool
+    {
+        $accuracy = $point['accuracy'] ?? null;
+
+        return $accuracy !== null && $accuracy > self::MAX_ACCURACY_METERS;
+    }
+
+    private function speedPlausible(float $meters, int $seconds): bool
+    {
+        $dt = max(1, $seconds);
+
+        return ($meters / $dt) <= self::MAX_SPEED_MPS;
+    }
+
+    private function secondsBetween(mixed $from, mixed $to): int
+    {
+        if (! $from instanceof CarbonInterface || ! $to instanceof CarbonInterface) {
+            return 15;
+        }
+
+        return max(0, (int) $from->diffInSeconds($to, false));
     }
 
     /**
