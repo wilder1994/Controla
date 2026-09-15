@@ -2099,7 +2099,6 @@ document.getElementById('btn-obs-send').onclick = () => withBusy(
 
 document.getElementById('btn-open-observatory').onclick = () => showObservatory();
 document.getElementById('btn-panic').onclick = async () => {
-    if (!window.confirm('¿Activar pánico? Se avisa a la empresa. Este teléfono no sonará.')) return;
     try {
         await api('/supervision/panic', {
             method: 'POST',

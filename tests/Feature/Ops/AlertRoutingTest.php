@@ -101,6 +101,27 @@ final class AlertRoutingTest extends TestCase
         $this->assertFalse($user->can('observatory.view'));
     }
 
+    public function test_attended_panic_leaves_the_live_poll(): void
+    {
+        [$admin, $attendee] = $this->collaboratorWith(['panics' => 'manage']);
+        $this->actingAs($admin)->postJson(route('company.ops.panic'), ['note' => 'X'])->assertCreated();
+
+        $alertId = (int) $this->actingAs($attendee)
+            ->getJson(route('company.ops.alerts'))
+            ->assertOk()
+            ->assertJsonPath('alerts.0.type', 'panic')
+            ->json('alerts.0.id');
+
+        $this->actingAs($attendee)
+            ->postJson(route('company.panics.claim'), ['alert_id' => $alertId])
+            ->assertOk();
+
+        $this->actingAs($attendee)
+            ->getJson(route('company.ops.alerts'))
+            ->assertOk()
+            ->assertJsonCount(0, 'alerts');
+    }
+
     /** @return array{0: User, 1: User} */
     private function collaboratorWith(array $companyGrants): array
     {

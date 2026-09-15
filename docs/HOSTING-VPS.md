@@ -62,6 +62,8 @@ Ficha folio Observatorio (15 sep 2026): grilla 2×2; fila 1 mapa+datos `h-[28rem
 
 Carga de folios (15 sep 2026): medidor verde→rojo (`load_rate`). Título **Atención de folios**; leyenda Cerrados (verde, izq.) · En trámite · Total (rojo, der.). Pull + `npm run build` + `view:cache`. Sin migrate. Artisan como `wcodex-controla`.
 
+Pánico inmediato (15 sep 2026): clic dispara el aviso (panel y APK, sin confirmar). **Enterado** silencia solo a ese usuario; **Atender** quita overlay y sonido a todos. PWA `controla-sup-v46`. APK v1.5 en `public/downloads/controla-supervision.apk`. Pull + `npm run build` + `view:cache` + `route:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
+
 Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON al cambio (Reverb) y sondeo cada 12 s si el socket no está conectado. Crear folio también refresca (alerta Observatorio). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
 
 Para WebSocket (si no, el sondeo basta):

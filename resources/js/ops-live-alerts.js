@@ -6,7 +6,7 @@ export function opsLiveAlerts() {
         csrf: '',
         after: 0,
         open: false,
-        panicOpen: false,
+        panicBusy: false,
         title: '',
         body: '',
         type: '',
@@ -45,13 +45,15 @@ export function opsLiveAlerts() {
                 const alerts = Array.isArray(data.alerts) ? data.alerts : [];
                 if (this.open) {
                     const current = alerts.find((row) => Number(row.id) === this.alertId);
-                    this.canAttend = Boolean(current && current.can_attend);
+                    if (!current) {
+                        this.ack();
+                        return;
+                    }
+                    this.canAttend = Boolean(current.can_attend);
                     return;
                 }
                 if (!alerts.length) return;
                 const first = alerts[0];
-                this.after = first.id;
-                localStorage.setItem('ops_alert_after', String(this.after));
                 this.alertId = Number(first.id) || 0;
                 this.type = first.type || '';
                 this.title = first.title;
@@ -93,6 +95,10 @@ export function opsLiveAlerts() {
         },
         ack() {
             this.stopAlarm();
+            if (this.alertId) {
+                this.after = Math.max(this.after, this.alertId);
+                localStorage.setItem('ops_alert_after', String(this.after));
+            }
             this.open = false;
             this.title = '';
             this.body = '';
@@ -123,19 +129,24 @@ export function opsLiveAlerts() {
             }
         },
         async sendPanic() {
+            if (this.panicBusy || !this.panicUrl) return;
+            this.panicBusy = true;
+            this.locate();
             const body = new FormData();
             body.append('_token', this.csrf);
             if (this.lat) body.append('latitude', this.lat);
             if (this.lng) body.append('longitude', this.lng);
-            if (this.note) body.append('note', this.note);
-            await fetch(this.panicUrl, {
-                method: 'POST',
-                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body,
-                credentials: 'same-origin',
-            });
-            this.panicOpen = false;
-            this.note = '';
+            try {
+                await fetch(this.panicUrl, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body,
+                    credentials: 'same-origin',
+                });
+            } finally {
+                this.panicBusy = false;
+                this.note = '';
+            }
         },
     };
 }

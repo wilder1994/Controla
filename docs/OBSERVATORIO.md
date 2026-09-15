@@ -43,7 +43,7 @@ En el Tablero, **Compartir link** abre el modal con la URL `/o/{slug}` (Copiar /
 
 Turno abierto. Entrada **Observatorio** (aparte de la revista). Colegio, tipo, texto, **mapa con pin arrastrable**, **1 a 3 fotos** (cámara, miniaturas; la primera es obligatoria), anónimo. Colegios de la empresa en el paquete offline. `POST /api/supervision/observatory/reports` con `photos[]` y lat/lng.
 
-Un reporte nuevo abre overlay palpitante + sonido en bucle hasta **Enterado** (solo quien tiene Observatorio). **Quien reporta no oye ni ve la alerta.** Poll `GET /company/ops/alerts.json` y `/client/ops/alerts.json`. El pánico por usuario lo oyen quienes tienen **Atención de pánicos** o **Supervisión**; Observatorio no alcanza, y viceversa. Quien tiene `ops.panic.attend` ve **Atender** (ficha en `/company/panics`); el primero se queda la ficha. Enterado silencia sin reclamar.
+Un reporte nuevo abre overlay palpitante + sonido en bucle hasta **Enterado** (solo quien tiene Observatorio). **Quien reporta no oye ni ve la alerta.** Poll `GET /company/ops/alerts.json` y `/client/ops/alerts.json`. El pánico por usuario lo oyen quienes tienen **Atención de pánicos** o **Supervisión**; Observatorio no alcanza, y viceversa. Quien tiene `ops.panic.attend` ve **Atender** (ficha en `/company/panics`); el primero se queda la ficha y el poll deja de devolver ese pánico: overlay y sonido se apagan en todos. **Enterado** silencia y recuerda el id en ese navegador; los demás siguen oyendo. El botón Pánico (panel y APK) dispara al toque, sin confirmar.
 
 ## Minuta
 

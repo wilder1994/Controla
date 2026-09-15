@@ -27,21 +27,7 @@
     </template>
 
     @if ($showPanic)
-        <template x-teleport="body">
-            <div x-show="panicOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4" x-cloak>
-                <div class="absolute inset-0 bg-black/60" @click="panicOpen = false"></div>
-                <div class="relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-5">
-                    <p class="text-lg font-semibold text-white">¿Activar pánico?</p>
-                    <p class="mt-1 text-sm text-slate-400">Se avisa al personal de la empresa. Tú no verás ni oirás la alerta.</p>
-                    <textarea x-model="note" rows="2" maxlength="240" placeholder="Nota opcional" class="mt-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"></textarea>
-                    <div class="mt-4 flex gap-2">
-                        <button type="button" class="flex-1 h-9 rounded-lg border border-slate-700 text-sm text-slate-300" @click="panicOpen = false">Cancelar</button>
-                        <button type="button" class="flex-1 h-9 rounded-lg bg-red-600 text-sm text-white" @click="sendPanic()">Activar</button>
-                    </div>
-                </div>
-            </div>
-        </template>
-        <button type="button" class="w-full mb-2 inline-flex items-center justify-center h-9 rounded-lg bg-red-700 text-sm font-medium text-white hover:bg-red-600" @click="panicOpen = true; locate()">
+        <button type="button" class="w-full mb-2 inline-flex items-center justify-center h-9 rounded-lg bg-red-700 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-60" :disabled="panicBusy" @click="sendPanic()">
             Pánico
         </button>
     @endif

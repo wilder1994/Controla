@@ -403,3 +403,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-15 | Admin cliente e instalaciones: misma matriz (SIG, Observatorio, Censo) por cliente o sede. |
 | 2026-09-15 | Ficha de folio Observatorio: grilla mapa + datos / novedades + bitácora, con scroll en los paneles inferiores. |
 | 2026-09-15 | Tablero Observatorio: medidor de carga (verde→rojo). Nuevo empuja a rojo; atender baja; cerrar baja más. Arco sin recorte; leyenda bajo la aguja. |
+| 2026-09-15 | Pánico: envío al toque (panel/APK). Enterado silencia a un usuario; Atender apaga overlay y sonido en todos. APK v1.5. |

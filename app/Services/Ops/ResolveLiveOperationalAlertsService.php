@@ -33,6 +33,14 @@ final class ResolveLiveOperationalAlertsService
             return [];
         }
 
+        $query->where(function ($scope) {
+            $scope->where('type', OperationalAlertType::Observatory->value)
+                ->orWhere(function ($panic) {
+                    $panic->where('type', OperationalAlertType::Panic->value)
+                        ->whereDoesntHave('attention');
+                });
+        });
+
         return $query->with('attention')
             ->get()
             ->filter(fn (OperationalAlert $alert) => $this->visibleTo($user, $alert))
