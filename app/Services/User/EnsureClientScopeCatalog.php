@@ -76,7 +76,7 @@ final class EnsureClientScopeCatalog
                     $row->level,
                 );
             }
-            $this->syncCollaboratorAccess->sync($user, $user, $grants, $companyId);
+            $this->syncCollaboratorAccess->sync($user, $user, $grants, $companyId, true);
 
             return;
         }
@@ -92,6 +92,6 @@ final class EnsureClientScopeCatalog
             return;
         }
 
-        $this->syncCollaboratorAccess->sync($user, $user, $grants, $companyId);
+        $this->syncCollaboratorAccess->sync($user, $user, $grants, $companyId, true);
     }
 }

@@ -19,7 +19,7 @@ final class SyncCollaboratorAccessService
     /**
      * @param  list<AccessGrantData>  $grants
      */
-    public function sync(User $user, User $actor, array $grants, int $companyId): void
+    public function sync(User $user, User $actor, array $grants, int $companyId, bool $trusted = false): void
     {
         if ($grants === []) {
             throw ValidationException::withMessages([
@@ -27,7 +27,9 @@ final class SyncCollaboratorAccessService
             ]);
         }
 
-        $this->assertActorCanGrant($actor, $grants, $companyId);
+        if (! $trusted) {
+            $this->assertActorCanGrant($actor, $grants, $companyId);
+        }
         $this->assertScopesBelongToCompany($grants, $companyId);
 
         UserModuleGrant::query()->where('user_id', $user->id)->delete();

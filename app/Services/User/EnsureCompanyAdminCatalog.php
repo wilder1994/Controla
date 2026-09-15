@@ -43,7 +43,7 @@ final class EnsureCompanyAdminCatalog
                     $row->level,
                 );
             }
-            $this->syncCollaboratorAccess->sync($user, $user, $grants, $companyId);
+            $this->syncCollaboratorAccess->sync($user, $user, $grants, $companyId, true);
 
             return;
         }
@@ -53,6 +53,7 @@ final class EnsureCompanyAdminCatalog
             $user,
             GrantableModules::defaultCompanyManageGrants($companyId),
             $companyId,
+            true,
         );
     }
 
