@@ -17,8 +17,8 @@ Tres administradores; el **admin empresa** también usa la matriz Nada / Ver / G
 | Quién | Alcance |
 |--------|---------|
 | Admin empresa (`company-admin`) | Matriz de módulos de empresa + portería/censo del rol |
-| Admin cliente (`client-admin`) | Ese cliente. **No crea usuarios.** |
-| Admin instalaciones (`client-installation-admin`) | Sedes asignadas. Ajustes solo ver. **No crea usuarios.** |
+| Admin cliente (`client-admin`) | Ese cliente. Matriz SIG / Observatorio / Censo. **No crea usuarios.** |
+| Admin instalaciones (`client-installation-admin`) | Sedes asignadas. Matriz SIG / Observatorio / Censo. Ajustes solo ver. **No crea usuarios.** |
 
 Oficios (no son un collage):
 
@@ -27,7 +27,7 @@ Oficios (no son un collage):
 | **Supervisor** | Solo app de campo. Login usuario + clave. Extra: código 6 dígitos para revista. |
 | **Vigilante** | Solo portería del cliente asignado (con puertas). Reasignar a otro cliente con puertas: mismas credenciales. |
 
-**Colaborador** y **admin empresa**: matriz Nada / Ver / Gestionar. Catálogo empresa: Mi empresa, Facturación, Clientes, Instalaciones, Observatorio, Supervisión, Atención de pánicos, Descargas, Empleados, Documentos, Usuarios, Mis datos, Ajustes. Por cliente/instalación: Resumen SIG, Observatorio, Censo. Pánico y Observatorio no se amarran entre sí. Quien crea no puede conceder más de lo que tiene **ni el colaborador asignar `company-admin`**. Permisos Spatie de panel empresa van en el usuario (`user_module_grants`). **Clientes Ver/Gestionar** abre `/company/clients`. **Instalaciones** usa `company.installations.view` / `manage`.
+**Colaborador** y **admin empresa**: matriz Nada / Ver / Gestionar. Catálogo empresa: Mi empresa, Facturación, Clientes, Instalaciones, Observatorio, Supervisión, Atención de pánicos, Descargas, Empleados, Documentos, Usuarios, Mis datos, Ajustes. **Admin cliente** e **admin instalaciones**: la misma matriz Nada / Ver / Gestionar sobre Resumen SIG, Observatorio y Censo (por cliente o por sede). Portería no se recorta en esa matriz. Pánico y Observatorio no se amarran entre sí. Quien crea no puede conceder más de lo que tiene **ni el colaborador asignar `company-admin`**. Permisos Spatie de esos módulos van en `user_module_grants`. **Clientes Ver/Gestionar** abre `/company/clients`. **Instalaciones** usa `company.installations.view` / `manage`.
 
 ---
 

@@ -285,6 +285,10 @@ final class UserController extends Controller
                 documentNumber: $request->validated('document_number'),
                 installationIds: array_map('intval', $request->input('installation_ids', [])),
                 sitePermission: (string) ($request->validated('site_permission') ?: 'admin'),
+                grants: app(ParseAccessGrants::class)->fromInput(
+                    $request->input('grants', []),
+                    app(ActingCompanyResolver::class)->requireId($request->user()),
+                ),
             ),
             $request->user(),
             UserManagementContext::Company,

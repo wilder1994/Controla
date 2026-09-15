@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Services\User\EnsureClientScopeCatalog;
 use App\Services\User\EnsureCompanyAdminCatalog;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
@@ -37,5 +38,6 @@ final class RoleAndPermissionSeeder extends Seeder
         $superAdmin->syncPermissions(Permission::all());
 
         app(EnsureCompanyAdminCatalog::class)->backfillAll();
+        app(EnsureClientScopeCatalog::class)->backfillAll();
     }
 }

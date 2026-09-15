@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\ClientUserAssignment;
 use App\Models\SecurityCompany;
 use App\Models\User;
+use App\Services\User\EnsureClientScopeCatalog;
 use App\Services\User\EnsureCompanyAdminCatalog;
 use Illuminate\Database\Seeder;
 
@@ -73,6 +74,7 @@ final class PilotUsersSeeder extends Seeder
         );
         $clientAdmin->syncRoles(['client-admin']);
         $this->assignClient($clientAdmin, $palmas, true);
+        app(EnsureClientScopeCatalog::class)->execute($clientAdmin);
     }
 
     private function linkOperationalUsersToPilotClient(): void

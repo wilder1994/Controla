@@ -104,7 +104,10 @@
             get isInstallationAdmin() { return this.role === 'client-installation-admin' },
             get isExternal() { return this.isInstallationAdmin || (this.role === 'client-admin' && this.origin === 'external') },
             get isCollaborator() { return this.role === 'colaborador' },
-            get usesGrantMatrix() { return this.role === 'colaborador' || this.role === 'company-admin' },
+            get usesCompanyMatrix() { return this.role === 'colaborador' || this.role === 'company-admin' },
+            get usesClientMatrix() { return this.role === 'colaborador' || this.role === 'client-admin' },
+            get usesInstallationMatrix() { return this.role === 'colaborador' || this.role === 'client-installation-admin' },
+            get usesGrantMatrix() { return this.usesCompanyMatrix || this.usesClientMatrix || this.usesInstallationMatrix },
             get needsEmployee() { return !this.isExternal && ['company-admin', 'client-admin', 'supervisor', 'guardia', 'colaborador'].includes(this.role) },
             get needsClients() { return cfg.rolesNeedingClients.includes(this.role) },
             get singleClient() { return cfg.singleClientRoles.includes(this.role) || this.isExternal },
@@ -122,18 +125,26 @@
             init() {
                 if (this.isInstallationAdmin) this.origin = 'external'
                 if (this.role === 'company-admin') this.fillCompanyAdminGrants()
+                if (this.usesClientMatrix) this.fillScopedManage(this.clientGrants, this.pickedClientIds)
+                if (this.usesInstallationMatrix) this.fillScopedManage(this.installationGrants, this.selectedInstallationIds)
                 this.$watch('role', () => {
                     if (this.isInstallationAdmin) this.origin = 'external'
                     if (this.role === 'company-admin') this.fillCompanyAdminGrants()
+                    if (this.role === 'client-admin') this.fillScopedManage(this.clientGrants, this.pickedClientIds)
+                    if (this.role === 'client-installation-admin') this.fillScopedManage(this.installationGrants, this.selectedInstallationIds)
                     this.loadInstallationsIfNeeded()
                 })
                 this.$watch('origin', () => this.loadInstallationsIfNeeded())
                 this.$watch('pickedClientIds', (ids) => {
                     (ids || []).forEach((id) => this.ensureScopedGrants(this.clientGrants, id))
+                    if (this.usesClientMatrix) this.fillScopedManage(this.clientGrants, ids || [])
                     this.loadInstallationsIfNeeded()
                 })
                 this.$watch('installations', (rows) => {
                     (rows || []).forEach((row) => this.ensureScopedGrants(this.installationGrants, String(row.id)))
+                })
+                this.$watch('selectedInstallationIds', (ids) => {
+                    if (this.usesInstallationMatrix) this.fillScopedManage(this.installationGrants, ids || [])
                 })
                 this.loadInstallationsIfNeeded()
             },
@@ -147,7 +158,7 @@
                     this.pickedClientIds = this.pickedClientIds.filter((item) => item !== value)
                 } else {
                     this.pickedClientIds = [...this.pickedClientIds, value]
-                    if (this.isCollaborator) this.ensureScopedGrants(this.clientGrants, value)
+                    if (this.usesClientMatrix) this.ensureScopedGrants(this.clientGrants, value)
                 }
             },
             toggleInstallation(id) {
@@ -156,6 +167,7 @@
                     this.selectedInstallationIds = this.selectedInstallationIds.filter((item) => item !== value)
                 } else {
                     this.selectedInstallationIds = [...this.selectedInstallationIds, value]
+                    if (this.usesInstallationMatrix) this.ensureScopedGrants(this.installationGrants, value)
                 }
             },
             ensureScopedGrants(map, id) {
@@ -168,6 +180,15 @@
                 const next = { ...this.companyGrants }
                 keys.forEach((key) => { next[key] = 'manage' })
                 this.companyGrants = next
+            },
+            fillScopedManage(map, ids) {
+                const keys = (this.scopedModules || []).map((mod) => mod.key)
+                ;(ids || []).forEach((id) => {
+                    this.ensureScopedGrants(map, id)
+                    const anySet = keys.some((key) => map[id][key] && map[id][key] !== 'none')
+                    if (anySet) return
+                    keys.forEach((key) => { map[id][key] = 'manage' })
+                })
             },
             async loadInstallationsIfNeeded() {
                 if (this.isCollaborator && this.pickedClientIds.length > 0) {
@@ -288,9 +309,9 @@
         <x-ui.field-error :messages="$errors->get('origin')" />
     </div>
     <p x-show="isInstallationAdmin" class="text-xs text-slate-500">Admin instalaciones es siempre externo: varias sedes del mismo cliente. En la ficha sale en Administrador o Apoyo (cargo · nombre). No crea usuarios ni cambia Ajustes.</p>
-    <p x-show="usesGrantMatrix" class="text-xs text-slate-500">Nada, Ver o Gestionar. Pánico y Observatorio son independientes: cada uno oye solo su alerta. Supervisión también oye pánico. Sin mezclar con vigilante ni supervisor de campo.</p>
+    <p x-show="usesCompanyMatrix" class="text-xs text-slate-500">Nada, Ver o Gestionar. Pánico y Observatorio son independientes. Supervisión también oye pánico.</p>
 
-    <div x-show="usesGrantMatrix" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3">
+    <div x-show="usesCompanyMatrix" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3">
         <p class="text-xs font-medium text-slate-300">Módulos de empresa</p>
         <p class="text-[11px] text-slate-500">Incluye tablero, menús y Atención de pánicos. Ver o Gestionar pánicos habilita Atender.</p>
         <template x-for="mod in companyModules" :key="mod.key">
@@ -464,8 +485,9 @@
         </div>
     </div>
 
-    <div x-show="isCollaborator && pickedClientIds.length" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+    <div x-show="usesClientMatrix && pickedClientIds.length" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
         <p class="text-xs font-medium text-slate-300">Permisos por cliente</p>
+        <p class="text-[11px] text-slate-500">Resumen SIG, Observatorio y Censo. Portería no se recorta aquí.</p>
         <template x-for="id in pickedClientIds" :key="'cg'+id">
             <div class="space-y-1">
                 <p class="text-sm text-white" x-text="(clients.find((c) => String(c.id) === String(id)) || {}).name"></p>
@@ -483,9 +505,10 @@
         </template>
     </div>
 
-    <div x-show="isCollaborator && installations.length" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+    <div x-show="usesInstallationMatrix && (isCollaborator ? installations.length : selectedInstallationIds.length)" x-cloak class="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
         <p class="text-xs font-medium text-slate-300">Permisos por instalación</p>
-        <template x-for="row in installations" :key="'ig'+row.id">
+        <p class="text-[11px] text-slate-500">Resumen SIG, Observatorio y Censo de esas sedes. Portería no se recorta aquí.</p>
+        <template x-for="row in (isCollaborator ? installations : installations.filter((item) => selectedInstallationIds.includes(String(item.id))))" :key="'ig'+row.id">
             <div class="space-y-1">
                 <p class="text-sm text-white" x-text="row.name"></p>
                 <template x-for="mod in scopedModules" :key="'im'+row.id+mod.key">

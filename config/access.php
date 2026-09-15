@@ -123,14 +123,6 @@ return [
         ],
 
         'client-admin' => [
-            'observatory.view',
-            'observatory.events.update',
-            'ops.sig.view',
-            'client.structures.manage',
-            'client.members.manage',
-            'client.pets.manage',
-            'client.vehicles.manage',
-            'client.authorizations.manage',
             'client.app_users.manage',
             'client.users.manage',
             'client.settings.manage',
@@ -158,14 +150,6 @@ return [
         ],
 
         'client-installation-admin' => [
-            'observatory.view',
-            'observatory.events.update',
-            'ops.sig.view',
-            'client.structures.manage',
-            'client.members.manage',
-            'client.pets.manage',
-            'client.vehicles.manage',
-            'client.authorizations.manage',
             'client.app_users.manage',
             'access.operations',
             'access.dashboard',

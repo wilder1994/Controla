@@ -467,12 +467,74 @@ final class ManageScopedUserService
             return;
         }
 
-        if ($role === 'company-admin' && $grants === [] && $companyId) {
-            $grants = GrantableModules::defaultCompanyManageGrants((int) $companyId);
+        $grants = $this->filterGrantsForRole($role, $grants);
+        if ($grants === []) {
+            $grants = $this->defaultGrantsForRole($user, $role, $companyId);
         }
 
         $actor->loadMissing('moduleGrants');
         $this->syncCollaboratorAccess->sync($user, $actor, $grants, (int) $companyId);
+    }
+
+    /**
+     * @param  list<AccessGrantData>  $grants
+     * @return list<AccessGrantData>
+     */
+    private function filterGrantsForRole(string $role, array $grants): array
+    {
+        return match ($role) {
+            'company-admin' => array_values(array_filter(
+                $grants,
+                fn (AccessGrantData $grant): bool => $grant->scope === AccessGrantScope::Company,
+            )),
+            'client-admin' => array_values(array_filter(
+                $grants,
+                fn (AccessGrantData $grant): bool => $grant->scope === AccessGrantScope::Client,
+            )),
+            'client-installation-admin' => array_values(array_filter(
+                $grants,
+                fn (AccessGrantData $grant): bool => $grant->scope === AccessGrantScope::Installation,
+            )),
+            default => $grants,
+        };
+    }
+
+    /**
+     * @return list<AccessGrantData>
+     */
+    private function defaultGrantsForRole(User $user, string $role, ?int $companyId): array
+    {
+        if ($role === 'company-admin' && $companyId) {
+            return GrantableModules::defaultCompanyManageGrants((int) $companyId);
+        }
+
+        if ($role === 'client-admin') {
+            $user->loadMissing('clients');
+            $grants = [];
+            foreach ($user->clients as $client) {
+                $grants = array_merge(
+                    $grants,
+                    GrantableModules::defaultScopedManageGrants(AccessGrantScope::Client, (int) $client->id),
+                );
+            }
+
+            return $grants;
+        }
+
+        if ($role === 'client-installation-admin') {
+            $user->loadMissing('assignedInstallations');
+            $grants = [];
+            foreach ($user->assignedInstallations as $installation) {
+                $grants = array_merge(
+                    $grants,
+                    GrantableModules::defaultScopedManageGrants(AccessGrantScope::Installation, (int) $installation->id),
+                );
+            }
+
+            return $grants;
+        }
+
+        return [];
     }
 
     /**

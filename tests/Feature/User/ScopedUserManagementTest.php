@@ -406,6 +406,43 @@ final class ScopedUserManagementTest extends TestCase
         $this->assertTrue($support->can('update', $structure));
     }
 
+    public function test_client_admin_observatory_can_be_denied_in_matrix(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+
+        $this->actingAs($admin)->post(route('company.users.store'), [
+            'role' => 'client-admin',
+            'origin' => 'external',
+            'name' => 'Admin Sin Observatorio',
+            'document_number' => '1098000771',
+            'job_title' => 'Administrador',
+            'email' => 'admin.sinobs@palmas.test',
+            'username' => 'admin.sinobs.0771',
+            'password' => 'Cliente123!',
+            'password_confirmation' => 'Cliente123!',
+            'client_ids' => [$palmas->id],
+            'is_active' => '1',
+            'grants' => [
+                'client' => [
+                    $palmas->id => [
+                        'sig' => 'manage',
+                        'observatory' => 'none',
+                        'census' => 'manage',
+                    ],
+                ],
+            ],
+        ])->assertRedirect();
+
+        $created = User::query()->where('email', 'admin.sinobs@palmas.test')->firstOrFail();
+        $this->assertTrue($created->hasRole('client-admin'));
+        $this->assertFalse($created->can('observatory.view'));
+        $this->assertTrue($created->can('client.structures.manage'));
+        $this->assertTrue($created->can('ops.sig.view'));
+    }
+
     public function test_company_settings_updates_geo_fields(): void
     {
         $this->seedWithPilot();

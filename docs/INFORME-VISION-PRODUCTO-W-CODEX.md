@@ -400,3 +400,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-14 | Fix: `panelSidebar` + `opsLiveAlerts` juntos en `app.js`; sin el sidebar Alpine el tablero Observatorio queda en blanco. |
 | 2026-09-15 | Mapa En vivo: filtro de traza GPS (precisión, velocidad de moto, picos aislados) para que la polilínea no se vea como sismógrafo. |
 | 2026-09-15 | Matriz de permisos (admin y colaborador): tablero, instalaciones, pánicos, SIG. Overlay pánico/observatorio independientes, palpitante y sonido en bucle. |
+| 2026-09-15 | Admin cliente e instalaciones: misma matriz (SIG, Observatorio, Censo) por cliente o sede. |

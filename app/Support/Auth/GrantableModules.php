@@ -132,7 +132,22 @@ final class GrantableModules
 
     public static function usesMatrix(string $role): bool
     {
+        return in_array($role, ['colaborador', 'company-admin', 'client-admin', 'client-installation-admin'], true);
+    }
+
+    public static function usesCompanyMatrix(string $role): bool
+    {
         return in_array($role, ['colaborador', 'company-admin'], true);
+    }
+
+    public static function usesClientMatrix(string $role): bool
+    {
+        return in_array($role, ['colaborador', 'client-admin'], true);
+    }
+
+    public static function usesInstallationMatrix(string $role): bool
+    {
+        return in_array($role, ['colaborador', 'client-installation-admin'], true);
     }
 
     /**
@@ -140,14 +155,25 @@ final class GrantableModules
      */
     public static function defaultCompanyManageGrants(int $companyId): array
     {
+        return self::defaultManageGrants(AccessGrantScope::Company, $companyId);
+    }
+
+    /**
+     * @return list<AccessGrantData>
+     */
+    public static function defaultScopedManageGrants(AccessGrantScope $scope, int $scopeId): array
+    {
+        return self::defaultManageGrants($scope, $scopeId);
+    }
+
+    /**
+     * @return list<AccessGrantData>
+     */
+    private static function defaultManageGrants(AccessGrantScope $scope, int $scopeId): array
+    {
         $grants = [];
-        foreach (self::keys(AccessGrantScope::Company) as $module) {
-            $grants[] = new AccessGrantData(
-                AccessGrantScope::Company,
-                $companyId,
-                $module,
-                AccessGrantLevel::Manage,
-            );
+        foreach (self::keys($scope) as $module) {
+            $grants[] = new AccessGrantData($scope, $scopeId, $module, AccessGrantLevel::Manage);
         }
 
         return $grants;
