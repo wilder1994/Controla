@@ -89,11 +89,11 @@ Empresa, `client-admin` y apoyo no ven esos botones.
 Pestañas **Tablero** | **Eventos** (cuelgan del header, no van dentro de la barra).
 
 - **Tablero:** filtros en una sola fila (xl): **Cliente** angosto (solo empresa), **Desde — Hasta** (ícono; modal Aceptar/Cerrar), Líneas, Buscar, **Filtrar**, Compartir link, **PPTX**, API. `?comuna=` va hidden. Fila 1: mapa + leyenda. **Todas** encuadra Cali y pinta las 22 comunas. Una comuna hace zoom a ese polígono. Calor = círculos (Google quitó HeatmapLayer). Fila 2: sedes por riesgo + tendencia. Fila 3: picos · canal · cierre. El PPTX usa los mismos filtros (fechas, cliente, comuna, grano); solo cifras. Alpine: `panelSidebar` (layout) + `observatoryBoard` / `observatoryMap`. Si `app.js` no registra `panelSidebar`, el mapa y las gráficas quedan en blanco.
-- **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha (mapa del folio, reportes, bitácora).
+- **Eventos:** tabla folio / sede / tipo / estado / abierto / Ver (+ cliente en empresa). **Ver** abre la ficha.
 
 ## Ficha
 
-Expediente del folio: cabecera, mapa de pines de *ese* evento, novedades (hora, canal, rol, denunciante), bitácora (estado + observación + quién + cuándo). Rector: Agregar / Cerrar folio.
+Grilla 2×2 (xl): mapa | datos del folio; novedades | bitácora. En móvil una columna. Novedades y bitácora tienen altura fija (`h-80`) y scroll interno. Unir folio queda debajo. Rector: Agregar / Cerrar folio. Bitácora = `observatory_event_status_logs` (estado, nota, quién, cuándo). Unir/sacar no escriben bitácora.
 
 ## API
 

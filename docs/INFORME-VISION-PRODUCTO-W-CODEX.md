@@ -401,3 +401,4 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-15 | Mapa En vivo: filtro de traza GPS (precisión, velocidad de moto, picos aislados) para que la polilínea no se vea como sismógrafo. |
 | 2026-09-15 | Matriz de permisos (admin y colaborador): tablero, instalaciones, pánicos, SIG. Overlay pánico/observatorio independientes, palpitante y sonido en bucle. |
 | 2026-09-15 | Admin cliente e instalaciones: misma matriz (SIG, Observatorio, Censo) por cliente o sede. |
+| 2026-09-15 | Ficha de folio Observatorio: grilla mapa + datos / novedades + bitácora, con scroll en los paneles inferiores. |

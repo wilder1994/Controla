@@ -20,130 +20,142 @@
     noteOpen: {{ $errors->has('note') && old('status', '') !== 'cerrado' ? 'true' : 'false' }},
     closeOpen: {{ $errors->has('note') && old('status') === 'cerrado' ? 'true' : 'false' }}
 }">
-    <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-5">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0">
-                <p class="font-mono text-xs text-indigo-300">{{ $event->folio() }}</p>
-                <h3 class="mt-1 text-xl font-semibold text-white">{{ $event->installation?->name }}</h3>
-                <p class="mt-1 text-sm text-slate-400">{{ $event->client?->name }} · {{ $event->kindLabel() }}</p>
-                @if ($event->installation?->addressLine())
-                    <p class="mt-1 text-xs text-slate-500">{{ $event->installation->addressLine() }}</p>
-                @endif
-                <p class="mt-2 text-sm text-slate-300">{{ $event->title }}</p>
-            </div>
-            <span class="inline-flex h-8 items-center rounded-lg border px-3 text-xs font-semibold {{ $tone }}">{{ $event->statusLabel() }}</span>
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="relative h-80 min-h-0 overflow-hidden">
+            @if ($folioMap)
+                @include('modules.observatory.partials.map', [
+                    'map' => $folioMap,
+                    'mapCanvasClass' => 'h-full min-h-0',
+                ])
+                <div class="absolute top-14 left-2 z-10 w-40 max-h-32 overflow-y-auto rounded-lg border border-slate-700/80 bg-slate-950/90 shadow-lg">
+                    @include('modules.observatory.partials.pin-legend', ['map' => $folioMap])
+                </div>
+            @else
+                <div class="flex h-full items-center rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+                    <p class="text-sm text-slate-500">Sin mapa para este folio.</p>
+                </div>
+            @endif
         </div>
-        <dl class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-500">Abierto</dt>
-                <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->opened_at?->format('d/m/Y H:i') ?? '—' }}</dd>
+
+        <div class="h-80 min-h-0 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-5 sidebar-scroll">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="font-mono text-xs text-indigo-300">{{ $event->folio() }}</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">{{ $event->installation?->name }}</h3>
+                    <p class="mt-1 text-sm text-slate-400">{{ $event->client?->name }} · {{ $event->kindLabel() }}</p>
+                    @if ($event->installation?->addressLine())
+                        <p class="mt-1 text-xs text-slate-500">{{ $event->installation->addressLine() }}</p>
+                    @endif
+                    <p class="mt-2 text-sm text-slate-300">{{ $event->title }}</p>
+                </div>
+                <span class="inline-flex h-8 items-center rounded-lg border px-3 text-xs font-semibold {{ $tone }}">{{ $event->statusLabel() }}</span>
             </div>
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerrado</dt>
-                <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->closed_at?->format('d/m/Y H:i') ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerró</dt>
-                <dd class="mt-0.5 text-slate-200">{{ $event->closedBy?->name ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-[11px] uppercase tracking-wide text-slate-500">Reportes</dt>
-                <dd class="mt-0.5 text-slate-200">{{ $event->reports->count() }}</dd>
-            </div>
-        </dl>
-        @if ($canUpdateStatus && $statusAction && ! $isClosed)
-            <div class="mt-4 flex flex-wrap gap-2">
-                <button type="button" class="h-9 px-4 rounded-lg bg-indigo-600 text-xs font-semibold text-white"
-                        @click="noteOpen = true">
-                    {{ $isNuevo ? 'Pasar a en atención' : 'Agregar' }}
-                </button>
-                @if ($isOpen)
-                    <button type="button" class="h-9 px-4 rounded-lg border border-emerald-700 text-xs font-semibold text-emerald-200 hover:bg-emerald-950/40"
-                            @click="closeOpen = true">
-                        Cerrar folio
+            <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Abierto</dt>
+                    <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->opened_at?->format('d/m/Y H:i') ?? '—' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerrado</dt>
+                    <dd class="mt-0.5 text-slate-200 tabular-nums">{{ $event->closed_at?->format('d/m/Y H:i') ?? '—' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Cerró</dt>
+                    <dd class="mt-0.5 text-slate-200">{{ $event->closedBy?->name ?? '—' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-[11px] uppercase tracking-wide text-slate-500">Reportes</dt>
+                    <dd class="mt-0.5 text-slate-200">{{ $event->reports->count() }}</dd>
+                </div>
+            </dl>
+            @if ($canUpdateStatus && $statusAction && ! $isClosed)
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button type="button" class="h-9 px-4 rounded-lg bg-indigo-600 text-xs font-semibold text-white"
+                            @click="noteOpen = true">
+                        {{ $isNuevo ? 'Pasar a en atención' : 'Agregar' }}
                     </button>
-                @endif
-            </div>
-        @elseif (! $canUpdateStatus)
-            <p class="mt-4 text-xs text-slate-500">Los estados los cierra el admin de instalaciones de esa sede.</p>
-        @endif
-    </div>
-
-    @if ($folioMap)
-        <div class="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.6fr)] xl:items-stretch">
-            @include('modules.observatory.partials.map', [
-                'map' => $folioMap,
-                'mapCanvasClass' => 'h-72 xl:h-80',
-            ])
-            @include('modules.observatory.partials.pin-legend')
-        </div>
-    @endif
-
-    <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3">
-        <p class="text-sm font-medium text-white">Novedades reportadas</p>
-        <x-ui.field-error :messages="$errors->get('report')" />
-        @forelse ($event->reports as $report)
-            <article class="rounded-lg border border-slate-800 bg-slate-950/50 p-3 space-y-1.5">
-                <p class="text-xs text-slate-500">
-                    {{ $report->kindLabel() }} · {{ $report->originLabel() }}
-                    · {{ $report->created_at?->format('d/m/Y H:i') }}
-                </p>
-                <p class="text-sm text-slate-200 whitespace-pre-line">{{ $report->body }}</p>
-                <p class="text-xs text-slate-400">
-                    {{ $report->reporterLabel() }}
-                    @if (! $report->is_anonymous && $report->reporter_phone)
-                        · {{ $report->reporter_phone }}
-                    @endif
-                    @if (! $report->is_anonymous && $report->reportedBy)
-                        · usuario {{ $report->reportedBy->name }}
-                    @endif
-                </p>
-                @if ($report->hasCoordinates())
-                    <p class="text-[11px] text-slate-500">Pin {{ number_format((float) $report->latitude, 5) }}, {{ number_format((float) $report->longitude, 5) }}</p>
-                @endif
-                @if ($report->photoUrls() !== [])
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        @foreach ($report->photoUrls() as $url)
-                            <a href="{{ $url }}" target="_blank" rel="noopener">
-                                <img src="{{ $url }}" alt="Evidencia" class="h-20 w-20 rounded-lg border border-slate-800 object-cover">
-                            </a>
-                        @endforeach
-                    </div>
-                @endif
-                @if ($canDetach && $event->reports->count() > 1)
-                    <form method="POST" action="{{ route('client.observatory.events.reports.detach', [$event, $report]) }}" class="pt-2">
-                        @csrf
-                        <button type="submit" class="h-8 px-2 rounded-md border border-slate-700 text-[11px] font-semibold text-slate-300 hover:bg-slate-800">
-                            Sacar a folio nuevo
+                    @if ($isOpen)
+                        <button type="button" class="h-9 px-4 rounded-lg border border-emerald-700 text-xs font-semibold text-emerald-200 hover:bg-emerald-950/40"
+                                @click="closeOpen = true">
+                            Cerrar folio
                         </button>
-                    </form>
-                @endif
-            </article>
-        @empty
-            <p class="text-sm text-slate-500">Sin reportes.</p>
-        @endforelse
-    </div>
-
-    <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3">
-        <p class="text-sm font-medium text-white">Bitácora</p>
-        @forelse ($event->statusLogs as $log)
-            <article class="rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2.5 space-y-1">
-                <p class="text-xs text-slate-400">
-                    @if ($log->from_status === $log->to_status)
-                        Observación
-                    @else
-                        {{ $log->from_status?->label() }} → {{ $log->to_status?->label() }}
                     @endif
-                    · {{ $log->user?->name ?? '—' }}
-                    · {{ $log->created_at?->format('d/m/Y H:i') }}
-                </p>
-                @if (filled($log->note))
-                    <p class="text-sm text-slate-200 whitespace-pre-line">{{ $log->note }}</p>
-                @endif
-            </article>
-        @empty
-            <p class="text-sm text-slate-500">Aún no hay observaciones ni cambios de estado.</p>
-        @endforelse
+                </div>
+            @elseif (! $canUpdateStatus)
+                <p class="mt-4 text-xs text-slate-500">Los estados los cierra el admin de instalaciones de esa sede.</p>
+            @endif
+        </div>
+
+        <div class="flex h-80 min-h-0 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+            <p class="shrink-0 text-sm font-medium text-white">Novedades reportadas</p>
+            <x-ui.field-error :messages="$errors->get('report')" />
+            <div class="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto sidebar-scroll pr-1">
+                @forelse ($event->reports as $report)
+                    <article class="rounded-lg border border-slate-800 bg-slate-950/50 p-3 space-y-1.5">
+                        <p class="text-xs text-slate-500">
+                            {{ $report->kindLabel() }} · {{ $report->originLabel() }}
+                            · {{ $report->created_at?->format('d/m/Y H:i') }}
+                        </p>
+                        <p class="text-sm text-slate-200 whitespace-pre-line">{{ $report->body }}</p>
+                        <p class="text-xs text-slate-400">
+                            {{ $report->reporterLabel() }}
+                            @if (! $report->is_anonymous && $report->reporter_phone)
+                                · {{ $report->reporter_phone }}
+                            @endif
+                            @if (! $report->is_anonymous && $report->reportedBy)
+                                · usuario {{ $report->reportedBy->name }}
+                            @endif
+                        </p>
+                        @if ($report->hasCoordinates())
+                            <p class="text-[11px] text-slate-500">Pin {{ number_format((float) $report->latitude, 5) }}, {{ number_format((float) $report->longitude, 5) }}</p>
+                        @endif
+                        @if ($report->photoUrls() !== [])
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach ($report->photoUrls() as $url)
+                                    <a href="{{ $url }}" target="_blank" rel="noopener">
+                                        <img src="{{ $url }}" alt="Evidencia" class="h-20 w-20 rounded-lg border border-slate-800 object-cover">
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                        @if ($canDetach && $event->reports->count() > 1)
+                            <form method="POST" action="{{ route('client.observatory.events.reports.detach', [$event, $report]) }}" class="pt-2">
+                                @csrf
+                                <button type="submit" class="h-8 px-2 rounded-md border border-slate-700 text-[11px] font-semibold text-slate-300 hover:bg-slate-800">
+                                    Sacar a folio nuevo
+                                </button>
+                            </form>
+                        @endif
+                    </article>
+                @empty
+                    <p class="text-sm text-slate-500">Sin reportes.</p>
+                @endforelse
+            </div>
+        </div>
+
+        <div class="flex h-80 min-h-0 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+            <p class="shrink-0 text-sm font-medium text-white">Bitácora</p>
+            <div class="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto sidebar-scroll pr-1">
+                @forelse ($event->statusLogs as $log)
+                    <article class="rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2.5 space-y-1">
+                        <p class="text-xs text-slate-400">
+                            @if ($log->from_status === $log->to_status)
+                                Observación
+                            @else
+                                {{ $log->from_status?->label() }} → {{ $log->to_status?->label() }}
+                            @endif
+                            · {{ $log->user?->name ?? '—' }}
+                            · {{ $log->created_at?->format('d/m/Y H:i') }}
+                        </p>
+                        @if (filled($log->note))
+                            <p class="text-sm text-slate-200 whitespace-pre-line">{{ $log->note }}</p>
+                        @endif
+                    </article>
+                @empty
+                    <p class="text-sm text-slate-500">Aún no hay observaciones ni cambios de estado.</p>
+                @endforelse
+            </div>
+        </div>
     </div>
 
     @if ($canMerge && $mergeAction && $mergeCandidates->isNotEmpty())
