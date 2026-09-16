@@ -200,7 +200,10 @@ final class SupervisorShiftController extends Controller
         abort_if($shift === null || $shift->km_start_selfie_path === null, 404);
         abort_unless(Storage::disk('local')->exists($shift->km_start_selfie_path), 404);
 
-        return response()->file(Storage::disk('local')->path($shift->km_start_selfie_path));
+        return response()->file(Storage::disk('local')->path($shift->km_start_selfie_path), [
+            'Cache-Control' => 'private, max-age=120',
+            'Access-Control-Allow-Origin' => '*',
+        ]);
     }
 
     public function intake(Request $request): JsonResponse

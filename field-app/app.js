@@ -1351,7 +1351,9 @@ async function loadCurrent() {
         await ControlaOffline.metaSet('shift', shift || null);
         const nameEl = document.getElementById('sup-name');
         if (nameEl) nameEl.textContent = data.supervisor?.name || '';
-        if (data.supervisor?.has_selfie) loadSupervisorSelfie();
+        if (data.supervisor?.has_selfie) {
+            await loadSupervisorSelfie();
+        }
         return applyShift(shift);
     } catch (e) {
         const shift = await ControlaOffline.metaGet('shift');
@@ -1383,6 +1385,26 @@ function applyShift(shift) {
     return shift;
 }
 
+function setSupervisorAvatar(blob) {
+    if (!blob || !blob.size) {
+        return Promise.resolve();
+    }
+    const img = document.getElementById('sup-avatar');
+    if (!img) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            img.src = reader.result;
+            resolve();
+        };
+        reader.onerror = () => resolve();
+        reader.readAsDataURL(blob);
+    });
+}
+
 async function loadSupervisorSelfie() {
     try {
         const res = await fetch(`${apiBase()}/supervision/shift-photo/start-selfie`, {
@@ -1390,7 +1412,7 @@ async function loadSupervisorSelfie() {
         });
         if (!res.ok) return;
         const blob = await res.blob();
-        document.getElementById('sup-avatar').src = URL.createObjectURL(blob);
+        await setSupervisorAvatar(blob);
     } catch (e) {
         // sin foto de perfil
     }
@@ -1639,7 +1661,11 @@ document.getElementById('btn-start').onclick = () => withBusy(
         fd.append('selfie_photo', blobs.self, 'selfie.jpg');
         await api('/supervision/shifts/open', { method: 'POST', body: fd });
         await clearOwnCloseLock();
+        const startSelfie = blobs.self;
         blobs.odo = blobs.self = null;
+        if (startSelfie) {
+            await setSupervisorAvatar(startSelfie);
+        }
         stopAllCams();
         try { await refreshOfflinePack(); } catch (e) { /* el turno ya abrió */ }
         await loadCurrent();

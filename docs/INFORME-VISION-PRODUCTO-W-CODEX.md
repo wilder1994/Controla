@@ -400,6 +400,7 @@ No se abre código en este corte. El orden acordado:
 | 2026-09-14 | Fix: `panelSidebar` + `opsLiveAlerts` juntos en `app.js`; sin el sidebar Alpine el tablero Observatorio queda en blanco. |
 | 2026-09-15 | Mapa En vivo: filtro de traza GPS (precisión, velocidad de moto, picos aislados) para que la polilínea no se vea como sismógrafo. |
 | 2026-09-16 | Supervisión: En vivo sin filtros ni trazas hasta clic; Historial solo turnos cerrados (una ruta en calle); ficha de turno (Ver) se guarda al cierre (`sheet_snapshot`). |
+| 2026-09-16 | APK/PWA v1.6: selfie de inicio en el círculo de perfil. PWA `controla-sup-v47`. |
 | 2026-09-15 | Matriz de permisos (admin y colaborador): tablero, instalaciones, pánicos, SIG. Overlay pánico/observatorio independientes, palpitante y sonido en bucle. |
 | 2026-09-15 | Admin cliente e instalaciones: misma matriz (SIG, Observatorio, Censo) por cliente o sede. |
 | 2026-09-15 | Ficha de folio Observatorio: grilla mapa + datos / novedades + bitácora, con scroll en los paneles inferiores. |
