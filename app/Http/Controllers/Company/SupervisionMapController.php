@@ -60,7 +60,7 @@ final class SupervisionMapController extends Controller
                     'zoom' => 6,
                 ],
             ]
-            : $this->buildSupervisionMapService->execute($company, $filter);
+            : $this->buildSupervisionMapService->execute($company, $filter, $tab);
 
         $summary = $this->buildSupervisionSummaryService->execute(
             $company,
@@ -125,9 +125,8 @@ final class SupervisionMapController extends Controller
 
         $companyId = app(ActingCompanyResolver::class)->requireId($request->user());
         $company = SecurityCompany::query()->findOrFail($companyId);
-        $filter = $this->queryFilter($request, $company);
 
-        return response()->json($this->buildSupervisionMapService->liveFeed($company, $filter));
+        return response()->json($this->buildSupervisionMapService->liveFeed($company));
     }
 
     public function snappedRoute(Request $request, SupervisorShift $shift): JsonResponse

@@ -12,6 +12,7 @@ final class AutoCloseExpiredSupervisorShiftsService
 {
     public function __construct(
         private readonly ResolveSupervisorShiftDeadlineService $deadlines,
+        private readonly BuildSupervisorShiftSheetService $shiftSheets,
     ) {}
 
     public function execute(?\DateTimeInterface $now = null): int
@@ -58,6 +59,11 @@ final class AutoCloseExpiredSupervisorShiftsService
                 'notes' => trim((string) $shift->notes."\n".$note),
                 'closed_by_system' => true,
             ]);
+
+            $closed = $shift->fresh(['user', 'zone', 'shiftTemplate', 'securityCompany', 'reviews.client', 'fieldLogs.client', 'locations']);
+            if ($closed instanceof SupervisorShift) {
+                $this->shiftSheets->freeze($closed);
+            }
         });
     }
 }

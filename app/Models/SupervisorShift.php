@@ -41,6 +41,7 @@ final class SupervisorShift extends Model
         'close_client_event_id',
         'snapped_route',
         'snapped_route_hash',
+        'sheet_snapshot',
     ];
 
     protected function casts(): array
@@ -58,6 +59,7 @@ final class SupervisorShift extends Model
             'ppe_checklist' => 'array',
             'vehicle_checklist' => 'array',
             'snapped_route' => 'array',
+            'sheet_snapshot' => 'array',
         ];
     }
 

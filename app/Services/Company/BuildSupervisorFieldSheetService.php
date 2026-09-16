@@ -30,6 +30,10 @@ use Illuminate\Support\Facades\Storage;
 
 final class BuildSupervisorFieldSheetService
 {
+    public function __construct(
+        private readonly BuildSupervisorShiftSheetService $shiftSheets,
+    ) {}
+
     public function forCompany(int $companyId, SupervisorFieldSheetKind $kind, int $id): ?SupervisorFieldSheet
     {
         return $this->build($companyId, $kind, $id, null);
@@ -42,6 +46,12 @@ final class BuildSupervisorFieldSheetService
 
     private function build(int $companyId, SupervisorFieldSheetKind $kind, int $id, ?int $userId): ?SupervisorFieldSheet
     {
+        if ($kind === SupervisorFieldSheetKind::Shift) {
+            return $userId === null
+                ? $this->shiftSheets->forCompany($companyId, $id)
+                : $this->shiftSheets->forSupervisor($companyId, $userId, $id);
+        }
+
         if ($kind === SupervisorFieldSheetKind::Review) {
             $review = SupervisorShiftReview::query()
                 ->whereKey($id)

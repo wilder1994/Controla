@@ -12,6 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 final class CloseSupervisorShiftService
 {
+    public function __construct(
+        private readonly BuildSupervisorShiftSheetService $shiftSheets,
+    ) {}
+
     public function execute(
         SupervisorShift $shift,
         int $kmEnd,
@@ -63,7 +67,12 @@ final class CloseSupervisorShiftService
                 $shift->fleetVehicle->update(['last_km' => $kmEnd]);
             }
 
-            return $shift->fresh(['fleetVehicle']);
+            $closed = $shift->fresh(['fleetVehicle', 'user', 'zone', 'shiftTemplate', 'securityCompany', 'reviews.client', 'fieldLogs.client', 'locations']);
+            if ($closed instanceof SupervisorShift) {
+                $this->shiftSheets->freeze($closed);
+            }
+
+            return $closed ?? $shift;
         });
     }
 }

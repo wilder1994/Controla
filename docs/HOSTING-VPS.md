@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 15 septiembre 2026
+**Última actualización:** 16 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
@@ -65,6 +65,8 @@ Carga de folios (15 sep 2026): medidor verde→rojo (`load_rate`). Título **Ate
 Pánico inmediato (15 sep 2026): clic dispara el aviso (panel y APK, sin confirmar). **Enterado** silencia solo a ese usuario; **Atender** quita overlay y sonido a todos. PWA `controla-sup-v46`. APK v1.5 en `public/downloads/controla-supervision.apk`. Pull + `npm run build` + `view:cache` + `route:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 
 Modalidades de puesto (15 sep 2026): Ajustes → Modalidades (`supervisor_post_modalities`, horas 1–24; semilla 8/12/24). El puesto elige del catálogo. Pull + `migrate --force` + `view:cache` + `route:cache`. Sin seeder ni `npm`. Artisan como `wcodex-controla`.
+
+Mapa Supervisión + ficha de turno (16 sep 2026): En vivo sin filtros; ruta GPS al clic; Historial solo cerrados (una ruta Roads). Ficha `kind=shift` se congela en `supervisor_shifts.sheet_snapshot` al cierre. Pull + `migrate --force` + `view:cache` + `route:cache`. Sin seeder ni `npm`. Artisan como `wcodex-controla`.
 
 Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON al cambio (Reverb) y sondeo cada 12 s si el socket no está conectado. Crear folio también refresca (alerta Observatorio). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
 

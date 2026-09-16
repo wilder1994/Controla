@@ -41,14 +41,6 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Historial');
         $response->assertSee('Resumen');
         $response->assertSee('Fichas');
-        $response->assertSee('Descargar PPTX');
-        $response->assertSee('Hoy');
-        $response->assertSee('Mes');
-        $response->assertSee('Año');
-        $response->assertSee('Zona');
-        $response->assertSee('Supervisor');
-        $response->assertSee('Norte');
-        $response->assertSee($supervisor->name);
         $response->assertSee('Supervisores en turno');
         $response->assertSee('Inicio de turno');
         $response->assertSee('Apoyo');
@@ -61,14 +53,22 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('Terreno');
         $response->assertSee('Palmas');
         $response->assertDontSee('Nueve módulos');
+        $response->assertDontSee('Hoy');
+        $response->assertDontSee('Descargar PPTX');
 
         $history = $this->actingAs($user)->get(route('company.supervision.index', ['tab' => 'history']));
         $history->assertOk();
         $history->assertSee('Turnos del periodo');
         $history->assertSee('Inicio de turno');
-        $history->assertSee('Una ruta a la vez');
+        $history->assertSee('Una ruta en calle a la vez');
+        $history->assertSee('Desde');
+        $history->assertSee('Hasta');
+        $history->assertSee('Supervisor');
+        $history->assertSee($supervisor->name);
         $history->assertDontSee('Replay');
         $history->assertDontSee('Reproducir');
+        $history->assertDontSee('>Zona<', false);
+        $history->assertDontSee('Descargar PPTX');
 
         SupervisorShift::query()->create([
             'security_company_id' => $user->security_company_id,
@@ -88,10 +88,13 @@ final class CompanySupervisionMapTest extends TestCase
         $summary->assertOk();
         $summary->assertSee('Cobertura de sitios');
         $summary->assertSee('Revistas');
+        $summary->assertSee('Descargar PPTX');
+        $summary->assertSee('Hoy');
+        $summary->assertSee('Zona');
         $summary->assertDontSee('Nueve módulos');
     }
 
-    public function test_supervision_map_filters_by_zone_and_supervisor(): void
+    public function test_live_map_ignores_zone_filter_and_history_filters_supervisor(): void
     {
         $this->seedWithPilot();
 
@@ -127,19 +130,40 @@ final class CompanySupervisionMapTest extends TestCase
             'supervisor_zone_id' => $sur->id,
             'started_at' => now(),
         ]);
+        SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Closed,
+            'supervisor_zone_id' => $norte->id,
+            'started_at' => now()->subHours(3),
+            'ended_at' => now()->subHour(),
+        ]);
+        SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $other->id,
+            'status' => SupervisorShiftStatus::Closed,
+            'supervisor_zone_id' => $sur->id,
+            'started_at' => now()->subHours(4),
+            'ended_at' => now()->subHours(2),
+        ]);
 
-        $all = $this->actingAs($admin)->get(route('company.supervision.index'));
-        $all->assertOk();
-        $all->assertSee('"user":"'.$supervisor->name.'"', false);
-        $all->assertSee('"user":"'.$other->name.'"', false);
-
-        $filtered = $this->actingAs($admin)->get(route('company.supervision.index', [
+        $live = $this->actingAs($admin)->get(route('company.supervision.index', [
             'zone_id' => $norte->id,
             'supervisor_id' => $supervisor->id,
         ]));
-        $filtered->assertOk();
-        $filtered->assertSee('"user":"'.$supervisor->name.'"', false);
-        $filtered->assertDontSee('"user":"'.$other->name.'"', false);
+        $live->assertOk();
+        $live->assertSee('"user":"'.$supervisor->name.'"', false);
+        $live->assertSee('"user":"'.$other->name.'"', false);
+
+        $history = $this->actingAs($admin)->get(route('company.supervision.index', [
+            'tab' => 'history',
+            'from' => now()->toDateString(),
+            'to' => now()->toDateString(),
+            'supervisor_id' => $supervisor->id,
+        ]));
+        $history->assertOk();
+        $history->assertSee('"user":"'.$supervisor->name.'"', false);
+        $history->assertDontSee('"user":"'.$other->name.'"', false);
     }
 
     public function test_live_map_embeds_client_pins_and_shift_path(): void
@@ -177,6 +201,7 @@ final class CompanySupervisionMapTest extends TestCase
         $response->assertSee('"name":"Palmas del Ingenio"', false);
         $response->assertSee('"path":', false);
         $response->assertSee('en ruta');
+        $response->assertSee('>Ver<', false);
     }
 
     public function test_live_feed_distinguishes_screen_off_from_no_signal(): void
@@ -379,5 +404,95 @@ final class CompanySupervisionMapTest extends TestCase
         $second->assertOk();
         $second->assertJsonPath('snapped', true);
         Http::assertSentCount(1);
+    }
+
+    public function test_history_lists_only_closed_shifts(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+        $supervisor = $this->companySupervisor();
+        SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'started_at' => now()->subHour(),
+        ]);
+        $closed = SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Closed,
+            'started_at' => now()->subHours(5),
+            'ended_at' => now()->subHours(1),
+        ]);
+
+        $history = $this->actingAs($admin)->get(route('company.supervision.index', [
+            'tab' => 'history',
+            'from' => now()->toDateString(),
+            'to' => now()->toDateString(),
+        ]));
+        $history->assertOk();
+        $history->assertSee('"shift_id":'.$closed->id, false);
+        $history->assertSee('sheet_url', false);
+        $open = SupervisorShift::query()
+            ->where('security_company_id', $supervisor->security_company_id)
+            ->where('status', SupervisorShiftStatus::Open)
+            ->firstOrFail();
+        $history->assertDontSee('"shift_id":'.$open->id.',', false);
+    }
+
+    public function test_company_opens_shift_sheet_as_draft_until_close(): void
+    {
+        $this->seedWithPilot();
+
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        app(AssignCompanySupervisionPackageService::class)->execute(
+            $admin->securityCompany,
+            SupervisionPackageSku::Sit1,
+        );
+        $supervisor = $this->companySupervisor();
+        $shift = SupervisorShift::query()->create([
+            'security_company_id' => $supervisor->security_company_id,
+            'user_id' => $supervisor->id,
+            'status' => SupervisorShiftStatus::Open,
+            'started_at' => now()->subHour(),
+            'km_start' => 100,
+        ]);
+        $shift->locations()->create([
+            'recorded_at' => now()->subMinutes(10),
+            'latitude' => 3.4516,
+            'longitude' => -76.5320,
+            'source' => 'gps',
+        ]);
+
+        $draft = $this->actingAs($admin)->get(route('company.supervision.sheets.show', [
+            'kind' => 'shift',
+            'id' => $shift->id,
+        ]));
+        $draft->assertOk();
+        $draft->assertSee('Ficha de turno de supervisión');
+        $draft->assertSee('En curso — no guardada');
+        $draft->assertSee('3.451600');
+        $this->assertNull($shift->fresh()->sheet_snapshot);
+
+        $shift->update([
+            'status' => SupervisorShiftStatus::Closed,
+            'ended_at' => now(),
+            'km_end' => 120,
+        ]);
+        app(\App\Services\Company\BuildSupervisorShiftSheetService::class)->freeze($shift->fresh());
+
+        $closed = $this->actingAs($admin)->get(route('company.supervision.sheets.show', [
+            'kind' => 'shift',
+            'id' => $shift->id,
+        ]));
+        $closed->assertOk();
+        $closed->assertSee('Ficha de turno de supervisión');
+        $closed->assertDontSee('En curso — no guardada');
+        $this->assertNotNull($shift->fresh()->sheet_snapshot);
     }
 }

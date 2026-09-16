@@ -26,8 +26,10 @@
 
 <x-company-layout title="Supervisión">
     <x-slot:actions>
+        @if ($activeTab !== 'live')
         <form method="GET" action="{{ route('company.supervision.index') }}" class="flex flex-wrap items-end gap-2" id="supervision-filter">
             <input type="hidden" name="tab" value="{{ $activeTab }}">
+            @if (in_array($activeTab, ['summary', 'sheets'], true))
             <div>
                 <label for="period-year" class="text-xs text-slate-500">Año</label>
                 <select id="period-year"
@@ -47,6 +49,7 @@
                     @endforeach
                 </select>
             </div>
+            @endif
             <div>
                 <label for="from" class="text-xs text-slate-500">Desde</label>
                 <input type="date" id="from" name="from" value="{{ $summary->from }}"
@@ -57,6 +60,7 @@
                 <input type="date" id="to" name="to" value="{{ $summary->to }}"
                        class="mt-1 block h-9 px-3 text-sm rounded-lg border border-slate-700 bg-slate-950 text-white">
             </div>
+            @if (in_array($activeTab, ['summary', 'sheets'], true))
             <div class="flex gap-1 pb-0.5">
                 <button type="button" data-preset="today" class="h-9 px-2 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800">Hoy</button>
                 <button type="button" data-preset="month" class="h-9 px-2 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800">Mes</button>
@@ -74,6 +78,7 @@
                     @endforeach
                 </select>
             </div>
+            @endif
             <div>
                 <label for="supervisor_id" class="text-xs text-slate-500">Supervisor</label>
                 <select id="supervisor_id" name="supervisor_id"
@@ -119,11 +124,14 @@
                 </div>
             @endif
             <x-ui.button type="submit" size="sm" variant="secondary">Filtrar</x-ui.button>
+            @if ($activeTab !== 'history')
             <a href="{{ route('company.supervision.report', $tabQuery) }}"
                class="inline-flex items-center h-9 px-3 text-sm rounded-lg border border-amber-500/40 text-amber-200 hover:bg-amber-500/10">
                 Descargar PPTX
             </a>
+            @endif
         </form>
+        @endif
     </x-slot:actions>
 
     <x-slot:headerTabs>
@@ -171,7 +179,7 @@
                     <section class="lg:col-span-5 xl:col-span-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-h-[420px] lg:min-h-0 lg:h-[min(78vh,740px)] flex flex-col">
                         <h3 class="text-sm font-semibold text-white shrink-0">Supervisores en turno</h3>
                         @include('modules.company.supervision.partials.pin-legend')
-                        <p class="text-xs text-slate-500 mt-2 shrink-0">Se actualiza solo. En línea = GPS reciente con pantalla encendida. Pantalla apagada = GPS sigue (APK). Sin señal = más de 90 s sin GPS.</p>
+                        <p class="text-xs text-slate-500 mt-2 shrink-0">Se actualiza solo. Clic en la fila: ruta GPS de ese supervisor. Ver: ficha del turno (se guarda al cerrar).</p>
                         <div class="mt-3 overflow-auto flex-1" id="supervision-live-list">
                             @include('modules.company.supervision.partials.live-roster', ['rows' => $map['live']])
                         </div>
@@ -182,13 +190,20 @@
                     <section class="lg:col-span-5 xl:col-span-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4 min-h-[420px] lg:min-h-0 lg:h-[min(78vh,740px)] flex flex-col">
                         <h3 class="text-sm font-semibold text-white shrink-0">Turnos del periodo</h3>
                         @include('modules.company.supervision.partials.pin-legend')
-                        <p class="text-xs text-slate-500 mt-2 shrink-0">Una ruta a la vez. Cerrado: callejero (Roads). Abierto: GPS hasta el cierre (automático al fin de plantilla + 30 min).</p>
+                        <p class="text-xs text-slate-500 mt-2 shrink-0">Solo turnos cerrados. Una ruta en calle a la vez: clic en la fila. Ver: ficha guardada del turno.</p>
                         <div class="mt-3 overflow-auto flex-1 space-y-1">
                             @forelse ($map['history'] as $row)
                                 <button type="button"
                                         class="supervision-trail-pick w-full text-left rounded-md px-2 py-2 hover:bg-slate-800 border border-transparent"
                                         data-shift-id="{{ $row['shift_id'] }}">
-                                    <p class="text-sm font-medium text-slate-100">{{ $row['user'] ?? 'Supervisor' }}</p>
+                                    <div class="flex items-start justify-between gap-2">
+                                        <p class="text-sm font-medium text-slate-100">{{ $row['user'] ?? 'Supervisor' }}</p>
+                                        @if (! empty($row['sheet_url']))
+                                            <a href="{{ $row['sheet_url'] }}" target="_blank" rel="noopener"
+                                               class="shrink-0 rounded-md border border-slate-700 px-2 py-0.5 text-[11px] font-semibold text-indigo-300 hover:bg-slate-800"
+                                               onclick="event.stopPropagation()">Ver</a>
+                                        @endif
+                                    </div>
                                     <p class="text-xs text-slate-400 mt-0.5">{{ $row['status_label'] ?? $row['status'] }}
                                         @if (! empty($row['schedule_label']))
                                             · {{ $row['schedule_label'] }}
@@ -341,7 +356,7 @@
                 const installations = {!! $installationsJson !!};
                 const googleMaps = {!! $googleMapsJson !!};
                 const activeTab = @json($activeTab);
-                const liveFeedUrl = @json(route('company.supervision.live-feed', $tabQuery));
+                const liveFeedUrl = @json(route('company.supervision.live-feed'));
                 const snappedRouteUrl = (id) => @json(url('/company/supervision/turnos')).replace(/\/$/, '') + '/' + id + '/ruta';
                 const mapEl = document.getElementById('supervision-map');
                 const fallback = document.getElementById('supervision-map-fallback');
@@ -386,6 +401,7 @@
 
                 let googleMap = null;
                 let overlays = [];
+                let selectedLiveShiftId = null;
                 let livePollTimer = null;
                 let liveFitted = false;
                 let pinCard = null;
@@ -437,15 +453,21 @@
                         + '<th class="text-left py-2 pr-2 font-medium">Estado</th>'
                         + '<th class="text-right py-2 font-medium">Km</th>'
                         + '<th class="text-right py-2 font-medium">Rev.</th>'
+                        + '<th class="text-right py-2 font-medium"></th>'
                         + '</tr></thead><tbody>'
                         + rows.map((row) => {
-                            return '<tr class="border-b border-slate-800/70 align-top">'
+                            const selected = Number(selectedLiveShiftId) === Number(row.shift_id);
+                            const sheet = row.sheet_url
+                                ? '<a href="' + esc(row.sheet_url) + '" target="_blank" rel="noopener" class="js-sheet-link inline-flex rounded-md border border-slate-700 px-2 py-0.5 text-[11px] font-semibold text-indigo-300 hover:bg-slate-800">Ver</a>'
+                                : '';
+                            return '<tr class="supervision-live-pick border-b border-slate-800/70 align-top cursor-pointer hover:bg-slate-800/60' + (selected ? ' bg-slate-800' : '') + '" data-shift-id="' + esc(String(row.shift_id)) + '">'
                                 + '<td class="py-2 pr-2"><p class="font-medium text-slate-100">' + esc(row.user || 'Supervisor') + '</p>'
                                 + '<p class="text-xs mt-0.5 ' + signalTextClass(row) + '">' + esc(row.online_label || (row.online ? 'En línea' : 'Sin señal')) + '</p>'
                                 + '<p class="text-xs text-slate-500 mt-0.5">Inicio ' + esc(row.started_at_label || '—') + '</p></td>'
                                 + '<td class="py-2 pr-2 text-xs text-slate-300 leading-snug">' + esc(row.status_line || liveStatus(row)) + '</td>'
                                 + '<td class="py-2 text-right text-slate-300 tabular-nums">' + Number(row.km || 0).toFixed(1) + '</td>'
                                 + '<td class="py-2 text-right text-slate-300 tabular-nums">' + String(row.reviews_count || 0) + '</td>'
+                                + '<td class="py-2 pl-2 text-right">' + sheet + '</td>'
                                 + '</tr>';
                         }).join('')
                         + '</tbody></table>';
@@ -1029,11 +1051,19 @@
                     const bounds = new google.maps.LatLngBounds();
                     let hasPoint = false;
                     const pins = collectClientPins();
+                    if (selectedLiveShiftId !== null && !live.some((row) => Number(row.shift_id) === Number(selectedLiveShiftId))) {
+                        selectedLiveShiftId = null;
+                    }
                     live.forEach((row) => {
-                        hasPoint = drawPath(googleMap, bounds, row, { street: false }) || hasPoint;
-                        pins.push(...collectTrailPins(row, { current: true, flag: false }));
-                        pins.push(...collectReviewPins(row.shift_id));
-                        pins.push(...collectEventPins(row.shift_id));
+                        const isSelected = Number(selectedLiveShiftId) === Number(row.shift_id);
+                        if (isSelected) {
+                            hasPoint = drawPath(googleMap, bounds, row, { street: false }) || hasPoint;
+                            pins.push(...collectTrailPins(row, { current: true, flag: false }));
+                            pins.push(...collectReviewPins(row.shift_id));
+                            pins.push(...collectEventPins(row.shift_id));
+                        } else {
+                            pins.push(...collectTrailPins(row, { current: true, flag: false }).filter((pin) => pin.kind === 'moto'));
+                        }
                     });
                     hasPoint = drawPins(googleMap, bounds, pins) || hasPoint;
                     if (hasPoint && fit) googleMap.fitBounds(bounds, 48);
@@ -1044,26 +1074,28 @@
                     clearOverlays();
                     const bounds = new google.maps.LatLngBounds();
                     let hasPoint = false;
-                    const row = history.find((item) => Number(item.shift_id) === Number(shiftId)) || history[0];
+                    const row = shiftId
+                        ? history.find((item) => Number(item.shift_id) === Number(shiftId))
+                        : null;
                     if (row) {
-                        const closed = row.status !== 'open';
                         let trailRow = row;
                         let street = false;
-                        if (closed) {
-                            try {
-                                const res = await fetch(snappedRouteUrl(row.shift_id), { headers: { Accept: 'application/json' } });
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    if (Array.isArray(data.path) && data.path.length) {
-                                        trailRow = Object.assign({}, row, { path: data.path });
-                                        street = Boolean(data.snapped);
-                                    }
+                        try {
+                            const res = await fetch(snappedRouteUrl(row.shift_id), { headers: { Accept: 'application/json' } });
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (Array.isArray(data.path) && data.path.length) {
+                                    trailRow = Object.assign({}, row, { path: data.path });
+                                    street = Boolean(data.snapped);
                                 }
-                            } catch (e) {}
-                        }
+                            }
+                        } catch (e) {}
+                        const path = trailRow.path || [];
+                        if (!trailRow.start && path.length) trailRow.start = path[0];
+                        if (!trailRow.end && path.length) trailRow.end = path[path.length - 1];
                         hasPoint = drawPath(googleMap, bounds, trailRow, { street });
                         const pins = collectClientPins()
-                            .concat(collectTrailPins(trailRow, { current: false, flag: closed }))
+                            .concat(collectTrailPins(trailRow, { current: false, flag: true }))
                             .concat(collectReviewPins(row.shift_id))
                             .concat(collectEventPins(row.shift_id));
                         hasPoint = drawPins(googleMap, bounds, pins) || hasPoint;
@@ -1119,12 +1151,22 @@
                     });
 
                     if (activeTab === 'history') {
-                        paintHistory(history[0]?.shift_id);
+                        paintHistory(null);
                         document.querySelectorAll('.supervision-trail-pick').forEach((btn) => {
                             btn.addEventListener('click', () => paintHistory(btn.dataset.shiftId));
                         });
                         return;
                     }
+
+                    document.getElementById('supervision-live-list')?.addEventListener('click', (ev) => {
+                        const link = ev.target.closest('.js-sheet-link');
+                        if (link) return;
+                        const row = ev.target.closest('.supervision-live-pick');
+                        if (!row || !googleMap) return;
+                        const id = Number(row.dataset.shiftId);
+                        selectedLiveShiftId = selectedLiveShiftId === id ? null : id;
+                        paintLive(true);
+                    });
 
                     paintLive(true);
                     liveFitted = true;

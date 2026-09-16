@@ -169,8 +169,14 @@
         <div class="folio">
             <strong>{{ $sheet->folio }}</strong>
             <div>{{ $sheet->recordedAt->format('d/m/Y H:i') }}</div>
-            <span class="badge {{ $sheet->hasNovelty ? 'nov' : '' }}">
-                {{ $sheet->hasNovelty ? 'Con novedad' : 'Sin novedad' }}
+            <span class="badge {{ $sheet->isDraft ? '' : ($sheet->hasNovelty ? 'nov' : '') }}">
+                @if ($sheet->isDraft)
+                    En curso — no guardada
+                @elseif ($sheet->hasNovelty)
+                    Con novedad
+                @else
+                    Sin novedad
+                @endif
             </span>
         </div>
     </div>
@@ -203,10 +209,16 @@
         @endif
     </div>
 
+    @if($sheet->mapImageSrc)
+        <p style="margin:0 0 14px">
+            <img src="{{ $sheet->mapImageSrc }}" alt="Ubicación" style="width:100%;max-height:220px;object-fit:cover;border:1px solid #cbd5e1;border-radius:8px">
+        </p>
+    @endif
+
     @if($sheet->guardPhotoSrc || $sheet->notes)
         <div class="guard">
             @if($sheet->guardPhotoSrc)
-                <img src="{{ $sheet->guardPhotoSrc }}" alt="Foto del vigilante">
+                <img src="{{ $sheet->guardPhotoSrc }}" alt="{{ $sheet->kind === \App\Enums\SupervisorFieldSheetKind::Shift ? 'Selfie de inicio' : 'Foto del vigilante' }}">
             @endif
             @if($sheet->notes)
                 <p><strong>Observaciones.</strong> {{ $sheet->notes }}</p>

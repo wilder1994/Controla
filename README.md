@@ -419,10 +419,10 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `POST/PUT/DELETE /company/clients/{id}/posts` | CRUD puestos compartidos (Accesos y Supervisión) |
 | `GET /company/clients/template` | Formato Excel de clientes |
 | `POST /company/clients/import/*` | Carga masiva: preview → aceptar |
-| `GET /company/supervision` | En vivo: mapa + tabla (GPS, en línea/sin señal); Historial: mapa + lista (Roads si el turno está cerrado); Resumen; Fichas |
+| `GET /company/supervision` | En vivo: motos + ruta al clic + Ver ficha en curso; Historial: turnos cerrados, una ruta en calle, Ver ficha guardada; Resumen; Fichas de campo |
 | `GET /company/supervision/live.json` | Feed En vivo (turnos abiertos + revistas); no llama Roads |
 | `GET /company/supervision/turnos/{shift}/ruta` | Historial: Snap to Roads en turno cerrado (cache `snapped_route`) |
-| `GET /company/supervision/fichas/{kind}/{id}` | Ficha HTML carta: marca de la empresa, encabezado Decreto 356, cliente/instalación/puesto |
+| `GET /company/supervision/fichas/{kind}/{id}` | Ficha HTML carta. `kind=shift`: ficha de turno (borrador si está abierto; `sheet_snapshot` al cerrar) |
 | `GET /company/supervision/informe.pptx` | Informe ejecutivo PPTX (mismo filtro; solo cifras). Compositor + párrafos + GRACIAS + DeepSeek + chatbot/PQRS: pendiente, [`docs/SUPERVISION-CAMPO.md`](docs/SUPERVISION-CAMPO.md) §§ Informe PPTX y Chatbot y PQRS |
 | `GET /company/descargas` | **Descargas**: APK (`/company/descargas/controla-supervision.apk`) + web PWA de respaldo |
 | `GET /company/billing` | **Facturación** unificada: membresía Accesos + Supervisión, historial, pago online |

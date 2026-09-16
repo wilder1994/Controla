@@ -162,7 +162,7 @@ final class ListSupervisorFieldSheetsService
     private function logModulesFor(?SupervisorFieldSheetKind $kind): array
     {
         return match ($kind) {
-            SupervisorFieldSheetKind::Review => [],
+            SupervisorFieldSheetKind::Review, SupervisorFieldSheetKind::Shift => [],
             SupervisorFieldSheetKind::Alarm => [SupervisorFieldModule::Alarms],
             SupervisorFieldSheetKind::Support => [SupervisorFieldModule::Supports],
             SupervisorFieldSheetKind::Document => [SupervisorFieldModule::Documents],

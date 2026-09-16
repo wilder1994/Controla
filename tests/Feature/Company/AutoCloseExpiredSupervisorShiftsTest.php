@@ -49,6 +49,8 @@ final class AutoCloseExpiredSupervisorShiftsTest extends TestCase
         $this->assertStringContainsString('Cierre automático: fin de turno 14:00 + 30 min.', (string) $closed->notes);
         $this->assertTrue($closed->closed_by_system);
         $this->assertSame(0, $service->execute(CarbonImmutable::parse('2026-09-05 15:00:00')));
+        $this->assertIsArray($closed->sheet_snapshot);
+        $this->assertStringContainsString('-T', (string) ($closed->sheet_snapshot['folio'] ?? ''));
     }
 
     public function test_auto_close_records_pending_outbox_in_notes_and_history_label(): void

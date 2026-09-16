@@ -12,6 +12,7 @@ enum SupervisorFieldSheetKind: string
     case Alarm = 'alarm';
     case Support = 'support';
     case Document = 'document';
+    case Shift = 'shift';
 
     public function documentTitle(): string
     {
@@ -20,6 +21,7 @@ enum SupervisorFieldSheetKind: string
             self::Alarm => 'Registro de alarma',
             self::Support => 'Registro de apoyo',
             self::Document => 'Registro de documentos de turno',
+            self::Shift => 'Ficha de turno de supervisión',
         };
     }
 
@@ -30,6 +32,7 @@ enum SupervisorFieldSheetKind: string
             self::Alarm => 'Alarma',
             self::Support => 'Apoyo',
             self::Document => 'Documentos',
+            self::Shift => 'Turno',
         };
     }
 
@@ -40,6 +43,7 @@ enum SupervisorFieldSheetKind: string
             self::Alarm => 'A',
             self::Support => 'S',
             self::Document => 'D',
+            self::Shift => 'T',
         };
     }
 
@@ -64,7 +68,7 @@ enum SupervisorFieldSheetKind: string
             self::Alarm => SupervisorFieldModule::Alarms,
             self::Support => SupervisorFieldModule::Supports,
             self::Document => SupervisorFieldModule::Documents,
-            self::Review => null,
+            self::Review, self::Shift => null,
         };
     }
 }

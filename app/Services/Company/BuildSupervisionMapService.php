@@ -23,7 +23,7 @@ final class BuildSupervisionMapService
     ) {}
 
     /** @return array<string, mixed> */
-    public function execute(SecurityCompany $company, SupervisionQueryFilter $filter): array
+    public function execute(SecurityCompany $company, SupervisionQueryFilter $filter, string $tab = 'live'): array
     {
         $fromAt = $filter->from !== null && $filter->from !== ''
             ? CarbonImmutable::parse($filter->from)->startOfDay()
@@ -32,104 +32,105 @@ final class BuildSupervisionMapService
             ? CarbonImmutable::parse($filter->to)->endOfDay()
             : CarbonImmutable::now()->endOfDay();
 
-        $live = SupervisorShift::query()
-            ->where('security_company_id', $company->id)
-            ->where('status', SupervisorShiftStatus::Open)
-            ->matchingFilter($filter)
-            ->withCount('reviews')
-            ->with([
-                'user',
-                'locations' => fn ($q) => $q->orderBy('recorded_at'),
-            ])
-            ->get()
-            ->map(fn (SupervisorShift $shift) => $this->mapLiveShift($shift))
-            ->values()
-            ->all();
+        $live = [];
+        $history = [];
+        if ($tab === 'live') {
+            $live = SupervisorShift::query()
+                ->where('security_company_id', $company->id)
+                ->where('status', SupervisorShiftStatus::Open)
+                ->withCount('reviews')
+                ->with([
+                    'user',
+                    'locations' => fn ($q) => $q->orderBy('recorded_at'),
+                ])
+                ->get()
+                ->map(fn (SupervisorShift $shift) => $this->mapLiveShift($shift))
+                ->values()
+                ->all();
+        }
 
-        $history = SupervisorShift::query()
-            ->where('security_company_id', $company->id)
-            ->whereBetween('started_at', [$fromAt, $toAt])
-            ->matchingFilter($filter)
-            ->with([
-                'user',
-                'shiftTemplate',
-                'locations' => fn ($q) => $q->orderBy('recorded_at'),
-            ])
-            ->orderByDesc('started_at')
-            ->limit(40)
-            ->get()
-            ->map(function (SupervisorShift $shift) {
-                $open = $shift->status === SupervisorShiftStatus::Open;
-                $built = $this->trail->execute($shift->locations, $open);
-                $tz = (string) config('app.timezone');
-                $started = $shift->started_at;
-                $ended = $shift->ended_at;
-                $auto = (bool) $shift->closed_by_system || str_contains((string) $shift->notes, 'Cierre automático');
-                $queued = (int) ($shift->pending_outbox_count ?? 0);
-                $statusLabel = 'Cerrado';
-                if ($open) {
-                    $statusLabel = 'Abierto';
-                } elseif ($auto) {
-                    $statusLabel = 'Cierre por el sistema';
-                    if ($queued > 0) {
-                        $statusLabel .= ' · '.$queued.' registro'.($queued === 1 ? '' : 's').' en cola';
-                    }
-                }
-
-                return [
-                    'shift_id' => $shift->id,
-                    'user' => $shift->user?->name,
-                    'status' => $shift->status->value,
-                    'status_label' => $statusLabel,
-                    'closed_by_system' => $auto && ! $open,
-                    'pending_outbox_count' => $queued,
-                    'started_at' => $started?->toIso8601String(),
-                    'started_at_label' => $started?->timezone($tz)->format('d/m H:i'),
-                    'ended_at' => $ended?->toIso8601String(),
-                    'ended_at_label' => $ended?->timezone($tz)->format('d/m H:i'),
-                    'schedule_label' => $shift->schedule_label ?? $shift->shiftTemplate?->scheduleLabel(),
-                    'km_traveled' => $shift->km_traveled ?? $built['km'],
-                    'path' => $built['path'],
-                    'start' => $built['start'],
-                    'end' => $built['end'],
-                    'stops' => $built['stops'],
-                    'parked' => $built['parked'],
-                    'route_cached' => is_array($shift->snapped_route) && $shift->snapped_route !== [],
-                ];
-            })
-            ->values()
-            ->all();
-
-        $shiftScope = function ($q) use ($company, $fromAt, $toAt, $filter): void {
-            $q->where('security_company_id', $company->id)
+        if ($tab === 'history') {
+            $history = SupervisorShift::query()
+                ->where('security_company_id', $company->id)
+                ->where('status', SupervisorShiftStatus::Closed)
                 ->whereBetween('started_at', [$fromAt, $toAt])
-                ->matchingFilter($filter);
-        };
+                ->matchingFilter($filter)
+                ->with(['user', 'shiftTemplate'])
+                ->orderByDesc('started_at')
+                ->limit(80)
+                ->get()
+                ->map(function (SupervisorShift $shift) {
+                    $tz = (string) config('app.timezone');
+                    $started = $shift->started_at;
+                    $ended = $shift->ended_at;
+                    $auto = (bool) $shift->closed_by_system || str_contains((string) $shift->notes, 'Cierre automático');
+                    $queued = (int) ($shift->pending_outbox_count ?? 0);
+                    $statusLabel = 'Cerrado';
+                    if ($auto) {
+                        $statusLabel = 'Cierre por el sistema';
+                        if ($queued > 0) {
+                            $statusLabel .= ' · '.$queued.' registro'.($queued === 1 ? '' : 's').' en cola';
+                        }
+                    }
 
-        $reviews = SupervisorShiftReview::query()
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->whereHas('shift', $shiftScope)
-            ->with(['shift.user', 'client:id,name', 'supervisorPost:id,name', 'employee'])
-            ->orderByDesc('recorded_at')
-            ->limit(200)
-            ->get()
-            ->map(fn (SupervisorShiftReview $review) => $this->mapReview($review))
-            ->values()
-            ->all();
+                    return [
+                        'shift_id' => $shift->id,
+                        'user' => $shift->user?->name,
+                        'status' => $shift->status->value,
+                        'status_label' => $statusLabel,
+                        'closed_by_system' => $auto,
+                        'pending_outbox_count' => $queued,
+                        'started_at' => $started?->toIso8601String(),
+                        'started_at_label' => $started?->timezone($tz)->format('d/m H:i'),
+                        'ended_at' => $ended?->toIso8601String(),
+                        'ended_at_label' => $ended?->timezone($tz)->format('d/m H:i'),
+                        'schedule_label' => $shift->schedule_label ?? $shift->shiftTemplate?->scheduleLabel(),
+                        'km_traveled' => $shift->km_traveled,
+                        'path' => [],
+                        'start' => null,
+                        'end' => null,
+                        'stops' => [],
+                        'parked' => null,
+                        'route_cached' => is_array($shift->snapped_route) && $shift->snapped_route !== [],
+                        'sheet_url' => $this->shiftSheetUrl($shift),
+                    ];
+                })
+                ->values()
+                ->all();
+        }
 
-        $events = SupervisorFieldLog::query()
-            ->whereIn('module', [SupervisorFieldModule::Alarms, SupervisorFieldModule::Supports])
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->whereHas('shift', $shiftScope)
-            ->with(['shift.user', 'user', 'client:id,name'])
-            ->orderByDesc('recorded_at')
-            ->limit(200)
-            ->get()
-            ->map(fn (SupervisorFieldLog $log) => $this->mapFieldEvent($log))
-            ->values()
-            ->all();
+        $liveIds = array_column($live, 'shift_id');
+        $historyIds = array_column($history, 'shift_id');
+        $pinShiftIds = $tab === 'live' ? $liveIds : $historyIds;
+
+        $reviews = $pinShiftIds === []
+            ? []
+            : SupervisorShiftReview::query()
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->whereIn('supervisor_shift_id', $pinShiftIds)
+                ->with(['shift.user', 'client:id,name', 'supervisorPost:id,name', 'employee'])
+                ->orderByDesc('recorded_at')
+                ->limit(200)
+                ->get()
+                ->map(fn (SupervisorShiftReview $review) => $this->mapReview($review))
+                ->values()
+                ->all();
+
+        $events = $pinShiftIds === []
+            ? []
+            : SupervisorFieldLog::query()
+                ->whereIn('module', [SupervisorFieldModule::Alarms, SupervisorFieldModule::Supports])
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->whereIn('supervisor_shift_id', $pinShiftIds)
+                ->with(['shift.user', 'user', 'client:id,name'])
+                ->orderByDesc('recorded_at')
+                ->limit(200)
+                ->get()
+                ->map(fn (SupervisorFieldLog $log) => $this->mapFieldEvent($log))
+                ->values()
+                ->all();
 
         $clients = Client::query()
             ->where('security_company_id', $company->id)
@@ -193,12 +194,11 @@ final class BuildSupervisionMapService
     }
 
     /** @return array{live: list<array<string, mixed>>, reviews: list<array<string, mixed>>, events: list<array<string, mixed>>} */
-    public function liveFeed(SecurityCompany $company, SupervisionQueryFilter $filter): array
+    public function liveFeed(SecurityCompany $company): array
     {
         $live = SupervisorShift::query()
             ->where('security_company_id', $company->id)
             ->where('status', SupervisorShiftStatus::Open)
-            ->matchingFilter($filter)
             ->withCount('reviews')
             ->with([
                 'user',
@@ -286,7 +286,16 @@ final class BuildSupervisionMapService
             'signal' => $built['signal'],
             'online_label' => $built['online_label'],
             'status_line' => $statusLine,
+            'sheet_url' => $this->shiftSheetUrl($shift),
         ];
+    }
+
+    private function shiftSheetUrl(SupervisorShift $shift): string
+    {
+        return route('company.supervision.sheets.show', [
+            'kind' => SupervisorFieldSheetKind::Shift->value,
+            'id' => $shift->id,
+        ]);
     }
 
     /** @return array<string, mixed> */

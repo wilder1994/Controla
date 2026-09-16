@@ -36,5 +36,7 @@ final readonly class SupervisorFieldSheet
         public ?float $longitude,
         public ?string $guardPhotoSrc,
         public array $sections,
+        public bool $isDraft = false,
+        public ?string $mapImageSrc = null,
     ) {}
 }
