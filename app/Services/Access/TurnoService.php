@@ -22,7 +22,7 @@ class TurnoService
         return $this->currentFor($user) !== null;
     }
 
-    public function open(User $user, ?int $locationId, ?string $notes = null): GuardShift
+    public function open(User $user, int $locationId, ?string $notes = null): GuardShift
     {
         return GuardShift::create([
             'user_id' => $user->id,

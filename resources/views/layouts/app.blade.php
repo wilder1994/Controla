@@ -35,10 +35,6 @@
         </main>
     </div>
 
-    @if(request()->routeIs('access.*'))
-        @include('modules.access.partials.sidebar-rapido')
-    @endif
-
     @stack('scripts')
 </body>
 </html>

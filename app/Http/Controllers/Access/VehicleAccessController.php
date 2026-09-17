@@ -14,27 +14,12 @@ class VehicleAccessController extends Controller
 {
     public function index()
     {
-        $activeVehicles = AccessLog::with(['vehicle', 'user', 'resident', 'location'])
-            ->whereIn('access_type', ['resident', 'resident_vehicle'])
-            ->where('status', 'active')
-            ->latest('entry_time')
-            ->get();
-
-        $todayLogs = AccessLog::with(['vehicle', 'user', 'resident', 'location'])
-            ->whereIn('access_type', ['resident', 'resident_vehicle'])
-            ->whereDate('entry_time', today())
-            ->latest('entry_time')
-            ->paginate(20);
-
-        return view('modules.access.vehicle_access.index', compact('activeVehicles', 'todayLogs'));
+        return redirect()->route('access.logs.index');
     }
 
     public function entry()
     {
-        $locations = Location::where('is_active', true)->get();
-        $owners = User::all();
-
-        return view('modules.access.vehicle_access.entry', compact('locations', 'owners'));
+        return redirect()->route('access.logs.entry', ['with_vehicle' => 1]);
     }
 
     public function storeEntry(Request $request)

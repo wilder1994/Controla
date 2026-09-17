@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
+use App\Models\Vehicle;
 use App\Models\Visitor;
 use App\Services\Access\BlocklistGuard;
 use Illuminate\Http\Request;
@@ -10,11 +11,21 @@ use Illuminate\Validation\Rule;
 
 class VisitorController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $visitors = Visitor::latest()->paginate(15);
+        $tab = $request->string('tab')->toString() === 'vehiculos' ? 'vehiculos' : 'personas';
+        $visitors = Visitor::latest()->paginate(15)->withQueryString();
+        $vehicles = Vehicle::query()
+            ->with('visitor')
+            ->where(function ($q) {
+                $q->where('is_visitor_vehicle', true)->orWhereNotNull('visitor_id');
+            })
+            ->whereNull('structure_id')
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('modules.access.visitors.index', compact('visitors'));
+        return view('modules.access.visitors.index', compact('visitors', 'vehicles', 'tab'));
     }
 
     public function create()

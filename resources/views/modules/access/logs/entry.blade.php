@@ -1,419 +1,211 @@
-<x-access-layout>
-    <div class="-mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-6 pb-8 bg-gradient-to-r from-slate-800 to-indigo-900 mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-indigo-300">Control de Acceso</p>
-                <h2 class="text-xl font-bold text-white">Registrar Ingreso</h2>
+<x-access-layout title="Registrar ingreso">
+    <div class="max-w-3xl" x-data="porteriaEntry()">
+        <p class="text-sm text-slate-400 mb-4">Puerta: <span class="text-white font-medium">{{ $door?->name ?? '—' }}</span></p>
+
+        @if($errors->any())
+            <div class="mb-4 rounded-lg bg-red-900/40 border border-red-700 text-red-200 px-4 py-3 text-sm">
+                @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
             </div>
-            <a href="{{ route('access.logs.index') }}" class="text-sm text-indigo-300 hover:text-white transition-colors">← Volver</a>
-        </div>
-    </div>
+        @endif
 
-    <div class="mb-4 flex justify-end">
-        <a href="{{ route('access.logs.exit.page') }}" class="inline-flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            Kiosco de salida rápida
-        </a>
-    </div>
+        <form method="POST" action="{{ route('access.logs.entry.store') }}" class="space-y-5">
+            @csrf
+            <input type="hidden" name="subject_kind" :value="kind">
+            <input type="hidden" name="member_id" :value="memberId">
+            <input type="hidden" name="visitor_id" :value="visitorId">
+            <input type="hidden" name="vehicle_id" :value="vehicleId">
+            <input type="hidden" name="person_photo_data" :value="personPhoto">
+            <input type="hidden" name="vehicle_photo_data" :value="vehiclePhoto">
 
-    <div class="max-w-4xl">
-        <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-800">
-                <div x-data="{ type: 'visitor' }">
-                    <label class="block text-sm font-semibold text-slate-300 mb-3">Tipo de Ingreso</label>
-                    <div class="flex gap-3">
-                        <label class="relative flex-1 cursor-pointer">
-                            <input type="radio" x-model="type" value="visitor" class="sr-only peer">
-                            <div class="p-3 border-2 rounded-xl text-center transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-900/30 border-slate-700 hover:border-slate-600 bg-slate-800">
-                                <svg class="w-6 h-6 mx-auto text-slate-500 peer-checked:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                <p class="mt-1 text-sm font-medium text-slate-300 peer-checked:text-emerald-300">Visitante peatonal</p>
-                            </div>
-                        </label>
-                        <label class="relative flex-1 cursor-pointer">
-                            <input type="radio" x-model="type" value="visitor_vehicle" class="sr-only peer">
-                            <div class="p-3 border-2 rounded-xl text-center transition-all peer-checked:border-cyan-500 peer-checked:bg-cyan-900/30 border-slate-700 hover:border-slate-600 bg-slate-800">
-                                <svg class="w-6 h-6 mx-auto text-slate-500 peer-checked:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10m0 0V21h14v-5m0 0h3l2-4-2-4h-3l-2 4h-1"/></svg>
-                                <p class="mt-1 text-sm font-medium text-slate-300 peer-checked:text-cyan-300">Visitante vehicular</p>
-                            </div>
-                        </label>
-                    </div>
-
-                    <hr class="my-6 border-slate-800">
-
-                    <form method="POST" action="{{ route('access.logs.entry.store') }}" x-show="type === 'visitor'" x-data="entryForm()">
-                        @csrf
-                        <input type="hidden" name="access_type" value="visitor">
-
-                        <div class="bg-slate-800 rounded-xl p-4 mb-6">
-                            <label class="block text-sm font-semibold text-slate-300 mb-2">Buscar Visitante</label>
-
-                            <div class="mb-3 p-3 bg-slate-950/50 border border-slate-700/50 rounded-lg">
-                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escáner QR Cédula</label>
-                                @include('modules.access.partials.qr-scan-field')
-                            </div>
-
-                            <div x-show="scanError" class="mb-3 p-3 bg-red-900/40 border border-red-700 rounded-lg">
-                                <p class="text-sm text-red-200 font-medium" x-text="scanError"></p>
-                            </div>
-                            <div class="relative">
-                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                <input type="text" x-model="search" @input.debounce="searchVisitor()" placeholder="Buscar por documento o nombre..." class="block w-full pl-10 rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <input type="hidden" name="visitor_id" x-model="selectedVisitorId">
-                            <div x-show="searchResults.length > 0 && !selectedVisitorId" class="mt-2 bg-slate-900 border border-slate-700 rounded-xl overflow-hidden divide-y divide-slate-800">
-                                <template x-for="v in searchResults" :key="v.id">
-                                    <div @click="selectVisitor(v)" class="px-4 py-3 hover:bg-indigo-900/30 cursor-pointer flex items-center justify-between transition-colors">
-                                        <div>
-                                            <p class="text-sm font-medium text-white" x-text="v.first_name + ' ' + v.last_name"></p>
-                                            <p class="text-xs text-slate-500" x-text="v.document_type + ' ' + v.document_number"></p>
-                                        </div>
-                                        <span x-show="v.company" class="text-xs text-slate-500" x-text="v.company"></span>
-                                    </div>
-                                </template>
-                            </div>
-                            <div x-show="selectedVisitor" class="mt-3 p-3 bg-emerald-900/30 border border-emerald-800 rounded-xl flex items-center justify-between">
-                                <p class="text-sm font-medium text-emerald-300" x-text="selectedVisitorLabel"></p>
-                                <button type="button" @click="clearSelection()" class="text-xs text-red-400 hover:text-red-300 font-medium">Cambiar</button>
-                            </div>
-                            <div class="mt-2">
-                                <a href="{{ route('access.visitors.create') }}" target="_blank" class="text-sm text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                    Crear nuevo visitante
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Anfitrión</label>
-                                <select name="host_id" required class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Seleccionar...</option>
-                                    @foreach($hosts as $host)
-                                    <option value="{{ $host->id }}">{{ $host->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Ubicación</label>
-                                <select name="location_id" required class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Seleccionar...</option>
-                                    @foreach($locations as $loc)
-                                    <option value="{{ $loc->id }}">{{ $loc->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Apartamento Destino</label>
-                                <select name="housing_unit_id" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">No aplica</option>
-                                    @foreach($housingUnits as $hu)
-                                    <option value="{{ $hu->id }}">{{ $hu->full_label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Propósito</label>
-                                <input type="text" name="purpose" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="Reunión, entrega, etc.">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Empresa a Visitar</label>
-                                <input type="text" name="company_visited" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="Opcional">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Temperatura (°C)</label>
-                                <input type="number" step="0.1" name="screening_temp" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="36.5">
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-slate-300">Notas</label>
-                            <textarea name="notes" rows="2" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="Observaciones adicionales..."></textarea>
-                        </div>
-                        <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-800">
-                            <a href="{{ route('access.logs.index') }}" class="inline-flex items-center px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg font-semibold text-xs text-slate-300 hover:bg-slate-700 transition-colors">Cancelar</a>
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-500 transition-colors shadow-sm">
-                                <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                Registrar Ingreso
-                            </button>
-                        </div>
-                    </form>
-
-                    <form method="POST" action="{{ route('access.logs.entry.store') }}" x-show="type === 'visitor_vehicle'" x-data="visitorVehicleForm()">
-                        @csrf
-                        <input type="hidden" name="access_type" value="visitor_vehicle">
-
-                        <div class="bg-slate-800 rounded-xl p-4 mb-6">
-                            <label class="block text-sm font-semibold text-slate-300 mb-2">Buscar Visitante</label>
-
-                            <div class="mb-3 p-3 bg-slate-950/50 border border-slate-700/50 rounded-lg">
-                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escáner QR Cédula</label>
-                                @include('modules.access.partials.qr-scan-field')
-                            </div>
-
-                            <div x-show="scanError" class="mb-3 p-3 bg-red-900/40 border border-red-700 rounded-lg">
-                                <p class="text-sm text-red-200 font-medium" x-text="scanError"></p>
-                            </div>
-                            <div class="relative">
-                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                <input type="text" x-model="vsearch" @input.debounce="searchVisitor()" placeholder="Buscar por documento o nombre..." class="block w-full pl-10 rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <input type="hidden" name="visitor_id" x-model="selectedVisitorId">
-                            <div x-show="visitorResults.length > 0 && !selectedVisitorId" class="mt-2 bg-slate-900 border border-slate-700 rounded-xl overflow-hidden divide-y divide-slate-800">
-                                <template x-for="v in visitorResults" :key="v.id">
-                                    <div @click="selectVisitor(v)" class="px-4 py-3 hover:bg-indigo-900/30 cursor-pointer flex items-center justify-between transition-colors">
-                                        <div>
-                                            <p class="text-sm font-medium text-white" x-text="v.first_name + ' ' + v.last_name"></p>
-                                            <p class="text-xs text-slate-500" x-text="v.document_type + ' ' + v.document_number"></p>
-                                        </div>
-                                        <span x-show="v.company" class="text-xs text-slate-500" x-text="v.company"></span>
-                                    </div>
-                                </template>
-                            </div>
-                            <div x-show="selectedVisitor" class="mt-3 p-3 bg-emerald-900/30 border border-emerald-800 rounded-xl flex items-center justify-between">
-                                <p class="text-sm font-medium text-emerald-300" x-text="selectedVisitorLabel"></p>
-                                <button type="button" @click="clearVisitor()" class="text-xs text-red-400 hover:text-red-300 font-medium">Cambiar</button>
-                            </div>
-                            <div class="mt-2">
-                                <a href="{{ route('access.visitors.create') }}" target="_blank" class="text-sm text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                    Crear nuevo visitante
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="bg-cyan-900/30 rounded-xl p-4 mb-6">
-                            <label class="block text-sm font-semibold text-slate-300 mb-2">Buscar Vehículo por Placa</label>
-                            <div class="relative">
-                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10m0 0V21h14v-5m0 0h3l2-4-2-4h-3l-2 4h-1"/></svg>
-                                <input type="text" x-model="psearch" @input.debounce="searchPlate()" placeholder="Buscar por placa..." class="block w-full pl-10 rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <input type="hidden" name="vehicle_id" x-model="selectedVehicleId">
-                            <div x-show="plateResults.length > 0 && !selectedVehicleId" class="mt-2 bg-slate-900 border border-slate-700 rounded-xl overflow-hidden divide-y divide-slate-800">
-                                <template x-for="v in plateResults" :key="v.id">
-                                    <div @click="selectVehicle(v)" class="px-4 py-3 hover:bg-cyan-900/30 cursor-pointer flex items-center justify-between transition-colors">
-                                        <div>
-                                            <p class="text-sm font-medium text-white" x-text="v.plate"></p>
-                                            <p class="text-xs text-slate-500" x-text="v.brand + ' ' + v.model + ' (' + v.color + ')'"></p>
-                                        </div>
-                                        <span x-show="v.visitor" class="text-xs text-slate-500" x-text="v.visitor.first_name + ' ' + v.visitor.last_name"></span>
-                                    </div>
-                                </template>
-                            </div>
-                            <div x-show="selectedVehicle" class="mt-3 p-3 bg-cyan-900/30 border border-cyan-800 rounded-xl flex items-center justify-between">
-                                <p class="text-sm font-medium text-cyan-300" x-text="selectedPlateLabel"></p>
-                                <button type="button" @click="clearVehicle()" class="text-xs text-red-400 hover:text-red-300 font-medium">Cambiar</button>
-                            </div>
-                            <div class="mt-2">
-                                <a href="{{ route('access.vehicles.create') }}" target="_blank" class="text-sm text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                    Registrar nuevo vehículo
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Anfitrión</label>
-                                <select name="host_id" required class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Seleccionar...</option>
-                                    @foreach($hosts as $host)
-                                    <option value="{{ $host->id }}">{{ $host->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Ubicación</label>
-                                <select name="location_id" required class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Seleccionar...</option>
-                                    @foreach($locations as $loc)
-                                    <option value="{{ $loc->id }}">{{ $loc->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Apartamento Destino</label>
-                                <select name="housing_unit_id" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">No aplica</option>
-                                    @foreach($housingUnits as $hu)
-                                    <option value="{{ $hu->id }}">{{ $hu->full_label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Propósito</label>
-                                <input type="text" name="purpose" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="Reunión, entrega, etc.">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Empresa a Visitar</label>
-                                <input type="text" name="company_visited" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300">Temperatura (°C)</label>
-                                <input type="number" step="0.1" name="screening_temp" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="36.5">
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-slate-300">Notas</label>
-                            <textarea name="notes" rows="2" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500"></textarea>
-                        </div>
-                        <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-800">
-                            <a href="{{ route('access.logs.index') }}" class="inline-flex items-center px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg font-semibold text-xs text-slate-300 hover:bg-slate-700 transition-colors">Cancelar</a>
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-500 transition-colors shadow-sm">
-                                <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                                Registrar Ingreso
-                            </button>
-                        </div>
-                    </form>
+            <div class="bg-slate-900 rounded-xl border border-slate-800 p-4 space-y-3">
+                <label class="block text-sm font-medium text-slate-300">Buscar documento, nombre o placa</label>
+                <input type="search" x-model="q" @input.debounce.400ms="lookup()" placeholder="Cédula, nombre o placa"
+                       class="w-full rounded-lg bg-slate-950 border-slate-700 text-white">
+                <p class="text-xs text-slate-500" x-show="blocked" x-text="blockReason"></p>
+                <div class="space-y-1" x-show="results.length">
+                    <template x-for="row in results" :key="row.kind + '-' + row.id">
+                        <button type="button" @click="pick(row)" class="w-full text-left px-3 py-2 rounded-lg bg-slate-800 hover:bg-indigo-900/40 text-sm">
+                            <span class="text-white" x-text="row.name || row.plate"></span>
+                            <span class="text-xs text-slate-500 ml-2" x-text="row.document || row.owner || ''"></span>
+                            <span class="text-xs text-red-400" x-show="row.blocked">Bloqueado</span>
+                        </button>
+                    </template>
                 </div>
             </div>
-        </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <label class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 p-3 cursor-pointer">
+                    <input type="radio" x-model="kind" value="member" class="text-indigo-500">
+                    <span class="text-sm">Censo (persona del nodo)</span>
+                </label>
+                <label class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 p-3 cursor-pointer">
+                    <input type="radio" x-model="kind" value="visitor" class="text-indigo-500">
+                    <span class="text-sm">Visitante</span>
+                </label>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl border border-slate-800 p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs text-slate-500">Nombre</label>
+                    <input name="first_name" x-model="firstName" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500">Apellido</label>
+                    <input name="last_name" x-model="lastName" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500">Tipo doc.</label>
+                    <input name="document_type" x-model="documentType" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500">Documento</label>
+                    <input name="document_number" x-model="documentNumber" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                </div>
+                <div x-show="kind === 'member'" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-slate-500">Nodo</label>
+                        <select name="structure_id" x-model="structureId" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                            <option value="">Seleccionar</option>
+                            @foreach($nodes as $node)
+                                <option value="{{ $node->id }}">{{ $node->installation?->name }} · {{ $node->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500">Tipo de persona</label>
+                        <select name="member_type_id" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                            <option value="">Automático</option>
+                            @foreach($memberTypes as $type)
+                                <option value="{{ $type->id }}">{{ $type->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="with_vehicle" value="1" x-model="withVehicle" @checked($withVehicle) class="rounded bg-slate-950 border-slate-700 text-indigo-500">
+                Ingresa con vehículo
+            </label>
+
+            <div class="bg-slate-900 rounded-xl border border-slate-800 p-4 grid grid-cols-1 md:grid-cols-3 gap-3" x-show="withVehicle">
+                <div>
+                    <label class="text-xs text-slate-500">Placa</label>
+                    <input name="plate" x-model="plate" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm uppercase">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500">Marca</label>
+                    <input name="vehicle_brand" x-model="vehicleBrand" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-500">Color</label>
+                    <input name="vehicle_color" x-model="vehicleColor" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="text-xs text-slate-500">Motivo</label>
+                <input name="purpose" class="mt-1 w-full rounded-lg bg-slate-950 border-slate-700 text-white text-sm">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-900 rounded-xl border border-slate-800 p-4">
+                    <p class="text-xs text-slate-500 mb-2">Foto persona (opcional)</p>
+                    <video x-ref="personVideo" autoplay playsinline class="w-full rounded-lg bg-black aspect-video"></video>
+                    <div class="mt-2 flex gap-2">
+                        <button type="button" @click="startCam('person')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800">Cámara</button>
+                        <button type="button" @click="snap('person')" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white">Capturar</button>
+                    </div>
+                    <img x-show="personPhoto" :src="personPhoto" alt="" class="mt-2 h-20 rounded-lg object-cover">
+                </div>
+                <div class="bg-slate-900 rounded-xl border border-slate-800 p-4" x-show="withVehicle">
+                    <p class="text-xs text-slate-500 mb-2">Foto vehículo (opcional)</p>
+                    <video x-ref="vehicleVideo" autoplay playsinline class="w-full rounded-lg bg-black aspect-video"></video>
+                    <div class="mt-2 flex gap-2">
+                        <button type="button" @click="startCam('vehicle')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800">Cámara</button>
+                        <button type="button" @click="snap('vehicle')" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white">Capturar</button>
+                    </div>
+                    <img x-show="vehiclePhoto" :src="vehiclePhoto" alt="" class="mt-2 h-20 rounded-lg object-cover">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <a href="{{ route('access.logs.index') }}" class="px-4 py-2 text-sm rounded-lg bg-slate-800">Cancelar</a>
+                <button type="submit" :disabled="blocked" class="px-4 py-2 text-sm rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-40">Registrar ingreso</button>
+            </div>
+        </form>
     </div>
-
-    @push('scripts')
-    <script>
-        function entryForm() {
-            return {
-                scanBuffer: '',
-                search: '',
-                searchResults: [],
-                selectedVisitorId: null,
-                selectedVisitor: null,
-                scanError: '',
-                get selectedVisitorLabel() {
-                    if (!this.selectedVisitor) return '';
-                    return this.selectedVisitor.document_type + ' ' + this.selectedVisitor.document_number + ' - ' + this.selectedVisitor.first_name + ' ' + this.selectedVisitor.last_name;
-                },
-                async searchVisitor() {
-                    if (this.search.length < 2) { this.searchResults = []; return; }
-                    try {
-                        const res = await fetch('{{ route("access.visitors.search.json") }}?q=' + encodeURIComponent(this.search));
-                        this.searchResults = await res.json();
-                    } catch(e) { this.searchResults = []; }
-                },
-                selectVisitor(v) {
-                    this.selectedVisitor = v;
-                    this.selectedVisitorId = v.id;
-                    this.search = v.document_number + ' - ' + v.first_name + ' ' + v.last_name;
-                    this.searchResults = [];
-                    this.scanError = '';
-                },
-                clearSelection() {
-                    this.selectedVisitor = null;
-                    this.selectedVisitorId = null;
-                    this.search = '';
-                    this.searchResults = [];
-                    this.scanError = '';
-                },
-                async handleScan() {
-                    let parts = this.scanBuffer.trim().split(/[|\t]/);
-                    if (parts.length < 5) return;
-                    let numero = parts[0], apellido1 = parts[1] || '', apellido2 = parts[2] || '';
-                    let nombre1 = parts[3] || '', nombre2 = parts[4] || '';
-                    let nombreCompleto = (nombre1 + ' ' + nombre2).trim();
-                    let apellidoCompleto = (apellido1 + ' ' + apellido2).trim();
-                    this.scanBuffer = '';
-                    try {
-                        const res = await fetch('{{ route("access.visitors.scan-register") }}', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                            body: JSON.stringify({ document_number: numero, first_name: nombreCompleto, last_name: apellidoCompleto })
-                        });
-                        const data = await res.json();
-                        if (data.blocked) {
-                            this.scanError = data.message + ' ' + (data.reason || '');
-                            return;
-                        }
-                        this.selectVisitor(data.visitor);
-                    } catch(e) {}
-                }
+@push('scripts')
+<script>
+function porteriaEntry() {
+    return {
+        q: '',
+        kind: 'visitor',
+        withVehicle: {{ $withVehicle ? 'true' : 'false' }},
+        memberId: '',
+        visitorId: '',
+        vehicleId: '',
+        firstName: '',
+        lastName: '',
+        documentType: 'CC',
+        documentNumber: '',
+        structureId: '',
+        plate: '',
+        vehicleBrand: '',
+        vehicleColor: '',
+        personPhoto: '',
+        vehiclePhoto: '',
+        results: [],
+        blocked: false,
+        blockReason: '',
+        async lookup() {
+            if (this.q.length < 2) { this.results = []; return; }
+            const res = await fetch('{{ route('access.logs.lookup') }}?q=' + encodeURIComponent(this.q));
+            const data = await res.json();
+            this.results = [...(data.members || []), ...(data.visitors || []), ...(data.vehicles || []), ...(data.authorizations || [])];
+        },
+        pick(row) {
+            if (row.blocked) {
+                this.blocked = true;
+                this.blockReason = 'Bloqueado: ' + (row.block_reason || '');
+                return;
             }
-        }
-
-        function visitorVehicleForm() {
-            return {
-                scanBuffer: '',
-                vsearch: '',
-                visitorResults: [],
-                selectedVisitorId: null,
-                selectedVisitor: null,
-                scanError: '',
-                psearch: '',
-                plateResults: [],
-                selectedVehicleId: null,
-                selectedVehicle: null,
-                get selectedVisitorLabel() {
-                    if (!this.selectedVisitor) return '';
-                    return this.selectedVisitor.document_type + ' ' + this.selectedVisitor.document_number + ' - ' + this.selectedVisitor.first_name + ' ' + this.selectedVisitor.last_name;
-                },
-                get selectedPlateLabel() {
-                    if (!this.selectedVehicle) return '';
-                    let label = this.selectedVehicle.plate;
-                    if (this.selectedVehicle.visitor) label += ' - ' + this.selectedVehicle.visitor.first_name + ' ' + this.selectedVehicle.visitor.last_name;
-                    return label;
-                },
-                async searchVisitor() {
-                    if (this.vsearch.length < 2) { this.visitorResults = []; return; }
-                    try {
-                        const res = await fetch('{{ route("access.visitors.search.json") }}?q=' + encodeURIComponent(this.vsearch));
-                        this.visitorResults = await res.json();
-                    } catch(e) { this.visitorResults = []; }
-                },
-                selectVisitor(v) {
-                    this.selectedVisitor = v;
-                    this.selectedVisitorId = v.id;
-                    this.vsearch = v.document_number + ' - ' + v.first_name + ' ' + v.last_name;
-                    this.visitorResults = [];
-                    this.scanError = '';
-                },
-                clearVisitor() {
-                    this.selectedVisitor = null;
-                    this.selectedVisitorId = null;
-                    this.vsearch = '';
-                    this.visitorResults = [];
-                    this.scanError = '';
-                },
-                async searchPlate() {
-                    if (this.psearch.length < 1) { this.plateResults = []; return; }
-                    try {
-                        const res = await fetch('{{ route("access.vehicles.search.json") }}?q=' + encodeURIComponent(this.psearch));
-                        this.plateResults = await res.json();
-                    } catch(e) { this.plateResults = []; }
-                },
-                selectVehicle(v) {
-                    this.selectedVehicle = v;
-                    this.selectedVehicleId = v.id;
-                    this.psearch = v.plate;
-                    this.plateResults = [];
-                },
-                clearVehicle() {
-                    this.selectedVehicle = null;
-                    this.selectedVehicleId = null;
-                    this.psearch = '';
-                    this.plateResults = [];
-                },
-                async handleScan() {
-                    let parts = this.scanBuffer.trim().split(/[|\t]/);
-                    if (parts.length < 5) return;
-                    let numero = parts[0], apellido1 = parts[1] || '', apellido2 = parts[2] || '';
-                    let nombre1 = parts[3] || '', nombre2 = parts[4] || '';
-                    let nombreCompleto = (nombre1 + ' ' + nombre2).trim();
-                    let apellidoCompleto = (apellido1 + ' ' + apellido2).trim();
-                    this.scanBuffer = '';
-                    try {
-                        const res = await fetch('{{ route("access.visitors.scan-register") }}', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                            body: JSON.stringify({ document_number: numero, first_name: nombreCompleto, last_name: apellidoCompleto })
-                        });
-                        const data = await res.json();
-                        if (data.blocked) {
-                            this.scanError = data.message + ' ' + (data.reason || '');
-                            return;
-                        }
-                        this.selectVisitor(data.visitor);
-                    } catch(e) {}
-                }
+            this.blocked = false;
+            if (row.kind === 'member') {
+                this.kind = 'member';
+                this.memberId = row.id;
+                this.visitorId = '';
+                this.firstName = row.name;
+                this.documentNumber = row.document || '';
+            } else if (row.kind === 'visitor' || row.kind === 'authorization') {
+                this.kind = 'visitor';
+                this.visitorId = row.kind === 'visitor' ? row.id : '';
+                this.memberId = '';
+                this.firstName = row.name;
+                this.documentNumber = row.document || '';
+            } else if (row.kind === 'vehicle') {
+                this.withVehicle = true;
+                this.vehicleId = row.id;
+                this.plate = row.plate;
+                if (row.census) this.kind = 'member';
             }
+            this.results = [];
+        },
+        async startCam(which) {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            this.$refs[which + 'Video'].srcObject = stream;
+        },
+        snap(which) {
+            const video = this.$refs[which + 'Video'];
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            if (which === 'person') this.personPhoto = canvas.toDataURL('image/jpeg', 0.8);
+            else this.vehiclePhoto = canvas.toDataURL('image/jpeg', 0.8);
         }
-    </script>
-    @endpush
+    }
+}
+</script>
+@endpush
 </x-access-layout>

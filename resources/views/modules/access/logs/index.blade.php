@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm font-medium text-indigo-300">Control de Acceso</p>
-                <h2 class="text-xl font-bold text-white">Ingreso / Salida</h2>
+                <h2 class="text-xl font-bold text-white">Ingreso y salida</h2>
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('access.logs.entry') }}" class="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors">
@@ -84,11 +84,11 @@
                     <tbody class="divide-y divide-slate-800">
                         @foreach($activeLogs as $log)
                         @php
-                            $personName = $log->visitor?->full_name ?? $log->resident?->full_name ?? '-';
-                            $personDoc = $log->visitor?->displayedDocument() ?? $log->resident?->displayedDocument() ?? '-';
-                            $personType = $log->access_type == 'visitor_vehicle' ? 'Visit. Vehicular' : 'Visitante';
+                            $personName = $log->subjectName();
+                            $personDoc = $log->visitor?->displayedDocument() ?? $log->structureMember?->displayedDocument() ?? $log->resident?->displayedDocument() ?? '-';
+                            $personType = $log->movementLabel();
                             $hoursInside = $log->entry_time->diffInHours(now());
-                            $destination = $log->housingUnit?->full_label ?? $log->host?->name ?? '-';
+                            $destination = $log->structureMember?->structure?->name ?? $log->housingUnit?->full_label ?? $log->host?->name ?? '-';
                         @endphp
                         <tr class="hover:bg-slate-800/40 transition-colors {{ $log->alert_long_stay ? 'bg-red-900/20' : '' }}">
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -102,7 +102,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 {{ $personType == 'Visit. Vehicular' ? 'bg-cyan-900/30 text-cyan-300 ring-cyan-700' : 'bg-blue-900/30 text-blue-300 ring-blue-700' }}">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 {{ str_contains($personType, 'vehículo') ? 'bg-cyan-900/30 text-cyan-300 ring-cyan-700' : 'bg-blue-900/30 text-blue-300 ring-blue-700' }}">
                                     {{ $personType }}
                                 </span>
                             </td>
@@ -289,7 +289,7 @@
                     <tbody class="divide-y divide-slate-800">
                         @forelse($todayLogs as $log)
                         @php
-                            $personName = $log->visitor?->full_name ?? $log->resident?->full_name ?? '-';
+                            $personName = $log->subjectName();
                         @endphp
                         <tr class="hover:bg-slate-800/40 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -303,8 +303,8 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 {{ $log->access_type == 'visitor_vehicle' ? 'bg-cyan-900/30 text-cyan-300 ring-cyan-700' : 'bg-blue-900/30 text-blue-300 ring-blue-700' }}">
-                                    {{ $log->access_type == 'visitor_vehicle' ? 'Visit. Vehicular' : 'Visitante' }}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 {{ str_contains($log->movementLabel(), 'vehículo') ? 'bg-cyan-900/30 text-cyan-300 ring-cyan-700' : 'bg-blue-900/30 text-blue-300 ring-blue-700' }}">
+                                    {{ $log->movementLabel() }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{{ $log->entry_time->format('H:i') }}</td>

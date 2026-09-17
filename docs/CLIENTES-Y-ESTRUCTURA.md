@@ -1,6 +1,6 @@
 # Clientes, instalaciones, Accesos y Supervisión
 
-**Última actualización:** 14 septiembre 2026
+**Última actualización:** 17 septiembre 2026
 
 Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) cuelga de la **instalación**, no del cliente suelto.
 
@@ -19,12 +19,13 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 | **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad en horas (catálogo Ajustes → Modalidades) y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
 | **Nodo / subnodo** | Censo (`structures`, `parent_id` + `installation_id`). Torre, salón, apto. Distinto de puesto/acceso. | Ficha de instalación (`/client/installations/{id}`) |
-| **Persona (censo)** | `structure_members` en un nodo. Tipo de documento + fecha de nacimiento. Menores: dato reservado salvo 4 admins; portería solo nombre. | Panel cliente |
+| **Persona (censo)** | `structure_members` en un nodo. Tipo de documento + fecha de nacimiento. Menores: dato reservado salvo 4 admins; portería solo nombre. **No es empleado de la empresa.** | Panel cliente · portería Personas |
+| **Empleado** | Colaborador de la empresa de seguridad (`employees`). El vigilante opera portería; no es una persona del nodo. | `/company/employees` |
 | **Acceso de persona** | `structure_app_users` de esa persona. Login `usuario@login_suffix` para app o panel. | `/client/app-users` |
 
 La ficha corta por **objeto**, no por línea comercial. **Instalación y puesto** se editan una sola vez. Las **puertas** son otra tarjeta, solo si hay Accesos. Operar portería / operar cliente también exigen Accesos. Supervisión de campo se opera en la app y en `/company/supervision`, no en un segundo árbol.
 
-Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_access`) son los KPIs de portería. El **panel cliente** (`/client/dashboard`) y **Instalaciones** muestran el tablero SIG: mapa, puestos, novedades de servicio, salud afiliatoria y gráfica de revistas. El pánico por usuario lo atiende la empresa en **Atención de pánicos** (`/company/panics`, permiso `ops.panic.attend`); no es el de portería. Tarjetas: **Instalaciones y puestos** (`?vista=sitio`, si Accesos o Supervisión) y **Puertas** (`?vista=puertas`, solo Accesos). `?vista=accesos` y `?vista=supervision` redirigen al sitio.
+Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_access`) son los KPIs de portería. El **panel cliente** (`/client/dashboard`) y **Instalaciones** muestran el tablero SIG: mapa, puestos, novedades de servicio, salud afiliatoria y gráfica de revistas. El pánico (portería, admin cliente/instalaciones, supervisor) es el mismo: `operational_alerts`; lo atiende la empresa en **Atención de pánicos** (`/company/panics`, permiso `ops.panic.attend`). Portería: una puerta se asigna sola; si hay varias, se elige al abrir turno. Ver [`PORTERIA.md`](PORTERIA.md). Tarjetas: **Instalaciones y puestos** (`?vista=sitio`, si Accesos o Supervisión) y **Puertas** (`?vista=puertas`, solo Accesos). `?vista=accesos` y `?vista=supervision` redirigen al sitio.
 
 ---
 

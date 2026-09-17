@@ -10,6 +10,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100 overflow-hidden">
+    @include('partials.ops-live-surface', [
+        'opsCompanyId' => auth()->user()?->security_company_id,
+        'opsClientId' => isset($activeClient) ? $activeClient->id : null,
+    ])
     <div class="h-screen flex overflow-hidden" x-data="panelSidebar">
         @include('partials.sidebar-backdrop')
         <div
@@ -46,26 +50,12 @@
                         </a>
                         @endcan
                     </nav>
-                    <div class="px-4 py-3 border-t border-slate-800 shrink-0 min-w-0">
-                        <p class="text-xs text-slate-400 truncate" title="{{ Auth::user()->name }}">{{ Auth::user()->name }}</p>
-                        <form method="POST" action="{{ route('logout') }}" class="mt-1">
-                            @csrf
-                            <button type="submit" class="text-xs text-slate-500 hover:text-white transition">
-                                Cerrar sesión
-                            </button>
-                        </form>
-                        <button
-                            type="button"
-                            @click="$dispatch('open-panic')"
-                            class="mt-3 w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-gradient-to-r from-red-950/60 to-red-900/40 hover:from-red-900/70 hover:to-red-800/50 border border-red-800/70 transition-colors group"
-                        >
-                            <span class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-                                <span class="text-sm font-semibold text-red-300 group-hover:text-red-100">Botón de Pánico</span>
-                            </span>
-                            <svg class="w-3.5 h-3.5 text-red-500/70 group-hover:text-red-300 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                        </button>
-                    </div>
+                    @include('partials.ops-live-alerts', [
+                        'opsPoll' => auth()->check() ? route('access.ops.alerts') : null,
+                        'opsPanicUrl' => auth()->check() ? route('access.ops.panic') : '',
+                        'showPanic' => ! empty($operatingDoor),
+                    ])
+                    @include('partials.sidebar-user')
                 </div>
             </aside>
             @include('partials.sidebar-toggle')
@@ -78,8 +68,18 @@
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3 min-w-0">
                         @include('partials.sidebar-hamburger')
-                        <span class="text-xs text-slate-500">{{ now()->format('D, d M Y') }}</span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-white truncate">{{ $title ?? 'Portería' }}</h2>
+                            @if(! empty($operatingDoor))
+                                <p class="text-xs text-slate-500 truncate">{{ $operatingDoor->name }}@isset($activeClient) · {{ $activeClient->name }}@endisset</p>
+                            @else
+                                <span class="text-xs text-slate-500">{{ now()->format('d M Y') }}</span>
+                            @endif
+                        </div>
                     </div>
+                    @isset($actions)
+                        <div class="flex items-center gap-2 shrink-0">{{ $actions }}</div>
+                    @endisset
                 </div>
             </header>
 
@@ -100,6 +100,8 @@
                                 </span>
                                 @if($activeShift->location)
                                     · {{ $activeShift->location->name }}
+                                @elseif(! empty($operatingDoor))
+                                    · {{ $operatingDoor->name }}
                                 @endif
                             </p>
                             <form method="POST" action="{{ route('access.turnos.close') }}" class="inline" onsubmit="return confirm('¿Cerrar el turno actual?');">
@@ -129,8 +131,6 @@
         </div>
         </div>
     </div>
-
-    @include('modules.access.partials.sidebar-rapido')
 
     @stack('scripts')
 </body>

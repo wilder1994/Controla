@@ -11,9 +11,10 @@ class AccessLog extends Model
     use BelongsToClient, HasFactory;
 
     protected $fillable = [
-        'client_id', 'visitor_id', 'user_id', 'resident_id', 'housing_unit_id', 'vehicle_id', 'host_id', 'location_id',
+        'client_id', 'visitor_id', 'structure_member_id', 'user_id', 'resident_id', 'housing_unit_id', 'vehicle_id', 'host_id', 'location_id',
         'authorized_by', 'access_type', 'entry_time', 'exit_time', 'status',
         'purpose', 'company_visited', 'screening_temp', 'qr_code', 'notes',
+        'photo_path', 'vehicle_photo_path',
         'has_custody', 'custody_description', 'custody_receiver_name', 'custody_received_at',
     ];
 
@@ -31,6 +32,11 @@ class AccessLog extends Model
     public function visitor()
     {
         return $this->belongsTo(Visitor::class);
+    }
+
+    public function structureMember()
+    {
+        return $this->belongsTo(StructureMember::class, 'structure_member_id');
     }
 
     public function user()
@@ -66,5 +72,24 @@ class AccessLog extends Model
     public function authorizer()
     {
         return $this->belongsTo(User::class, 'authorized_by');
+    }
+
+    public function subjectName(): string
+    {
+        return $this->structureMember?->full_name
+            ?? $this->visitor?->full_name
+            ?? $this->resident?->full_name
+            ?? $this->user?->name
+            ?? '—';
+    }
+
+    public function movementLabel(): string
+    {
+        return match ($this->access_type) {
+            'visitor_vehicle' => 'Visitante · vehículo',
+            'resident_vehicle', 'member_vehicle' => 'Censo · vehículo',
+            'resident', 'member' => 'Censo · peatón',
+            default => 'Visitante · peatón',
+        };
     }
 }

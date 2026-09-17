@@ -15,11 +15,7 @@ class PreAuthorizationController extends Controller
 {
     public function index()
     {
-        $preAuthorizations = PreAuthorization::with(['visitor', 'host', 'location'])
-            ->latest()
-            ->paginate(15);
-
-        return view('modules.access.pre_authorizations.index', compact('preAuthorizations'));
+        return redirect()->route('access.authorizations.index');
     }
 
     public function create()

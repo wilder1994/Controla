@@ -6,6 +6,7 @@ namespace App\Services\Ops;
 
 use App\Models\Client;
 use App\Models\Installation;
+use App\Models\Location;
 use App\Models\OperationalAlert;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
@@ -17,6 +18,9 @@ final class TriggerPanicService
         private readonly RecordOperationalAlertService $record,
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     public function execute(
         User $actor,
         ?float $lat,
@@ -24,6 +28,7 @@ final class TriggerPanicService
         string $note = '',
         ?int $clientId = null,
         ?int $installationId = null,
+        array $payload = [],
     ): OperationalAlert {
         $companyId = (int) ($actor->security_company_id ?? 0);
         if ($companyId < 1 && $clientId) {
@@ -40,7 +45,30 @@ final class TriggerPanicService
             }
         }
 
-        return $this->record->panic($actor, $companyId, $clientId, $installationId, $lat, $lng, $note);
+        return $this->record->panic($actor, $companyId, $clientId, $installationId, $lat, $lng, $note, $payload);
+    }
+
+    public function fromPorteria(
+        User $actor,
+        Location $door,
+        ?float $lat,
+        ?float $lng,
+        string $note = '',
+    ): OperationalAlert {
+        $door->loadMissing('installation');
+
+        return $this->execute(
+            $actor,
+            $lat,
+            $lng,
+            $note,
+            (int) $door->client_id ?: null,
+            $door->installation_id ? (int) $door->installation_id : null,
+            [
+                'location_id' => $door->id,
+                'location_name' => $door->name,
+            ],
+        );
     }
 
     public function fromClientPanel(User $actor, TenantContext $tenant, ?float $lat, ?float $lng, string $note = ''): OperationalAlert

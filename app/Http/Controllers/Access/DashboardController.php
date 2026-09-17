@@ -1,70 +1,45 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
-use App\Models\Building;
 use App\Models\Correspondence;
-use App\Models\HousingUnit;
-use App\Models\PreAuthorization;
-use App\Models\Resident;
-use App\Models\Visitor;
+use App\Models\VisitorPreAuthorization;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $activeEntries = AccessLog::where('status', 'active')->count();
-        $todayEntries = AccessLog::whereDate('entry_time', today())->count();
-        $totalVisitors = Visitor::count();
-        $totalResidents = Resident::count();
-        $totalHousingUnits = HousingUnit::count();
-        $totalBuildings = Building::count();
-        $pendingCorrespondence = Correspondence::where('status', 'pending')->count();
-        $pendingPreAuthorizations = PreAuthorization::where('status', 'pending')
-            ->whereDate('scheduled_date', '>=', today())
+        $activeLogs = AccessLog::query()
+            ->with(['visitor', 'structureMember.structure', 'resident', 'location', 'vehicle'])
+            ->where('status', 'active')
+            ->latest('entry_time')
+            ->get()
+            ->map(function (AccessLog $log) {
+                $hoursInside = $log->entry_time->diffInHours(now());
+                $log->hours_inside = $hoursInside;
+                $log->alert_long_stay = $hoursInside >= (int) config('access.alerts.long_stay_hours');
+                $log->person_name = $log->subjectName();
+                $log->person_type = $log->movementLabel();
+                $log->destination = $log->structureMember?->structure?->name ?? '—';
+
+                return $log;
+            });
+
+        $pendingCorrespondence = Correspondence::query()->where('status', 'pending')->count();
+        $pendingAuthorizations = VisitorPreAuthorization::query()
+            ->whereDate('valid_for_date', today())
             ->count();
 
-        $recentLogs = AccessLog::with(['visitor', 'resident', 'host', 'location'])
-            ->latest('entry_time')
-            ->take(10)
-            ->get();
-
-        // Chart data: daily entries for last 7 days
-        $dailyLabels = [];
-        $dailyData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $dailyLabels[] = $date->format('D');
-            $dailyData[] = AccessLog::whereDate('entry_time', $date)->count();
-        }
-
-        // Chart data: access type distribution
-        $typeLabels = ['Visitante', 'Vehicular', 'Residente'];
-        $typeData = [
-            AccessLog::where('access_type', 'visitor')->count(),
-            AccessLog::where('access_type', 'visitor_vehicle')->count(),
-            AccessLog::whereIn('access_type', ['resident', 'resident_vehicle'])->count(),
-        ];
-
-        // Chart data: hourly distribution for today
-        $hourlyLabels = [];
-        $hourlyData = [];
-        for ($h = 0; $h < 24; $h++) {
-            $hourlyLabels[] = str_pad($h, 2, '0', STR_PAD_LEFT).':00';
-            $hourlyData[] = AccessLog::whereDate('entry_time', today())
-                ->whereTime('entry_time', '>=', str_pad($h, 2, '0').':00:00')
-                ->whereTime('entry_time', '<', str_pad(($h + 1) % 24, 2, '0').':00:00')
-                ->count();
-        }
-
-        return view('modules.access.dashboard', compact(
-            'activeEntries', 'todayEntries', 'totalVisitors', 'totalResidents',
-            'totalHousingUnits', 'totalBuildings',
-            'pendingCorrespondence', 'pendingPreAuthorizations', 'recentLogs',
-            'dailyLabels', 'dailyData', 'typeLabels', 'typeData',
-            'hourlyLabels', 'hourlyData'
-        ));
+        return view('modules.access.dashboard', [
+            'peopleInside' => $activeLogs,
+            'activeEntries' => $activeLogs->count(),
+            'todayEntries' => AccessLog::query()->whereDate('entry_time', today())->count(),
+            'pendingCorrespondence' => $pendingCorrespondence,
+            'pendingAuthorizations' => $pendingAuthorizations,
+        ]);
     }
 }

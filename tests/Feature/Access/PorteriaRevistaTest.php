@@ -30,7 +30,7 @@ final class PorteriaRevistaTest extends TestCase
             ->firstOrFail();
 
         $response = $this->actingAs($vigilante)
-            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->withSession($this->porteriaSession($client))
             ->post(route('access.guard_logs.store'), [
                 'location_id' => $door->id,
                 'log_time' => now()->format('Y-m-d H:i:s'),
@@ -66,7 +66,7 @@ final class PorteriaRevistaTest extends TestCase
             ->firstOrFail();
 
         $response = $this->actingAs($vigilante)
-            ->withSession(['tenancy.active_client_id' => $client->id])
+            ->withSession($this->porteriaSession($client))
             ->from(route('access.guard_logs.create'))
             ->post(route('access.guard_logs.store'), [
                 'location_id' => $door->id,

@@ -35,6 +35,7 @@ use App\Policies\StructureTypePolicy;
 use App\Policies\SupervisorCompanyCatalogPolicy;
 use App\Policies\UserPolicy;
 use App\Support\Tenancy\TenantContext;
+use App\View\Composers\AccessLayoutComposer;
 use App\View\Composers\CompanyLayoutComposer;
 use App\View\Composers\OperateReturnLayoutComposer;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -86,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('layouts.company', CompanyLayoutComposer::class);
+        View::composer('layouts.access', AccessLayoutComposer::class);
         View::composer(['layouts.access', 'layouts.client'], OperateReturnLayoutComposer::class);
     }
 }

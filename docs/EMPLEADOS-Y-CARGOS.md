@@ -1,8 +1,10 @@
 # Empleados, cargos y tipos (empresa)
 
-**Última actualización:** 13 septiembre 2026
+**Última actualización:** 17 septiembre 2026
 
-Maestro de colaboradores de la **empresa** de seguridad. Distinto de **usuarios** (`/company/users`): la ficha es la persona; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
+Maestro de colaboradores de la **empresa** de seguridad. **No** son las **personas** del censo de una instalación (`structure_members`). Esa gente vive en **Personas** del panel cliente / portería. Ver [`PORTERIA.md`](PORTERIA.md) y [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+
+Distinto de **usuarios** (`/company/users`): la ficha de empleado es el colaborador; el usuario es el login. Ver [`USUARIOS-Y-PERFILES.md`](USUARIOS-Y-PERFILES.md).
 
 La pantalla copia Personal de SJ-SIG (listado, ficha, foto, bloques HR/SS) con estilos Controla. Se mantienen nombres partidos, tipo de documento de catálogo, DIVIPOLA y cargos/tipos por empresa. Fuente Excel: `Maestro Colaboradores WM.xlsx` **ampliado** con columnas SJ-SIG opcionales. **No** van las cuatro de asignación a cliente (razón social, instalaciones, sector, puesto).
 

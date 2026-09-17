@@ -13,7 +13,6 @@ use App\Models\SupervisionCode;
 use App\Models\User;
 use App\Services\Observatory\EnsureObservatoryReportTypesService;
 use App\Services\Observatory\SubmitObservatoryReportService;
-use App\Notifications\AlertaOperativa;
 use App\Services\Access\AuditLogger;
 use App\Services\Access\GeoService;
 use App\Support\Tenancy\TenantContext;
@@ -155,52 +154,6 @@ class GuardLogController extends Controller
 
         return redirect()->route('access.guard_logs.index')
             ->with('success', $message);
-    }
-
-    public function panic(Request $request)
-    {
-        $request->validate([
-            'location_id' => 'required|exists:locations,id',
-            'description' => 'required|string|max:500',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-        ]);
-
-        $log = GuardLog::create([
-            'client_id' => auth()->user()->primary_client_id,
-            'user_id' => auth()->id(),
-            'location_id' => $request->location_id,
-            'log_time' => now(),
-            'type' => 'incidente',
-            'shift_type' => now()->hour >= 6 && now()->hour < 18 ? 'diurno' : 'nocturno',
-            'description' => '🚨 PANIC: '.$request->description,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'is_panic' => true,
-            'signed_at' => now(),
-        ]);
-
-        $locationName = $log->location?->name ?? 'Portería';
-
-        $managers = User::role(['client-admin', 'admin-accesos', 'company-admin'])
-            ->where('primary_client_id', auth()->user()->primary_client_id)
-            ->whereKeyNot(auth()->id())
-            ->get();
-
-        $managers->each(fn (User $user) => $user->notify(new AlertaOperativa(
-            title: '🚨 Alerta de pánico',
-            message: auth()->user()->name." generó una alerta de pánico en {$locationName}.",
-            level: 'panic',
-            url: route('access.guard_logs.show', $log),
-        )));
-
-        app(AuditLogger::class)->record($log, 'panic', null, [
-            'location_id' => $log->location_id,
-            'description' => $log->description,
-        ]);
-
-        return redirect()->route('access.guard_logs.index')
-            ->with('success', '🚨 Alerta de pánico registrada. Personal notificado.');
     }
 
     public function show(GuardLog $guardLog)

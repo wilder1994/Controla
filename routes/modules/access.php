@@ -6,25 +6,37 @@ use App\Http\Controllers\Access\VisitorController;
 use App\Http\Controllers\Access\VehicleController;
 use App\Http\Controllers\Access\VehicleAccessController;
 use App\Http\Controllers\Access\AccessLogController;
+use App\Http\Controllers\Access\OperationsController;
 use App\Http\Controllers\Access\PreAuthorizationController;
 use App\Http\Controllers\Access\CorrespondenceController;
 use App\Http\Controllers\Access\GuardLogController;
+use App\Http\Controllers\Ops\OperationalAlertController;
 use App\Http\Controllers\Access\SupervisionController;
 use App\Http\Controllers\Access\SupervisionCodeController;
 use App\Http\Controllers\Access\ReportController;
 use App\Http\Controllers\Access\BuildingController;
 use App\Http\Controllers\Access\HousingUnitController;
 use App\Http\Controllers\Access\ResidentController;
-use App\Http\Controllers\Access\OperationsController;
+use App\Http\Controllers\Access\PorteriaDirectoryController;
+use App\Http\Controllers\Access\PorteriaAuthorizationController;
 use App\Http\Controllers\Access\BlocklistController;
 use App\Http\Controllers\Access\TurnoController;
 use App\Http\Controllers\Access\AuditController;
 use App\Http\Controllers\Access\ZoneController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'client.module:doors'])->prefix('access')->name('access.')->group(function () {
+Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'client.module:doors', 'porteria.door'])->prefix('access')->name('access.')->group(function () {
+    Route::get('/ops/alerts.json', [OperationalAlertController::class, 'poll'])->name('ops.alerts');
+    Route::post('/ops/panic', [OperationalAlertController::class, 'panic'])->name('ops.panic');
+
     // Operations Hub
     Route::get('/operations', [OperationsController::class, 'index'])->name('operations');
+
+    Route::get('/people', [PorteriaDirectoryController::class, 'people'])->name('people.index');
+    Route::get('/census-vehicles', [PorteriaDirectoryController::class, 'vehicles'])->name('census-vehicles.index');
+    Route::get('/pets', [PorteriaDirectoryController::class, 'pets'])->name('pets.index');
+    Route::get('/sites', [PorteriaDirectoryController::class, 'sites'])->name('sites.index');
+    Route::get('/authorizations', [PorteriaAuthorizationController::class, 'index'])->name('authorizations.index');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -66,6 +78,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
     });
 
     // Access Logs (ingreso/salida)
+    Route::get('/logs/lookup', [AccessLogController::class, 'lookup'])
+        ->middleware('shift.open')
+        ->name('logs.lookup');
     Route::get('/logs', [AccessLogController::class, 'index'])
         ->middleware('shift.open')
         ->name('logs.index');
@@ -96,7 +111,6 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
     // Guard Logs
     Route::resource('guard_logs', GuardLogController::class)->except(['edit', 'update'])
         ->middleware('shift.open');
-    Route::post('/guard_logs/panic', [GuardLogController::class, 'panic'])->name('guard_logs.panic');
 
     // Supervision (módulo con acceso por código único de supervisor)
     Route::middleware('permission:access.manage.supervision')->group(function () {

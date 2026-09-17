@@ -219,4 +219,20 @@ abstract class TestCase extends BaseTestCase
             'guard_photo' => UploadedFile::fake()->image('guard.jpg'),
         ], $overrides);
     }
+
+    /** @return array<string, int> */
+    protected function porteriaSession(\App\Models\Client $client, ?int $doorId = null): array
+    {
+        $doorId ??= (int) \App\Models\Location::query()
+            ->withoutGlobalScopes()
+            ->where('client_id', $client->id)
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->value('id');
+
+        return [
+            config('tenancy.session.active_client_key') => $client->id,
+            \App\Services\Access\PorteriaDoorService::SESSION_KEY => $doorId,
+        ];
+    }
 }

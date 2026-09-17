@@ -1,36 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
-use App\Models\Building;
-use App\Models\HousingUnit;
-use App\Models\Location;
-use App\Models\Resident;
-use App\Models\User;
-use App\Models\Vehicle;
-use App\Models\Visitor;
-use App\Services\Access\AuditLogger;
-use App\Services\Access\BlocklistGuard;
+use App\Services\Access\LookupPorteriaSubjectService;
+use App\Services\Access\PorteriaDoorService;
+use App\Services\Access\RegisterPorteriaMovementService;
+use App\Support\Access\DataUrlToUploadedFile;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AccessLogController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        $activeLogs = AccessLog::with(['visitor', 'resident', 'housingUnit.building', 'host', 'location', 'vehicle'])
+        $activeLogs = AccessLog::query()
+            ->with(['visitor', 'structureMember.structure', 'resident', 'location', 'vehicle'])
             ->where('status', 'active')
             ->latest('entry_time')
             ->get()
-            ->map(function ($log) {
+            ->map(function (AccessLog $log) {
                 $log->hours_inside = $log->entry_time->diffInHours(now());
                 $log->alert_long_stay = $log->hours_inside >= config('access.alerts.long_stay_hours');
 
                 return $log;
             });
 
-        $todayLogs = AccessLog::with(['visitor', 'resident', 'housingUnit.building', 'host', 'location'])
+        $todayLogs = AccessLog::query()
+            ->with(['visitor', 'structureMember', 'location', 'vehicle'])
             ->whereDate('entry_time', today())
             ->latest('entry_time')
             ->paginate(20);
@@ -38,208 +40,147 @@ class AccessLogController extends Controller
         return view('modules.access.logs.index', compact('activeLogs', 'todayLogs'));
     }
 
-    public function entry()
+    public function lookup(Request $request, LookupPorteriaSubjectService $lookup): JsonResponse
     {
-        $locations = Location::where('is_active', true)->get();
-        $hosts = User::role('anfitrion')->get();
-        $buildings = Building::where('is_active', true)->get();
-        $housingUnits = HousingUnit::where('is_active', true)->with('building')->get();
-
-        return view('modules.access.logs.entry', compact('locations', 'hosts', 'buildings', 'housingUnits'));
+        return response()->json($lookup->search((string) $request->query('q', '')));
     }
 
-    public function exitPage()
+    public function entry(LookupPorteriaSubjectService $lookup, PorteriaDoorService $doors): View
     {
-        return view('modules.access.logs.exit');
+        return view('modules.access.logs.entry', [
+            'nodes' => $lookup->nodes(),
+            'memberTypes' => $lookup->memberTypes(),
+            'door' => $doors->current(request()),
+            'withVehicle' => request()->boolean('with_vehicle'),
+        ]);
     }
 
-    public function storeEntry(Request $request)
+    public function storeEntry(Request $request, RegisterPorteriaMovementService $register): RedirectResponse
     {
         $validated = $request->validate([
-            'visitor_id' => 'required|exists:visitors,id',
-            'housing_unit_id' => 'nullable|exists:housing_units,id',
-            'vehicle_id' => 'nullable|exists:vehicles,id',
-            'host_id' => 'required|exists:users,id',
-            'location_id' => 'required|exists:locations,id',
-            'access_type' => 'required|in:visitor,visitor_vehicle',
+            'subject_kind' => 'required|in:member,visitor',
+            'with_vehicle' => 'nullable|boolean',
+            'member_id' => 'nullable|integer',
+            'visitor_id' => 'nullable|integer',
+            'vehicle_id' => 'nullable|integer',
+            'structure_id' => 'nullable|integer',
+            'member_type_id' => 'nullable|integer',
+            'first_name' => 'nullable|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'document_type' => 'nullable|string|max:20',
+            'document_number' => 'nullable|string|max:50',
+            'birth_date' => 'nullable|date',
+            'plate' => 'nullable|string|max:20',
+            'vehicle_brand' => 'nullable|string|max:80',
+            'vehicle_color' => 'nullable|string|max:40',
             'purpose' => 'nullable|string|max:255',
-            'company_visited' => 'nullable|string|max:150',
-            'screening_temp' => 'nullable|numeric|min:34|max:42',
             'notes' => 'nullable|string',
+            'person_photo_data' => 'nullable|string',
+            'vehicle_photo_data' => 'nullable|string',
         ]);
 
-        $visitorBlock = app(BlocklistGuard::class)->checkPerson(
-            visitor: Visitor::find($validated['visitor_id'])
+        $validated['with_vehicle'] = $request->boolean('with_vehicle');
+
+        $register->enter(
+            $request->user(),
+            $validated,
+            DataUrlToUploadedFile::make($validated['person_photo_data'] ?? null, 'persona'),
+            DataUrlToUploadedFile::make($validated['vehicle_photo_data'] ?? null, 'vehiculo'),
         );
 
-        if ($visitorBlock !== null) {
-            return back()->withErrors(['visitor_id' => '🚫 Ingreso bloqueado por lista de bloqueo: '.$visitorBlock->reason])->withInput();
-        }
-
-        if (! empty($validated['vehicle_id'])) {
-            $vehicleBlock = app(BlocklistGuard::class)->checkVehicle(
-                vehicle: Vehicle::find($validated['vehicle_id'])
-            );
-
-            if ($vehicleBlock !== null) {
-                return back()->withErrors(['vehicle_id' => '🚫 Vehículo bloqueado: '.$vehicleBlock->reason])->withInput();
-            }
-        }
-
-        $validated['authorized_by'] = auth()->id();
-        $validated['entry_time'] = now();
-        $validated['status'] = 'active';
-
-        $log = AccessLog::create($validated);
-
-        app(AuditLogger::class)->record($log, 'access.entry', null, [
-            'access_type' => $log->access_type,
-            'visitor_id' => $log->visitor_id,
-            'location_id' => $log->location_id,
-            'entry_time' => $log->entry_time->toDateTimeString(),
-        ]);
-
-        return redirect()->route('access.logs.index')
-            ->with('success', 'Ingreso registrado exitosamente.');
+        return redirect()->route('access.logs.index')->with('success', 'Ingreso registrado.');
     }
 
-    public function markExit(Request $request, AccessLog $accessLog)
+    public function exitPage(): View
+    {
+        $activeLogs = AccessLog::query()
+            ->with(['visitor', 'structureMember', 'vehicle', 'location'])
+            ->where('status', 'active')
+            ->latest('entry_time')
+            ->get();
+
+        return view('modules.access.logs.exit', compact('activeLogs'));
+    }
+
+    public function markExit(Request $request, AccessLog $accessLog): RedirectResponse
     {
         if ($accessLog->status !== 'active') {
-            return back()->with('error', 'Este registro ya tiene una salida registrada.');
+            return back()->with('error', 'Este registro ya tiene salida.');
         }
 
-        $data = [
+        $accessLog->update([
             'exit_time' => now(),
             'status' => 'completed',
-        ];
-
-        if ($request->boolean('has_custody')) {
-            $custodyData = $request->validate([
-                'custody_description' => 'required|string|max:1000',
-                'custody_receiver_name' => 'nullable|string|max:255',
-            ]);
-            $data['has_custody'] = true;
-            $data['custody_description'] = $custodyData['custody_description'];
-            $data['custody_receiver_name'] = $custodyData['custody_receiver_name'];
-            $data['custody_received_at'] = now();
-        }
-
-        $accessLog->update($data);
-
-        app(AuditLogger::class)->record($accessLog, 'access.exit', [
-            'status' => $accessLog->getOriginal('status'),
-        ], [
-            'exit_time' => $accessLog->exit_time?->toDateTimeString(),
-            'status' => $accessLog->status,
-            'has_custody' => $accessLog->has_custody,
+            'has_custody' => $request->boolean('has_custody'),
+            'custody_description' => $request->input('custody_description'),
+            'custody_receiver_name' => $request->input('custody_receiver_name'),
+            'custody_received_at' => $request->boolean('has_custody') ? now() : null,
         ]);
 
-        return redirect()->route('access.logs.index')
-            ->with('success', 'Salida registrada exitosamente.');
+        return back()->with('success', 'Salida registrada.');
     }
 
-    public function scanExit(Request $request)
+    public function scanExit(Request $request): JsonResponse
     {
-        $request->validate([
-            'document_number' => 'required_if:log_id,null|string|max:50',
-            'log_id' => 'nullable|exists:access_logs,id',
-            'has_custody' => 'boolean',
-            'custody_description' => 'required_if:has_custody,1|string|max:1000',
-            'custody_receiver_name' => 'nullable|string|max:255',
-        ]);
-
-        if (! empty($request->log_id)) {
-            $log = AccessLog::with(['visitor', 'resident', 'vehicle', 'location'])
-                ->where('status', 'active')
-                ->find($request->log_id);
-
+        if ($request->filled('log_id')) {
+            $log = AccessLog::query()->whereKey($request->integer('log_id'))->where('status', 'active')->first();
             if ($log === null) {
-                return response()->json(['error' => 'El registro ya tiene salida o no existe.'], 422);
+                return response()->json(['error' => 'Ingreso no encontrado.'], 404);
             }
 
-            $data = [
+            $log->update([
                 'exit_time' => now(),
                 'status' => 'completed',
-            ];
-
-            if ($request->boolean('has_custody')) {
-                $data['has_custody'] = true;
-                $data['custody_description'] = $request->custody_description;
-                $data['custody_receiver_name'] = $request->custody_receiver_name;
-                $data['custody_received_at'] = now();
-            }
-
-            $log->update($data);
-
-            app(AuditLogger::class)->record($log, 'access.exit', ['status' => 'active'], [
-                'exit_time' => $log->exit_time?->toDateTimeString(),
-                'status' => 'completed',
-                'via' => 'kiosco',
+                'has_custody' => $request->boolean('has_custody'),
+                'custody_description' => $request->input('custody_description'),
+                'custody_receiver_name' => $request->input('custody_receiver_name'),
+                'custody_received_at' => $request->boolean('has_custody') ? now() : null,
             ]);
 
-            return response()->json([
-                'ok' => true,
-                'message' => 'Salida registrada exitosamente.',
-                'id' => $log->id,
-            ]);
+            return response()->json(['found' => true, 'message' => 'Salida registrada.']);
         }
 
-        $logs = $this->activeLogsForDocument($request->document_number);
+        $q = trim((string) ($request->input('document_number') ?: $request->input('qr_code') ?: ''));
+        if ($q === '') {
+            return response()->json(['error' => 'Indica documento o placa.'], 422);
+        }
+
+        $logs = AccessLog::query()
+            ->with(['visitor', 'structureMember.structure', 'vehicle', 'location'])
+            ->where('status', 'active')
+            ->where(function ($query) use ($q): void {
+                $query->where('qr_code', $q)
+                    ->orWhereHas('visitor', fn ($v) => $v->where('document_number', 'like', "%{$q}%"))
+                    ->orWhereHas('structureMember', fn ($m) => $m->where('document_number', 'like', "%{$q}%"))
+                    ->orWhereHas('vehicle', fn ($veh) => $veh->where('plate', 'like', "%{$q}%"));
+            })
+            ->latest('entry_time')
+            ->get();
 
         if ($logs->isEmpty()) {
-            return response()->json([
-                'found' => false,
-                'message' => 'No hay ingresos activos para el documento ingresado.',
-            ]);
+            return response()->json(['found' => false, 'message' => 'Sin ingresos activos.', 'matches' => []]);
         }
 
         return response()->json([
             'found' => true,
-            'matches' => $logs->map(function ($log) {
-                return [
-                    'id' => $log->id,
-                    'name' => $log->visitor?->full_name ?? $log->resident?->full_name ?? $log->user?->name ?? '-',
-                    'entry_time' => $log->entry_time->format('d/m/Y H:i'),
-                    'duration_hours' => (int) $log->entry_time->diffInHours(now()),
-                    'destination' => $log->housingUnit?->full_label ?? $log->location?->name,
-                    'has_vehicle' => $log->vehicle?->plate ?? ($log->access_type === 'resident_vehicle' ? 'Sí' : null),
-                ];
-            }),
+            'matches' => $logs->map(fn (AccessLog $log): array => [
+                'id' => $log->id,
+                'name' => $log->subjectName(),
+                'destination' => $log->structureMember?->structure?->name ?? $log->location?->name ?? '—',
+                'entry_time' => $log->entry_time->format('H:i'),
+                'duration_hours' => $log->entry_time->diffInHours(now()),
+                'has_vehicle' => $log->vehicle?->plate,
+            ])->all(),
         ]);
     }
 
-    private function activeLogsForDocument(string $documentNumber)
+    public function bulkExit(): RedirectResponse
     {
-        $visitorIds = Visitor::whereNull('deleted_at')
-            ->where('document_number', $documentNumber)
-            ->pluck('id');
+        AccessLog::query()->where('status', 'active')->update([
+            'exit_time' => now(),
+            'status' => 'completed',
+        ]);
 
-        $residentIds = Resident::where('document_number', $documentNumber)->pluck('id');
-
-        $vehicleIds = Vehicle::whereRaw('upper(plate) = ?', [strtoupper($documentNumber)])->pluck('id');
-
-        return AccessLog::with(['visitor', 'resident', 'vehicle', 'location', 'housingUnit'])
-            ->where('status', 'active')
-            ->where(function ($q) use ($visitorIds, $residentIds, $vehicleIds) {
-                $q->whereIn('visitor_id', $visitorIds)
-                    ->orWhereIn('resident_id', $residentIds)
-                    ->orWhereIn('vehicle_id', $vehicleIds);
-            })
-            ->latest('entry_time')
-            ->get();
-    }
-
-    public function bulkExit(Request $request)
-    {
-        $count = AccessLog::where('status', 'active')
-            ->whereDate('entry_time', '<=', today())
-            ->update([
-                'exit_time' => now(),
-                'status' => 'completed',
-            ]);
-
-        return redirect()->route('access.logs.index')
-            ->with('success', "Salida masiva: {$count} registro(s) actualizado(s).");
+        return back()->with('success', 'Salida masiva registrada.');
     }
 }

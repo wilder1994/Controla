@@ -2,9 +2,9 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de clientes.
 
-**Última actualización:** 15 septiembre 2026
+**Última actualización:** 17 septiembre 2026
 
-La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. El Excel **no** crea usuario: solo la persona. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles. Login y formularios: mensajes en español al centro de la pantalla ([`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md)).
+La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. Es gente de la **empresa**, no del censo del predio. El Excel **no** crea usuario: solo la ficha de empleado. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md), [`PORTERIA.md`](PORTERIA.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles. Login y formularios: mensajes en español al centro de la pantalla ([`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md)).
 
 Sidebar empresa: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalaciones** · **Observatorio** · Supervisión · **Descargas** · **Empleados** · **Documentos** · Usuarios · **Mis datos** (este perfil) · **Ajustes** (Cargos | Tipos | Estructuras | Zonas | Turnos | Modalidades | Preoperacional | Documentos | Libros | Tipos de arma | Marcas | Riesgos | Alarmas | Apoyos). Chatbot de ayuda y PQRS: pendiente, [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Observatorio: [`OBSERVATORIO.md`](OBSERVATORIO.md).
 
@@ -324,10 +324,13 @@ Vistas empresa (crear = editar): `modules/company/users/partials/form.blade.php`
 
 ---
 
-## Portería (minuta y turno)
+## Portería (minuta, turno y pánico)
+
+Detalle: [`PORTERIA.md`](PORTERIA.md).
 
 - Firma de **revista / minuta** por código en `/access` (tipo Revista + `users.supervisor_code` de 6 dígitos, o catálogo `supervision_codes`). Válido aunque el cliente también tenga Supervisión de campo.
-- Turno abierto del vigilante: `guard_shifts` + `TurnoService` (`/access/turnos`).
+- Turno abierto del vigilante: `guard_shifts` + puerta (`/access/turnos`). Una puerta se asigna sola; varias se eligen al abrir.
+- Pánico: `POST /access/ops/panic` (mismo overlay que cliente/supervisor). Ya no hay pánico en minuta.
 - Turno del **supervisor** (Supervisión): `supervisor_shifts` + PWA. Distinto del turno de portería.
 
 ---
@@ -342,6 +345,8 @@ php artisan test --filter=AuthenticationTest
 php artisan test --filter=CollaboratorAccessTest
 php artisan test --filter=SupervisorShiftApiTest
 php artisan test --filter=PorteriaRevistaTest
+php artisan test --filter=PorteriaDoorAndPanicTest
+php artisan test --filter=PorteriaConsoleTest
 php artisan test --filter=StructureModuleTest
 ```
 

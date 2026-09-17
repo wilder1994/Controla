@@ -1,6 +1,6 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 16 septiembre 2026
+**Última actualización:** 17 septiembre 2026
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
@@ -69,6 +69,8 @@ Selfie de perfil APK/PWA (16 sep 2026): círculo del turno con la foto de inicio
 Modalidades de puesto (15 sep 2026): Ajustes → Modalidades (`supervisor_post_modalities`, horas 1–24; semilla 8/12/24). El puesto elige del catálogo. Pull + `migrate --force` + `view:cache` + `route:cache`. Sin seeder ni `npm`. Artisan como `wcodex-controla`.
 
 Mapa Supervisión + ficha de turno (16 sep 2026): En vivo sin filtros; ruta GPS al clic; Historial solo cerrados (una ruta Roads). Ficha `kind=shift` se congela en `supervisor_shifts.sheet_snapshot` al cierre. Pull + `migrate --force` + `view:cache` + `route:cache`. Sin seeder ni `npm`. Artisan como `wcodex-controla`.
+
+Portería consola vigilante (17 sep 2026): pánico `POST /access/ops/panic` (usuario + puerta). Ingreso/salida unificado (censo + visitante, peatón + vehículo). Menú Personas/Vehículos/Mascotas/Autorizaciones/Reservas/Visitantes. Pull + `migrate --force` (`2026_09_17_150000` en `access_logs`) + `RoleAndPermissionSeeder` + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
 Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON al cambio (Reverb) y sondeo cada 12 s si el socket no está conectado. Crear folio también refresca (alerta Observatorio). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
 

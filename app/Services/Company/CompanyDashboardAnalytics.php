@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Enums\ClientLifecycle;
+use App\Enums\OperationalAlertType;
+use App\Enums\PanicAttentionStatus;
 use App\Models\AccessLog;
 use App\Models\Blocklist;
 use App\Models\Client;
@@ -12,6 +14,7 @@ use App\Models\Correspondence;
 use App\Models\GuardLog;
 use App\Models\GuardShift;
 use App\Models\Installation;
+use App\Models\OperationalAlert;
 use App\Models\SecurityCompany;
 use App\Models\SupervisorReview;
 use App\Models\User;
@@ -267,7 +270,7 @@ final class CompanyDashboardAnalytics
 
     /**
      * @param  list<int>  $clientIds
-     * @return Collection<int, GuardLog>
+     * @return Collection<int, OperationalAlert>
      */
     private function panicsToday(array $clientIds): Collection
     {
@@ -275,12 +278,12 @@ final class CompanyDashboardAnalytics
             return collect();
         }
 
-        return GuardLog::query()
-            ->with(['user', 'location', 'client'])
+        return OperationalAlert::query()
+            ->with(['client'])
+            ->where('type', OperationalAlertType::Panic)
             ->whereIn('client_id', $clientIds)
-            ->where('is_panic', true)
-            ->whereDate('log_time', today())
-            ->orderByDesc('log_time')
+            ->whereDate('created_at', today())
+            ->orderByDesc('id')
             ->get();
     }
 
@@ -291,10 +294,13 @@ final class CompanyDashboardAnalytics
             return 0;
         }
 
-        return (int) GuardLog::query()
+        return (int) OperationalAlert::query()
+            ->where('type', OperationalAlertType::Panic)
             ->whereIn('client_id', $clientIds)
-            ->where('is_panic', true)
-            ->whereNull('resolved_at')
+            ->where(function ($query): void {
+                $query->whereDoesntHave('attention')
+                    ->orWhereHas('attention', fn ($q) => $q->where('status', PanicAttentionStatus::Abierto));
+            })
             ->count();
     }
 
@@ -355,7 +361,7 @@ final class CompanyDashboardAnalytics
 
     /**
      * @param  Collection<int, Client>  $activeClients
-     * @param  Collection<int, GuardLog>  $panicsToday
+     * @param  Collection<int, OperationalAlert>  $panicsToday
      * @param  array{vehicles: int, persons: int}  $blockCounts
      * @param  array<string, mixed>  $revista
      * @param  Collection<int, GuardShift>  $openShifts
@@ -376,8 +382,8 @@ final class CompanyDashboardAnalytics
             $items[] = [
                 'priority' => 'Pánico',
                 'tone' => 'danger',
-                'signal' => Str::limit((string) $panic->description, 60),
-                'context' => $panic->client?->name ?? $panic->location?->name ?? '—',
+                'signal' => Str::limit((string) $panic->body, 60),
+                'context' => $panic->client?->name ?? (string) (($panic->payload['location_name'] ?? null) ?: '—'),
             ];
         }
 

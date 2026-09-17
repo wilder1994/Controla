@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm font-medium text-indigo-300">Control de Acceso</p>
-                <h2 class="text-xl font-bold text-white">Abrir Turno</h2>
+                <h2 class="text-xl font-bold text-white">Abrir turno / puerta</h2>
             </div>
             <a href="{{ route('access.turnos.index') }}" class="text-sm text-indigo-300 hover:text-white transition-colors">← Mis turnos</a>
         </div>
@@ -12,41 +12,46 @@
     <div class="max-w-xl">
         <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-800">
-                <h3 class="text-sm font-semibold text-slate-200">Iniciar turno de portería</h3>
-                <p class="text-xs text-slate-500 mt-1">Al iniciar tu turno quedan habilitadas las operaciones de ingreso, salida, minutas y vehículos.</p>
+                <h3 class="text-sm font-semibold text-slate-200">Puerta que vas a operar</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                    @if($locations->count() === 1)
+                        Hay una sola puerta: el sistema la asigna a tu usuario. El pánico sale con tu nombre y esa puerta.
+                    @else
+                        Hay varias puertas. Elige una; el pánico y el turno quedan ligados a esa puerta y a tu usuario.
+                    @endif
+                </p>
             </div>
-            <form method="POST" action="{{ route('access.turnos.store') }}" class="p-6 space-y-5">
+            <form method="POST" action="{{ route('access.turnos.store') }}" class="p-6 space-y-5" novalidate>
                 @csrf
 
-                @if($errors->any())
-                    <div class="rounded-lg bg-red-900/40 border border-red-700 text-red-200 px-4 py-3 text-sm">
-                        @foreach($errors->all() as $error)
-                            <p>{{ $error }}</p>
-                        @endforeach
+                @if($locations->isEmpty())
+                    <p class="text-sm text-amber-200">Este cliente no tiene puertas activas. Sin puerta no hay portería ni pánico.</p>
+                @elseif($locations->count() === 1)
+                    <input type="hidden" name="location_id" value="{{ $locations->first()->id }}">
+                    <p class="text-sm text-slate-200">{{ $locations->first()->name }}</p>
+                @else
+                    <div>
+                        <x-ui.label for="location_id">Puerta</x-ui.label>
+                        <select id="location_id" name="location_id" required class="mt-1 block w-full h-9 rounded-lg bg-slate-950 border border-slate-700 text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
+                            <option value="">Selecciona…</option>
+                            @foreach($locations as $loc)
+                                <option value="{{ $loc->id }}" @selected((int) ($selectedId ?? 0) === (int) $loc->id)>{{ $loc->name }}</option>
+                            @endforeach
+                        </select>
+                        <x-ui.field-error :messages="$errors->get('location_id')" />
                     </div>
                 @endif
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-300">Ubicación / Portería</label>
-                    <select name="location_id" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="">No especificada</option>
-                        @foreach($locations as $loc)
-                            <option value="{{ $loc->id }}">{{ $loc->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-300">Nota de apertura</label>
-                    <textarea name="start_notes" rows="3" class="mt-1 block w-full rounded-lg bg-slate-950 border-slate-700 text-white focus:border-indigo-500 focus:ring-indigo-500" placeholder="Estado del turno, personal relevante, pendientes..."></textarea>
+                    <x-ui.label for="start_notes">Nota de apertura (opcional)</x-ui.label>
+                    <textarea id="start_notes" name="start_notes" rows="3" class="mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30" placeholder="Estado del turno, pendientes…"></textarea>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-2">
-                    <a href="{{ route('access.operations') }}" class="inline-flex items-center px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg font-semibold text-xs text-slate-300 hover:bg-slate-700 transition-colors">Cancelar</a>
-                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-500 transition-colors shadow-sm">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                        Iniciar Turno
-                    </button>
+                    <x-ui.button variant="secondary" :href="route('access.turnos.index')">Cancelar</x-ui.button>
+                    @if($locations->isNotEmpty())
+                    <x-ui.button type="submit" size="md">{{ $locations->count() === 1 ? 'Iniciar turno' : 'Operar esta puerta' }}</x-ui.button>
+                    @endif
                 </div>
             </form>
         </div>

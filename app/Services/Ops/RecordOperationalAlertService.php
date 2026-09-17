@@ -22,8 +22,9 @@ final class RecordOperationalAlertService
         ?float $lat,
         ?float $lng,
         string $note = '',
+        array $payload = [],
     ): OperationalAlert {
-        $where = $this->placeLabel($clientId, $installationId);
+        $where = $this->placeLabel($clientId, $installationId, $payload);
 
         return $this->store(
             OperationalAlertType::Panic,
@@ -36,6 +37,7 @@ final class RecordOperationalAlertService
             trim($actor->name.' activó pánico'.($where !== '' ? ' · '.$where : '').($note !== '' ? '. '.$note : '')),
             $lat,
             $lng,
+            $payload === [] ? null : $payload,
         );
     }
 
@@ -113,9 +115,16 @@ final class RecordOperationalAlertService
         return $alert;
     }
 
-    private function placeLabel(?int $clientId, ?int $installationId): string
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function placeLabel(?int $clientId, ?int $installationId, array $payload = []): string
     {
         $parts = [];
+        $doorName = $payload['location_name'] ?? null;
+        if (is_string($doorName) && $doorName !== '') {
+            $parts[] = $doorName;
+        }
         if ($installationId) {
             $name = Installation::query()->withoutGlobalScopes()->whereKey($installationId)->value('name');
             if (is_string($name) && $name !== '') {

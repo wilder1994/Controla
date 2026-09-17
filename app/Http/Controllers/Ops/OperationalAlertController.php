@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Ops;
 use App\Http\Controllers\Controller;
 use App\Services\Ops\ResolveLiveOperationalAlertsService;
 use App\Services\Ops\TriggerPanicService;
+use App\Services\Access\PorteriaDoorService;
 use App\Support\Platform\ActingCompanyResolver;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ final class OperationalAlertController extends Controller
         private readonly TriggerPanicService $panic,
         private readonly ActingCompanyResolver $actingCompany,
         private readonly TenantContext $tenantContext,
+        private readonly PorteriaDoorService $porteriaDoors,
     ) {}
 
     public function poll(Request $request): JsonResponse
@@ -49,7 +51,20 @@ final class OperationalAlertController extends Controller
         $lng = isset($data['longitude']) ? (float) $data['longitude'] : null;
         $note = (string) ($data['note'] ?? '');
 
-        if ($user->hasAnyRole(['company-admin', 'colaborador']) && $this->actingCompany->id($user) !== null) {
+        if ($request->routeIs('access.ops.panic')) {
+            $door = $this->porteriaDoors->bindSingleIfOnlyOne($request);
+            if ($door === null) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Selecciona la puerta que vas a operar.'], 422);
+                }
+
+                return redirect()
+                    ->route('access.turnos.open')
+                    ->with('error', 'Selecciona la puerta que vas a operar.');
+            }
+
+            $this->panic->fromPorteria($user, $door, $lat, $lng, $note);
+        } elseif ($user->hasAnyRole(['company-admin', 'colaborador']) && $this->actingCompany->id($user) !== null) {
             $this->panic->execute($user, $lat, $lng, $note);
         } else {
             $this->panic->fromClientPanel($user, $this->tenantContext, $lat, $lng, $note);

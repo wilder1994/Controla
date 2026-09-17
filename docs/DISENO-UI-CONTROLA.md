@@ -8,6 +8,8 @@ Referencia oficial del sistema visual. **Panel empresa** (`/company`, acento ind
 
 **Layouts:** `layouts/company.blade.php` · `layouts/admin.blade.php` · `layouts/client.blade.php` · `layouts/access.blade.php`
 
+Portería (`/access`): menú vigilante (Resumen, Ingreso y salida, censo, pánico `ops-live-alerts`). Una puerta se fija sola; varias → abrir turno. [`PORTERIA.md`](PORTERIA.md).
+
 **Sidebar cliente:** Resumen · Instalaciones · Observatorio · Personas · Usuarios · Accesos · Ajustes (fijos). Opcionales en ficha empresa (**Gestión de módulos**): Vehículos · Mascotas · Autorizaciones · Puertas. Zonas comunes y Documentos siguen por permiso / flag.
 
 **Shell común:** wrapper `h-screen flex overflow-hidden` + Alpine `panelSidebar`. `resources/js/app.js` registra `panelSidebar` y `opsLiveAlerts`; si falta el primero, Observatorio no dibuja mapa ni Chart.js.
@@ -290,7 +292,7 @@ warning: rounded-lg bg-amber-900/40 border border-amber-700 text-amber-200 px-4 
 | Empresa (`/company`) | `indigo` | ✅ Referencia actual |
 | Plataforma (`/admin`) | `violet` | ✅ Dashboard, empresas, pricing |
 | Conjunto (`/client`) | `teal` | Pendiente |
-| Portería (`/access`) | `indigo` | Pendiente |
+| Portería (`/access`) | `indigo` | Consola vigilante (ingreso/censo/pánico) |
 
 Al migrar client/access: duplicar patrones de este doc cambiando solo el color acento en botones, focus de inputs y nav activo.
 

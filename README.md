@@ -38,7 +38,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos). Mapa En vivo/Historial, cierre automático, cola offline por usuario. Fuente de verdad: Controla | ✅ Implementada |
 | **Árbol del cliente** | Una tarjeta **Instalaciones y puestos**; otra **Puertas** (solo Accesos). Modalidad + vigilantes en el puesto | ✅ Implementada |
 
-Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFORME-VISION-PRODUCTO-W-CODEX.md) · [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Observatorio**](docs/OBSERVATORIO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12) · [**Hosting VPS**](docs/HOSTING-VPS.md)
+Documentación detallada: [`docs/INFORME-VISION-PRODUCTO-W-CODEX.md`](docs/INFORME-VISION-PRODUCTO-W-CODEX.md) · [`docs/PLAN-INICIO-PROYECTO-CONTROLA.md`](docs/PLAN-INICIO-PROYECTO-CONTROLA.md) · [`docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md`](docs/REFERENCIA-PLATAFORMA-CONTROL-ACCESOS.md) · [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [**Paquetes Accesos y Supervisión**](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md) · [**Supervisión de campo**](docs/SUPERVISION-CAMPO.md) · [**Portería**](docs/PORTERIA.md) · [**Observatorio**](docs/OBSERVATORIO.md) · [**Landing y contratación**](docs/LANDING-Y-CONTRATACION.md) · [**Usuarios y perfiles**](docs/USUARIOS-Y-PERFILES.md) · [**Empleados y cargos**](docs/EMPLEADOS-Y-CARGOS.md) · [**Clientes y estructura**](docs/CLIENTES-Y-ESTRUCTURA.md) · [**Billing local**](docs/BILLING-LOCAL-Y-MIGRACION.md) · [**Diseño UI**](docs/DISENO-UI-CONTROLA.md) · [**Panel Plataforma**](docs/PLATAFORMA-ADMIN.md) · [**Módulo Documentos**](docs/MODULO-DOCUMENTOS.md) (v1.1 normoteca por SKU + inmutabilidad; fases futuras §12) · [**Hosting VPS**](docs/HOSTING-VPS.md)
 
 ---
 
@@ -406,7 +406,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
 | `GET /company/installations` | Directorio de sedes + tablero SIG (mapa, puestos, novedades de servicio) si no hay búsqueda |
 | `GET /company/ops/alerts.json` | Poll de pánico/Observatorio (overlay; no incluye a quien disparó) |
-| `POST /company/ops/panic` | Pánico por usuario de empresa (no es el de portería) |
+| `POST /company/ops/panic` | Pánico por usuario de empresa (mismo canal que portería, cliente y APK) |
 | `GET /company/panics` | Atención de pánicos: fichas abiertas/cerradas (`ops.panic.attend`) |
 | `POST /company/panics/claim` | Tomar un pánico y abrir la ficha |
 | `GET /company/panics/{id}/ficha` | Carta imprimible / PDF |
@@ -613,7 +613,7 @@ Tablas relacionadas:
 | `/client/dashboard` | Resumen SIG: mapa, puestos, novedades de servicio, afiliación, gráfica de revistas |
 | `/client/installations` | Directorio de sedes + tablero SIG compacto (sin búsqueda). `/client/structures` redirige |
 | `/client/ops/alerts.json` | Poll de pánico/Observatorio (overlay) |
-| `/client/ops/panic` | Pánico por usuario (el overlay lo reciben usuarios de empresa, no el emisor) |
+| `/client/ops/panic` | Pánico por usuario (mismo canal; overlay en empresa, no el emisor) |
 | `/client/observatory/events` | Observatorio (módulo opt-in). Tablero + Eventos + **Tipos**. **Nuevo reporte**: hasta 3 fotos (cámara/miniatura, opcional). Rector cierra; apoyo reporta |
 | `/client/observatory/tablero.pptx` | Observatorio: export PPTX del tablero (mismos filtros; solo cifras) |
 | `/client/members` | Personas: tipo de documento + fecha de nacimiento; menores (Ley 1581) sin export; QR solo adultos |
@@ -662,20 +662,11 @@ Descarga un Excel del censo para juntas. **Excluye menores de 18 años** (Ley 15
 
 ## Módulo Portería (`/access`) — línea base
 
-Dashboard operativo con KPIs (personas dentro, visitantes, correspondencia pendiente, etc.). Sigue usando layout Breeze (`x-app-layout`) y modelos legacy (`buildings`, `housing_units`, `residents`) en paralelo al nuevo censo `structures`.
+Consola del vigilante. Detalle: [`docs/PORTERIA.md`](docs/PORTERIA.md). Layout `layouts.access`. Pánico: `POST /access/ops/panic`. Ingreso/salida unificado (`structure_members` + visitantes). Menú: Resumen, Ingreso y salida, Personas, Vehículos, Mascotas, Correspondencia, Autorizaciones, Reservas, Minutas, Lista de bloqueo, Instalaciones, Visitantes, Turnos. Una puerta se asigna sola; si hay varias se elige al abrir turno.
 
-### Fase 2 — Hub de Operaciones (`/access/operations`)
+Las pantallas legacy (`buildings`/`residents`, `/access/operations`) redirigen o quedan fuera del menú.
 
-**Centro de operaciones unificado** que reemplaza el dashboard como pantalla principal del guardia:
-
-- **Matriz 3×3 de acceso rápido**: Ingreso Peatonal, Ingreso Vehicular, Registrar Salida, Pre-Autorizaciones, Correspondencia, Minutas, Personas Dentro, Reportes, Búsqueda Rápida
-- Cada botón se muestra según los permisos del usuario
-- **Personas Dentro**: tabla en tiempo real con nombre, documento, tipo, destino, ubicación, tiempo transcurrido
-- **Alertas >12h**: las personas con más de 12 horas dentro se marcan en rojo con ícono de advertencia y un resumen de alerta al final
-- **Estadísticas rápidas**: dentro, hoy, correspondencia pendiente, pre-autorizaciones pendientes
-- **Salida directa**: botón "Salida" en cada fila que registra la salida con confirmación
-
-### Fase 2 — Lista de Bloqueo (`/access/blocklist`)
+### Lista de Bloqueo (`/access/blocklist`)
 
 Permite denegar acceso a personas o vehículos desde la portería:
 
@@ -686,7 +677,7 @@ Permite denegar acceso a personas o vehículos desde la portería:
 - **Permiso**: `access.manage.blocklist` (asignado a guardia, supervisor, client-admin)
 - **Consumo empresa**: el Command Center agrega bloqueos activos por cartera de conjuntos
 
-### Fase 2 — Salida Masiva
+### Salida masiva
 
 Botón `Salida Masiva` en la vista de Ingreso/Salida que marca como `completed` todos los registros activos del día:
 
@@ -694,7 +685,7 @@ Botón `Salida Masiva` en la vista de Ingreso/Salida que marca como `completed` 
 - Confirmación antes de ejecutar
 - Útil para cierre de turno o jornada
 
-### Fase 3 — Reportes Mejorados (`/access/reports`)
+### Reportes (`/access/reports`)
 
 - **Nuevos filtros**: tipo de acceso (visitante, vehicular, residente) además de fecha, estado y ubicación
 - **Exportación a Excel**: botón `Exportar Excel` que descarga los resultados filtrados como `.xlsx`
@@ -709,7 +700,8 @@ Integrado en `main` / `creawilder` (rama Manuel + Command Center). Roles en `con
 | Módulo | Rutas / piezas clave | Notas |
 |--------|----------------------|--------|
 | **Supervisión (minuta)** | `/access/supervision/*`, códigos `/access/supervision/codes` | Unlock por código, evidencias (`supervision_attachments`), firma en minuta |
-| **Turnos portería** | `/access/turnos` | Apertura/cierre; middleware `EnsureOpenShift` |
+| **Turnos portería** | `/access/turnos` | Apertura/cierre; puerta obligatoria; `EnsureOpenShift` + `EnsurePorteriaDoor` |
+| **Pánico** | `POST /access/ops/panic`, `GET /access/ops/alerts.json` | Mismo overlay que cliente/supervisor. Sin minuta `is_panic`. [`PORTERIA.md`](docs/PORTERIA.md) |
 | **Zonas comunes** | `/access/zones`, reserva cliente `/client/zones` | `common_zones` + bookings; permiso `access.manage.zones` / `client.zones.book` |
 | **Auditoría** | `/access/audit` | `audit_logs` + `AuditLogger` |
 | **Geo / recurrencia** | Locations con geo; pre-autorizaciones con recurrencia | `GeoService`, `RecurrenceService` |

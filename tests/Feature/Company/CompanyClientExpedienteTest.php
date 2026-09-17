@@ -129,8 +129,7 @@ final class CompanyClientExpedienteTest extends TestCase
         $this->assertSame(CompanyOperateContext::MODE_PORTERIA, CompanyOperateContext::mode());
 
         $dashboard = $this->actingAs($user)
-            ->withSession([
-                config('tenancy.session.active_client_key') => $client->id,
+            ->withSession($this->porteriaSession($client) + [
                 CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
                 CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_PORTERIA,
             ])
@@ -272,9 +271,9 @@ final class CompanyClientExpedienteTest extends TestCase
         $this->assertFalse($client->fresh()->panelModuleEnabled('doors'));
 
         $this->actingAs($clientAdmin)->withSession($tenancy)->get(route('access.dashboard'))->assertForbidden();
-        $this->actingAs($vigilante)->withSession($tenancy)->get(route('access.dashboard'))->assertOk();
+        $this->actingAs($vigilante)->withSession($this->porteriaSession($client))->get(route('access.dashboard'))->assertOk();
 
-        $this->actingAs($company)->withSession($tenancy + [
+        $this->actingAs($company)->withSession($this->porteriaSession($client) + [
             CompanyOperateContext::SESSION_CLIENT_KEY => $client->id,
             CompanyOperateContext::SESSION_MODE_KEY => CompanyOperateContext::MODE_PORTERIA,
         ])->get(route('access.dashboard'))->assertOk();
