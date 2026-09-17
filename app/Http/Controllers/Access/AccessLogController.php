@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Access;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccessLog;
+use App\Models\User;
 use App\Services\Access\LookupPorteriaSubjectService;
 use App\Services\Access\PorteriaDoorService;
 use App\Services\Access\RegisterPorteriaMovementService;
@@ -17,27 +18,63 @@ use Illuminate\View\View;
 
 class AccessLogController extends Controller
 {
-    public function index(): View
+    public function index(Request $request, LookupPorteriaSubjectService $lookup, PorteriaDoorService $doors): View
     {
-        $activeLogs = AccessLog::query()
-            ->with(['visitor', 'structureMember.structure', 'resident', 'location', 'vehicle'])
-            ->where('status', 'active')
-            ->latest('entry_time')
-            ->get()
-            ->map(function (AccessLog $log) {
-                $log->hours_inside = $log->entry_time->diffInHours(now());
-                $log->alert_long_stay = $log->hours_inside >= config('access.alerts.long_stay_hours');
+        $from = $request->filled('from') ? $request->date('from') : today();
+        $to = $request->filled('to') ? $request->date('to') : $from;
+        $scope = (string) $request->query('scope', 'all');
+        $hostId = $request->integer('host_id');
+        $q = trim((string) $request->query('q', ''));
+        $tab = (string) $request->query('tab', 'movimiento');
 
-                return $log;
+        $logsQuery = AccessLog::query()
+            ->with(['visitor', 'structureMember', 'vehicle', 'host', 'destinationStructure', 'authorizedMember', 'location'])
+            ->whereDate('entry_time', '>=', $from)
+            ->whereDate('entry_time', '<=', $to)
+            ->latest('entry_time');
+
+        if ($scope === 'people') {
+            $logsQuery->whereNull('vehicle_id');
+        } elseif ($scope === 'vehicles') {
+            $logsQuery->whereNotNull('vehicle_id');
+        }
+
+        if ($hostId > 0) {
+            $logsQuery->where('host_id', $hostId);
+        }
+
+        if ($q !== '') {
+            $logsQuery->where(function ($query) use ($q): void {
+                $query->whereHas('visitor', function ($v) use ($q): void {
+                    $v->where('first_name', 'like', "%{$q}%")
+                        ->orWhere('last_name', 'like', "%{$q}%")
+                        ->orWhere('document_number', 'like', "%{$q}%");
+                })->orWhereHas('structureMember', function ($m) use ($q): void {
+                    $m->where('first_name', 'like', "%{$q}%")
+                        ->orWhere('last_name', 'like', "%{$q}%")
+                        ->orWhere('document_number', 'like', "%{$q}%");
+                })->orWhereHas('vehicle', fn ($veh) => $veh->where('plate', 'like', "%{$q}%"));
             });
+        }
 
-        $todayLogs = AccessLog::query()
-            ->with(['visitor', 'structureMember', 'location', 'vehicle'])
-            ->whereDate('entry_time', today())
-            ->latest('entry_time')
-            ->paginate(20);
+        $guards = User::query()
+            ->whereIn('id', AccessLog::query()->whereNotNull('host_id')->select('host_id'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        return view('modules.access.logs.index', compact('activeLogs', 'todayLogs'));
+        return view('modules.access.logs.index', [
+            'tab' => in_array($tab, ['movimiento', 'registros'], true) ? $tab : 'movimiento',
+            'nodes' => $lookup->nodes(),
+            'memberTypes' => $lookup->memberTypes(),
+            'door' => $doors->operatingOrFirst($request),
+            'logs' => $logsQuery->paginate(30)->withQueryString(),
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+            'scope' => $scope,
+            'hostId' => $hostId,
+            'q' => $q,
+            'guards' => $guards,
+        ]);
     }
 
     public function lookup(Request $request, LookupPorteriaSubjectService $lookup): JsonResponse
@@ -45,42 +82,21 @@ class AccessLogController extends Controller
         return response()->json($lookup->search((string) $request->query('q', '')));
     }
 
-    public function entry(LookupPorteriaSubjectService $lookup, PorteriaDoorService $doors): View
+    public function hosts(Request $request, LookupPorteriaSubjectService $lookup): JsonResponse
     {
-        return view('modules.access.logs.entry', [
-            'nodes' => $lookup->nodes(),
-            'memberTypes' => $lookup->memberTypes(),
-            'door' => $doors->current(request()),
-            'withVehicle' => request()->boolean('with_vehicle'),
+        return response()->json([
+            'hosts' => $lookup->hostsForNode($request->integer('structure_id')),
         ]);
+    }
+
+    public function entry(): RedirectResponse
+    {
+        return redirect()->route('access.logs.index', ['tab' => 'movimiento']);
     }
 
     public function storeEntry(Request $request, RegisterPorteriaMovementService $register): RedirectResponse
     {
-        $validated = $request->validate([
-            'subject_kind' => 'required|in:member,visitor',
-            'with_vehicle' => 'nullable|boolean',
-            'member_id' => 'nullable|integer',
-            'visitor_id' => 'nullable|integer',
-            'vehicle_id' => 'nullable|integer',
-            'structure_id' => 'nullable|integer',
-            'member_type_id' => 'nullable|integer',
-            'first_name' => 'nullable|string|max:100',
-            'last_name' => 'nullable|string|max:100',
-            'document_type' => 'nullable|string|max:20',
-            'document_number' => 'nullable|string|max:50',
-            'birth_date' => 'nullable|date',
-            'plate' => 'nullable|string|max:20',
-            'vehicle_brand' => 'nullable|string|max:80',
-            'vehicle_color' => 'nullable|string|max:40',
-            'purpose' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-            'person_photo_data' => 'nullable|string',
-            'vehicle_photo_data' => 'nullable|string',
-        ]);
-
-        $validated['with_vehicle'] = $request->boolean('with_vehicle');
-
+        $validated = $this->movementPayload($request);
         $register->enter(
             $request->user(),
             $validated,
@@ -88,18 +104,52 @@ class AccessLogController extends Controller
             DataUrlToUploadedFile::make($validated['vehicle_photo_data'] ?? null, 'vehiculo'),
         );
 
-        return redirect()->route('access.logs.index')->with('success', 'Ingreso registrado.');
+        return redirect()->route('access.logs.index', ['tab' => 'movimiento'])->with('success', 'Ingreso registrado.');
     }
 
-    public function exitPage(): View
+    public function storeMove(Request $request, RegisterPorteriaMovementService $register): RedirectResponse
     {
-        $activeLogs = AccessLog::query()
-            ->with(['visitor', 'structureMember', 'vehicle', 'location'])
-            ->where('status', 'active')
-            ->latest('entry_time')
-            ->get();
+        $validated = $request->validate([
+            'kind' => 'required|in:member,visitor,vehicle',
+            'id' => 'required|integer',
+            'action' => 'required|in:enter,exit',
+            'destination_structure_id' => 'nullable|integer',
+            'destination_text' => 'nullable|string|max:255',
+            'authorized_member_id' => 'nullable|integer',
+            'purpose' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
 
-        return view('modules.access.logs.exit', compact('activeLogs'));
+        $log = $register->move($request->user(), $validated);
+        $msg = $validated['action'] === 'exit' ? 'Salida registrada.' : 'Ingreso registrado.';
+
+        return redirect()
+            ->route('access.logs.index', ['tab' => 'movimiento'])
+            ->with('success', $msg)
+            ->with('moved_log_id', $log->id);
+    }
+
+    public function storeRegister(Request $request, RegisterPorteriaMovementService $register): RedirectResponse
+    {
+        $validated = $this->movementPayload($request);
+        $created = $register->register(
+            $validated,
+            DataUrlToUploadedFile::make($validated['person_photo_data'] ?? $validated['vehicle_photo_data'] ?? null, 'ficha'),
+        );
+
+        return redirect()
+            ->route('access.logs.index', [
+                'tab' => 'movimiento',
+                'registered_kind' => $created['kind'],
+                'registered_id' => $created['id'],
+                'q' => $request->input('document_number') ?: $request->input('plate') ?: $request->input('first_name'),
+            ])
+            ->with('success', 'Ficha creada. Revisa la tarjeta e ingresa si corresponde.');
+    }
+
+    public function exitPage(): RedirectResponse
+    {
+        return redirect()->route('access.logs.index', ['tab' => 'registros']);
     }
 
     public function markExit(Request $request, AccessLog $accessLog): RedirectResponse
@@ -131,47 +181,12 @@ class AccessLogController extends Controller
             $log->update([
                 'exit_time' => now(),
                 'status' => 'completed',
-                'has_custody' => $request->boolean('has_custody'),
-                'custody_description' => $request->input('custody_description'),
-                'custody_receiver_name' => $request->input('custody_receiver_name'),
-                'custody_received_at' => $request->boolean('has_custody') ? now() : null,
             ]);
 
             return response()->json(['found' => true, 'message' => 'Salida registrada.']);
         }
 
-        $q = trim((string) ($request->input('document_number') ?: $request->input('qr_code') ?: ''));
-        if ($q === '') {
-            return response()->json(['error' => 'Indica documento o placa.'], 422);
-        }
-
-        $logs = AccessLog::query()
-            ->with(['visitor', 'structureMember.structure', 'vehicle', 'location'])
-            ->where('status', 'active')
-            ->where(function ($query) use ($q): void {
-                $query->where('qr_code', $q)
-                    ->orWhereHas('visitor', fn ($v) => $v->where('document_number', 'like', "%{$q}%"))
-                    ->orWhereHas('structureMember', fn ($m) => $m->where('document_number', 'like', "%{$q}%"))
-                    ->orWhereHas('vehicle', fn ($veh) => $veh->where('plate', 'like', "%{$q}%"));
-            })
-            ->latest('entry_time')
-            ->get();
-
-        if ($logs->isEmpty()) {
-            return response()->json(['found' => false, 'message' => 'Sin ingresos activos.', 'matches' => []]);
-        }
-
-        return response()->json([
-            'found' => true,
-            'matches' => $logs->map(fn (AccessLog $log): array => [
-                'id' => $log->id,
-                'name' => $log->subjectName(),
-                'destination' => $log->structureMember?->structure?->name ?? $log->location?->name ?? '—',
-                'entry_time' => $log->entry_time->format('H:i'),
-                'duration_hours' => $log->entry_time->diffInHours(now()),
-                'has_vehicle' => $log->vehicle?->plate,
-            ])->all(),
-        ]);
+        return response()->json(['error' => 'Usa Ingreso y salida → Movimiento.'], 422);
     }
 
     public function bulkExit(): RedirectResponse
@@ -181,6 +196,38 @@ class AccessLogController extends Controller
             'status' => 'completed',
         ]);
 
-        return back()->with('success', 'Salida masiva registrada.');
+        return redirect()->route('access.logs.index', ['tab' => 'registros'])->with('success', 'Salida masiva registrada.');
+    }
+
+    /** @return array<string, mixed> */
+    private function movementPayload(Request $request): array
+    {
+        $validated = $request->validate([
+            'subject_kind' => 'required|in:member,visitor,vehicle',
+            'with_vehicle' => 'nullable|boolean',
+            'member_id' => 'nullable|integer',
+            'visitor_id' => 'nullable|integer',
+            'vehicle_id' => 'nullable|integer',
+            'structure_id' => 'nullable|integer',
+            'member_type_id' => 'nullable|integer',
+            'first_name' => 'nullable|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'document_type' => 'nullable|string|max:20',
+            'document_number' => 'nullable|string|max:50',
+            'birth_date' => 'nullable|date',
+            'plate' => 'nullable|string|max:20',
+            'vehicle_brand' => 'nullable|string|max:80',
+            'vehicle_color' => 'nullable|string|max:40',
+            'purpose' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'person_photo_data' => 'nullable|string',
+            'vehicle_photo_data' => 'nullable|string',
+            'destination_structure_id' => 'nullable|integer',
+            'destination_text' => 'nullable|string|max:255',
+            'authorized_member_id' => 'nullable|integer',
+        ]);
+        $validated['with_vehicle'] = $request->boolean('with_vehicle');
+
+        return $validated;
     }
 }

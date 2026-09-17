@@ -24,7 +24,7 @@ class DashboardController extends Controller
                 $log->alert_long_stay = $hoursInside >= (int) config('access.alerts.long_stay_hours');
                 $log->person_name = $log->subjectName();
                 $log->person_type = $log->movementLabel();
-                $log->destination = $log->structureMember?->structure?->name ?? '—';
+                $log->destination = $log->destinationLabel();
 
                 return $log;
             });

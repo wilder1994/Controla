@@ -662,7 +662,7 @@ Descarga un Excel del censo para juntas. **Excluye menores de 18 años** (Ley 15
 
 ## Módulo Portería (`/access`) — línea base
 
-Consola del vigilante. Detalle: [`docs/PORTERIA.md`](docs/PORTERIA.md). Layout `layouts.access`. Pánico: `POST /access/ops/panic`. Ingreso/salida unificado (`structure_members` + visitantes). Menú: Resumen, Ingreso y salida, Personas, Vehículos, Mascotas, Correspondencia, Autorizaciones, Reservas, Minutas, Lista de bloqueo, Instalaciones, Visitantes, Turnos. El vigilante: una puerta se asigna sola; si hay varias las elige al abrir turno. Operar portería no pide puerta.
+Consola del vigilante. Detalle: [`docs/PORTERIA.md`](docs/PORTERIA.md). Layout `layouts.access`. Pánico: `POST /access/ops/panic`. Ingreso y salida: pestaña Movimiento (busca → Ingresa/Sale; foto en ficha) y pestaña Registros. Menú: Resumen, Ingreso y salida, Personas, Vehículos, Mascotas, Correspondencia, Autorizaciones, Reservas, Minutas, Lista de bloqueo, Instalaciones, Visitantes, Turnos. El vigilante: una puerta se asigna sola; si hay varias las elige al abrir turno. Operar portería no pide puerta.
 
 Las pantallas legacy (`buildings`/`residents`, `/access/operations`) redirigen o quedan fuera del menú.
 

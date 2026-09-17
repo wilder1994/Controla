@@ -1,8 +1,8 @@
 <x-access-layout title="Resumen">
     <div class="space-y-6">
         <div class="flex flex-wrap gap-2 justify-end">
-            <a href="{{ route('access.logs.entry') }}" class="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg">Ingreso</a>
-            <a href="{{ route('access.logs.exit.page') }}" class="inline-flex items-center px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg">Salida</a>
+            <a href="{{ route('access.logs.index', ['tab' => 'movimiento']) }}" class="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg">Movimiento</a>
+            <a href="{{ route('access.logs.index', ['tab' => 'registros']) }}" class="inline-flex items-center px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg">Registros</a>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">

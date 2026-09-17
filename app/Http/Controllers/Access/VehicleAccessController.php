@@ -19,7 +19,7 @@ class VehicleAccessController extends Controller
 
     public function entry()
     {
-        return redirect()->route('access.logs.entry', ['with_vehicle' => 1]);
+        return redirect()->route('access.logs.index', ['tab' => 'movimiento']);
     }
 
     public function storeEntry(Request $request)

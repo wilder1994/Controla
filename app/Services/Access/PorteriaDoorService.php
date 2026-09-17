@@ -70,4 +70,9 @@ final class PorteriaDoorService
 
         return $this->current($request);
     }
+
+    public function operatingOrFirst(Request $request): ?Location
+    {
+        return $this->bindSingleIfOnlyOne($request) ?? $this->activeDoors()->first();
+    }
 }

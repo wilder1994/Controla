@@ -45,8 +45,13 @@ Resumen · Ingreso y salida · Personas · Vehículos · Mascotas · Corresponde
 
 ## Ingreso y salida
 
-Una sola pantalla: peatón o vehículo, censo (`structure_members`) o visitante. Busca documento/nombre/placa; si no existe, se da de alta al vuelo (visitante por documento; persona del censo exige nodo). Fotos opcionales con cámara del PC (`photo_path` / `vehicle_photo_path` en `access_logs`). La puerta es la del turno/sesión. Bloqueados no entran.
+`/access/logs` tiene **dos pestañas**.
 
-Personas / vehículos / mascotas / instalaciones leen el censo del cliente (no `employees`). Visitantes: pestaña personas y pestaña vehículos de visita. Autorizaciones: `visitor_pre_authorizations`. Reservas: zonas comunes.
+1. **Movimiento.** Una búsqueda (placa, documento o nombre). La tarjeta muestra foto de la **ficha** si existe. **Ingresa** si está afuera, **Sale** si está adentro, **Cancelar**. Censo entra/sale directo. Visitante al ingresar: último nodo/autorizador (editable: nodo + miembro, o destino en texto). Si no hay ficha: **¿Registrar?** (foto opcional solo ahí; se guarda en `structure_members` / `visitors` / `vehicles`, no en cada movimiento).
+2. **Registros.** Movimientos del día o rango, con filtros personas/vehículos, vigilante y buscador. Columnas: entrada, salida, quién, tipo, foto, destino, autoriza, vigilante, estado.
+
+Destino: `destination_structure_id` / `destination_text`. Autorizador del predio: `authorized_member_id`. El vigilante queda en `host_id`. Puerta: turno/sesión o primera activa (`operatingOrFirst`). Bloqueados no entran.
+
+Personas / vehículos / mascotas / instalaciones leen el censo (no `employees`). Visitantes: pestaña personas y vehículos de visita. Autorizaciones: `visitor_pre_authorizations`. Reservas: zonas comunes.
 
 Pánico: ver arriba. Tests: `PorteriaDoorAndPanicTest`, `PorteriaConsoleTest`.

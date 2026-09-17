@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Access;
 
+use App\Models\AccessLog;
 use App\Models\MemberType;
 use App\Models\Structure;
 use App\Models\StructureMember;
 use App\Models\Vehicle;
 use App\Models\Visitor;
-use App\Models\VisitorPreAuthorization;
 use App\Support\Privacy\MinorPersonalData;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 final class LookupPorteriaSubjectService
 {
@@ -22,7 +23,7 @@ final class LookupPorteriaSubjectService
     ) {}
 
     /**
-     * @return array{q: string, members: list<array<string, mixed>>, visitors: list<array<string, mixed>>, vehicles: list<array<string, mixed>>, authorizations: list<array<string, mixed>>}
+     * @return array{q: string, hits: list<array<string, mixed>>}
      */
     public function search(string $q): array
     {
@@ -31,104 +32,40 @@ final class LookupPorteriaSubjectService
         $user = auth()->user();
 
         if ($q === '' || $clientId < 1) {
-            return ['q' => $q, 'members' => [], 'visitors' => [], 'vehicles' => [], 'authorizations' => []];
+            return ['q' => $q, 'hits' => []];
         }
 
-        $members = StructureMember::query()
-            ->with(['structure.installation', 'memberType'])
+        $hits = [];
+
+        foreach ($this->members($clientId, $q, $user) as $row) {
+            $hits[] = $row;
+        }
+        foreach ($this->visitors($clientId, $q) as $row) {
+            $hits[] = $row;
+        }
+        foreach ($this->vehicles($clientId, $q) as $row) {
+            $hits[] = $row;
+        }
+
+        return ['q' => $q, 'hits' => $hits];
+    }
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    public function hostsForNode(int $structureId): array
+    {
+        $clientId = (int) $this->tenant->clientId();
+
+        return StructureMember::query()
             ->where('client_id', $clientId)
+            ->where('structure_id', $structureId)
             ->where('is_active', true)
-            ->where(function ($query) use ($q): void {
-                $query->where('first_name', 'like', "%{$q}%")
-                    ->orWhere('last_name', 'like', "%{$q}%")
-                    ->orWhere('document_number', 'like', "%{$q}%");
-            })
-            ->limit(8)
+            ->orderBy('last_name')
+            ->limit(40)
             ->get()
-            ->map(function (StructureMember $member) use ($user): array {
-                $block = $this->blocklist->checkPerson(documentNumber: $member->document_number);
-
-                return [
-                    'id' => $member->id,
-                    'kind' => 'member',
-                    'name' => $member->full_name,
-                    'document' => MinorPersonalData::documentForDisplay($user, $member->birth_date, $member->document_type, $member->document_number),
-                    'node' => $member->structure?->name,
-                    'installation' => $member->structure?->installation?->name,
-                    'blocked' => $block !== null,
-                    'block_reason' => $block?->reason,
-                ];
-            })
+            ->map(fn (StructureMember $m): array => ['id' => $m->id, 'name' => $m->full_name])
             ->all();
-
-        $visitors = Visitor::query()
-            ->where('client_id', $clientId)
-            ->where(function ($query) use ($q): void {
-                $query->where('first_name', 'like', "%{$q}%")
-                    ->orWhere('last_name', 'like', "%{$q}%")
-                    ->orWhere('document_number', 'like', "%{$q}%");
-            })
-            ->limit(8)
-            ->get()
-            ->map(function (Visitor $visitor): array {
-                $block = $this->blocklist->checkPerson(visitor: $visitor);
-
-                return [
-                    'id' => $visitor->id,
-                    'kind' => 'visitor',
-                    'name' => $visitor->full_name,
-                    'document' => $visitor->displayedDocument(),
-                    'blocked' => $block !== null,
-                    'block_reason' => $block?->reason,
-                ];
-            })
-            ->all();
-
-        $plate = strtoupper($q);
-        $vehicles = Vehicle::query()
-            ->with(['structure', 'visitor'])
-            ->where('client_id', $clientId)
-            ->where('plate', 'like', "%{$plate}%")
-            ->limit(8)
-            ->get()
-            ->map(function (Vehicle $vehicle): array {
-                $block = $this->blocklist->checkVehicle(vehicle: $vehicle);
-                $census = $vehicle->structure_id !== null;
-
-                return [
-                    'id' => $vehicle->id,
-                    'kind' => 'vehicle',
-                    'plate' => $vehicle->plate,
-                    'label' => trim($vehicle->brand.' '.$vehicle->model),
-                    'census' => $census,
-                    'owner' => $census ? ($vehicle->structure?->name) : ($vehicle->visitor?->full_name),
-                    'blocked' => $block !== null,
-                    'block_reason' => $block?->reason,
-                ];
-            })
-            ->all();
-
-        $authorizations = VisitorPreAuthorization::query()
-            ->with(['structure', 'member'])
-            ->where('client_id', $clientId)
-            ->whereDate('valid_for_date', today())
-            ->where(function ($query) use ($q): void {
-                $query->where('visitor_name', 'like', "%{$q}%")
-                    ->orWhere('visitor_document', 'like', "%{$q}%");
-            })
-            ->limit(8)
-            ->get()
-            ->map(fn (VisitorPreAuthorization $row): array => [
-                'id' => $row->id,
-                'kind' => 'authorization',
-                'name' => $row->visitor_name,
-                'document' => $row->visitor_document,
-                'host' => $row->member?->full_name,
-                'node' => $row->structure?->name,
-            ])
-            ->all();
-
-        return compact('q', 'members', 'visitors', 'vehicles', 'authorizations');
     }
 
     /** @return Collection<int, Structure> */
@@ -151,5 +88,193 @@ final class LookupPorteriaSubjectService
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function members(int $clientId, string $q, mixed $user): array
+    {
+        return StructureMember::query()
+            ->with(['structure.installation'])
+            ->where('client_id', $clientId)
+            ->where('is_active', true)
+            ->where(function ($query) use ($q): void {
+                $query->where('first_name', 'like', "%{$q}%")
+                    ->orWhere('last_name', 'like', "%{$q}%")
+                    ->orWhere('document_number', 'like', "%{$q}%");
+            })
+            ->limit(8)
+            ->get()
+            ->map(function (StructureMember $member) use ($user): array {
+                $block = $this->blocklist->checkPerson(documentNumber: $member->document_number);
+                $inside = $this->activeLog('structure_member_id', (int) $member->id);
+
+                return $this->card(
+                    kind: 'member',
+                    id: (int) $member->id,
+                    title: $member->full_name,
+                    document: MinorPersonalData::documentForDisplay($user, $member->birth_date, $member->document_type, $member->document_number),
+                    census: true,
+                    photo: $member->photo_path,
+                    node: $member->structure?->name,
+                    blocked: $block !== null,
+                    blockReason: $block?->reason,
+                    inside: $inside,
+                );
+            })
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function visitors(int $clientId, string $q): array
+    {
+        return Visitor::query()
+            ->where('client_id', $clientId)
+            ->where(function ($query) use ($q): void {
+                $query->where('first_name', 'like', "%{$q}%")
+                    ->orWhere('last_name', 'like', "%{$q}%")
+                    ->orWhere('document_number', 'like', "%{$q}%");
+            })
+            ->limit(8)
+            ->get()
+            ->map(function (Visitor $visitor): array {
+                $block = $this->blocklist->checkPerson(visitor: $visitor);
+                $inside = $this->activeLog('visitor_id', (int) $visitor->id);
+                $last = $this->lastVisit('visitor_id', (int) $visitor->id);
+
+                return $this->card(
+                    kind: 'visitor',
+                    id: (int) $visitor->id,
+                    title: $visitor->full_name,
+                    document: $visitor->displayedDocument(),
+                    census: false,
+                    photo: $visitor->photo_path,
+                    blocked: $block !== null,
+                    blockReason: $block?->reason,
+                    inside: $inside,
+                    last: $last,
+                );
+            })
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function vehicles(int $clientId, string $q): array
+    {
+        $plate = strtoupper($q);
+
+        return Vehicle::query()
+            ->with(['structure', 'visitor'])
+            ->where('client_id', $clientId)
+            ->where('plate', 'like', "%{$plate}%")
+            ->limit(8)
+            ->get()
+            ->map(function (Vehicle $vehicle): array {
+                $block = $this->blocklist->checkVehicle(vehicle: $vehicle);
+                $census = $vehicle->structure_id !== null;
+                $inside = $this->activeLog('vehicle_id', (int) $vehicle->id);
+                $last = $census ? null : $this->lastVisit('vehicle_id', (int) $vehicle->id);
+
+                return $this->card(
+                    kind: 'vehicle',
+                    id: (int) $vehicle->id,
+                    title: $vehicle->plate,
+                    document: trim($vehicle->brand.' '.$vehicle->color),
+                    census: $census,
+                    photo: $vehicle->photo_path,
+                    plate: $vehicle->plate,
+                    node: $census ? $vehicle->structure?->name : $vehicle->visitor?->full_name,
+                    visitorId: $vehicle->visitor_id ? (int) $vehicle->visitor_id : null,
+                    blocked: $block !== null,
+                    blockReason: $block?->reason,
+                    inside: $inside,
+                    last: $last,
+                );
+            })
+            ->all();
+    }
+
+    private function activeLog(string $column, int $id): ?AccessLog
+    {
+        return AccessLog::query()
+            ->where('status', 'active')
+            ->where($column, $id)
+            ->latest('entry_time')
+            ->first();
+    }
+
+    /**
+     * @return array{destination_structure_id: ?int, destination_name: ?string, destination_text: ?string, authorized_member_id: ?int, authorized_name: ?string}|null
+     */
+    private function lastVisit(string $column, int $id): ?array
+    {
+        $log = AccessLog::query()
+            ->with(['destinationStructure', 'authorizedMember'])
+            ->where($column, $id)
+            ->latest('id')
+            ->first();
+
+        if ($log === null) {
+            return null;
+        }
+
+        return [
+            'destination_structure_id' => $log->destination_structure_id,
+            'destination_name' => $log->destinationStructure?->name,
+            'destination_text' => $log->destination_text,
+            'authorized_member_id' => $log->authorized_member_id,
+            'authorized_name' => $log->authorizedMember?->full_name,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $last
+     * @return array<string, mixed>
+     */
+    private function card(
+        string $kind,
+        int $id,
+        string $title,
+        string $document,
+        bool $census,
+        ?string $photo,
+        ?AccessLog $inside,
+        bool $blocked,
+        ?string $blockReason,
+        ?string $node = null,
+        ?string $plate = null,
+        ?int $visitorId = null,
+        ?array $last = null,
+    ): array {
+        return [
+            'kind' => $kind,
+            'id' => $id,
+            'title' => $title,
+            'document' => $document,
+            'census' => $census,
+            'photo_url' => $this->photoUrl($photo),
+            'node' => $node,
+            'plate' => $plate,
+            'visitor_id' => $visitorId,
+            'blocked' => $blocked,
+            'block_reason' => $blockReason,
+            'inside' => $inside !== null,
+            'active_log_id' => $inside?->id,
+            'last' => $last,
+        ];
+    }
+
+    private function photoUrl(?string $path): ?string
+    {
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        return Storage::disk('public')->url($path);
     }
 }

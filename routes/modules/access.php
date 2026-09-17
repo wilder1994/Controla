@@ -81,6 +81,9 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
     Route::get('/logs/lookup', [AccessLogController::class, 'lookup'])
         ->middleware('shift.open')
         ->name('logs.lookup');
+    Route::get('/logs/hosts', [AccessLogController::class, 'hosts'])
+        ->middleware('shift.open')
+        ->name('logs.hosts');
     Route::get('/logs', [AccessLogController::class, 'index'])
         ->middleware('shift.open')
         ->name('logs.index');
@@ -93,6 +96,12 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
     Route::post('/logs/entry', [AccessLogController::class, 'storeEntry'])
         ->middleware('shift.open')
         ->name('logs.entry.store');
+    Route::post('/logs/move', [AccessLogController::class, 'storeMove'])
+        ->middleware('shift.open')
+        ->name('logs.move');
+    Route::post('/logs/register', [AccessLogController::class, 'storeRegister'])
+        ->middleware('shift.open')
+        ->name('logs.register');
     Route::patch('/logs/{accessLog}/exit', [AccessLogController::class, 'markExit'])
         ->middleware('shift.open')
         ->name('logs.exit');

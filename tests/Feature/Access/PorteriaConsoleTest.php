@@ -57,38 +57,63 @@ final class PorteriaConsoleTest extends TestCase
         $session[PorteriaDoorService::SESSION_KEY] = $door->id;
 
         $this->actingAs($vigilante)->withSession($session)
-            ->post(route('access.logs.entry.store'), [
+            ->post(route('access.logs.register'), [
                 'subject_kind' => 'visitor',
                 'first_name' => 'Ana',
                 'last_name' => 'Visitante',
                 'document_type' => 'CC',
                 'document_number' => '1099001122',
-                'purpose' => 'Entrega',
             ])
-            ->assertRedirect(route('access.logs.index'));
+            ->assertRedirect();
 
         $this->assertDatabaseHas('visitors', [
             'client_id' => $client->id,
             'document_number' => '1099001122',
         ]);
         $visitor = Visitor::query()->where('document_number', '1099001122')->firstOrFail();
+        $this->assertFalse(AccessLog::query()->where('visitor_id', $visitor->id)->exists());
+        $node = \App\Models\Structure::query()->where('client_id', $client->id)->firstOrFail();
+        $authorizer = StructureMember::query()->where('client_id', $client->id)->firstOrFail();
+
+        $this->actingAs($vigilante)->withSession($session)
+            ->post(route('access.logs.move'), [
+                'kind' => 'visitor',
+                'id' => $visitor->id,
+                'action' => 'enter',
+                'destination_structure_id' => $node->id,
+                'authorized_member_id' => $authorizer->id,
+            ])
+            ->assertRedirect(route('access.logs.index', ['tab' => 'movimiento']));
+
         $this->assertDatabaseHas('access_logs', [
             'visitor_id' => $visitor->id,
             'location_id' => $door->id,
             'status' => 'active',
             'access_type' => 'visitor',
+            'destination_structure_id' => $node->id,
+            'authorized_member_id' => $authorizer->id,
         ]);
 
         $this->actingAs($vigilante)->withSession($session)
             ->getJson(route('access.logs.lookup', ['q' => '1099001122']))
             ->assertOk()
-            ->assertJsonPath('visitors.0.name', 'Ana Visitante');
+            ->assertJsonPath('hits.0.title', 'Ana Visitante')
+            ->assertJsonPath('hits.0.inside', true);
 
-        $log = AccessLog::query()->where('visitor_id', $visitor->id)->firstOrFail();
         $this->actingAs($vigilante)->withSession($session)
-            ->patch(route('access.logs.exit', $log))
+            ->post(route('access.logs.move'), [
+                'kind' => 'visitor',
+                'id' => $visitor->id,
+                'action' => 'exit',
+            ])
             ->assertRedirect();
-        $this->assertSame('completed', $log->fresh()->status);
+        $this->assertSame('completed', AccessLog::query()->where('visitor_id', $visitor->id)->firstOrFail()->status);
+
+        $this->actingAs($vigilante)->withSession($session)
+            ->get(route('access.logs.index', ['tab' => 'registros', 'from' => now()->toDateString()]))
+            ->assertOk()
+            ->assertSee('Ana Visitante')
+            ->assertSee($authorizer->first_name);
     }
 
     /** @return array{0: User, 1: Client} */

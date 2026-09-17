@@ -12,6 +12,7 @@ class AccessLog extends Model
 
     protected $fillable = [
         'client_id', 'visitor_id', 'structure_member_id', 'user_id', 'resident_id', 'housing_unit_id', 'vehicle_id', 'host_id', 'location_id',
+        'destination_structure_id', 'destination_text', 'authorized_member_id',
         'authorized_by', 'access_type', 'entry_time', 'exit_time', 'status',
         'purpose', 'company_visited', 'screening_temp', 'qr_code', 'notes',
         'photo_path', 'vehicle_photo_path',
@@ -69,6 +70,16 @@ class AccessLog extends Model
         return $this->belongsTo(Location::class);
     }
 
+    public function destinationStructure()
+    {
+        return $this->belongsTo(Structure::class, 'destination_structure_id');
+    }
+
+    public function authorizedMember()
+    {
+        return $this->belongsTo(StructureMember::class, 'authorized_member_id');
+    }
+
     public function authorizer()
     {
         return $this->belongsTo(User::class, 'authorized_by');
@@ -91,5 +102,29 @@ class AccessLog extends Model
             'resident', 'member' => 'Censo · peatón',
             default => 'Visitante · peatón',
         };
+    }
+
+    public function destinationLabel(): string
+    {
+        return $this->destinationStructure?->name
+            ?? (is_string($this->destination_text) && $this->destination_text !== '' ? $this->destination_text : '—');
+    }
+
+    public function isVehicleMovement(): bool
+    {
+        return in_array($this->access_type, ['visitor_vehicle', 'member_vehicle', 'resident_vehicle'], true);
+    }
+
+    public function fichaPhotoUrl(): ?string
+    {
+        $path = $this->isVehicleMovement()
+            ? ($this->vehicle?->photo_path ?: $this->vehicle_photo_path)
+            : ($this->structureMember?->photo_path ?: $this->visitor?->photo_path ?: $this->photo_path);
+
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
     }
 }

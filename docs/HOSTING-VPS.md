@@ -72,6 +72,8 @@ Mapa Supervisión + ficha de turno (16 sep 2026): En vivo sin filtros; ruta GPS 
 
 Portería consola vigilante (17 sep 2026): pánico `POST /access/ops/panic`. Puerta/turno solo el `guardia`; Operar portería entra al Resumen. Ingreso unificado. Pull + `migrate --force` si falta `2026_09_17_150000` + `view:cache` + `route:cache`. Sin seeder ni `npm` si el HTML ya está. Artisan como `wcodex-controla`.
 
+Ingreso/salida dos pestañas (17 sep 2026): Movimiento (busca → Ingresa/Sale) + Registros (filtros). Migrate `2026_09_17_180000` (`destination_*`, `authorized_member_id`). Pull + `migrate --force` + `npm run build` + `view:cache` + `route:cache`. Sin seeder. Artisan como `wcodex-controla`.
+
 Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON al cambio (Reverb) y sondeo cada 12 s si el socket no está conectado. Crear folio también refresca (alerta Observatorio). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
 
 Para WebSocket (si no, el sondeo basta):
