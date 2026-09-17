@@ -33,6 +33,19 @@ final class PorteriaDoorAndPanicTest extends TestCase
             ->assertRedirect(route('access.turnos.open'));
     }
 
+    public function test_company_admin_operating_porteria_skips_door_picker(): void
+    {
+        $this->seedWithPilot();
+        $client = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $admin = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->withSession($this->tenancy($client))
+            ->get(route('access.dashboard'))
+            ->assertOk()
+            ->assertSee('Personas dentro');
+    }
+
     public function test_opening_shift_requires_a_door_and_panic_records_user_and_door(): void
     {
         [$vigilante, $client] = $this->palmasVigilante();

@@ -70,7 +70,7 @@ Modalidades de puesto (15 sep 2026): Ajustes → Modalidades (`supervisor_post_m
 
 Mapa Supervisión + ficha de turno (16 sep 2026): En vivo sin filtros; ruta GPS al clic; Historial solo cerrados (una ruta Roads). Ficha `kind=shift` se congela en `supervisor_shifts.sheet_snapshot` al cierre. Pull + `migrate --force` + `view:cache` + `route:cache`. Sin seeder ni `npm`. Artisan como `wcodex-controla`.
 
-Portería consola vigilante (17 sep 2026): pánico `POST /access/ops/panic` (usuario + puerta). Ingreso/salida unificado (censo + visitante, peatón + vehículo). Menú Personas/Vehículos/Mascotas/Autorizaciones/Reservas/Visitantes. Pull + `migrate --force` (`2026_09_17_150000` en `access_logs`) + `RoleAndPermissionSeeder` + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
+Portería consola vigilante (17 sep 2026): pánico `POST /access/ops/panic`. Puerta/turno solo el `guardia`; Operar portería entra al Resumen. Ingreso unificado. Pull + `migrate --force` si falta `2026_09_17_150000` + `view:cache` + `route:cache`. Sin seeder ni `npm` si el HTML ya está. Artisan como `wcodex-controla`.
 
 Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON al cambio (Reverb) y sondeo cada 12 s si el socket no está conectado. Crear folio también refresca (alerta Observatorio). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
 

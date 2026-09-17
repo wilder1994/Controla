@@ -17,7 +17,8 @@ final class EnsurePorteriaDoor
 
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() === null) {
+        $user = $request->user();
+        if ($user === null || ! $user->hasRole('guardia')) {
             return $next($request);
         }
 

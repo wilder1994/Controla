@@ -51,7 +51,7 @@ final class OperationalAlertController extends Controller
         $lng = isset($data['longitude']) ? (float) $data['longitude'] : null;
         $note = (string) ($data['note'] ?? '');
 
-        if ($request->routeIs('access.ops.panic')) {
+        if ($request->routeIs('access.ops.panic') && $user->hasRole('guardia')) {
             $door = $this->porteriaDoors->bindSingleIfOnlyOne($request);
             if ($door === null) {
                 if ($request->expectsJson()) {
@@ -64,6 +64,13 @@ final class OperationalAlertController extends Controller
             }
 
             $this->panic->fromPorteria($user, $door, $lat, $lng, $note);
+        } elseif ($request->routeIs('access.ops.panic')) {
+            $door = $this->porteriaDoors->bindSingleIfOnlyOne($request);
+            if ($door !== null) {
+                $this->panic->fromPorteria($user, $door, $lat, $lng, $note);
+            } else {
+                $this->panic->fromClientPanel($user, $this->tenantContext, $lat, $lng, $note);
+            }
         } elseif ($user->hasAnyRole(['company-admin', 'colaborador']) && $this->actingCompany->id($user) !== null) {
             $this->panic->execute($user, $lat, $lng, $note);
         } else {

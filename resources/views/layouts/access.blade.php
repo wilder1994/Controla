@@ -53,7 +53,7 @@
                     @include('partials.ops-live-alerts', [
                         'opsPoll' => auth()->check() ? route('access.ops.alerts') : null,
                         'opsPanicUrl' => auth()->check() ? route('access.ops.panic') : '',
-                        'showPanic' => ! empty($operatingDoor),
+                        'showPanic' => ! auth()->user()?->hasRole('guardia') || ! empty($operatingDoor),
                     ])
                     @include('partials.sidebar-user')
                 </div>

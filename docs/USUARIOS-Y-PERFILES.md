@@ -329,7 +329,7 @@ Vistas empresa (crear = editar): `modules/company/users/partials/form.blade.php`
 Detalle: [`PORTERIA.md`](PORTERIA.md).
 
 - Firma de **revista / minuta** por código en `/access` (tipo Revista + `users.supervisor_code` de 6 dígitos, o catálogo `supervision_codes`). Válido aunque el cliente también tenga Supervisión de campo.
-- Turno abierto del vigilante: `guard_shifts` + puerta (`/access/turnos`). Una puerta se asigna sola; varias se eligen al abrir.
+- Turno abierto del vigilante: `guard_shifts` + puerta (`/access/turnos`). Una puerta se asigna sola; varias las elige el vigilante al abrir. Quien opera desde el expediente no pasa por esa pantalla.
 - Pánico: `POST /access/ops/panic` (mismo overlay que cliente/supervisor). Ya no hay pánico en minuta.
 - Turno del **supervisor** (Supervisión): `supervisor_shifts` + PWA. Distinto del turno de portería.
 

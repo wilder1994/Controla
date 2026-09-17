@@ -20,13 +20,13 @@ Detalle de fichas de empresa: [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md). 
 
 ## Puerta de operación
 
-Tabla `locations` (no confundir con **puesto**).
+Tabla `locations` (no confundir con **puesto**). Solo el **vigilante** (`guardia`) al entrar a `/access`. **Operar portería** desde el expediente no pide puerta ni turno.
 
-1. **Una puerta activa:** el sistema la liga al usuario. No pide elegir.
-2. **Varias puertas:** al entrar (o al abrir turno) hay que **elegir cuál se opera**. Queda en el turno (`guard_shifts.location_id`) y en sesión.
-3. Sin puertas activas no hay portería.
+1. **Una puerta activa:** el sistema la liga al vigilante. No pide elegir.
+2. **Varias puertas:** el vigilante elige al abrir turno. Queda en `guard_shifts.location_id` y en sesión.
+3. Sin puertas activas el vigilante no opera.
 
-El pánico usa **ese usuario + esa puerta** (instalación y nombre de puerta en `operational_alerts.payload`).
+El pánico del vigilante usa **ese usuario + esa puerta**. El admin de empresa en portería dispara pánico del cliente (sin elegir puerta).
 
 ## Pánico
 

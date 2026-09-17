@@ -8,7 +8,7 @@ Referencia oficial del sistema visual. **Panel empresa** (`/company`, acento ind
 
 **Layouts:** `layouts/company.blade.php` · `layouts/admin.blade.php` · `layouts/client.blade.php` · `layouts/access.blade.php`
 
-Portería (`/access`): menú vigilante (Resumen, Ingreso y salida, censo, pánico `ops-live-alerts`). Una puerta se fija sola; varias → abrir turno. [`PORTERIA.md`](PORTERIA.md).
+Portería (`/access`): menú vigilante (Resumen, Ingreso y salida, censo, pánico `ops-live-alerts`). Puerta/turno solo el vigilante; Operar portería entra al Resumen. [`PORTERIA.md`](PORTERIA.md).
 
 **Sidebar cliente:** Resumen · Instalaciones · Observatorio · Personas · Usuarios · Accesos · Ajustes (fijos). Opcionales en ficha empresa (**Gestión de módulos**): Vehículos · Mascotas · Autorizaciones · Puertas. Zonas comunes y Documentos siguen por permiso / flag.
 
