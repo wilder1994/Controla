@@ -298,6 +298,7 @@ final class CommitParafiscalPlanillaService
             if ($document->hasFile()) {
                 $path = StoredFileResponder::absolute((string) $document->disk_path);
                 if (is_file($path)) {
+                    app(RenderSpreadsheetPdfPreviewService::class)->forget($path);
                     File::delete($path);
                 }
             }

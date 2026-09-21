@@ -37,5 +37,6 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="SUPERVISION_PWA_URL" value="http://controla_supervision.test"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="LIBREOFFICE_BIN" value="off"/>
     </php>
 </phpunit>

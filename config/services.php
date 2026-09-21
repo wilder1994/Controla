@@ -31,4 +31,8 @@ return [
         ],
     ],
 
+    'libreoffice' => [
+        'binary' => env('LIBREOFFICE_BIN'),
+    ],
+
 ];

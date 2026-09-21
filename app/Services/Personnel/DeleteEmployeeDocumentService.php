@@ -23,6 +23,7 @@ final class DeleteEmployeeDocumentService
 
         $absolute = StoredFileResponder::absolute((string) $document->disk_path);
         if (is_file($absolute)) {
+            app(RenderSpreadsheetPdfPreviewService::class)->forget($absolute);
             File::delete($absolute);
         }
 

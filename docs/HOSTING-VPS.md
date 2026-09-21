@@ -76,6 +76,8 @@ Ingreso/salida dos pestañas (17 sep 2026): Movimiento (busca → Ingresa/Sale) 
 
 Resumen servicios vs revistas (21 sep 2026): puesto = servicio. Novedades de servicio = cambios de puesto + observaciones. Revistas en contenedor aparte. Pull + `npm run build` + `view:cache` + `route:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 
+Preview planilla parafiscal (21 sep 2026): LibreOffice convierte el recorte `.xlsx` a PDF (cache `*.xlsx.preview.pdf`). Apt una vez: `apt-get install -y --no-install-recommends libreoffice-calc fonts-liberation`. Usuario `wcodex-controla` debe poder ejecutar `/usr/bin/soffice`. Sin `soffice` no hay 500: tabla HTML + aviso. Pull + `view:cache` + `config:cache`. Sin migrate ni `npm`. Artisan como `wcodex-controla`.
+
 Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON al cambio (Reverb) y sondeo cada 12 s si el socket no está conectado. Crear folio también refresca (alerta Observatorio). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
 
 Para WebSocket (si no, el sondeo basta):
