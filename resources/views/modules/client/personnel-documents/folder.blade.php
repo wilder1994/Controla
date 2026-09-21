@@ -3,6 +3,7 @@
         'employee' => $employee,
         'indexedChecklists' => $indexedChecklists,
         'canUpload' => false,
+        'canDownload' => auth()->user()?->can('company.documents.manage') ?? false,
         'cargar' => false,
         'indexRoute' => route('client.personnel-documents.index'),
         'previewRoute' => 'client.personnel-documents.preview',

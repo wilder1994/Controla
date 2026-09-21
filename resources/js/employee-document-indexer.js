@@ -22,6 +22,7 @@ function initDocumentPreview() {
         title.textContent = name;
         if (download) {
             download.href = previewDownloadUrl(url);
+            download.hidden = false;
         }
         frame.src = url;
         layer.hidden = false;

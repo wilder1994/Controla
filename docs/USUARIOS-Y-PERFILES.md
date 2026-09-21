@@ -2,7 +2,7 @@
 
 Gestión de usuarios web (`users`) por panel, perfil de empresa con geolocalización y datos de clientes.
 
-**Última actualización:** 17 septiembre 2026
+**Última actualización:** 21 septiembre 2026
 
 La **ficha de empleado** (listado, 4 bloques SJ-SIG, foto, Excel WM + extras) vive en el sidebar **Empleados**. Es gente de la **empresa**, no del censo del predio. El Excel **no** crea usuario: solo la ficha de empleado. Reimportar el mismo documento **actualiza** la ficha (no duplica). Cargos, tipos y catálogos de Supervisión de campo: **Ajustes**. Ver [`EMPLEADOS-Y-CARGOS.md`](EMPLEADOS-Y-CARGOS.md), [`PORTERIA.md`](PORTERIA.md) y [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md). Este documento cubre **usuarios** (`users`): login y roles. Login y formularios: mensajes en español al centro de la pantalla ([`DISENO-UI-CONTROLA.md`](DISENO-UI-CONTROLA.md)).
 
@@ -181,7 +181,7 @@ Reglas:
 - Clientes Ver/Gestionar a nivel empresa abre `/company/clients` (listado y ficha). Gestionar también crea/edita. Sin esa rama el menú se veía y el listado respondía 403.
 - Observatorio o Supervisión a nivel empresa abre **todos** los clientes e instalaciones de la empresa (detalle de evento incluido).
 - Grant a un cliente abre las sedes de ese cliente; grant a una sede solo esa.
-- Empleados: `company.employees.view` / `manage` (`EmployeePolicy`). Documentos: `company.documents.view` / `manage` (indexar PDF y carga masiva de planilla parafiscal = manage).
+- Empleados: `company.employees.view` / `manage` (`EmployeePolicy`). Documentos: `company.documents.view` / `manage` (indexar, carga masiva y **descargar** = manage; Ver no descarga).
 - Usuarios → Gestionar no incluye promover a admin empresa.
 
 ---
@@ -217,7 +217,7 @@ Reglas:
 | `platform.users.view` / `platform.users.manage` | Listado y CRUD global |
 | `company.users.view` / `company.users.assign` | Ver / crear-editar usuarios en panel empresa |
 | `company.employees.view` / `company.employees.manage` | Listar / mutar fichas de empleados |
-| `company.documents.view` / `company.documents.manage` | Ver carpetas / indexar lotes PDF y carga masiva de planilla parafiscal |
+| `company.documents.view` / `company.documents.manage` | Ver carpetas y preview / indexar, subir y **descargar** |
 | `company.billing.manage` | Facturación (matriz) |
 | `company.profile.manage` | **Mis datos** (perfil legal/geo) |
 | `company.downloads.view` | Descargas PWA/APK |

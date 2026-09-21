@@ -147,13 +147,13 @@ Route::middleware(['auth', 'password.changed', 'active', 'company', 'tenant.unsc
         Route::middleware('permission:company.documents.view|company.documents.manage|company.settings.manage')->group(function () {
             Route::get('/documents', [PersonnelDocumentController::class, 'index'])->name('personnel-documents.index');
             Route::get('/documents/file/{document}/preview', [PersonnelDocumentController::class, 'preview'])->name('personnel-documents.preview');
-            Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
             Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->whereNumber('employee')->name('personnel-documents.folder');
             Route::get('/documents/{employee}/batches/{batch}', [PersonnelDocumentController::class, 'batchIndex'])->whereNumber('employee')->name('personnel-documents.batch.index');
             Route::get('/documents/{employee}/batches/{batch}/preview', [PersonnelDocumentController::class, 'previewBatch'])->whereNumber('employee')->name('personnel-documents.batch.preview');
         });
 
         Route::middleware('permission:company.documents.manage|company.settings.manage')->group(function () {
+            Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
             Route::get('/documents/parafiscales/preview', [PersonnelDocumentController::class, 'showParafiscalPreview'])->name('personnel-documents.parafiscales.preview');
             Route::post('/documents/parafiscales/preview', [PersonnelDocumentController::class, 'storeParafiscalPreview'])->name('personnel-documents.parafiscales.preview.store');
             Route::post('/documents/parafiscales/commit', [PersonnelDocumentController::class, 'commitParafiscal'])->name('personnel-documents.parafiscales.commit');

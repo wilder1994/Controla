@@ -184,7 +184,7 @@ Pestañas de ficha empresa (`/company/clients/{id}`): **Cliente** | **Resumen** 
 - Cliente: ficha (incluye **inicio de servicio**) + **Operar portería** / **Operar cliente** / **Operar instalación** (una sede o selector), **Editar**, **Instalaciones y puestos**, **Puertas** (solo Accesos), **Gestión de módulos**.
 - Sitio: instalaciones + puestos (modalidad y vigilantes). Sin revistas aquí.
 - Puertas: `locations` de esas instalaciones.
-- Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente, solo lectura.
+- Operar cliente + flag: sidebar **Documentos** (`/client/documents`), solo empleados con puesto en ese cliente. Ver = preview; Gestionar = descargar.
 
 Sidebar del panel cliente:
 

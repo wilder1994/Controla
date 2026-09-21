@@ -120,6 +120,7 @@ final class PersonnelDocumentTest extends TestCase
         $post->employees()->sync([$assigned->id]);
 
         $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+        $this->grantPersonnelDocuments($clientAdmin, 'view');
 
         $this->actingAs($clientAdmin)
             ->withSession(['tenancy.active_client_id' => $palmas->id])
@@ -138,7 +139,42 @@ final class PersonnelDocumentTest extends TestCase
             ->get(route('client.personnel-documents.folder', $assigned))
             ->assertOk()
             ->assertSee('Historia Laboral')
-            ->assertDontSee('Cargar documentos');
+            ->assertDontSee('Cargar documentos')
+            ->assertDontSee('Descargar');
+    }
+
+    public function test_documents_view_cannot_download_manage_can(): void
+    {
+        $this->seedWithPilot();
+        $palmas = Client::query()->where('slug', 'palmas-del-ingenio')->firstOrFail();
+        $palmas->update(['show_personnel_folders' => true]);
+        $assigned = $this->pilotVigilante();
+        $post = SupervisorPost::query()->where('client_id', $palmas->id)->firstOrFail();
+        $post->employees()->sync([$assigned->id]);
+        $document = $this->storedPersonnelPdf($assigned);
+        $session = ['tenancy.active_client_id' => $palmas->id];
+        $clientAdmin = User::query()->where('email', 'admin@palmasdelingenio.test')->firstOrFail();
+
+        $this->grantPersonnelDocuments($clientAdmin, 'view');
+        $this->actingAs($clientAdmin)->withSession($session)
+            ->get(route('client.personnel-documents.preview', $document))
+            ->assertOk();
+        $this->actingAs($clientAdmin)->withSession($session)
+            ->get(route('client.personnel-documents.download', $document))
+            ->assertForbidden();
+        $this->actingAs($clientAdmin)->withSession($session)
+            ->get(route('client.personnel-documents.folder', $assigned))
+            ->assertOk()
+            ->assertDontSee('Descargar');
+
+        $this->grantPersonnelDocuments($clientAdmin, 'manage');
+        $this->actingAs($clientAdmin)->withSession($session)
+            ->get(route('client.personnel-documents.download', $document))
+            ->assertOk();
+        $this->actingAs($clientAdmin)->withSession($session)
+            ->get(route('client.personnel-documents.folder', $assigned))
+            ->assertOk()
+            ->assertSee('Descargar');
     }
 
     public function test_client_without_flag_cannot_open_personnel_documents(): void
@@ -330,6 +366,39 @@ final class PersonnelDocumentTest extends TestCase
     private function companyAdmin(): User
     {
         return User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+    }
+
+    private function grantPersonnelDocuments(User $user, string $level): void
+    {
+        $user->givePermissionTo('company.documents.view');
+        if ($level === 'manage') {
+            $user->givePermissionTo('company.documents.manage');
+        } elseif ($user->hasPermissionTo('company.documents.manage')) {
+            $user->revokePermissionTo('company.documents.manage');
+        }
+        $user->unsetRelation('permissions');
+        $user->load('permissions');
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    }
+
+    private function storedPersonnelPdf(Employee $employee): EmployeeDocument
+    {
+        $relative = 'testing/personnel/'.$employee->id.'/cedula.pdf';
+        $absolute = storage_path('app/'.$relative);
+        SimplePdf::write($absolute, 'Cedula', (string) $employee->document_number);
+
+        return EmployeeDocument::query()->create([
+            'security_company_id' => $employee->security_company_id,
+            'employee_id' => $employee->id,
+            'folder' => DocumentFolder::HojaVida,
+            'document_type' => LaborHistoryDocumentType::FotocopiaCedula->value,
+            'display_name' => 'Cédula',
+            'original_name' => 'cedula.pdf',
+            'disk_path' => $relative,
+            'mime' => 'application/pdf',
+            'size_bytes' => filesize($absolute) ?: 0,
+            'not_applicable' => false,
+        ]);
     }
 
     private function pilotVigilante(): Employee

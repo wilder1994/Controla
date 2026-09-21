@@ -214,6 +214,7 @@ final class PersonnelDocumentController extends Controller
 
     public function download(Request $request, EmployeeDocument $document): StreamedResponse
     {
+        abort_unless($this->canUpload($request), 403);
         $file = $this->locate($request, $document);
         abort_unless($file->hasFile(), 404);
 

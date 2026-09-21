@@ -1,5 +1,6 @@
 @php
     $canUpload = $canUpload ?? false;
+    $canDownload = $canDownload ?? false;
     $cargar = $cargar ?? false;
     $indexRoute = $indexRoute ?? route('company.personnel-documents.index');
     $previewRoute = $previewRoute ?? 'company.personnel-documents.preview';
@@ -82,7 +83,9 @@
                             </div>
                             <div class="folder-doc-actions">
                                 <button class="folder-link" type="button" data-preview="{{ route($previewRoute, $doc) }}" data-name="{{ $doc->label() }}">Ver</button>
-                                <a class="folder-link" href="{{ route($downloadRoute, $doc) }}">Descargar</a>
+                                @if ($canDownload)
+                                    <a class="folder-link" href="{{ route($downloadRoute, $doc) }}">Descargar</a>
+                                @endif
                                 @if ($canUpload && $doc->canDelete())
                                     <form method="post" action="{{ route($destroyRoute, $doc) }}" onsubmit="return confirm({{ $isParafiscal ? '\'¿Eliminar este archivo? Solo puede hacerlo durante 12 horas.\'' : '\'¿Eliminar este PDF? Solo puede hacerlo durante 12 horas.\'' }});">
                                         @csrf
@@ -162,9 +165,11 @@
         <div class="preview-bar">
             <span id="preview-title">Documento</span>
             <div class="flex gap-2">
-                <a class="folder-link" id="preview-download" href="#">Descargar</a>
-                <button class="folder-link" type="button" id="preview-close">Cerrar</button>
-            </div>
+                    @if ($canDownload)
+                        <a class="folder-link" id="preview-download" href="#">Descargar</a>
+                    @endif
+                    <button class="folder-link" type="button" id="preview-close">Cerrar</button>
+                </div>
         </div>
         <iframe id="preview-iframe" title="Vista previa"></iframe>
     </div>

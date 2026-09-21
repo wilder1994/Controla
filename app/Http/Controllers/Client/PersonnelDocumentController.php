@@ -84,6 +84,7 @@ final class PersonnelDocumentController extends Controller
 
     public function download(EmployeeDocument $document): StreamedResponse
     {
+        abort_unless(auth()->user()?->can('company.documents.manage'), 403);
         $file = $this->locate($document);
         abort_unless($file->hasFile(), 404);
 

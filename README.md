@@ -34,7 +34,7 @@ Plataforma SaaS B2B de **control de accesos y vigilancia** para empresas de segu
 | **Usuarios** | CRUD scoped; Vigilante / Supervisor de vigilancia (código revista); foto y cargo | ✅ Implementada |
 | **Perfiles** | Empresa/cliente: dirección, ciudad/depto y geo; `service_started_at` (sin cobro al cliente en Controla) | ✅ Implementada |
 | **Empleados** | Ficha SJ-SIG (4 bloques + foto) + Excel WM ampliado (preview → alta o **actualización** por documento). Sidebar propio; Ajustes = cargos/tipos + catálogos de Supervisión | ✅ Implementada |
-| **Documentos (personal)** | Indexador de carpetas (HV, contratación, certificados, cursos, afiliaciones, otros). Cliente: flag Accesos + solo puestos del cliente, solo lectura. Distinto de Normoteca | ✅ Implementada |
+| **Documentos (personal)** | Indexador de carpetas (HV, contratación, certificados, cursos, afiliaciones, otros). Cliente: flag Accesos + puestos del cliente. **Ver** = preview; **Gestionar** = descargar/indexar. Distinto de Normoteca | ✅ Implementada |
 | **Supervisión campo** | PWA captura (8 módulos, rito de turno, catálogos). Mapa En vivo/Historial, cierre automático, cola offline por usuario. Fuente de verdad: Controla | ✅ Implementada |
 | **Árbol del cliente** | Una tarjeta **Instalaciones y puestos**; otra **Puertas** (solo Accesos). Modalidad + vigilantes en el puesto | ✅ Implementada |
 
@@ -436,8 +436,8 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 | `GET /company/settings` | **Mis datos**: perfil, ubicación, logo y encabezado de fichas (sin pestañas) |
 | `PUT /company/settings` | Guardar perfil, logo y texto de encabezado |
 | `GET /company/employees` | **Empleados**: listado (Ficha), Formato Excel, carga masiva (preview → alta o actualización por documento) |
-| `GET /company/documents` | **Documentos** de personal: carpetas + indexador PDF (no es la Normoteca) |
-| `GET /client/documents` | Carpetas del personal asignado al cliente (si Accesos + `show_personnel_folders`; solo lectura) |
+| `GET /company/documents` | **Documentos** de personal: carpetas + indexador PDF. Preview con Ver; Descargar con Gestionar |
+| `GET /client/documents` | Carpetas del personal asignado (Accesos + `show_personnel_folders`). Ver = preview; Gestionar = descargar |
 | `GET /company/employees/template` | Descarga plantilla (hojas Empleados + Instrucciones; A–Z WM + extras SJ-SIG) |
 | `GET/POST /company/employees/{id}/photo` | Foto de la ficha (JPG/PNG/WebP, disco local) |
 | `GET /company/job-titles` | **Ajustes → Cargos**: catálogo por empresa |

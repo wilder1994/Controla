@@ -124,13 +124,13 @@ No está en el Excel. En la ficha: `is_active = false` + `ceased_at`. Si tenía 
 
 `/company/documents`: 7 carpetas (Historia laboral, Contratación, Certificados, Cursos, Afiliaciones, **Parafiscales**, Otros). Carga por lote PDF + indexador (FPDI + pdf.js), salvo Parafiscales. Distinto de la Normoteca (`/admin/documents`). Permiso ver: `company.documents.view`; indexar/subir: `company.documents.manage` (o `company.settings.manage`).
 
-**Parafiscales:** no van en Normoteca. En el listado, **Carga masiva planilla**: Excel PILA (hoja por `CC`+cédula). Overlay con % al leer y al guardar. El recorte es una copia del xlsx original (tema, fondo, logo) con solo las filas de ese colaborador; BJ15 = su total. **Ver** sirve el PDF generado con LibreOffice (igual a la descarga); si no hay `soffice`, tabla HTML y Descargar. Una carga nueva **reemplaza** la planilla previa de ese colaborador. No se guarda la planilla completa.
+**Parafiscales:** no van en Normoteca. En el listado, **Carga masiva planilla**: Excel PILA (hoja por `CC`+cédula). Overlay con % al leer y al guardar. El recorte es una copia del xlsx original (tema, fondo, logo) con solo las filas de ese colaborador; BJ15 = su total. **Ver** sirve el PDF generado con LibreOffice (igual a la descarga); si no hay `soffice`, tabla HTML. **Descargar** (xlsx o PDF) solo con Gestionar (`company.documents.manage`); Ver no baja archivos. Una carga nueva **reemplaza** la planilla previa de ese colaborador. No se guarda la planilla completa.
 
 Miniaturas del lote: el worker de pdf.js es un `.mjs`. CloudPanel lo sirve como `application/octet-stream` y Chrome lo bloquea. El indexador lo vuelve a servir como blob `application/javascript`. El PDF se pide de una vez (`disableRange`), no por rangos. **Ampliar** sigue siendo el iframe nativo. El formulario (izq.) usa `minmax(24rem, 32rem)`; las miniaturas van a ~220px (`scale` 0.48).
 
 Tablas: `employee_documents`, `employee_document_batches`. Disco: `storage/app/companies/{id}/employees/{id}/{carpeta}/`. Borrar PDF solo durante 12 h.
 
-El cliente **solo** ve esas carpetas si tiene Accesos y `show_personnel_folders`. En Operar cliente: `/client/documents`, solo empleados con puesto en ese cliente, solo lectura. Reasignar puesto cambia la visibilidad; los PDF siguen en la empresa.
+El cliente **solo** ve esas carpetas si tiene Accesos y `show_personnel_folders`. En Operar cliente: `/client/documents`, solo empleados con puesto en ese cliente. **Ver** = preview; **Gestionar** = descargar. Reasignar puesto cambia la visibilidad; los PDF siguen en la empresa.
 
 ## Pendiente (otro corte)
 

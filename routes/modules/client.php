@@ -40,9 +40,11 @@ Route::middleware(['auth', 'password.changed', 'active', 'tenancy.access', 'clie
         Route::middleware('permission:company.documents.view')->group(function () {
             Route::get('/documents', [PersonnelDocumentController::class, 'index'])->name('personnel-documents.index');
             Route::get('/documents/file/{document}/preview', [PersonnelDocumentController::class, 'preview'])->name('personnel-documents.preview');
-            Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])->name('personnel-documents.download');
             Route::get('/documents/{employee}', [PersonnelDocumentController::class, 'folder'])->name('personnel-documents.folder');
         });
+        Route::get('/documents/file/{document}/download', [PersonnelDocumentController::class, 'download'])
+            ->middleware('permission:company.documents.manage')
+            ->name('personnel-documents.download');
 
         Route::get('/employees', [EmployeeController::class, 'index'])
             ->middleware('permission:company.employees.view')

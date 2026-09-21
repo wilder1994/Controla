@@ -3,6 +3,7 @@
         'employee' => $employee,
         'indexedChecklists' => $indexedChecklists,
         'canUpload' => $canUpload,
+        'canDownload' => $canUpload,
         'cargar' => $cargar,
         'indexRoute' => route('company.personnel-documents.index'),
         'previewRoute' => 'company.personnel-documents.preview',
