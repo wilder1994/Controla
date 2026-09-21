@@ -103,6 +103,7 @@ final class BuildSigBoardService
         $feedBase = OperationalAlert::query()
             ->where('type', OperationalAlertType::ServiceChange)
             ->where('security_company_id', $companyId)
+            ->where('body', 'not like', 'Revista en%')
             ->when($client !== null, fn ($q) => $q->where('client_id', $client->id))
             ->when($siteIds !== [], fn ($q) => $q->where(function ($inner) use ($siteIds) {
                 $inner->whereIn('installation_id', $siteIds)->orWhereNull('installation_id');

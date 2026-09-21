@@ -66,46 +66,34 @@
 
         <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col {{ $box }}">
             <h3 class="text-sm font-semibold text-white shrink-0">Revistas del supervisor</h3>
-            <div class="mt-2 flex-1 min-h-0 overflow-y-auto">
-                <table class="min-w-full text-xs">
-                    <thead class="text-[10px] uppercase text-slate-500 sticky top-0 bg-slate-900">
-                        <tr>
-                            <th class="px-2 py-1 text-left">Hora</th>
-                            <th class="px-2 py-1 text-left">Supervisor</th>
-                            <th class="px-2 py-1 text-left">Servicio</th>
-                            <th class="px-2 py-1 text-left">Vigilante</th>
-                            <th class="px-2 py-1 text-left">Registro</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-800">
-                        @if ($sigLiveUrl)
-                            <template x-for="row in (board.reviews || [])" :key="row.id">
-                                <tr>
-                                    <td class="px-2 py-1.5 text-slate-400 whitespace-nowrap" x-text="row.at"></td>
-                                    <td class="px-2 py-1.5 text-slate-200" x-text="row.supervisor"></td>
-                                    <td class="px-2 py-1.5 text-slate-300" x-text="row.post"></td>
-                                    <td class="px-2 py-1.5 text-slate-300" x-text="row.guard"></td>
-                                    <td class="px-2 py-1.5 text-slate-400" x-text="row.record"></td>
-                                </tr>
-                            </template>
-                            <tr x-show="!(board.reviews || []).length">
-                                <td colspan="5" class="px-2 py-6 text-center text-slate-500">Sin revistas en este alcance.</td>
-                            </tr>
-                        @else
-                            @forelse (($board['reviews'] ?? []) as $row)
-                                <tr>
-                                    <td class="px-2 py-1.5 text-slate-400 whitespace-nowrap">{{ $row['at'] }}</td>
-                                    <td class="px-2 py-1.5 text-slate-200">{{ $row['supervisor'] }}</td>
-                                    <td class="px-2 py-1.5 text-slate-300">{{ $row['post'] }}</td>
-                                    <td class="px-2 py-1.5 text-slate-300">{{ $row['guard'] }}</td>
-                                    <td class="px-2 py-1.5 text-slate-400">{{ $row['record'] }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="5" class="px-2 py-6 text-center text-slate-500">Sin revistas en este alcance.</td></tr>
-                            @endforelse
-                        @endif
-                    </tbody>
-                </table>
+            <div class="mt-2 flex-1 min-h-0 overflow-y-auto flex flex-wrap content-start gap-2">
+                @if ($sigLiveUrl)
+                    <template x-for="row in (board.reviews || [])" :key="row.id">
+                        <article class="w-full sm:w-[calc(50%-0.25rem)] rounded-2xl border px-3 py-2"
+                                 :class="row.novelty ? 'border-amber-500/40 bg-amber-950/20' : 'border-slate-800 bg-slate-950/70'">
+                            <p class="text-[10px] text-slate-500" x-text="row.at"></p>
+                            <p class="text-sm text-white leading-snug" x-text="row.supervisor"></p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">
+                                <span x-text="row.post"></span>
+                                <span class="text-slate-600"> · </span>
+                                <span x-text="row.guard"></span>
+                            </p>
+                            <p class="text-xs text-slate-300 mt-1 leading-snug" x-text="row.record"></p>
+                        </article>
+                    </template>
+                    <p class="w-full py-6 text-center text-sm text-slate-500" x-show="!(board.reviews || []).length">Sin revistas en este alcance.</p>
+                @else
+                    @forelse (($board['reviews'] ?? []) as $row)
+                        <article class="w-full sm:w-[calc(50%-0.25rem)] rounded-2xl border px-3 py-2 {{ ($row['novelty'] ?? false) ? 'border-amber-500/40 bg-amber-950/20' : 'border-slate-800 bg-slate-950/70' }}">
+                            <p class="text-[10px] text-slate-500">{{ $row['at'] }}</p>
+                            <p class="text-sm text-white leading-snug">{{ $row['supervisor'] }}</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">{{ $row['post'] }} · {{ $row['guard'] }}</p>
+                            <p class="text-xs text-slate-300 mt-1 leading-snug">{{ $row['record'] }}</p>
+                        </article>
+                    @empty
+                        <p class="w-full py-6 text-center text-sm text-slate-500">Sin revistas en este alcance.</p>
+                    @endforelse
+                @endif
             </div>
         </div>
 
@@ -155,7 +143,9 @@
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col {{ $box }}">
                 <h3 class="text-sm font-semibold text-white shrink-0">Servicios por mes</h3>
                 <p class="text-[10px] text-slate-500">Puestos activos al corte, no revistas.</p>
-                <div class="flex-1 min-h-0 mt-2"><canvas @if ($sigLiveUrl) x-ref="chart" @else id="sig-chart" @endif></canvas></div>
+                <div class="relative flex-1 min-h-0 mt-2">
+                    <canvas class="absolute inset-0 !w-full !h-full" @if ($sigLiveUrl) x-ref="chart" @else id="sig-chart" @endif></canvas>
+                </div>
             </div>
 
             <div class="rounded-lg border border-slate-800 bg-slate-900/80 overflow-hidden flex flex-col {{ $box }}">
@@ -232,7 +222,7 @@
                 labels: chart.labels || [],
                 datasets: [{ label: 'Servicios activos', data: chart.values || [], backgroundColor: '#2dd4bf' }],
             },
-            options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' }, beginAtZero: true } } },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' }, beginAtZero: true } } },
         });
     }
 

@@ -29,7 +29,7 @@ final class SigBoardAndPanicTest extends TestCase
             ])
             ->get(route('client.dashboard'))
             ->assertOk()
-            ->assertSee('Panel del cliente')
+            ->assertDontSee('Panel del cliente')
             ->assertSee('Novedades de servicio')
             ->assertSee('Revistas del supervisor')
             ->assertSee('Servicios actuales')
