@@ -124,7 +124,7 @@ export function sigBoardLive() {
                 type: 'bar',
                 data: {
                     labels: chart.labels || [],
-                    datasets: [{ label: 'Revistas', data: chart.values || [], backgroundColor: '#2dd4bf' }],
+                    datasets: [{ label: 'Servicios activos', data: chart.values || [], backgroundColor: '#2dd4bf' }],
                 },
                 options: {
                     plugins: { legend: { display: false } },

@@ -72,41 +72,54 @@ final class BuildSigBoardService
             ->when($siteIds !== [], fn ($q) => $q->whereIn('installation_id', $siteIds))
             ->when($siteIds === [] && $client === null, fn ($q) => $q->whereRaw('1 = 0'))
             ->with(['employees', 'installation', 'client'])
+            ->orderBy('name')
             ->get();
 
         $employees = $posts->pluck('employees')->flatten()->unique('id')->values();
         $parafiscalByEmployee = $this->latestParafiscal($employees->pluck('id')->all());
 
-        $from = CarbonImmutable::now()->subMonths(11)->startOfMonth();
-        $reviews = SupervisorShiftReview::query()
+        $historyPosts = SupervisorPost::query()
+            ->withoutGlobalScopes()
+            ->withTrashed()
             ->when($client !== null, fn ($q) => $q->where('client_id', $client->id))
-            ->when($siteIds !== [], fn ($q) => $q->whereHas('supervisorPost', fn ($p) => $p->whereIn('installation_id', $siteIds)))
-            ->where('recorded_at', '>=', $from)
-            ->get(['id', 'recorded_at']);
+            ->when($siteIds !== [], fn ($q) => $q->whereIn('installation_id', $siteIds))
+            ->when($siteIds === [] && $client === null, fn ($q) => $q->whereRaw('1 = 0'))
+            ->get(['id', 'created_at', 'updated_at', 'deleted_at', 'is_active']);
 
+        $from = CarbonImmutable::now()->subMonths(11)->startOfMonth();
         $months = [];
         $cursor = $from;
-        $end = CarbonImmutable::now()->startOfMonth();
-        while ($cursor->lte($end)) {
-            $key = $cursor->format('Y-m');
-            $months[$key] = 0;
+        $endMonth = CarbonImmutable::now()->startOfMonth();
+        while ($cursor->lte($endMonth)) {
+            $cut = $cursor->endOfMonth();
+            $months[$cursor->format('Y-m')] = $historyPosts->filter(
+                fn (SupervisorPost $post) => $this->wasActiveAt($post, $cut)
+            )->count();
             $cursor = $cursor->addMonth();
         }
-        foreach ($reviews as $row) {
-            $key = CarbonImmutable::parse($row->recorded_at)->format('Y-m');
-            if (isset($months[$key])) {
-                $months[$key]++;
-            }
-        }
 
-        $feedQuery = OperationalAlert::query()
+        $todayStart = CarbonImmutable::now()->startOfDay();
+
+        $feedBase = OperationalAlert::query()
             ->where('type', OperationalAlertType::ServiceChange)
             ->where('security_company_id', $companyId)
             ->when($client !== null, fn ($q) => $q->where('client_id', $client->id))
             ->when($siteIds !== [], fn ($q) => $q->where(function ($inner) use ($siteIds) {
                 $inner->whereIn('installation_id', $siteIds)->orWhereNull('installation_id');
-            }))
-            ->latest('id')
+            }));
+
+        $reviewsBase = SupervisorShiftReview::query()
+            ->when($client !== null, fn ($q) => $q->where('client_id', $client->id))
+            ->when($siteIds !== [], fn ($q) => $q->whereHas('supervisorPost', fn ($p) => $p->whereIn('installation_id', $siteIds)))
+            ->when($siteIds === [] && $client === null, fn ($q) => $q->whereRaw('1 = 0'));
+
+        $novedadesToday = (clone $feedBase)->where('created_at', '>=', $todayStart)->count();
+        $reviewsToday = (clone $reviewsBase)->where('recorded_at', '>=', $todayStart)->count();
+
+        $feedQuery = (clone $feedBase)->latest('id')->limit(40);
+        $reviewsQuery = (clone $reviewsBase)
+            ->with(['shift.user', 'employee', 'supervisorPost', 'fieldLogs'])
+            ->latest('recorded_at')
             ->limit(40);
 
         $markers = [];
@@ -132,15 +145,26 @@ final class BuildSigBoardService
             ];
         }
 
+        $servicesToday = $posts->count();
+
         return [
+            'show_installations_kpi' => $sites->count() > 1,
             'installations_count' => $sites->count(),
-            'posts_count' => $posts->count(),
+            'services_today' => $servicesToday,
+            'novedades_today' => $novedadesToday,
+            'reviews_today' => $reviewsToday,
+            'posts_count' => $servicesToday,
             'staff_count' => $employees->count(),
             'markers' => $markers,
             'maps' => [
                 'api_key' => (string) config('google-maps.api_key', ''),
                 'center' => config('google-maps.default_center'),
             ],
+            'services' => $posts->map(fn (SupervisorPost $post): array => [
+                'name' => $post->name,
+                'modality' => $post->modalityLabel(),
+                'guards' => $post->employees->count(),
+            ])->all(),
             'staff' => $employees->map(function (Employee $employee) use ($parafiscalByEmployee, $posts) {
                 $post = $posts->first(fn (SupervisorPost $p) => $p->employees->contains('id', $employee->id));
 
@@ -161,8 +185,33 @@ final class BuildSigBoardService
             'feed' => $feedQuery->get()->map(fn (OperationalAlert $row) => [
                 'id' => $row->id,
                 'body' => $row->body,
+                'observations' => is_array($row->payload) ? ($row->payload['observations'] ?? null) : null,
                 'at' => $row->created_at?->format('d/m H:i'),
             ])->all(),
+            'reviews' => $reviewsQuery->get()->map(function (SupervisorShiftReview $review): array {
+                $modules = $review->fieldLogs
+                    ->map(fn ($log) => $log->module?->label())
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $record = trim((string) $review->notes);
+                if ($modules->isNotEmpty()) {
+                    $record = trim($record.' · '.$modules->implode(', '));
+                }
+                if ($record === '') {
+                    $record = $review->has_novelty ? 'Con novedad' : 'Sin novedad';
+                }
+
+                return [
+                    'id' => $review->id,
+                    'at' => $review->recorded_at?->timezone(config('app.timezone'))->format('d/m H:i'),
+                    'supervisor' => $review->shift?->user?->name ?? '—',
+                    'post' => $review->supervisorPost?->name ?? '—',
+                    'guard' => $review->employee?->fullName() ?? '—',
+                    'record' => $record,
+                    'novelty' => (bool) $review->has_novelty,
+                ];
+            })->all(),
             'chart' => [
                 'labels' => array_map(
                     fn (string $key) => CarbonImmutable::createFromFormat('Y-m', $key)->format('m/Y'),
@@ -171,6 +220,21 @@ final class BuildSigBoardService
                 'values' => array_values($months),
             ],
         ];
+    }
+
+    private function wasActiveAt(SupervisorPost $post, CarbonImmutable $cut): bool
+    {
+        if ($post->created_at === null || $post->created_at->gt($cut)) {
+            return false;
+        }
+        if ($post->deleted_at !== null && $post->deleted_at->lte($cut)) {
+            return false;
+        }
+        if (! $post->is_active && $post->updated_at !== null && $post->updated_at->lte($cut)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

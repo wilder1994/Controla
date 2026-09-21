@@ -31,6 +31,8 @@ final class SigBoardAndPanicTest extends TestCase
             ->assertOk()
             ->assertSee('Panel del cliente')
             ->assertSee('Novedades de servicio')
+            ->assertSee('Revistas del supervisor')
+            ->assertSee('Servicios actuales')
             ->assertSee('Salud afiliatoria');
     }
 
@@ -43,7 +45,10 @@ final class SigBoardAndPanicTest extends TestCase
             ->get(route('company.installations.index'))
             ->assertOk()
             ->assertSee('Novedades de servicio')
-            ->assertSee('Personal operativo');
+            ->assertSee('Servicios hoy')
+            ->assertSee('Revistas del supervisor')
+            ->assertSee('Servicios actuales')
+            ->assertDontSee('Personal operativo');
     }
 
     public function test_panic_is_hidden_from_actor_and_from_client_admins(): void
@@ -118,7 +123,7 @@ final class SigBoardAndPanicTest extends TestCase
         $this->actingAs($user)
             ->getJson(route('company.sig.live'))
             ->assertOk()
-            ->assertJsonStructure(['installations_count', 'posts_count', 'staff_count', 'feed', 'chart']);
+            ->assertJsonStructure(['installations_count', 'services_today', 'feed', 'reviews', 'services', 'chart']);
 
         $this->actingAs($user)
             ->withSession($session)

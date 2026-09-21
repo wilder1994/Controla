@@ -52,6 +52,7 @@ final class StoreClientSupervisorPostRequest extends FormRequest
             'employee_ids' => ['nullable', 'array'],
             'employee_ids.*' => ['integer', 'exists:employees,id'],
             'is_active' => ['sometimes', 'boolean'],
+            'observations' => ['nullable', 'string', 'max:2000'],
             'vista' => ['nullable', 'in:sitio,puertas,accesos,supervision'],
         ];
     }
@@ -64,6 +65,7 @@ final class StoreClientSupervisorPostRequest extends FormRequest
             'name' => 'nombre',
             'modality' => 'modalidad',
             'employee_ids' => 'vigilantes',
+            'observations' => 'observaciones',
         ];
     }
 }

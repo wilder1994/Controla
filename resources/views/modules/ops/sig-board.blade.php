@@ -4,6 +4,8 @@
     $chart = $board['chart'] ?? ['labels' => [], 'values' => []];
     $markers = $board['markers'] ?? [];
     $sigLiveUrl = $sigLiveUrl ?? null;
+    $showInstallations = (bool) ($board['show_installations_kpi'] ?? true);
+    $box = 'h-64';
 @endphp
 
 <div class="space-y-4"
@@ -12,33 +14,35 @@
          data-live-url="{{ $sigLiveUrl }}"
          data-board='@json($board)'
      @endif>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
+    <div class="grid grid-cols-2 {{ $showInstallations ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-3">
+        @if ($showInstallations)
+        <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3" @if ($sigLiveUrl) x-show="board.show_installations_kpi" @endif>
             <p class="text-[10px] uppercase tracking-wide text-slate-500">Instalaciones</p>
             <p class="mt-1 text-2xl font-semibold text-white tabular-nums" @if ($sigLiveUrl) x-text="board.installations_count ?? 0" @endif>{{ $board['installations_count'] ?? 0 }}</p>
         </div>
+        @endif
         <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
-            <p class="text-[10px] uppercase tracking-wide text-slate-500">Puestos</p>
-            <p class="mt-1 text-2xl font-semibold text-white tabular-nums" @if ($sigLiveUrl) x-text="board.posts_count ?? 0" @endif>{{ $board['posts_count'] ?? 0 }}</p>
+            <p class="text-[10px] uppercase tracking-wide text-slate-500">Servicios hoy</p>
+            <p class="mt-1 text-2xl font-semibold text-white tabular-nums" @if ($sigLiveUrl) x-text="board.services_today ?? board.posts_count ?? 0" @endif>{{ $board['services_today'] ?? $board['posts_count'] ?? 0 }}</p>
         </div>
         <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
-            <p class="text-[10px] uppercase tracking-wide text-slate-500">Personal operativo</p>
-            <p class="mt-1 text-2xl font-semibold text-white tabular-nums" @if ($sigLiveUrl) x-text="board.staff_count ?? 0" @endif>{{ $board['staff_count'] ?? 0 }}</p>
+            <p class="text-[10px] uppercase tracking-wide text-slate-500">Novedades hoy</p>
+            <p class="mt-1 text-2xl font-semibold text-white tabular-nums" @if ($sigLiveUrl) x-text="board.novedades_today ?? 0" @endif>{{ $board['novedades_today'] ?? 0 }}</p>
         </div>
         <div class="rounded-lg border border-slate-800 bg-slate-900/80 px-3 py-3">
-            <p class="text-[10px] uppercase tracking-wide text-slate-500">Servicios (12 meses)</p>
-            <p class="mt-1 text-2xl font-semibold text-white tabular-nums" @if ($sigLiveUrl) x-text="chartSum()" @endif>{{ array_sum($chart['values'] ?? []) }}</p>
-            <p class="text-[10px] text-slate-500">Revistas de puesto</p>
+            <p class="text-[10px] uppercase tracking-wide text-slate-500">Revistas hoy</p>
+            <p class="mt-1 text-2xl font-semibold text-white tabular-nums" @if ($sigLiveUrl) x-text="board.reviews_today ?? 0" @endif>{{ $board['reviews_today'] ?? 0 }}</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 {{ $compact ? '' : 'lg:items-stretch' }}">
-        <div class="rounded-lg border border-slate-800 bg-slate-900/80 overflow-hidden min-h-[16rem]">
-            <div id="sig-map" class="w-full h-64 lg:h-full min-h-[16rem]"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="rounded-lg border border-slate-800 bg-slate-900/80 overflow-hidden {{ $box }}">
+            <div id="sig-map" class="w-full h-full min-h-[16rem]"></div>
         </div>
-        <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col max-h-[20rem]">
+        <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col {{ $box }}">
             <h3 class="text-sm font-semibold text-white shrink-0">Novedades de servicio</h3>
-            <div class="mt-3 flex-1 min-h-0 overflow-y-auto space-y-2">
+            <p class="text-[10px] text-slate-500 shrink-0">Altas, bajas, modalidad y vigilantes.</p>
+            <div class="mt-2 flex-1 min-h-0 overflow-y-auto space-y-2">
                 @if ($sigLiveUrl)
                     <template x-for="row in (board.feed || [])" :key="row.id">
                         <div class="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2">
@@ -59,62 +63,150 @@
                 @endif
             </div>
         </div>
-    </div>
 
-    @unless ($compact)
-        <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4">
-            <h3 class="text-sm font-semibold text-white">Servicios por mes</h3>
-            <div class="h-48 mt-2"><canvas @if ($sigLiveUrl) x-ref="chart" @else id="sig-chart" @endif></canvas></div>
-        </div>
-
-        <div class="rounded-lg border border-slate-800 bg-slate-900/80 overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-800">
-                <h3 class="text-sm font-semibold text-white">Salud afiliatoria</h3>
-                <p class="text-xs text-slate-500">EPS, pensión, caja y última planilla de los asignados a estos puestos.</p>
-            </div>
-            <div class="overflow-x-auto max-h-[20rem] overflow-y-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="text-xs uppercase text-slate-500 sticky top-0 bg-slate-900">
+        <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col {{ $box }}">
+            <h3 class="text-sm font-semibold text-white shrink-0">Revistas del supervisor</h3>
+            <div class="mt-2 flex-1 min-h-0 overflow-y-auto">
+                <table class="min-w-full text-xs">
+                    <thead class="text-[10px] uppercase text-slate-500 sticky top-0 bg-slate-900">
                         <tr>
-                            <th class="px-3 py-2 text-left">Empleado</th>
-                            <th class="px-3 py-2 text-left">Puesto</th>
-                            <th class="px-3 py-2 text-left">EPS</th>
-                            <th class="px-3 py-2 text-left">Pensión</th>
-                            <th class="px-3 py-2 text-left">Caja</th>
-                            <th class="px-3 py-2 text-left">Parafiscal</th>
+                            <th class="px-2 py-1 text-left">Hora</th>
+                            <th class="px-2 py-1 text-left">Supervisor</th>
+                            <th class="px-2 py-1 text-left">Servicio</th>
+                            <th class="px-2 py-1 text-left">Vigilante</th>
+                            <th class="px-2 py-1 text-left">Registro</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800">
                         @if ($sigLiveUrl)
-                            <template x-for="(row, index) in (board.staff || [])" :key="index">
+                            <template x-for="row in (board.reviews || [])" :key="row.id">
                                 <tr>
-                                    <td class="px-3 py-2 text-slate-200" x-text="row.name"></td>
-                                    <td class="px-3 py-2 text-slate-400" x-text="(row.post || '') + ' · ' + (row.site || '')"></td>
-                                    <td class="px-3 py-2" :class="row.eps === '—' ? 'text-amber-400' : 'text-slate-300'" x-text="row.eps"></td>
-                                    <td class="px-3 py-2" :class="row.pension === '—' ? 'text-amber-400' : 'text-slate-300'" x-text="row.pension"></td>
-                                    <td class="px-3 py-2" :class="row.caja === '—' ? 'text-amber-400' : 'text-slate-300'" x-text="row.caja"></td>
-                                    <td class="px-3 py-2" :class="row.ok ? 'text-emerald-400' : 'text-amber-400'" x-text="row.parafiscal"></td>
+                                    <td class="px-2 py-1.5 text-slate-400 whitespace-nowrap" x-text="row.at"></td>
+                                    <td class="px-2 py-1.5 text-slate-200" x-text="row.supervisor"></td>
+                                    <td class="px-2 py-1.5 text-slate-300" x-text="row.post"></td>
+                                    <td class="px-2 py-1.5 text-slate-300" x-text="row.guard"></td>
+                                    <td class="px-2 py-1.5 text-slate-400" x-text="row.record"></td>
                                 </tr>
                             </template>
-                            <tr x-show="!(board.staff || []).length">
-                                <td colspan="6" class="px-3 py-8 text-center text-slate-500">Sin personal en puestos de este alcance.</td>
+                            <tr x-show="!(board.reviews || []).length">
+                                <td colspan="5" class="px-2 py-6 text-center text-slate-500">Sin revistas en este alcance.</td>
                             </tr>
                         @else
-                            @forelse (($board['staff'] ?? []) as $row)
+                            @forelse (($board['reviews'] ?? []) as $row)
                                 <tr>
-                                    <td class="px-3 py-2 text-slate-200">{{ $row['name'] }}</td>
-                                    <td class="px-3 py-2 text-slate-400">{{ $row['post'] }} · {{ $row['site'] }}</td>
-                                    <td class="px-3 py-2 {{ $row['eps'] === '—' ? 'text-amber-400' : 'text-slate-300' }}">{{ $row['eps'] }}</td>
-                                    <td class="px-3 py-2 {{ $row['pension'] === '—' ? 'text-amber-400' : 'text-slate-300' }}">{{ $row['pension'] }}</td>
-                                    <td class="px-3 py-2 {{ $row['caja'] === '—' ? 'text-amber-400' : 'text-slate-300' }}">{{ $row['caja'] }}</td>
-                                    <td class="px-3 py-2 {{ ($row['ok'] ?? false) ? 'text-emerald-400' : 'text-amber-400' }}">{{ $row['parafiscal'] }}</td>
+                                    <td class="px-2 py-1.5 text-slate-400 whitespace-nowrap">{{ $row['at'] }}</td>
+                                    <td class="px-2 py-1.5 text-slate-200">{{ $row['supervisor'] }}</td>
+                                    <td class="px-2 py-1.5 text-slate-300">{{ $row['post'] }}</td>
+                                    <td class="px-2 py-1.5 text-slate-300">{{ $row['guard'] }}</td>
+                                    <td class="px-2 py-1.5 text-slate-400">{{ $row['record'] }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="6" class="px-3 py-8 text-center text-slate-500">Sin personal en puestos de este alcance.</td></tr>
+                                <tr><td colspan="5" class="px-2 py-6 text-center text-slate-500">Sin revistas en este alcance.</td></tr>
                             @endforelse
                         @endif
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col {{ $box }}">
+            <h3 class="text-sm font-semibold text-white shrink-0">Servicios actuales</h3>
+            <p class="text-[10px] text-slate-500 shrink-0">A la fecha.</p>
+            <div class="mt-2 flex-1 min-h-0 overflow-y-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="text-[10px] uppercase text-slate-500 sticky top-0 bg-slate-900">
+                        <tr>
+                            <th class="px-2 py-1 text-left">Servicio</th>
+                            <th class="px-2 py-1 text-left">Modalidad</th>
+                            <th class="px-2 py-1 text-right">Vigilantes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        @if ($sigLiveUrl)
+                            <template x-for="(row, index) in (board.services || [])" :key="index">
+                                <tr>
+                                    <td class="px-2 py-1.5 text-slate-200" x-text="row.name"></td>
+                                    <td class="px-2 py-1.5 text-slate-400" x-text="row.modality"></td>
+                                    <td class="px-2 py-1.5 text-right text-slate-200 tabular-nums" x-text="row.guards"></td>
+                                </tr>
+                            </template>
+                            <tr x-show="!(board.services || []).length">
+                                <td colspan="3" class="px-2 py-6 text-center text-slate-500">Sin servicios activos.</td>
+                            </tr>
+                        @else
+                            @forelse (($board['services'] ?? []) as $row)
+                                <tr>
+                                    <td class="px-2 py-1.5 text-slate-200">{{ $row['name'] }}</td>
+                                    <td class="px-2 py-1.5 text-slate-400">{{ $row['modality'] }}</td>
+                                    <td class="px-2 py-1.5 text-right text-slate-200 tabular-nums">{{ $row['guards'] }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3" class="px-2 py-6 text-center text-slate-500">Sin servicios activos.</td></tr>
+                            @endforelse
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @unless ($compact)
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col {{ $box }}">
+                <h3 class="text-sm font-semibold text-white shrink-0">Servicios por mes</h3>
+                <p class="text-[10px] text-slate-500">Puestos activos al corte, no revistas.</p>
+                <div class="flex-1 min-h-0 mt-2"><canvas @if ($sigLiveUrl) x-ref="chart" @else id="sig-chart" @endif></canvas></div>
+            </div>
+
+            <div class="rounded-lg border border-slate-800 bg-slate-900/80 overflow-hidden flex flex-col {{ $box }}">
+                <div class="px-4 py-3 border-b border-slate-800 shrink-0">
+                    <h3 class="text-sm font-semibold text-white">Salud afiliatoria</h3>
+                    <p class="text-xs text-slate-500">EPS, pensión, caja y última planilla de los asignados.</p>
+                </div>
+                <div class="overflow-auto flex-1 min-h-0">
+                    <table class="min-w-full text-sm">
+                        <thead class="text-xs uppercase text-slate-500 sticky top-0 bg-slate-900">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Empleado</th>
+                                <th class="px-3 py-2 text-left">Servicio</th>
+                                <th class="px-3 py-2 text-left">EPS</th>
+                                <th class="px-3 py-2 text-left">Pensión</th>
+                                <th class="px-3 py-2 text-left">Caja</th>
+                                <th class="px-3 py-2 text-left">Parafiscal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            @if ($sigLiveUrl)
+                                <template x-for="(row, index) in (board.staff || [])" :key="index">
+                                    <tr>
+                                        <td class="px-3 py-2 text-slate-200" x-text="row.name"></td>
+                                        <td class="px-3 py-2 text-slate-400" x-text="row.post || ''"></td>
+                                        <td class="px-3 py-2" :class="row.eps === '—' ? 'text-amber-400' : 'text-slate-300'" x-text="row.eps"></td>
+                                        <td class="px-3 py-2" :class="row.pension === '—' ? 'text-amber-400' : 'text-slate-300'" x-text="row.pension"></td>
+                                        <td class="px-3 py-2" :class="row.caja === '—' ? 'text-amber-400' : 'text-slate-300'" x-text="row.caja"></td>
+                                        <td class="px-3 py-2" :class="row.ok ? 'text-emerald-400' : 'text-amber-400'" x-text="row.parafiscal"></td>
+                                    </tr>
+                                </template>
+                                <tr x-show="!(board.staff || []).length">
+                                    <td colspan="6" class="px-3 py-8 text-center text-slate-500">Sin personal en puestos de este alcance.</td>
+                                </tr>
+                            @else
+                                @forelse (($board['staff'] ?? []) as $row)
+                                    <tr>
+                                        <td class="px-3 py-2 text-slate-200">{{ $row['name'] }}</td>
+                                        <td class="px-3 py-2 text-slate-400">{{ $row['post'] }}</td>
+                                        <td class="px-3 py-2 {{ $row['eps'] === '—' ? 'text-amber-400' : 'text-slate-300' }}">{{ $row['eps'] }}</td>
+                                        <td class="px-3 py-2 {{ $row['pension'] === '—' ? 'text-amber-400' : 'text-slate-300' }}">{{ $row['pension'] }}</td>
+                                        <td class="px-3 py-2 {{ $row['caja'] === '—' ? 'text-amber-400' : 'text-slate-300' }}">{{ $row['caja'] }}</td>
+                                        <td class="px-3 py-2 {{ ($row['ok'] ?? false) ? 'text-emerald-400' : 'text-amber-400' }}">{{ $row['parafiscal'] }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="6" class="px-3 py-8 text-center text-slate-500">Sin personal en puestos de este alcance.</td></tr>
+                                @endforelse
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     @endunless
@@ -138,7 +230,7 @@
             type: 'bar',
             data: {
                 labels: chart.labels || [],
-                datasets: [{ label: 'Revistas', data: chart.values || [], backgroundColor: '#2dd4bf' }],
+                datasets: [{ label: 'Servicios activos', data: chart.values || [], backgroundColor: '#2dd4bf' }],
             },
             options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' }, beginAtZero: true } } },
         });

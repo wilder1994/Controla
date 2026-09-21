@@ -62,13 +62,22 @@ final class RecordOperationalAlertService
         );
     }
 
+    /**
+     * @param  array<string, mixed>|null  $payload
+     */
     public function serviceChange(
         Client $client,
         string $body,
         ?Installation $installation = null,
         ?SupervisorPost $post = null,
         ?User $actor = null,
+        ?array $payload = null,
     ): OperationalAlert {
+        $note = trim((string) ($payload['observations'] ?? ''));
+        if ($note !== '') {
+            $body = rtrim($body).'. '.$note;
+        }
+
         return $this->store(
             OperationalAlertType::ServiceChange,
             (int) $client->security_company_id,
@@ -78,6 +87,7 @@ final class RecordOperationalAlertService
             $post?->id,
             'Novedad de servicio',
             $body,
+            payload: $payload,
         );
     }
 

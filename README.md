@@ -404,7 +404,7 @@ Sidebar: **Mi empresa** (dashboard) · Facturación · Clientes · **Instalacion
 |------|---------|
 | `GET /company/dashboard` | **Mi empresa** — Command Center (3 filas): mapa satélite, cartera/alertas, fuerza laboral, accesos, turnos, revistas mes/semana |
 | `GET /company/clients` | Cartera de **clientes** (acción única: **Ver**; vacío: «Aún no tienes clientes creados en la cartera») |
-| `GET /company/installations` | Directorio de sedes + tablero SIG (mapa, puestos, novedades de servicio) si no hay búsqueda |
+| `GET /company/installations` | Directorio de sedes + tablero SIG (servicios, novedades de puesto, revistas) si no hay búsqueda |
 | `GET /company/ops/alerts.json` | Poll de pánico/Observatorio (overlay; no incluye a quien disparó) |
 | `POST /company/ops/panic` | Pánico por usuario de empresa (mismo canal que portería, cliente y APK) |
 | `GET /company/panics` | Atención de pánicos: fichas abiertas/cerradas (`ops.panic.attend`) |
@@ -610,7 +610,7 @@ Tablas relacionadas:
 
 | Ruta | Módulo |
 |------|--------|
-| `/client/dashboard` | Resumen SIG: mapa, puestos, novedades de servicio, afiliación, gráfica de revistas |
+| `/client/dashboard` | Resumen SIG: servicios hoy, novedades de puesto, revistas, tabla de servicios, afiliación, gráfica de servicios por mes |
 | `/client/installations` | Directorio de sedes + tablero SIG compacto (sin búsqueda). `/client/structures` redirige |
 | `/client/ops/alerts.json` | Poll de pánico/Observatorio (overlay) |
 | `/client/ops/panic` | Pánico por usuario (mismo canal; overlay en empresa, no el emisor) |

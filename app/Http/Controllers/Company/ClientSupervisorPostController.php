@@ -31,6 +31,7 @@ final class ClientSupervisorPostController extends Controller
                 'modality' => (int) $request->validated('modality'),
                 'is_active' => $request->boolean('is_active', true),
                 'employee_ids' => $request->validated('employee_ids') ?? [],
+                'observations' => $request->validated('observations'),
             ]);
         } catch (ValidationException $e) {
             return $this->backToClient(
@@ -55,6 +56,7 @@ final class ClientSupervisorPostController extends Controller
                 'modality' => (int) $request->validated('modality'),
                 'is_active' => $request->boolean('is_active'),
                 'employee_ids' => $request->validated('employee_ids') ?? [],
+                'observations' => $request->validated('observations'),
             ]);
         } catch (ValidationException $e) {
             return $this->backToClient(
@@ -74,7 +76,7 @@ final class ClientSupervisorPostController extends Controller
         $this->authorize('update', $client);
 
         try {
-            $this->posts->delete($post);
+            $this->posts->delete($post, $request->input('observations'));
         } catch (ValidationException $e) {
             return $this->backToClient(
                 $client,

@@ -21,10 +21,14 @@
                 @if ($canManageTree)
                     <div class="flex items-center gap-2">
                         <button type="button" @click="editingPost = !editingPost" class="text-xs {{ $editLink }}">Editar</button>
-                        <form method="POST" action="{{ route('company.clients.posts.destroy', [$client, $post]) }}" onsubmit="return confirm('¿Eliminar este puesto?')">
+                        <form method="POST" action="{{ route('company.clients.posts.destroy', [$client, $post]) }}" class="flex items-center gap-1" onsubmit="return confirm('¿Eliminar este puesto?')">
                             @csrf
                             @method('DELETE')
                             <input type="hidden" name="vista" value="{{ $vista }}">
+                            @if ($returnTo)
+                                <input type="hidden" name="return_to" value="{{ $returnTo }}">
+                            @endif
+                            <input type="text" name="observations" required maxlength="2000" placeholder="Motivo" class="w-28 rounded bg-slate-950 border border-slate-700 px-1.5 py-0.5 text-[11px] text-white">
                             <button type="submit" class="text-xs text-rose-400">Eliminar</button>
                         </form>
                     </div>

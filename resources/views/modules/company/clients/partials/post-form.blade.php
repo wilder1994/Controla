@@ -116,6 +116,11 @@
         </p>
     </div>
 
+    <div class="sm:col-span-2">
+        <label class="block text-[11px] text-slate-500 mb-1">Observaciones @if ($isEdit)<span class="text-slate-600">(obligatorio si el servicio ya está armado)</span>@else<span class="text-slate-600">(opcional en el alta)</span>@endif</label>
+        <textarea name="observations" rows="2" maxlength="2000" placeholder="{{ $isEdit ? 'Por qué cambia modalidad, vigilantes o estado…' : 'Opcional' }}" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5 text-xs text-white">{{ old('observations') }}</textarea>
+    </div>
+
     <div class="flex items-center gap-2 sm:col-span-2">
         @if ($isEdit)
             <label class="inline-flex items-center gap-1 text-[11px] text-slate-300">

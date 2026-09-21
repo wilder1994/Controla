@@ -1,6 +1,6 @@
 # Clientes, instalaciones, Accesos y Supervisión
 
-**Última actualización:** 17 septiembre 2026
+**Última actualización:** 21 septiembre 2026
 
 Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) cuelga de la **instalación**, no del cliente suelto.
 
@@ -16,7 +16,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 | **Ciudad** | Ubicación del cliente (`clients.city` + `department`). **No es un nodo del árbol.** Lo que en el Excel viejo de empleados decía «Sector» era ciudad. | Ficha y Excel de clientes |
 | **Instalación** | Sitio físico del cliente, **siempre con georreferencia**. Tipo, código interno, DANE si es colegio, **área**, **Administrador** y **Apoyo**. El nombre puede repetirse. Puede ser **el mismo cliente** (copia nombre + pin de la ficha). URL pública del Observatorio: `/o/{slug}` (solo colegios). | Módulo `/company/installations` · `/client/installations` · ficha del cliente · [`OBSERVATORIO.md`](OBSERVATORIO.md) |
 | **Puerta** | Punto de portería (peatonal, vehicular, principal). Tabla `locations` (`type = access_point`). Solo Accesos. **No** es un puesto. | Tarjeta **Puertas** |
-| **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad en horas (catálogo Ajustes → Modalidades) y vigilantes asignados. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
+| **Puesto** | Puesto de vigilancia (`supervisor_posts`): modalidad en horas (catálogo Ajustes → Modalidades) y vigilantes asignados. En el tablero SIG es un **servicio**. Un catálogo. **Nunca** un `location`. | Tarjeta **Instalaciones y puestos** |
 | **Tipo de estructura** | Catálogo **por empresa** (`structure_types.security_company_id`), fijo en el alta (`clients.structure_type_id`). | Ajustes → Estructuras / ficha cliente |
 | **Nodo / subnodo** | Censo (`structures`, `parent_id` + `installation_id`). Torre, salón, apto. Distinto de puesto/acceso. | Ficha de instalación (`/client/installations/{id}`) |
 | **Persona (censo)** | `structure_members` en un nodo. Tipo de documento + fecha de nacimiento. Menores: dato reservado salvo 4 admins; portería solo nombre. **No es empleado de la empresa.** | Panel cliente · portería Personas |
@@ -25,7 +25,7 @@ Controla **no** cobra al cliente final por vigilancia; solo registra `service_st
 
 La ficha corta por **objeto**, no por línea comercial. **Instalación y puesto** se editan una sola vez. Las **puertas** son otra tarjeta, solo si hay Accesos. Operar portería / operar cliente también exigen Accesos. Supervisión de campo se opera en la app y en `/company/supervision`, no en un segundo árbol.
 
-Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_access`) son los KPIs de portería. El **panel cliente** (`/client/dashboard`) y **Instalaciones** muestran el tablero SIG: mapa, puestos, novedades de servicio, salud afiliatoria y gráfica de revistas. El pánico (portería, admin cliente/instalaciones, supervisor) es el mismo: `operational_alerts`; lo atiende la empresa en **Atención de pánicos** (`/company/panics`, permiso `ops.panic.attend`). El vigilante elige puerta si hay varias; **Operar portería** no. Ver [`PORTERIA.md`](PORTERIA.md). Tarjetas: **Instalaciones y puestos** (`?vista=sitio`, si Accesos o Supervisión) y **Puertas** (`?vista=puertas`, solo Accesos). `?vista=accesos` y `?vista=supervision` redirigen al sitio.
+Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_access`) son los KPIs de portería. El **panel cliente** (`/client/dashboard`) y **Instalaciones** muestran el tablero SIG: mapa, **servicios hoy** (puestos activos), novedades de **puesto** (alta/baja/modalidad/vigilantes + observaciones), **revistas del supervisor**, tabla Servicio/Modalidad/Vigilantes, gráfica de servicios por mes y salud afiliatoria. Un puesto es un servicio. Observaciones opcionales en el alta y en la primera asignación de vigilantes; obligatorias en cambios posteriores. Las revistas no van en novedades de servicio. El pánico (portería, admin cliente/instalaciones, supervisor) es el mismo: `operational_alerts`; lo atiende la empresa en **Atención de pánicos** (`/company/panics`, permiso `ops.panic.attend`). El vigilante elige puerta si hay varias; **Operar portería** no. Ver [`PORTERIA.md`](PORTERIA.md). Tarjetas: **Instalaciones y puestos** (`?vista=sitio`, si Accesos o Supervisión) y **Puertas** (`?vista=puertas`, solo Accesos). `?vista=accesos` y `?vista=supervision` redirigen al sitio.
 
 ---
 
