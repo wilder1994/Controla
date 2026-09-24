@@ -10,6 +10,7 @@ use App\Enums\EvidenceEventType;
 use App\Enums\SubscriptionStatus;
 use App\Models\Client;
 use App\Models\SecurityCompany;
+use App\Support\Company\CompanyServiceAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -40,6 +41,8 @@ final class ArchiveCompanyService
                     'archived_at' => $now,
                     'is_active' => false,
                 ]);
+
+            CompanyServiceAccess::revokeOperationalTokens((int) $company->id);
 
             $this->evidenceService->record(
                 EvidenceEventType::CompanyArchived,

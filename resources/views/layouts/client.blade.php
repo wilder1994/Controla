@@ -71,6 +71,7 @@
         </div>
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
+            @include('partials.company-service-suspended')
             @include('partials.operate-return-banner')
             @php
                 $rail = ($wide ?? false)

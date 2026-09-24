@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Domain\Geo\GeoAddressData;
 use App\Domain\Pricing\Data\AccessSeatSplit;
+use App\Enums\ArchiveReason;
 use App\Enums\BillingCycle;
 use App\Enums\ClientLifecycle;
 use App\Enums\CompanyPackageSku;
@@ -14,6 +15,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PlatformDocumentType;
 use App\Enums\SupervisionPackageSku;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Platform\ArchiveCompanyRequest;
 use App\Http\Requests\Platform\ApplyAdminPlanChangeRequest;
 use App\Http\Requests\Platform\CancelCompanyMembershipRequest;
 use App\Http\Requests\Platform\SchedulePackageChangeRequest;
@@ -29,6 +31,9 @@ use App\Models\SecurityCompany;
 use App\Models\User;
 use App\Repositories\SecurityCompanyRepository;
 use App\Services\Platform\ApplyAdminPlanChangeService;
+use App\Services\Platform\ArchiveCompanyService;
+use App\Services\Platform\ReactivateCompanyService;
+use App\Services\Platform\SuspendCompanyService;
 use App\Services\Platform\CancelCompanyMembershipService;
 use App\Services\Platform\EnterCompanyAsSupportService;
 use App\Services\Platform\RegisterCommercialPaymentService;
@@ -67,6 +72,9 @@ final class CompanyController extends Controller
         private readonly UndoCompanyMembershipCancellationService $undoCompanyMembershipCancellationService,
         private readonly ScheduleCompanyPackageChangeService $scheduleCompanyPackageChangeService,
         private readonly ApplyAdminPlanChangeService $applyAdminPlanChangeService,
+        private readonly SuspendCompanyService $suspendCompanyService,
+        private readonly ReactivateCompanyService $reactivateCompanyService,
+        private readonly ArchiveCompanyService $archiveCompanyService,
     ) {}
 
     public function index(): View
@@ -497,6 +505,56 @@ final class CompanyController extends Controller
         return redirect()
             ->route('admin.companies.show', $company)
             ->with('success', "Paquete de Supervisión actualizado: {$label}.");
+    }
+
+    public function cutService(SecurityCompany $company): RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+
+        if (! $company->is_active || $company->archived_at !== null) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->with('warning', 'El servicio de esta empresa ya está cortado o archivado.');
+        }
+
+        $this->suspendCompanyService->execute($company, null, 'Corte inmediato de servicio');
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with('success', "Servicio cortado para «{$company->displayName()}». Solo el admin empresa puede entrar, en solo lectura.");
+    }
+
+    public function reactivateService(SecurityCompany $company): RedirectResponse
+    {
+        abort_unless(auth()->user()?->can('platform.companies.manage'), 403);
+
+        if ($company->is_active && $company->archived_at === null) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->with('warning', 'El servicio de esta empresa ya está activo.');
+        }
+
+        $this->reactivateCompanyService->execute($company);
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with('success', "Servicio reactivado para «{$company->displayName()}».");
+    }
+
+    public function archiveCompany(ArchiveCompanyRequest $request, SecurityCompany $company): RedirectResponse
+    {
+        if ($company->archived_at !== null) {
+            return redirect()
+                ->route('admin.companies.show', $company)
+                ->with('warning', 'Esta empresa ya está archivada.');
+        }
+
+        $reason = ArchiveReason::from($request->validated('archive_reason'));
+        $this->archiveCompanyService->execute($company, $reason);
+
+        return redirect()
+            ->route('admin.companies.show', $company)
+            ->with('success', "Empresa «{$company->displayName()}» archivada ({$reason->label()}).");
     }
 
     public function editProfile(SecurityCompany $company): View

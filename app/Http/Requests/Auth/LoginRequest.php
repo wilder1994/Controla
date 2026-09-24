@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Services\Auth\FindUserByLogin;
+use App\Support\Company\CompanyServiceAccess;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -69,6 +70,15 @@ class LoginRequest extends FormRequest
 
             throw ValidationException::withMessages([
                 'email' => 'Esta cuenta está desactivada.',
+            ]);
+        }
+
+        $user->loadMissing('securityCompany');
+        if (CompanyServiceAccess::isCut($user->securityCompany) && ! CompanyServiceAccess::mayBrowseWhileCut($user)) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => CompanyServiceAccess::DENIED,
             ]);
         }
 

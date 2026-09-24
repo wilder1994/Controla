@@ -50,6 +50,7 @@ Panel `/company/users`. **Crear y editar usan el mismo formulario** (`modules/co
 9. Clave aleatoria. Tras crear, modal para **copiar usuario y contraseña** (no se vuelven a mostrar). Primera entrada: cambia **usuario y contraseña** (`/password/primera` o PWA). Supervisor: además `supervisor_code` de 6 dígitos (revista Accesos, no login).
 10. La zona de Supervisión **no** se pega al usuario ni se muestra en la tabla: se elige al abrir turno.
 11. **No se elimina** la cuenta. **Desactivar** (pestaña Activos) pone `is_active = false`: sale del listado activo, no puede entrar al panel ni a la PWA, el historial queda. Pestaña **Desactivados** → Reactivar. No se puede desactivar a uno mismo.
+12. **Empresa con acceso suspendido** (ficha plataforma, bloque **Acceso al sistema** → Suspender / Archivar): el **admin empresa** entra al panel en solo lectura con el aviso **Servicio suspendido**. El resto (portería, PWA/APK, API) no entra: *Este usuario no tiene acceso al sistema. Comuníquese con el administrador.* No confundir con **Cancelar membresía**. Detalle: [`PLATAFORMA-ADMIN.md`](PLATAFORMA-ADMIN.md).
 
 Cuentas antiguas pueden seguir entrando con `users.email` si lo tienen. Plataforma (`/admin/users`) no usa este flujo.
 

@@ -24,6 +24,7 @@
             cancelOpen: {{ old('action_context') === 'cancel' ? 'true' : 'false' }},
             changeOpen: {{ old('action_context') === 'schedule' ? 'true' : 'false' }},
             reactivateOpen: false,
+            archiveOpen: false,
             applyWhen: @js(old('apply_when', 'now')),
             syncPlanSeats() {
                 const sku = this.$refs.planSku?.value ?? ''
@@ -40,6 +41,18 @@
             }
         }"
     >
+        @if ($company->archived_at !== null)
+            <div class="rounded-lg border border-slate-600/60 bg-slate-900 px-4 py-3 text-sm text-slate-100">
+                <p class="font-semibold">Servicio archivado</p>
+                <p class="text-xs text-slate-400 mt-1">La empresa está fuera de cartera. Nadie opera. Usa «Reactivar servicio» si vuelve el acuerdo.</p>
+            </div>
+        @elseif (! $company->is_active)
+            <div class="rounded-lg border border-rose-800/50 bg-rose-950/30 px-4 py-3 text-sm text-rose-100">
+                <p class="font-semibold">Servicio suspendido</p>
+                <p class="text-xs text-rose-200/80 mt-1">Solo el admin empresa entra (solo lectura). El resto ve: «Este usuario no tiene acceso al sistema. Comuníquese con el administrador.»</p>
+            </div>
+        @endif
+
         @if ($company->hasPendingCancellation())
             <div class="rounded-lg border border-amber-800/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
                 Cancelación programada
@@ -311,6 +324,49 @@
                             </x-ui.button>
                         @endif
                     </div>
+
+                    <div class="rounded-lg border border-rose-900/40 bg-rose-950/15 p-3 space-y-2">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <p class="text-xs uppercase tracking-wide text-rose-300/80">Acceso al sistema</p>
+                                <p class="text-sm font-semibold text-white">
+                                    @if ($company->archived_at !== null)
+                                        Archivado
+                                    @elseif (! $company->is_active)
+                                        Suspendido
+                                    @else
+                                        Activo
+                                    @endif
+                                </p>
+                                <p class="text-xs text-slate-400 mt-0.5">
+                                    No es la membresía. Aquí se apaga o se prende el acceso de todos los usuarios.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            @if ($company->is_active && $company->archived_at === null)
+                                <form method="POST" action="{{ route('admin.companies.cut', $company) }}" onsubmit="return confirm('¿Suspender el acceso ahora? Solo el admin empresa podrá entrar, en solo lectura.')">
+                                    @csrf
+                                    <x-ui.button type="submit" variant="secondary" size="md">
+                                        Suspender acceso
+                                    </x-ui.button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('admin.companies.reactivate-service', $company) }}" onsubmit="return confirm('¿Reactivar el acceso de esta empresa?')">
+                                    @csrf
+                                    <x-ui.button type="submit" variant="secondary" size="md">
+                                        Reactivar acceso
+                                    </x-ui.button>
+                                </form>
+                            @endif
+
+                            @if ($company->archived_at === null)
+                                <x-ui.button type="button" variant="secondary" size="md" @click="archiveOpen = true">
+                                    Archivar empresa
+                                </x-ui.button>
+                            @endif
+                        </div>
+                    </div>
                 @else
                     <p class="text-xs text-slate-500">No tienes permiso para gestionar la membresía.</p>
                 @endcan
@@ -382,5 +438,6 @@
             'packageOptions' => $packageOptions,
             'cycleOptions' => $cycleOptions,
         ])
+        @include('modules.admin.companies.partials.archive-company-modal', ['company' => $company])
     </div>
 </x-admin-layout>

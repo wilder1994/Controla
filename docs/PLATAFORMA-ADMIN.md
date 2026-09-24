@@ -2,7 +2,7 @@
 
 Documentación del panel `/admin`: dashboard operativo, ciclo comercial, archivo de cartera y retención legal de datos.
 
-**Última actualización:** 14 septiembre 2026
+**Última actualización:** 24 septiembre 2026
 
 ---
 
@@ -35,6 +35,31 @@ Tests: `EnterCompanyAsSupportTest`.
 - Servicio `ApplyAdminPlanChangeService`. Si no es inmediato, escribe `scheduled_*`; el cron de ciclo (`applyDueChanges`) lo aplica al vencer.
 - **Cobrar y programar al corte** (`POST …/package/schedule`) sigue pidiendo comprobante.
 - Tests: `AdminPlanChangeTest`.
+
+### Acceso al sistema (suspender / archivar / reactivar)
+
+En la ficha, bloque **Acceso al sistema** (abajo de Pagar / Cancelar membresía). No es lo mismo que cancelar la membresía.
+
+Estado visible: **Activo** · **Suspendido** · **Archivado**.
+
+| Qué pulsar | Cuándo | Qué pasa |
+|------------|--------|----------|
+| **Suspender acceso** | Mora o corte inmediato | Apaga el sistema ya. Tokens API revocados. |
+| **Archivar empresa** | No hay acuerdo | Suspende + saca de cartera (`cancelled` o `non_payment`). |
+| **Reactivar acceso** | Ya pagaron / volvió el trato | Prende de nuevo. Si estaba archivada, desarchiva y restaura conjuntos `archived_company`. |
+
+Rutas (`platform.companies.manage`): `POST …/cut` · `POST …/archive` · `POST …/reactivate-service`.
+
+**Quién entra con el acceso suspendido o archivado**
+
+- **Admin empresa:** entra al panel web, solo lectura, aviso **Servicio suspendido**.
+- **Cualquier otro** (colaborador, portería, PWA/APK, API): no entra. *Este usuario no tiene acceso al sistema. Comuníquese con el administrador.*
+
+**Cancelar membresía** sigue siendo contrato: opera hasta `package_ends_at`. No apaga el sistema.
+
+El cron de mora usa el mismo corte (`SuspendCompanyService`).
+
+Tests: `CutCompanyServiceTest`.
 
 ---
 

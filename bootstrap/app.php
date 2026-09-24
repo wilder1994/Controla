@@ -11,6 +11,7 @@ use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureSupervisionUnlocked;
 use App\Http\Middleware\EnsureSupervisorProApi;
 use App\Http\Middleware\EnsureSupervisorUsesFieldApp;
+use App\Http\Middleware\EnsureCompanyServiceAccess;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\InitializeAccessTenancy;
 use App\Support\Platform\SupportCompanyContext;
@@ -43,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
+            'company.service' => EnsureCompanyServiceAccess::class,
             'password.changed' => EnsurePasswordIsChanged::class,
             'tenancy.access' => InitializeAccessTenancy::class,
             'tenant.unscoped' => DisableTenantScoping::class,

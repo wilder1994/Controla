@@ -28,7 +28,15 @@ Route::middleware(['auth', 'password.changed', 'active', 'platform.admin', 'tena
             ->middleware('permission:platform.dashboard')
             ->name('downloads.apk');
 
-        Route::post('/companies/{company}/archive', [DashboardController::class, 'archiveCompany'])
+        Route::post('/companies/{company}/cut', [CompanyController::class, 'cutService'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.cut');
+
+        Route::post('/companies/{company}/reactivate-service', [CompanyController::class, 'reactivateService'])
+            ->middleware('permission:platform.companies.manage')
+            ->name('companies.reactivate-service');
+
+        Route::post('/companies/{company}/archive', [CompanyController::class, 'archiveCompany'])
             ->middleware('permission:platform.companies.manage')
             ->name('companies.archive');
 

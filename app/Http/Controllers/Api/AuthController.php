@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Company\CompanyServiceAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -26,6 +27,13 @@ final class AuthController extends Controller
         if (! $user || ! Hash::check($request->password, $user->password) || ! $user->is_active) {
             throw ValidationException::withMessages([
                 'email' => ['Credenciales inválidas.'],
+            ]);
+        }
+
+        $user->loadMissing('securityCompany');
+        if (CompanyServiceAccess::isCut($user->securityCompany)) {
+            throw ValidationException::withMessages([
+                'email' => [CompanyServiceAccess::DENIED],
             ]);
         }
 

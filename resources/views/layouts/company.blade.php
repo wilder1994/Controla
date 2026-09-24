@@ -182,6 +182,7 @@
         </div>
 
         <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto">
+            @include('partials.company-service-suspended')
             @if (! empty($supportMode['active']))
                 <div class="shrink-0 border-b border-amber-800/60 bg-amber-950/50">
                     <div class="company-shell-rail py-2.5 flex flex-wrap items-center justify-between gap-3">
@@ -222,7 +223,7 @@
                             @endisset
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end {{ ! empty($companyServiceSuspended) ? 'pointer-events-none opacity-40' : '' }}">
                             @isset($actions)
                                 {{ $actions }}
                             @elseif (request()->routeIs('company.clients.*') && ! request()->routeIs('company.clients.create'))
@@ -245,7 +246,7 @@
 
             <x-ui.flash-toasts rail="company-shell-rail" />
 
-            <main class="company-shell-rail flex-1 w-full py-4 sm:py-5">
+            <main class="company-shell-rail flex-1 w-full py-4 sm:py-5 {{ ! empty($companyServiceSuspended) ? 'pointer-events-none select-none opacity-60' : '' }}">
                 {{ $slot }}
             </main>
         </div>

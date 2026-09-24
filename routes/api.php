@@ -18,7 +18,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/supervision/login', [SupervisorShiftController::class, 'login']);
 Route::get('/observatory/openapi.json', [ObservatoryApiDocsController::class, 'spec']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'company.service'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 

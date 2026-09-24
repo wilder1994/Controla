@@ -18,6 +18,7 @@ use App\Models\SupervisorShiftReview;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
 use App\Services\Auth\FindUserByLogin;
+use App\Support\Company\CompanyServiceAccess;
 use App\Support\Auth\LoginUsernameRules;
 use App\Services\Company\BuildSupervisorOfflinePackService;
 use App\Services\Company\CloseSupervisorShiftService;
@@ -79,6 +80,13 @@ final class SupervisorShiftController extends Controller
         if (! $user->is_active) {
             throw ValidationException::withMessages([
                 'login' => ['Esta cuenta está desactivada.'],
+            ]);
+        }
+
+        $user->loadMissing('securityCompany');
+        if (CompanyServiceAccess::isCut($user->securityCompany)) {
+            throw ValidationException::withMessages([
+                'login' => [CompanyServiceAccess::DENIED],
             ]);
         }
 

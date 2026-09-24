@@ -382,7 +382,7 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 
 **Pagos locales (sin proveedor):** `BILLING_GATEWAY_DRIVER=local` abre checkout interno (`/billing/checkout/{payment}`) con Aprobar/Rechazar. Manual súper admin + online simulado convergen en `commercial_payments`. Guía: [`docs/BILLING-LOCAL-Y-MIGRACION.md`](docs/BILLING-LOCAL-Y-MIGRACION.md).
 
-**Membresía (v1):** en Resumen se gestionan intents `renew` / `anticipate` / `reactivate` / `plan_change`. Cancelación = `cancel_at_period_end` (sigue operativa hasta `package_ends_at`); al vencer, lifecycle suspende **sin gracia**. Historial es solo lectura (los pagos manuales del súper admin sí aparecen).
+**Membresía (v1):** en Resumen se gestionan intents `renew` / `anticipate` / `reactivate` / `plan_change`. Cancelación = `cancel_at_period_end` (sigue operativa hasta `package_ends_at`); al vencer, lifecycle suspende **sin gracia**. **Suspender acceso** (ficha admin, bloque Acceso al sistema) apaga de inmediato a todos salvo el admin empresa (solo lectura + «Servicio suspendido»). No es Cancelar membresía. Historial es solo lectura (los pagos manuales del súper admin sí aparecen).
 
 **Módulo Documentos (v1.1):** normoteca con **contrato por plan (SKU)** y documentos globales (T&C, privacidad, **protección de menores**, procedimiento); versionado desde admin; al aceptar se congela contenido + hash en expediente (**inmutable** ante cambios posteriores de Normoteca); clickwrap, pago manual y factura demo (`BILLING_MODE=demo`). El aviso de menores en Personas / alta de cliente y admins lee la versión vigente. Sin export PDF/HTML en v1. Detalle: [`docs/MODULO-DOCUMENTOS.md`](docs/MODULO-DOCUMENTOS.md).
 

@@ -6,6 +6,7 @@ namespace App\View\Composers;
 
 use App\Models\SecurityCompany;
 use App\Repositories\ClientRepository;
+use App\Support\Company\CompanyServiceAccess;
 use App\Support\Platform\ActingCompanyResolver;
 use App\Support\Platform\SupportCompanyContext;
 use Illuminate\View\View;
@@ -56,7 +57,14 @@ final class CompanyLayoutComposer
             }
         }
 
+        $suspended = false;
+        if ($user !== null && ! $user->hasRole('super-admin')) {
+            $user->loadMissing('securityCompany');
+            $suspended = CompanyServiceAccess::isCut($user->securityCompany);
+        }
+
         $view->with('companyContext', $companyContext);
         $view->with('supportMode', $supportMode);
+        $view->with('companyServiceSuspended', $suspended);
     }
 }
