@@ -29,7 +29,8 @@ final class CutCompanyServiceTest extends TestCase
             ->get(route('admin.companies.show', $company))
             ->assertOk()
             ->assertSee('Acceso al sistema')
-            ->assertSee('Suspender acceso');
+            ->assertSee('Suspender acceso')
+            ->assertSee('Se apaga el sistema ahora');
 
         $this->actingAs($platform)
             ->from(route('admin.companies.show', $company))

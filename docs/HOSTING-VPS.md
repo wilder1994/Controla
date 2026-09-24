@@ -80,7 +80,7 @@ Preview planilla parafiscal (21 sep 2026): LibreOffice convierte el recorte `.xl
 
 Documentos Ver vs Gestionar (21 sep 2026): `company.documents.view` solo preview. **Descargar** (PDF/xlsx) exige `company.documents.manage`. Pull + `npm run build` + `route:cache` + `view:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 
-Suspender acceso (24 sep 2026): ficha empresa, bloque **Acceso al sistema** (Suspender / Reactivar / Archivar). Admin empresa solo lectura + banner. Resto bloqueado. Sin migrate ni seeder. Pull + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
+Suspender acceso (24 sep 2026): ficha empresa, bloque **Acceso al sistema** (Suspender / Reactivar / Archivar). Confirmación en modal del panel. Admin empresa solo lectura + banner. Resto bloqueado. Sin migrate ni seeder. Pull + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
 Tableros en vivo (15 sep 2026): Observatorio + SIG + **Mi empresa**. JSON al cambio (Reverb) y sondeo cada 12 s si el socket no está conectado. Crear folio también refresca (alerta Observatorio). Toast de quién cambió. Mapa de conjuntos sigue de un pintado. Pull + `npm run build` + `view:cache` + `route:cache` + `config:cache`.
 

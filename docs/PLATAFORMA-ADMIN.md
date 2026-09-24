@@ -40,7 +40,7 @@ Tests: `EnterCompanyAsSupportTest`.
 
 En la ficha, bloque **Acceso al sistema** (abajo de Pagar / Cancelar membresía). No es lo mismo que cancelar la membresía.
 
-Estado visible: **Activo** · **Suspendido** · **Archivado**.
+Estado visible: **Activo** · **Suspendido** · **Archivado**. Confirmar siempre en modal del panel (no `confirm()` del navegador).
 
 | Qué pulsar | Cuándo | Qué pasa |
 |------------|--------|----------|

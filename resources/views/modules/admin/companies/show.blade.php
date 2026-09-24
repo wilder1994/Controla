@@ -25,6 +25,8 @@
             changeOpen: {{ old('action_context') === 'schedule' ? 'true' : 'false' }},
             reactivateOpen: false,
             archiveOpen: false,
+            cutOpen: false,
+            reactivateServiceOpen: false,
             applyWhen: @js(old('apply_when', 'now')),
             syncPlanSeats() {
                 const sku = this.$refs.planSku?.value ?? ''
@@ -345,19 +347,13 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             @if ($company->is_active && $company->archived_at === null)
-                                <form method="POST" action="{{ route('admin.companies.cut', $company) }}" onsubmit="return confirm('¿Suspender el acceso ahora? Solo el admin empresa podrá entrar, en solo lectura.')">
-                                    @csrf
-                                    <x-ui.button type="submit" variant="secondary" size="md">
-                                        Suspender acceso
-                                    </x-ui.button>
-                                </form>
+                                <x-ui.button type="button" variant="secondary" size="md" @click="cutOpen = true">
+                                    Suspender acceso
+                                </x-ui.button>
                             @else
-                                <form method="POST" action="{{ route('admin.companies.reactivate-service', $company) }}" onsubmit="return confirm('¿Reactivar el acceso de esta empresa?')">
-                                    @csrf
-                                    <x-ui.button type="submit" variant="secondary" size="md">
-                                        Reactivar acceso
-                                    </x-ui.button>
-                                </form>
+                                <x-ui.button type="button" variant="secondary" size="md" @click="reactivateServiceOpen = true">
+                                    Reactivar acceso
+                                </x-ui.button>
                             @endif
 
                             @if ($company->archived_at === null)
@@ -439,5 +435,7 @@
             'cycleOptions' => $cycleOptions,
         ])
         @include('modules.admin.companies.partials.archive-company-modal', ['company' => $company])
+        @include('modules.admin.companies.partials.cut-service-modal', ['company' => $company])
+        @include('modules.admin.companies.partials.reactivate-service-modal', ['company' => $company])
     </div>
 </x-admin-layout>
