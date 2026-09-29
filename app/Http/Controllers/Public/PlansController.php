@@ -5,41 +5,43 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Enums\BillingCycle;
-use App\Enums\PackageModality;
+use App\Enums\CommercialProduct;
 use App\Http\Controllers\Controller;
-use App\Models\PricingSettings;
-use App\Services\Pricing\PriceCalculator;
+use App\Support\Catalog\CatalogPricer;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class PlansController extends Controller
 {
-    public function __construct(
-        private readonly PriceCalculator $priceCalculator,
-    ) {}
-
     public function index(Request $request): View
     {
-        $settings = PricingSettings::current();
         $cycle = BillingCycle::tryFrom((string) $request->query('cycle', 'monthly'))
             ?? BillingCycle::Monthly;
-        $modality = PackageModality::tryFrom((string) $request->query('modality', 'manual'))
-            ?? PackageModality::Manual;
-
-        $matrix = $this->priceCalculator->matrix($cycle, $settings);
-        $supervisionMatrix = $this->priceCalculator->matrixSupervision($cycle, $settings);
+        $pricer = CatalogPricer::make();
+        $accessMatrix = $pricer->matrix(CommercialProduct::Access, $cycle);
+        $supervisionMatrix = $pricer->matrix(CommercialProduct::Supervision, $cycle);
+        $indexingMatrix = $pricer->matrix(CommercialProduct::Indexing, $cycle);
+        $indexingAddonMatrix = $pricer->matrix(CommercialProduct::Indexing, $cycle, true);
+        $observatoryMatrix = $pricer->observatoryMatrix($cycle);
         $annualDiscount = (float) config('tenancy.pricing.annual_discount', 0.17);
-
-        $minMonthly = $this->priceCalculator->quote(PackageModality::Manual, 1, BillingCycle::Monthly, $settings);
+        $minMonthly = $accessMatrix[0]['price_monthly'] ?? 0;
+        $signupSku = [
+            'bronce' => 'pack_5_manual',
+            'plata' => 'pack_10_manual',
+            'oro' => 'pack_50_manual',
+            'platino' => 'pack_100_manual',
+        ];
 
         return view('modules.public.plans.index', compact(
-            'settings',
-            'matrix',
-            'supervisionMatrix',
             'cycle',
-            'modality',
+            'accessMatrix',
+            'supervisionMatrix',
+            'indexingMatrix',
+            'indexingAddonMatrix',
+            'observatoryMatrix',
             'annualDiscount',
             'minMonthly',
+            'signupSku',
         ));
     }
 }

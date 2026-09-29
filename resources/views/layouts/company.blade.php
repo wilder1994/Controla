@@ -73,78 +73,104 @@
                 @include('partials.sidebar-mobile-close')
             </div>
             <nav class="flex-1 min-h-0 px-4 py-6 space-y-1 overflow-y-auto sidebar-scroll" @click="onNavClick($event)">
+                @php $canMod = $canMod ?? []; @endphp
+                @if (! empty($canMod['dashboard']))
                 @can('company.dashboard')
                 <a href="{{ route('company.dashboard') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.dashboard') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Mi empresa</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['billing']))
                 @can('company.billing.manage')
                 <a href="{{ route('company.billing.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.billing.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Facturación</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['clients']))
                 @can('company.clients.view')
                 <a href="{{ route('company.clients.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onClientsCrud ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Clientes</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['installations']))
                 @can('company.installations.view')
                 <a href="{{ route('company.installations.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onInstallations ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Instalaciones</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['observatory']))
                 @can('observatory.view')
                 <a href="{{ route('company.observatory.events.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ $onObservatory ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Observatorio</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['supervision']))
                 @can('company.supervision.view')
                 <a href="{{ route('company.supervision.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.supervision.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Supervisión</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['panics']))
                 @can('ops.panic.attend')
                 <a href="{{ route('company.panics.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.panics.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Atención de pánicos</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['downloads']))
                 @can('company.downloads.view')
                 <a href="{{ route('company.downloads.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.downloads.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Descargas</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['employees']))
                 @can('company.employees.view')
                 <a href="{{ route('company.employees.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.employees.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Empleados</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['documents']))
                 @can('company.documents.view')
                 <a href="{{ route('company.personnel-documents.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.personnel-documents.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Documentos</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['users']))
                 @canany(['company.users.view', 'company.users.assign'])
                 <a href="{{ route('company.users.index') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.users.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Usuarios</span>
                 </a>
                 @endcanany
+                @endif
+                @if (! empty($canMod['profile']))
                 @can('company.profile.manage')
                 <a href="{{ route('company.settings.edit') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('company.settings.*') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800' }}">
                     <span>Mis datos</span>
                 </a>
                 @endcan
+                @endif
+                @if (! empty($canMod['settings']))
                 @canany(['company.settings.view', 'company.settings.manage'])
                 @php
                     $onAjustes = request()->routeIs('company.job-titles.*')
@@ -167,6 +193,7 @@
                     <span>Ajustes</span>
                 </a>
                 @endcanany
+                @endif
             </nav>
                     @include('partials.ops-live-alerts', [
                         'opsPoll' => auth()->check() ? route('company.ops.alerts') : null,

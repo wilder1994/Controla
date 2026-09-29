@@ -4,209 +4,86 @@ Documentación de la implementación de pricing B2B para empresas de seguridad (
 
 ---
 
+**Catálogo 29 sep 2026:** metales Bronce (1–5) · Plata (6–15) · Oro (16–40) · Platino (41–100). Unidad = 100%. Pack = unidad × cupo × (1 − %). Extra = unidades al 100%. Empleados 3k/6k/9k/12k. Indexación add-on más barata si ya hay Accesos/Supervisión. Observatorio: un precio según metal de Accesos. Módulos por producto en `/admin/pricing`. `config/catalog.php` + `pricing_settings.catalog`.
+
 ## Resumen ejecutivo
 
-| Quién compra | Qué compra | Qué limita | Qué es ilimitado |
-|--------------|------------|------------|------------------|
-| Empresa de seguridad | Cupo de **instalaciones** activas + modalidad + ciclo | Nº de sedes `is_active` (reusa `max_clients`) | Personas, nodos y puertas de cada sede |
+| Quién compra | Qué compra | Qué limita |
+|--------------|------------|------------|
+| Empresa de seguridad | Metales + productos (Accesos, Supervisión, Indexación, Observatorio) | Instalaciones activas (`max_clients`) y empleados (3k–12k) |
 
-El modelo **reemplaza** el pricing por unidades (`plan_tier` / `max_structures` en `clients`). Esas columnas siguen en BD por compatibilidad pero **no limitan** el censo.
-
-**Actualización ago 2026:** el cupo de Accesos ya no bloquea el alta de fichas. Ver [`PAQUETES-ACCESOS-Y-SUPERVISION.md`](PAQUETES-ACCESOS-Y-SUPERVISION.md).
+Unidad comercial = **instalación activa**. Personas/nodos/puertas de la sede no se venden por cupo.
 
 ---
 
-## Variables comerciales
+## Metales y fórmula
 
-### 1. Cupo (tamaño del paquete)
-
-Cantidad máxima de conjuntos (`clients`) que la empresa puede registrar:
-
-| Cupo | Descuento por volumen (config) |
-|------|--------------------------------|
-| 1 | 0% |
-| 5 | 10% |
-| 10 | 15% |
-| 50 | 25% |
-| 100 | 30% |
-| 500 | 50% |
-
-Definido en `config/tenancy.php` → `pricing.volume_discounts`.
-
-### 2. Modalidad
-
-| Valor | Label UI | Incluye (feature flags) |
-|-------|----------|-------------------------|
-| `manual` | Sin hardware | Censo, portería manual, portal residente web |
-| `hardware` | Con hardware | Lo anterior + lectores, LPR, RFID, facial, app↔dispositivos |
-| `mixed` | Mixto (desde 5) | Asientos combinados; hardware en los asientos con HW |
-
-Features en `config/tenancy.php` → `features`. Helper: `App\Support\Tenancy\CompanyPackage::allows()`.
-
-### 3. Ciclo de facturación
-
-| Valor | Label | Vigencia al asignar |
-|-------|-------|---------------------|
-| `monthly` | Mensual | +1 mes desde `package_starts_at` |
-| `annual` | Anual | +1 año (descuento ~17% vs 12 mensualidades) |
-
-Enum: `App\Enums\BillingCycle`.
-
----
-
-## Precios: quién define qué
-
-### Entrada manual (solo súper admin)
-
-En `/admin/pricing` se editan **dos** precios unitarios (COP / cliente / mes):
-
-- `unit_price_manual`
-- `unit_price_hardware`
-
-Persistidos en tabla `pricing_settings` (modelo `PricingSettings`).
-
-### Cálculo automático
-
-Servicio: `App\Services\Pricing\PriceCalculator`
+| Plan | Rango / pack | Empleados |
+|------|--------------|-----------|
+| Bronce | 1–5 / pack 5 | 3.000 |
+| Plata | 6–15 / pack 15 | 6.000 |
+| Oro | 16–40 / pack 40 | 9.000 |
+| Platino | 41–100 / pack 100 | 12.000 |
 
 ```
-precio_mensual_paquete = unitario × cupo × (1 - descuento_volumen)
-precio_anual           = precio_mensual × 12 × (1 - descuento_anual)
+precio_pack = unidad × cupo_pack × (1 − % descuento del metal)
+N sedes     = mayor pack que quepa + extras × unidad (100%)
 ```
 
-DTO de salida: `App\Domain\Pricing\Data\PriceQuote` (incluye ahorro anual, unitario efectivo, etc.).
+Ciclo anual: ×12 × (1 − `tenancy.pricing.annual_discount`, ~17%).
 
-La matriz completa se muestra en `/admin/pricing` con toggle **Mensual / Anual**. Las celdas **no** se editan una a una.
+## Productos y menús
 
-### Snapshot en contrato
+Defaults en `config/catalog.php`. Editables en `/admin/pricing` (un modal, 4 bloques).
 
-Al asignar paquete (`AssignCompanyPackageService`), se congela en `security_companies`:
+| Producto | Menú por defecto |
+|----------|------------------|
+| Accesos | Mi empresa, Facturación, Clientes, Instalaciones, Pánicos, Empleados, Usuarios, Mis datos, Ajustes |
+| Supervisión | Facturación, Clientes, Instalaciones, Supervisión, Pánicos, Descargas, Empleados, Usuarios, Mis datos, Ajustes |
+| Indexación | Facturación, Empleados, Documentos, Usuarios, Mis datos, Ajustes |
+| Observatorio | Observatorio (solo si hay Accesos) |
 
-- `package_sku`, `package_size`, `package_modality`, `max_clients`
-- `billing_cycle`, `unit_price_snapshot`, `volume_discount_pct`, `annual_discount_pct`
-- `package_price_monthly`, `package_price_annual`
-- `package_starts_at`, `package_ends_at`, `subscription_status`
+Indexación **sola** = unidad lista (más cara) + cupo del metal. **Add-on** (ya hay Accesos o Supervisión) = `indexing_addon`, solo carpetas. Observatorio: un precio por metal de Accesos (Platino más barato).
 
-Cambios futuros en `pricing_settings` **no** alteran empresas ya contratadas.
+El panel recorta el sidebar con `CompanyEntitlements` + `$canMod`. Alta de empleado respeta el tope.
 
----
+## Dónde se ve
 
-## SKUs
+- `/admin/pricing` — 4 tablas + Editar catálogo  
+- `/` y `/planes` — agrupa qué lleva cada metal  
+- Ficha empresa — etiqueta Bronce/Plata… + extras  
 
-Enum `App\Enums\CompanyPackageSku` — combinación `pack_{cupo}_{modality}`:
+Flags en `security_companies`: `has_indexing`, `has_observatory` (existentes quedan en true). JSON `pricing_settings.catalog`.
 
-- `pack_1_manual` … `pack_100_manual`
-- `pack_1_hardware` … `pack_100_hardware`
+Motor: `App\Support\Catalog\CatalogPricer`. Signup público aún usa SKU legacy (`pack_5/10/50/100_manual`). `PriceCalculator` (volumen 1–500) queda para ese checkout.
 
----
+## Rutas
 
-## Rutas y permisos
+| Método | Ruta | Permiso |
+|--------|------|---------|
+| GET/PUT | `/admin/pricing` | `platform.companies.view` / `manage` |
+| GET | `/planes` | público |
 
-### Plataforma (`/admin`)
-
-| Método | Ruta | Permiso | Acción |
-|--------|------|---------|--------|
-| GET | `/admin/pricing` | `platform.companies.view` | Ver/editar unitarios y matriz |
-| PUT | `/admin/pricing` | `platform.companies.manage` | Guardar unitarios |
-| GET | `/admin/companies` | `platform.companies.view` | Listado empresas |
-| GET | `/admin/companies/{company}` | `platform.companies.view` | Detalle + asignar paquete/ciclo |
-| PUT | `/admin/companies/{company}/package` | `platform.companies.manage` | Aplicar SKU + ciclo |
-
-Navegación: `config/access.php` → `navigation.admin`.
-
-### Empresa (`/company`)
-
-- Dashboard: licencia, cupo, ciclo, CTA anual, sugerencias de upgrade de cupo.
-- Instalaciones: alta o reactivar bloqueada si las sedes activas ≥ `max_clients`. Archivar libera cupo. Crear cliente también pide 1 cupo libre.
-- Sin selector de `plan_tier` al crear/editar conjunto.
-
----
-
-## Base de datos
-
-### Migraciones
-
-1. `2026_07_20_140000_add_package_fields_to_security_companies_table.php`  
-   Campos iniciales de paquete en `security_companies`.
-
-2. `2026_07_20_150000_create_pricing_settings_and_subscription_fields.php`  
-   Tabla `pricing_settings` + campos de suscripción (ciclo, snapshot, vigencia).
-
-### Tablas clave
-
-**`pricing_settings`**
-
-| Columna | Descripción |
-|---------|-------------|
-| `unit_price_manual` | Unitario sin hardware |
-| `unit_price_hardware` | Unitario con hardware |
-| `currency` | COP (default) |
-| `updated_by` | Usuario súper admin |
-
-**`security_companies`** (campos comerciales)
-
-Ver snapshot en sección anterior.
-
----
-
-## Servicios y clases
-
-```
-app/
-├── Domain/Pricing/Data/PriceQuote.php
-├── Enums/
-│   ├── BillingCycle.php
-│   ├── CompanyPackageSku.php
-│   ├── PackageModality.php
-│   └── SubscriptionStatus.php
-├── Http/Controllers/Platform/
-│   ├── PricingController.php
-│   └── CompanyController.php
-├── Models/PricingSettings.php
-├── Services/Pricing/
-│   ├── PriceCalculator.php
-│   └── UpdatePlatformPricingService.php
-├── Services/Tenant/AssignCompanyPackageService.php
-└── Support/Tenancy/CompanyPackage.php
-```
-
----
-
-## Tests
+## Tests (BD `controla_test`)
 
 ```bash
+php artisan test --filter=CatalogPricerTest
 php artisan test --filter=PriceCalculatorTest
-php artisan test --filter=PlatformDashboardTest
 ```
 
-- `tests/Unit/Pricing/PriceCalculatorTest.php` — descuentos volumen y anual.
-- `tests/Feature/Platform/PlatformDashboardTest.php` — acceso panel plataforma.
-
----
-
-## Post-instalación / actualización
-
-Tras `git pull` con estos cambios:
+## Deploy
 
 ```bash
-composer install
-php artisan migrate
-php artisan db:seed --class=TenantSeeder    # opcional: refrescar paquete demo SJ Seguridad
-npm install && npm run build
+php artisan migrate --force
+npm run build
+php artisan view:cache && php artisan route:cache
 ```
 
----
-
-## Fuera de alcance (roadmap)
-
-- Pasarela de pago / facturación electrónica.
-- Sub-tiers hardware (Access / Smart / Pro) como SKUs separados.
-- Autoservicio de upgrade por empresa (hoy: solicitud + asignación plataforma).
-
----
+Sin `migrate:fresh`. Ver [`HOSTING-VPS.md`](HOSTING-VPS.md).
 
 ## Changelog
 
 | Fecha | Cambio |
 |-------|--------|
-| 2026-07-20 | Modelo inicial: cupo empresa, modalidad manual/hardware, pricing dinámico, UI admin/empresa |
+| 2026-09-29 | Metales, 4 productos, módulos por plan, indexación add-on, observatorio por metal de Accesos |
+| 2026-07-20 | Modelo inicial cupo + unitarios |

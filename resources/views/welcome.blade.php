@@ -85,7 +85,7 @@
                                         </span>
                                     </div>
                                     <p class="text-sm font-medium text-slate-200 tabular-nums">
-                                        Desde {{ '$'.number_format($minMonthly->priceMonthly, 0, ',', '.') }} / mes · 1 conjunto · manual
+                                        Desde {{ '$'.number_format($minMonthlyAmount, 0, ',', '.') }} / mes · 1 instalación
                                     </p>
                                     <a
                                         href="{{ route('planes.index') }}"
@@ -108,6 +108,23 @@
                                 class="relative h-full w-full rounded-xl border border-white/10 object-cover object-center shadow-2xl shadow-black/50 sm:rounded-2xl"
                             >
                         </div>
+                    </section>
+
+                    <section class="mt-8 space-y-3">
+                        <div class="flex items-end justify-between gap-3">
+                            <h2 class="text-lg font-semibold text-white">Planes Accesos</h2>
+                            <a href="{{ route('planes.index') }}" class="text-sm text-cyan-400 hover:text-cyan-300">Ver todo</a>
+                        </div>
+                        <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            @foreach ($accessMatrix as $row)
+                                <li class="rounded-xl border border-white/10 bg-white/5 p-3">
+                                    <p class="text-sm font-semibold text-cyan-300">{{ $row['label'] }}</p>
+                                    <p class="text-xs text-slate-500">{{ $row['range'] }} · {{ number_format($row['employees']) }} empleados</p>
+                                    <p class="mt-1 text-lg font-bold text-white tabular-nums">{{ '$'.number_format($row['price_monthly'], 0, ',', '.') }}<span class="text-xs font-normal text-slate-500">/mes</span></p>
+                                    <p class="text-[11px] text-emerald-400">−{{ number_format($row['discount'] * 100, 0) }}% vs unidad</p>
+                                </li>
+                            @endforeach
+                        </ul>
                     </section>
 
                     <section class="mt-8 pb-2 sm:mt-10">

@@ -1,5 +1,8 @@
 @php
     $fmt = fn (float $n) => '$'.number_format($n, 0, ',', '.');
+    $period = $cycle->value === 'annual' ? '/año' : '/mes';
+    $cell = $cycle->value === 'annual' ? 'price_annual' : 'price_monthly';
+    $pct = fn (float $d) => number_format($d * 100, 0).'%';
 @endphp
 
 <x-admin-layout title="Tabla de precios">
@@ -7,186 +10,82 @@
         <x-ui.button
             :variant="$cycle->value === 'monthly' ? 'platform' : 'secondary'"
             :href="route('admin.pricing.edit', ['cycle' => 'monthly'])"
-            size="sm">
-            Mensual
-        </x-ui.button>
+            size="sm">Mensual</x-ui.button>
         <x-ui.button
             :variant="$cycle->value === 'annual' ? 'platform' : 'secondary'"
             :href="route('admin.pricing.edit', ['cycle' => 'annual'])"
-            size="sm">
-            Anual recomendado
-        </x-ui.button>
+            size="sm">Anual (−{{ number_format($annualDiscount * 100, 0) }}%)</x-ui.button>
+        @can('platform.companies.manage')
+            <x-ui.button type="button" variant="platform" size="sm" onclick="document.getElementById('catalog-modal').showModal()">
+                Editar catálogo
+            </x-ui.button>
+        @endcan
     </x-slot:actions>
 
     <div class="space-y-4">
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-            <section class="xl:col-span-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4 flex flex-col">
-                <h3 class="text-sm font-semibold text-white">Precios base</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Única entrada manual del súper admin.</p>
+        <p class="text-sm text-slate-400">
+            Bronce 1–5 · Plata 6–15 · Oro 16–40 · Platino 41–100 instalaciones.
+            Precio = unidad × cupo del pack × (1 − descuento). Unidades sueltas van al 100%.
+        </p>
 
-                @can('platform.companies.manage')
-                    <form method="POST" action="{{ route('admin.pricing.update') }}" class="mt-4 space-y-4 flex-1">
-                        @csrf
-                        @method('PUT')
-
-                        <div>
-                            <x-ui.label for="unit_price_manual">Unitario · Sin hardware</x-ui.label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
-                                <x-ui.input accent="platform" type="number" step="1000" min="1000" name="unit_price_manual" id="unit_price_manual"
-                                       :value="old('unit_price_manual', (int) $settings->unit_price_manual)"
-                                       class="pl-7" />
-                            </div>
-                            <p class="mt-1 text-xs text-slate-600">COP por cliente / mes · modalidad manual</p>
-                            <x-ui.field-error :messages="$errors->get('unit_price_manual')" />
-                        </div>
-
-                        <div>
-                            <x-ui.label for="unit_price_hardware">Unitario · Con hardware</x-ui.label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
-                                <x-ui.input accent="platform" type="number" step="1000" min="1000" name="unit_price_hardware" id="unit_price_hardware"
-                                       :value="old('unit_price_hardware', (int) $settings->unit_price_hardware)"
-                                       class="pl-7" />
-                            </div>
-                            <p class="mt-1 text-xs text-slate-600">COP por cliente / mes · lectores, LPR, facial…</p>
-                            <x-ui.field-error :messages="$errors->get('unit_price_hardware')" />
-                        </div>
-
-                        <div>
-                            <x-ui.label for="unit_price_supervision">Unitario · Supervisión</x-ui.label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
-                                <x-ui.input accent="platform" type="number" step="1000" min="0" name="unit_price_supervision" id="unit_price_supervision"
-                                       :value="old('unit_price_supervision', (int) $settings->unit_price_supervision)"
-                                       class="pl-7" />
-                            </div>
-                            <p class="mt-1 text-xs text-slate-600">COP por sitio / mes · sin hardware</p>
-                            <x-ui.field-error :messages="$errors->get('unit_price_supervision')" />
-                        </div>
-
-                        <x-ui.button type="submit" variant="platform" size="md" class="w-full">Guardar y recalcular matriz</x-ui.button>
-                    </form>
-                @else
-                    <div class="mt-4 space-y-2 text-sm">
-                        <p class="text-slate-400">Manual: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_manual) }}</span></p>
-                        <p class="text-slate-400">Hardware: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_hardware) }}</span></p>
-                        <p class="text-slate-400">Supervisión: <span class="font-semibold text-white tabular-nums">{{ $fmt((float) $settings->unit_price_supervision) }}</span></p>
-                    </div>
-                @endcan
-
-                <div class="mt-4 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-500 space-y-1">
-                    <p>Volumen: 1 (0%) · 5 (10%) · 10 (15%) · 50 (25%) · 100 (30%) · 500 (50%)</p>
-                    <p>Anual: −{{ number_format($annualDiscount * 100, 0) }}% sobre 12 meses del paquete</p>
-                    <p>Moneda: {{ $settings->currency }}</p>
+        @foreach ([
+            ['Accesos', $accessMatrix, 'Instalaciones + portería. Empleados según metal.'],
+            ['Supervisión', $supervisionMatrix, 'Campo y APK. Mismos metales. Requiere sentido operativo con Accesos.'],
+            ['Indexación (lista)', $indexingMatrix, 'Sola: más cara. Incluye cupo de empleados del metal.'],
+            ['Indexación (add-on)', $indexingAddonMatrix, 'Con Accesos o Supervisión: más barata. Solo carpetas.'],
+        ] as [$title, $rows, $hint])
+            <section class="rounded-lg border border-slate-800 bg-slate-900/80 overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-800">
+                    <h3 class="text-sm font-semibold text-white">{{ $title }} · {{ $cycle->label() }}</h3>
+                    <p class="text-xs text-slate-500">{{ $hint }}</p>
                 </div>
-            </section>
-
-            <section class="xl:col-span-8 rounded-lg border border-slate-800 bg-slate-900/80 flex flex-col">
-                <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
-                    <div>
-                        <h3 class="text-sm font-semibold text-white">Matriz calculada · {{ $cycle->label() }}</h3>
-                        <p class="text-xs text-slate-600">Precios de paquete (no editables celda a celda)</p>
-                    </div>
-                    @if ($cycle === \App\Enums\BillingCycle::Annual)
-                        <span class="rounded-full bg-emerald-900/30 border border-emerald-800/50 px-2.5 py-0.5 text-xs text-emerald-300">
-                            Ahorro vs 12 mensualidades
-                        </span>
-                    @endif
-                </div>
-
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-slate-950/60 text-xs uppercase tracking-wide text-slate-500 sticky top-0">
+                        <thead class="bg-slate-950/60 text-xs uppercase tracking-wide text-slate-500">
                             <tr>
+                                <th class="px-4 py-2 text-left font-medium">Plan</th>
                                 <th class="px-4 py-2 text-left font-medium">Cupo</th>
-                                <th class="px-4 py-2 text-left font-medium">Desc. vol.</th>
-                                <th class="px-4 py-2 text-right font-medium">Sin hardware</th>
-                                <th class="px-4 py-2 text-right font-medium">Con hardware</th>
-                                <th class="px-4 py-2 text-right font-medium">Oferta Supervisión</th>
-                                <th class="px-4 py-2 text-right font-medium">$/cliente eff.</th>
+                                <th class="px-4 py-2 text-left font-medium">Empleados</th>
+                                <th class="px-4 py-2 text-left font-medium">Dto.</th>
+                                <th class="px-4 py-2 text-right font-medium">Lista</th>
+                                <th class="px-4 py-2 text-right font-medium">Precio</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800">
-                            @foreach ($matrix as $row)
-                                @php
-                                    $cell = $cycle->value === 'annual' ? 'price_annual' : 'price_monthly';
-                                    $period = $cycle->value === 'annual' ? '/año' : '/mes';
-                                @endphp
-                                <tr class="hover:bg-slate-800/30">
-                                    <td class="px-4 py-2.5">
-                                        <span class="font-medium text-slate-200">{{ $row['size'] }}</span>
-                                        <span class="text-slate-600">{{ $row['size'] === 1 ? 'cliente' : 'clientes' }}</span>
-                                    </td>
-                                    <td class="px-4 py-2.5 text-slate-400">−{{ number_format($row['volume_discount_pct'] * 100, 0) }}%</td>
-                                    <td class="px-4 py-2.5 text-right">
-                                        <p class="font-medium text-slate-200 tabular-nums">{{ $fmt((float) $row['manual'][$cell]) }}{{ $period }}</p>
-                                        @if ($cycle->value === 'annual')
-                                            <p class="text-xs text-emerald-400/90 tabular-nums">Ahorras {{ $fmt((float) $row['manual']['annual_savings']) }}</p>
-                                        @else
-                                            <p class="text-xs text-slate-600 tabular-nums">Lista {{ $fmt((float) $row['manual']['list_monthly_without_volume']) }}</p>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-2.5 text-right">
-                                        <p class="font-medium text-violet-300 tabular-nums">{{ $fmt((float) $row['hardware'][$cell]) }}{{ $period }}</p>
-                                        @if ($cycle->value === 'annual')
-                                            <p class="text-xs text-emerald-400/90 tabular-nums">Ahorras {{ $fmt((float) $row['hardware']['annual_savings']) }}</p>
-                                        @else
-                                            <p class="text-xs text-slate-600 tabular-nums">Lista {{ $fmt((float) $row['hardware']['list_monthly_without_volume']) }}</p>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-2.5 text-right text-amber-200">
-                                        @if (! empty($row['supervision_offer']))
-                                            <p class="font-medium tabular-nums">{{ $fmt((float) $row['supervision_offer'][$cell]) }}{{ $period }}</p>
-                                            <p class="text-xs text-slate-500">{{ $row['supervision_offer_label'] }}</p>
-                                        @else
-                                            <p class="text-slate-600">—</p>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-2.5 text-right text-slate-500 tabular-nums">
-                                        <p>{{ $fmt((float) $row['manual']['effective_unit_monthly']) }}</p>
-                                        <p class="text-violet-400/80">{{ $fmt((float) $row['hardware']['effective_unit_monthly']) }}</p>
-                                    </td>
+                            @foreach ($rows as $row)
+                                <tr>
+                                    <td class="px-4 py-2.5 font-medium text-slate-200">{{ $row['label'] }}</td>
+                                    <td class="px-4 py-2.5 text-slate-400">{{ $row['range'] }}</td>
+                                    <td class="px-4 py-2.5 text-slate-400 tabular-nums">{{ number_format($row['employees']) }}</td>
+                                    <td class="px-4 py-2.5 text-emerald-400">−{{ $pct($row['discount']) }}</td>
+                                    <td class="px-4 py-2.5 text-right text-slate-500 tabular-nums">{{ $fmt((float) $row['list_monthly']) }}/mes</td>
+                                    <td class="px-4 py-2.5 text-right font-medium text-white tabular-nums">{{ $fmt((float) $row[$cell]) }}{{ $period }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
             </section>
-        </div>
+        @endforeach
 
-        <section class="rounded-lg border border-slate-800 bg-slate-900/80">
-            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
-                <div>
-                    <h3 class="text-sm font-semibold text-white">Supervisión · {{ $cycle->label() }}</h3>
-                    <p class="text-xs text-slate-600">Catálogo 1–100; ilimitada = 2× el pack de 100. Accesos 50+ ofrece ilimitada con el % del paquete Accesos.</p>
-                </div>
+        <section class="rounded-lg border border-slate-800 bg-slate-900/80 overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-800">
+                <h3 class="text-sm font-semibold text-white">Observatorio · un módulo</h3>
+                <p class="text-xs text-slate-500">Solo con Accesos. El precio baja si el metal de Accesos es más alto.</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/60 text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th class="px-4 py-2 text-left font-medium">Sitios</th>
-                            <th class="px-4 py-2 text-left font-medium">Desc. vol.</th>
-                            <th class="px-4 py-2 text-right font-medium">Paquete</th>
-                            <th class="px-4 py-2 text-right font-medium">$/sitio eff.</th>
+                            <th class="px-4 py-2 text-left font-medium">Si Accesos es…</th>
+                            <th class="px-4 py-2 text-right font-medium">Observatorio</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800">
-                        @foreach ($supervisionMatrix as $row)
-                            @php
-                                $cell = $cycle->value === 'annual' ? 'price_annual' : 'price_monthly';
-                                $period = $cycle->value === 'annual' ? '/año' : '/mes';
-                            @endphp
-                            <tr class="hover:bg-slate-800/30">
-                                <td class="px-4 py-2.5 font-medium text-slate-200">{{ $row['label'] ?? $row['size'] }}</td>
-                                <td class="px-4 py-2.5 text-slate-400">−{{ number_format($row['volume_discount_pct'] * 100, 0) }}%</td>
-                                <td class="px-4 py-2.5 text-right font-medium text-amber-200 tabular-nums">
-                                    {{ $fmt((float) $row['quote'][$cell]) }}{{ $period }}
-                                </td>
-                                <td class="px-4 py-2.5 text-right text-slate-500 tabular-nums">
-                                    {{ $fmt((float) $row['quote']['effective_unit_monthly']) }}
-                                </td>
+                        @foreach ($observatoryMatrix as $row)
+                            <tr>
+                                <td class="px-4 py-2.5 text-slate-200">{{ $row['label'] }}</td>
+                                <td class="px-4 py-2.5 text-right font-medium text-white tabular-nums">{{ $fmt((float) $row[$cell]) }}{{ $period }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -194,4 +93,94 @@
             </div>
         </section>
     </div>
+
+    @can('platform.companies.manage')
+    <dialog id="catalog-modal" class="w-full max-w-4xl rounded-xl border border-slate-700 bg-slate-950 p-0 text-slate-200 backdrop:bg-slate-950/70">
+        <form method="POST" action="{{ route('admin.pricing.update') }}" class="max-h-[90vh] overflow-y-auto p-5 space-y-5">
+            @csrf
+            @method('PUT')
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-base font-semibold text-white">Editar catálogo</h2>
+                    <p class="text-xs text-slate-500">Unidades al 100%. Descuento por metal. Módulos por producto (igual en Bronce o Platino).</p>
+                </div>
+                <button type="button" class="ui-chip-link" onclick="document.getElementById('catalog-modal').close()">Cerrar</button>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+                @foreach ([
+                    ['access', 'Unidad Accesos'],
+                    ['supervision', 'Unidad Supervisión'],
+                    ['indexing', 'Unidad Indexación (sola)'],
+                    ['indexing_addon', 'Unidad Indexación (add-on)'],
+                ] as [$key, $label])
+                    <div>
+                        <x-ui.label :for="'unit_'.$key">{{ $label }}</x-ui.label>
+                        <x-ui.input accent="platform" type="number" step="1000" min="0" :name="'units['.$key.']'" :id="'unit_'.$key"
+                            :value="old('units.'.$key, (int) $catalog['units'][$key])" />
+                    </div>
+                @endforeach
+            </div>
+
+            @foreach ([
+                ['access', 'Accesos'],
+                ['supervision', 'Supervisión'],
+                ['indexing', 'Indexación'],
+            ] as [$key, $label])
+                <div class="rounded-lg border border-slate-800 p-3 space-y-2">
+                    <p class="text-sm font-medium text-white">{{ $label }} · % descuento por plan</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        @foreach (['bronce','plata','oro','platino'] as $metal)
+                            <div>
+                                <x-ui.label :for="'d_'.$key.'_'.$metal">{{ ucfirst($metal) }} %</x-ui.label>
+                                <x-ui.input accent="platform" type="number" step="0.5" min="0" max="90"
+                                    :name="'discounts['.$key.']['.$metal.']'" :id="'d_'.$key.'_'.$metal"
+                                    :value="old('discounts.'.$key.'.'.$metal, round(($catalog['discounts'][$key][$metal] ?? 0) * 100, 2))" />
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="text-xs text-slate-500">Módulos de {{ $label }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($moduleOptions as $mod => $modLabel)
+                            <label class="inline-flex items-center gap-1.5 text-xs text-slate-300">
+                                <input type="checkbox" name="modules[{{ $key }}][]" value="{{ $mod }}"
+                                    class="rounded border-slate-600 bg-slate-900"
+                                    @checked(in_array($mod, old('modules.'.$key, $catalog['modules'][$key] ?? []), true))>
+                                {{ $modLabel }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+
+            <div class="rounded-lg border border-slate-800 p-3 space-y-2">
+                <p class="text-sm font-medium text-white">Observatorio · precio según metal de Accesos</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    @foreach (['bronce','plata','oro','platino'] as $metal)
+                        <div>
+                            <x-ui.label :for="'obs_'.$metal">{{ ucfirst($metal) }}</x-ui.label>
+                            <x-ui.input accent="platform" type="number" step="1000" min="0" :name="'observatory['.$metal.']'" :id="'obs_'.$metal"
+                                :value="old('observatory.'.$metal, (int) $catalog['observatory'][$metal])" />
+                        </div>
+                    @endforeach
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($moduleOptions as $mod => $modLabel)
+                        <label class="inline-flex items-center gap-1.5 text-xs text-slate-300">
+                            <input type="checkbox" name="modules[observatory][]" value="{{ $mod }}"
+                                class="rounded border-slate-600 bg-slate-900"
+                                @checked(in_array($mod, old('modules.observatory', $catalog['modules']['observatory'] ?? []), true))>
+                            {{ $modLabel }}
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <x-ui.button type="submit" variant="platform" size="md" class="w-full">Guardar y recalcular</x-ui.button>
+        </form>
+    </dialog>
+    @if ($errors->any())
+        <script>document.getElementById('catalog-modal')?.showModal()</script>
+    @endif
+    @endcan
 </x-admin-layout>

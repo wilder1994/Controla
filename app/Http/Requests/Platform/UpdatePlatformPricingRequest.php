@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Platform;
 
+use App\Enums\CommercialMetal;
+use App\Enums\CommercialProduct;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class UpdatePlatformPricingRequest extends FormRequest
 {
@@ -16,20 +19,31 @@ final class UpdatePlatformPricingRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return [
-            'unit_price_manual' => ['required', 'numeric', 'min:1000'],
-            'unit_price_hardware' => ['required', 'numeric', 'min:1000'],
-            'unit_price_supervision' => ['required', 'numeric', 'min:0'],
-        ];
-    }
+        $metals = array_column(CommercialMetal::cases(), 'value');
+        $moduleKeys = array_keys(config('catalog.module_options', []));
 
-    /** @return array<string, string> */
-    public function messages(): array
-    {
-        return [
-            'unit_price_manual.min' => 'El precio unitario manual debe ser al menos $1.000.',
-            'unit_price_hardware.min' => 'El precio unitario con hardware debe ser al menos $1.000.',
-            'unit_price_supervision.min' => 'El unitario de Supervisión no puede ser negativo.',
+        $rules = [
+            'units.access' => ['required', 'numeric', 'min:1000'],
+            'units.supervision' => ['required', 'numeric', 'min:0'],
+            'units.indexing' => ['required', 'numeric', 'min:0'],
+            'units.indexing_addon' => ['required', 'numeric', 'min:0'],
         ];
+
+        foreach ([CommercialProduct::Access, CommercialProduct::Supervision, CommercialProduct::Indexing] as $product) {
+            foreach ($metals as $metal) {
+                $rules["discounts.{$product->value}.{$metal}"] = ['required', 'numeric', 'min:0', 'max:90'];
+            }
+            $rules["modules.{$product->value}"] = ['nullable', 'array'];
+            $rules["modules.{$product->value}.*"] = ['string', Rule::in($moduleKeys)];
+        }
+
+        foreach ($metals as $metal) {
+            $rules["observatory.{$metal}"] = ['required', 'numeric', 'min:0'];
+        }
+
+        $rules['modules.observatory'] = ['nullable', 'array'];
+        $rules['modules.observatory.*'] = ['string', Rule::in($moduleKeys)];
+
+        return $rules;
     }
 }

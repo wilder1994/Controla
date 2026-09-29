@@ -6,6 +6,7 @@ namespace App\View\Composers;
 
 use App\Models\SecurityCompany;
 use App\Repositories\ClientRepository;
+use App\Support\Catalog\CompanyEntitlements;
 use App\Support\Company\CompanyServiceAccess;
 use App\Support\Platform\ActingCompanyResolver;
 use App\Support\Platform\SupportCompanyContext;
@@ -63,8 +64,21 @@ final class CompanyLayoutComposer
             $suspended = CompanyServiceAccess::isCut($user->securityCompany);
         }
 
+        $canMod = array_fill_keys(array_keys(config('catalog.module_options', [])), true);
+        if ($user !== null && (! $user->hasRole('super-admin') || SupportCompanyContext::isActive())) {
+            $entitled = $user->securityCompany;
+            if (SupportCompanyContext::isActive()) {
+                $actingId = SupportCompanyContext::companyId();
+                $entitled = $actingId !== null ? SecurityCompany::query()->find($actingId) : $entitled;
+            } elseif ($user->security_company_id) {
+                $entitled = $user->securityCompany ?? SecurityCompany::query()->find($user->security_company_id);
+            }
+            $canMod = array_fill_keys(CompanyEntitlements::for($entitled)->modules(), true);
+        }
+
         $view->with('companyContext', $companyContext);
         $view->with('supportMode', $supportMode);
         $view->with('companyServiceSuspended', $suspended);
+        $view->with('canMod', $canMod);
     }
 }

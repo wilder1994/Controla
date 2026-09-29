@@ -1,48 +1,38 @@
-# Paquetes Accesos y Supervisión
+# Paquetes Accesos, Supervisión, Indexación y Observatorio
 
-Controla vende **Accesos** y **Supervisión** por separado. El súper admin en `/admin/pricing` solo edita **unitarios**; la matriz se calcula.
+Catálogo vigente (29 sep 2026). Detalle de precios y clases: [`MODELO-COMERCIAL-PAQUETES.md`](MODELO-COMERCIAL-PAQUETES.md).
 
-## Accesos
+## Metales (mismos 4 en Accesos, Supervisión e Indexación)
 
-Cupos: **1 · 5 · 10 · 50 · 100 · 500**.
+| Plan | Instalaciones | Empleados |
+|------|---------------|-----------|
+| Bronce | 1–5 (pack 5) | 3.000 |
+| Plata | 6–15 (pack 15) | 6.000 |
+| Oro | 16–40 (pack 40) | 9.000 |
+| Platino | 41–100 (pack 100) | 12.000 |
 
-| Cupo | Mixto hardware | Supervisión |
-|------|----------------|-------------|
-| 1 | No | No se vende |
-| 5 | Sí (ej. 3 sin HW + 2 con HW) | Oferta: **10** clientes, mismo % de volumen (10 %) |
-| 10 | Sí | Oferta: **20** clientes, mismo % (15 %) |
-| 50 / 100 / 500 | Sí | Oferta: **ilimitada** (2× pack 100) con el % del paquete Accesos (25 / 30 / 50 %). En `/planes` se puede elegir **cualquier** cupo de Supervisión, no solo la oferta. |
+Unidades sueltas al **100%**. Si N supera el pack, se cobra el **mayor pack que quepa + extras**. Con Accesos + Supervisión el tope de empleados es el **mayor** de los dos.
 
-Descuentos de volumen Accesos: 1=0 % · 5=10 % · 10=15 % · 50=25 % · 100=30 % · 500=50 %.
+## Productos
 
-Precio mixto: `(manual × unitario_manual + hardware × unitario_hardware) × (1 − desc. del cupo)`.
+**Accesos** — cupo de instalaciones activas (`max_clients`). Menú: Mi empresa, Facturación, Clientes, Instalaciones, Pánicos, Empleados, Usuarios, Mis datos, Ajustes. **No** Descargas.
 
-El paquete Accesos vende **N instalaciones activas** (`max_clients` / `package_size`). El cupo es compartido entre clientes. Crear un cliente o una sede pide 1 cupo libre (`N − instalaciones activas`). Archivar la sede (`is_active` false) libera; reactivar consume. Si está lleno: archiva otra o amplía el paquete. Las líneas `has_access` / `has_supervision` siguen limitando esas operaciones, aparte del cupo de sedes.
+**Supervisión** — mismo metal. Menú: Facturación, Clientes, Instalaciones, Supervisión, Pánicos, Descargas, Empleados, Usuarios, Mis datos, Ajustes. **No** Mi empresa. GPS y app de campo: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
 
-El Excel de clientes **solo** da de alta la ficha. Instalaciones, accesos y puestos se crean a mano en las tarjetas de la ficha. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
+**Indexación** — sola: lista (cupo + carpetas). Con Accesos o Supervisión: **add-on más barato**, solo carpetas (no suma cupo). Flags `has_indexing`.
 
-Accesos incluye **supervisión básica en puesto** (código + minuta de portería). Eso no convierte un acceso en puesto de la app de campo.
+**Observatorio** — un solo módulo. Precio según el metal de Accesos. Sin Accesos no se vende. Flag `has_observatory`.
 
-## Supervisión (catálogo suelto)
+Módulos por producto se marcan en `/admin/pricing` → Editar catálogo.
 
-1 · 5 · 10 · 50 · 100 e **ilimitado** (precio = **2×** el paquete de 100). Requiere Accesos de 5 o más.
+## Cupo de sedes
 
-GPS (~15 s), mapa En vivo / Historial, cierre automático (plantilla + 30 min). Revista en la app; no se vuelve a firmar en portería.
+Crear cliente o instalación pide 1 cupo libre. Archivar sede libera. `has_access` / `has_supervision` por cliente siguen aparte. Excel de clientes solo da de alta la ficha. [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 
-## Checkout y cambios
+## Checkout
 
-`/planes`: cupo Accesos, mezcla hardware (desde 5) y Supervisión (oferta del cupo o cualquier otro del catálogo).
+`/` y `/planes` muestran el catálogo nuevo. El alta pública (`signup`) aún mapea metales a SKU legacy (`pack_5/10/50/100_manual`). La ficha empresa aplica Accesos + Supervisión ya / fecha / corte. Cobro aparte.
 
-Empresa ya cliente: el súper admin en la ficha (`/admin/companies/{id}`) aplica Accesos + Supervisión **ya**, **en una fecha** o **al corte** (`POST …/plan`). El cobro es aparte (Pagar factura). Lo programado lo aplica el cron (`applyDueChanges`). La empresa en `/company/billing` sigue programando al corte con pago.
+## App de campo
 
-## App de campo y catálogos
-
-Detalle: [`SUPERVISION-CAMPO.md`](SUPERVISION-CAMPO.md).
-
-PWA en `field-app/` (copia alineada: `Controla_Supervision`). API `/api/supervision/*`. Login de supervisor no usa `structure_app_users`. Distribución: **Descargas** (APK + QR web). No Play Store.
-
-Ajustes empresa: **Zonas / Turnos / Modalidades / Preoperacional / Documentos / Libros / Tipos de arma / Marcas / Riesgos / Alarmas / Apoyos** (además de Cargos y Tipos). La app solo muestra ítems activos. Recomendaciones: registro de riesgo por puesto (hasta 3), no ticket.
-
-Captura: tras login, rito de turno (catálogo de turno y zona, EPP/vehículo plegables, odómetro + selfie al abrir y al cerrar). Hub: perfil + revista (cliente, puesto, vigilante, foto, GPS al guardar) + módulos colgados + alarmas/apoyos/documentos. Flota en `supervisor_fleet_vehicles`, no en `vehicles` de Accesos.
-
-No choca con `/access/supervision` (código en puesto), `SupervisorReview`, `PlatformDocument` ni correspondencia de Accesos.
+PWA `field-app/` · API `/api/supervision/*` · **Descargas** (APK + QR). No Play Store.

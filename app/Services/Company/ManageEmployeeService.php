@@ -8,6 +8,8 @@ use App\Domain\Employee\Data\SaveEmployeeData;
 use App\Models\CompanyCollaboratorType;
 use App\Models\CompanyJobTitle;
 use App\Models\Employee;
+use App\Models\SecurityCompany;
+use App\Support\Catalog\CompanyEntitlements;
 use Illuminate\Validation\ValidationException;
 
 final class ManageEmployeeService
@@ -16,6 +18,7 @@ final class ManageEmployeeService
     {
         $this->assertJobTitle($data);
         $this->assertCollaboratorType($data);
+        $this->assertEmployeeCap($data->securityCompanyId);
         $this->assertUniqueDocument($data);
         $this->assertUniqueEmail($data);
 
@@ -109,6 +112,30 @@ final class ManageEmployeeService
             'arl_name' => $data->arlName,
             'arl_risk_level' => $data->arlRiskLevel,
         ];
+    }
+
+    private function assertEmployeeCap(int $companyId): void
+    {
+        $company = SecurityCompany::query()->find($companyId);
+        if ($company === null) {
+            return;
+        }
+
+        $cap = CompanyEntitlements::for($company)->employeeCap();
+        if ($cap <= 0) {
+            return;
+        }
+
+        $used = Employee::query()
+            ->where('security_company_id', $companyId)
+            ->where('is_active', true)
+            ->count();
+
+        if ($used >= $cap) {
+            throw ValidationException::withMessages([
+                'document_number' => "Cupo de empleados lleno ({$used}/{$cap}). Amplía el plan.",
+            ]);
+        }
     }
 
     private function assertJobTitle(SaveEmployeeData $data, ?Employee $employee = null): void

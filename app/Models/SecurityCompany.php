@@ -49,6 +49,8 @@ class SecurityCompany extends Model
         'supervision_unlimited',
         'package_price_monthly',
         'max_clients',
+        'has_indexing',
+        'has_observatory',
         'max_supervision_clients',
         'supervision_package_size',
         'billing_cycle',
@@ -96,6 +98,8 @@ class SecurityCompany extends Model
             'supervision_unlimited' => 'boolean',
             'package_price_monthly' => 'decimal:2',
             'max_clients' => 'integer',
+            'has_indexing' => 'boolean',
+            'has_observatory' => 'boolean',
             'max_supervision_clients' => 'integer',
             'supervision_package_size' => 'integer',
             'billing_cycle' => BillingCycle::class,
@@ -167,6 +171,15 @@ class SecurityCompany extends Model
 
     public function packageLabel(): string
     {
+        $seats = (int) ($this->max_clients ?: $this->package_size ?: 0);
+        if ($seats > 0) {
+            $metal = \App\Enums\CommercialMetal::fromSeats($seats);
+            $parts = \App\Enums\CommercialMetal::decompose($seats);
+            $extra = $parts['extras'] > 0 ? ' + '.$parts['extras'].' und.' : '';
+
+            return $metal->label().' · '.$seats.' instalaciones'.$extra;
+        }
+
         try {
             return $this->accessSeats()->label();
         } catch (\InvalidArgumentException) {

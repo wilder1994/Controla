@@ -1,8 +1,8 @@
 # Hosting VPS (Controla)
 
-**Última actualización:** 28 septiembre 2026
+**Última actualización:** 29 septiembre 2026
 
-Temas claro/oscuro (28 sep 2026): `controla-theme` en localStorage, tokens en `theme.css`. Claro: KPIs/cards `.company-cc-card` + Chart.js + chips `.ui-chip` / `.ui-chip-link`. PWA `controla-sup-v49`. APK v1.8. Pull + `npm run build` + `view:cache` + `route:cache`. Sin migrate.
+Catálogo comercial (29 sep 2026): migrate `2026_09_29_010000` (`pricing_settings.catalog`, `has_indexing`, `has_observatory`). Pull + `migrate --force` + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 

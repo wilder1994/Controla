@@ -13,6 +13,7 @@ class PricingSettings extends Model
         'unit_price_manual',
         'unit_price_hardware',
         'unit_price_supervision',
+        'catalog',
         'currency',
         'updated_by',
     ];
@@ -23,6 +24,7 @@ class PricingSettings extends Model
             'unit_price_manual' => 'decimal:2',
             'unit_price_hardware' => 'decimal:2',
             'unit_price_supervision' => 'decimal:2',
+            'catalog' => 'array',
             'updated_by' => 'integer',
         ];
     }
