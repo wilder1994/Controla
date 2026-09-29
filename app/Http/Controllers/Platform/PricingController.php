@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Platform\UpdatePlatformPricingRequest;
 use App\Services\Pricing\UpdatePlatformPricingService;
 use App\Support\Catalog\CatalogPricer;
+use App\Support\Catalog\CatalogSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,7 +35,7 @@ final class PricingController extends Controller
         $indexingAddonMatrix = $pricer->matrix(CommercialProduct::Indexing, $cycle, true);
         $observatoryMatrix = $pricer->observatoryMatrix($cycle);
         $annualDiscount = (float) config('tenancy.pricing.annual_discount', 0.17);
-        $moduleOptions = config('catalog.module_options', []);
+        $moduleOptions = CatalogSettings::defaults()['module_options'] ?? [];
 
         return view('modules.admin.pricing.edit', compact(
             'cycle',

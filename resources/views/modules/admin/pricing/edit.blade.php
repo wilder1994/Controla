@@ -117,7 +117,7 @@
                     <div>
                         <x-ui.label :for="'unit_'.$key">{{ $label }}</x-ui.label>
                         <x-ui.input accent="platform" type="number" step="1000" min="0" :name="'units['.$key.']'" :id="'unit_'.$key"
-                            :value="old('units.'.$key, (int) $catalog['units'][$key])" />
+                            :value="old('units.'.$key, (int) ($catalog['units'][$key] ?? 0))" />
                     </div>
                 @endforeach
             </div>
@@ -160,7 +160,7 @@
                         <div>
                             <x-ui.label :for="'obs_'.$metal">{{ ucfirst($metal) }}</x-ui.label>
                             <x-ui.input accent="platform" type="number" step="1000" min="0" :name="'observatory['.$metal.']'" :id="'obs_'.$metal"
-                                :value="old('observatory.'.$metal, (int) $catalog['observatory'][$metal])" />
+                                :value="old('observatory.'.$metal, (int) ($catalog['observatory'][$metal] ?? 0))" />
                         </div>
                     @endforeach
                 </div>

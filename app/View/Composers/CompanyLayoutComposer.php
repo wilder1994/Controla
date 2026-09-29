@@ -64,7 +64,8 @@ final class CompanyLayoutComposer
             $suspended = CompanyServiceAccess::isCut($user->securityCompany);
         }
 
-        $canMod = array_fill_keys(array_keys(config('catalog.module_options', [])), true);
+        $moduleKeys = array_keys(\App\Support\Catalog\CatalogSettings::defaults()['module_options'] ?? []);
+        $canMod = array_fill_keys($moduleKeys, true);
         if ($user !== null && (! $user->hasRole('super-admin') || SupportCompanyContext::isActive())) {
             $entitled = $user->securityCompany;
             if (SupportCompanyContext::isActive()) {

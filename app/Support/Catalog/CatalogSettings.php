@@ -24,16 +24,27 @@ final class CatalogSettings
         return new self(PricingSettings::current());
     }
 
+    /** @return array<string, mixed> */
+    public static function defaults(): array
+    {
+        $fromConfig = config('catalog');
+        if (is_array($fromConfig) && isset($fromConfig['default_units'])) {
+            return $fromConfig;
+        }
+
+        return require base_path('config/catalog.php');
+    }
+
     public function unit(string $key): float
     {
-        $defaults = config('catalog.default_units', []);
+        $defaults = self::defaults()['default_units'] ?? [];
 
         return (float) ($this->data['units'][$key] ?? $defaults[$key] ?? 0);
     }
 
     public function discount(CommercialProduct $product, CommercialMetal $metal): float
     {
-        $defaults = config('catalog.default_discounts.'.$product->value, []);
+        $defaults = self::defaults()['default_discounts'][$product->value] ?? [];
         $value = $this->data['discounts'][$product->value][$metal->value] ?? $defaults[$metal->value] ?? 0;
 
         return max(0, min(0.9, (float) $value));
@@ -41,7 +52,7 @@ final class CatalogSettings
 
     public function observatoryPrice(CommercialMetal $metal): float
     {
-        $defaults = config('catalog.default_observatory', []);
+        $defaults = self::defaults()['default_observatory'] ?? [];
 
         return (float) ($this->data['observatory'][$metal->value] ?? $defaults[$metal->value] ?? 0);
     }
@@ -49,13 +60,13 @@ final class CatalogSettings
     /** @return list<string> */
     public function modules(CommercialProduct $product): array
     {
-        $defaults = config('catalog.default_modules.'.$product->value, []);
+        $defaults = self::defaults()['default_modules'][$product->value] ?? [];
         $stored = $this->data['modules'][$product->value] ?? null;
         if (! is_array($stored) || $stored === []) {
             return $defaults;
         }
 
-        $allowed = array_keys(config('catalog.module_options', []));
+        $allowed = array_keys(self::defaults()['module_options'] ?? []);
 
         return array_values(array_intersect($stored, $allowed));
     }
@@ -71,7 +82,7 @@ final class CatalogSettings
     public function toForm(): array
     {
         $units = [];
-        foreach (array_keys(config('catalog.default_units', [])) as $key) {
+        foreach (array_keys(self::defaults()['default_units'] ?? []) as $key) {
             $units[$key] = $this->unit($key);
         }
 

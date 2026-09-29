@@ -20,7 +20,7 @@ final class UpdatePlatformPricingRequest extends FormRequest
     public function rules(): array
     {
         $metals = array_column(CommercialMetal::cases(), 'value');
-        $moduleKeys = array_keys(config('catalog.module_options', []));
+        $moduleKeys = array_keys(\App\Support\Catalog\CatalogSettings::defaults()['module_options'] ?? []);
 
         $rules = [
             'units.access' => ['required', 'numeric', 'min:1000'],
