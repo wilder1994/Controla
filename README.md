@@ -304,33 +304,9 @@ Otras rutas auth (recuperar contraseña, etc.) siguen usando `GuestLayout` de Br
 
 ### Paquetes comerciales (empresa)
 
-La empresa contrata **Accesos** (cupo de sitios a operar portería × modalidad o mixto × ciclo) y, aparte, **Supervisión** (cupo GPS, o ilimitada). Las fichas de cliente son ilimitadas; el cupo aplica al marcar líneas. Detalle: [`docs/PAQUETES-ACCESOS-Y-SUPERVISION.md`](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md).
+Metales **Bronce / Plata / Oro / Platino** (instalaciones + empleados 3k–12k). Productos: Accesos, Supervisión, Indexación (lista o add-on) y Observatorio (precio según Accesos). Unidad = 100%; pack con %; extras al precio lleno. Tabla y modal en `/admin/pricing`. [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md) · [`docs/PAQUETES-ACCESOS-Y-SUPERVISION.md`](docs/PAQUETES-ACCESOS-Y-SUPERVISION.md).
 
-| Concepto | Regla |
-|----------|--------|
-| Precios base | Súper admin define 3 unitarios (manual, hardware, Supervisión) en `/admin/pricing` |
-| Matriz | Se calcula sola: descuento por volumen (hasta 500 / 50 %) + descuento anual (~17 %) |
-| Mixto | Desde 5 clientes: asientos sin hardware + con hardware = cupo |
-| Cupo Accesos | `has_access` en clientes activos (`max_clients`) |
-| Cupo Supervisión | `has_supervision` (`max_supervision_clients`); ilimitada = `supervision_unlimited` |
-| Portafolio del conjunto | **Ilimitado** (unidades, personas, mascotas, vehículos) |
-| Snapshot | Al asignar paquete se congelan precio, descuentos y vigencia en la empresa |
-
-Catálogo de reglas: `config/tenancy.php` → `pricing` · Motor: `App\Services\Pricing\PriceCalculator`
-
-**Documentación completa:** [`docs/MODELO-COMERCIAL-PAQUETES.md`](docs/MODELO-COMERCIAL-PAQUETES.md)
-
-#### Ejemplo de matriz (valores dependen de unitarios en BD)
-
-| Cupo | Desc. vol. | Manual / mes | Hardware / mes |
-|------|------------|--------------|----------------|
-| 1 | 0% | unitario × 1 | unitario × 1 |
-| 5 | 10% | × 0,90 | × 0,90 |
-| 10 | 15% | × 0,85 | × 0,85 |
-| 50 | 25% | × 0,75 | × 0,75 |
-| 100 | 30% | × 0,70 | × 0,70 |
-
-Ciclo **anual**: total mensual × 12 × (1 − 17%). El súper admin solo edita los dos unitarios en `/admin/pricing`.
+Motor de lista: `App\Support\Catalog\CatalogPricer` (`config/catalog.php`, `pricing_settings.catalog`). Checkout público aún usa SKU legacy + `PriceCalculator`. Anual: ×12 × (1 − 17%).
 
 ### Arquitectura
 
@@ -352,8 +328,8 @@ Documentación completa: [`docs/PLATAFORMA-ADMIN.md`](docs/PLATAFORMA-ADMIN.md)
 | `GET/POST /admin/companies/create` | Alta empresa (datos fiscales, paquete, ubicación geo) |
 | `POST /admin/companies/{id}/archive` | Archivar empresa (cascada a clientes) |
 | `POST /admin/companies/{id}/clients/{client}/release` | Retirar conjunto y liberar cupo |
-| `GET /admin/pricing` | Tabla de precios (editar unitarios, matriz calculada) |
-| `PUT /admin/pricing` | Guardar unitarios manual/hardware |
+| `GET /admin/pricing` | Catálogo Bronce–Platino (4 tablas + modal) |
+| `PUT /admin/pricing` | Guardar unidades, % y módulos |
 | `GET /admin/companies/{id}` | **Resumen** empresa: KPIs, cartera de clientes, aplicar plan Accesos+Supervisión (ya / fecha / al corte), Pagar / Cancelar / Cobrar y programar al corte / Reactivar |
 | `GET /admin/companies/{id}/historial` | Historial comercial (solo lectura): pagos, facturas, timeline |
 | `POST /admin/companies/{id}/payments/manual` | Pago manual (ref + soporte PDF/imagen + intent) |
