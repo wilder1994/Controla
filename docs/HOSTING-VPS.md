@@ -80,7 +80,7 @@ Preview planilla parafiscal (21 sep 2026): LibreOffice convierte el recorte `.xl
 
 Documentos Ver vs Gestionar (21 sep 2026): `company.documents.view` solo preview. **Descargar** (PDF/xlsx) exige `company.documents.manage`. Pull + `npm run build` + `route:cache` + `view:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 
-Favicon único (28 sep 2026): solo `public/favicon.ico`. Layouts y páginas sueltas incluyen `partials.favicon`. Sin migrate ni `npm`. Pull + `view:cache`. Artisan como `wcodex-controla`.
+Favicon único (28 sep 2026): solo `public/favicon.ico`. `partials.favicon` añade `?v=` con `filemtime` para evitar caché. Pull + `view:cache`. Artisan como `wcodex-controla`.
 
 Suspender acceso (24 sep 2026): ficha empresa, bloque **Acceso al sistema** (Suspender / Reactivar / Archivar). Confirmación en modal del panel. Admin empresa solo lectura + banner. Resto bloqueado. Sin migrate ni seeder. Pull + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
