@@ -146,7 +146,7 @@
                                 </td>
                                 <td class="px-4 py-2.5 text-slate-300">{{ $company->packageLabel() }}</td>
                                 <td class="px-4 py-2.5">
-                                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs {{ $company->billing_cycle?->value === 'annual' ? 'bg-emerald-900/30 text-emerald-300' : 'bg-slate-800 text-slate-400' }}">
+                                    <span class="ui-chip {{ $company->billing_cycle?->value === 'annual' ? 'ui-chip-success' : '' }}">
                                         {{ $company->billingPeriodLabel() }}
                                     </span>
                                 </td>
@@ -158,17 +158,17 @@
                                     <span class="text-slate-600 text-xs">{{ $company->billing_cycle?->value === 'annual' ? '/año' : '/mes' }}</span>
                                 </td>
                                 <td class="px-4 py-2.5">
-                                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs
-                                        @if($bucket->value === 'current') bg-emerald-900/30 text-emerald-300
-                                        @elseif($bucket->value === 'due_soon') bg-amber-900/30 text-amber-300
-                                        @elseif($bucket->value === 'overdue') bg-red-900/30 text-red-300
-                                        @elseif($bucket->value === 'suspended') bg-orange-900/40 text-orange-300
-                                        @else bg-slate-800 text-slate-400 @endif">
+                                    <span class="ui-chip
+                                        @if($bucket->value === 'current') ui-chip-success
+                                        @elseif($bucket->value === 'due_soon') ui-chip-caution
+                                        @elseif($bucket->value === 'overdue') ui-chip-danger
+                                        @elseif($bucket->value === 'suspended') ui-chip-warning
+                                        @endif">
                                         {{ $bucket->label() }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-2.5 text-right">
-                                    <a href="{{ route('admin.companies.show', $company) }}" class="text-xs text-violet-400 hover:text-violet-300 font-medium">Gestionar</a>
+                                    <a href="{{ route('admin.companies.show', $company) }}" class="ui-chip-link">Gestionar</a>
                                 </td>
                             </tr>
                         @empty

@@ -180,13 +180,13 @@
                                 @endif
                                 <td class="px-4 py-3">
                                     @if ($client->is_active)
-                                        <span class="inline-flex rounded-full bg-emerald-900/30 px-2 py-0.5 text-xs text-emerald-300">Activo</span>
+                                        <span class="ui-chip ui-chip-success">Activo</span>
                                     @else
-                                        <span class="inline-flex rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-500">Inactivo</span>
+                                        <span class="ui-chip">Inactivo</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <a href="{{ route('company.clients.show', $client) }}" class="text-xs text-indigo-400 hover:text-indigo-300">Ver</a>
+                                    <a href="{{ route('company.clients.show', $client) }}" class="ui-chip-link">Ver</a>
                                 </td>
                             </tr>
                         @empty

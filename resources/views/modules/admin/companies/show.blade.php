@@ -115,14 +115,14 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
-                <span class="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400">
+                <span class="ui-chip">
                     Modalidad · {{ $company->package_modality?->label() ?? '—' }}
                 </span>
-                <span class="rounded-full {{ $company->billing_cycle?->value === 'annual' ? 'bg-emerald-950/40 text-emerald-300' : 'bg-slate-800 text-slate-400' }} px-2.5 py-0.5 text-xs">
+                <span class="ui-chip {{ $company->billing_cycle?->value === 'annual' ? 'ui-chip-success' : '' }}">
                     Ciclo · {{ $company->billingPeriodLabel() }}
                 </span>
                 @if ($company->package_ends_at)
-                    <span class="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400">
+                    <span class="ui-chip">
                         Vigencia {{ $company->package_starts_at?->format('d/m/Y') ?? '—' }}
                         → {{ $company->package_ends_at->format('d/m/Y') }}
                     </span>
@@ -384,8 +384,8 @@
                         <h3 class="text-sm font-semibold text-white">Historial de pagos</h3>
                         <p class="text-xs text-slate-500 mt-1">Facturas pagadas registradas</p>
                     </div>
-                    <a href="{{ route('admin.companies.historial', $company) }}" class="text-xs text-violet-400 hover:text-violet-300 shrink-0">
-                        Ver historial →
+                    <a href="{{ route('admin.companies.historial', $company) }}" class="ui-chip-link shrink-0">
+                        Ver historial
                     </a>
                 </div>
                 <p class="mt-4 text-3xl font-semibold text-white tabular-nums">{{ $paidInvoicesCount }}</p>

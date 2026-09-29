@@ -64,7 +64,7 @@
                                 <td class="px-4 py-3 text-slate-300">{{ $installation->client?->name ?? '—' }}</td>
                                 <td class="px-4 py-3 hidden lg:table-cell text-slate-400">{{ $installation->siteAdminLabel() }}</td>
                                 <td class="px-4 py-3 text-right">
-                                    <a href="{{ route('company.installations.show', $installation) }}" class="text-xs text-indigo-400 hover:text-indigo-300">Ver</a>
+                                    <a href="{{ route('company.installations.show', $installation) }}" class="ui-chip-link">Ver</a>
                                 </td>
                             </tr>
                         @empty

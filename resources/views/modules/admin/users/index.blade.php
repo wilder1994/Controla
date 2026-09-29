@@ -30,7 +30,7 @@
                             <td class="px-4 py-3 text-slate-400">{{ $user->roles->first()?->name ?? '—' }}</td>
                             <td class="px-4 py-3 text-slate-400">{{ $user->securityCompany?->trade_name ?? '—' }}</td>
                             <td class="px-4 py-3 text-right">
-                                <a href="{{ route('admin.users.edit', $user) }}" class="text-violet-400 hover:text-violet-300">Editar</a>
+                                <a href="{{ route('admin.users.edit', $user) }}" class="ui-chip-link">Editar</a>
                             </td>
                         </tr>
                     @empty

@@ -466,7 +466,7 @@
                     <div class="company-cc-card-head">
                         <h3 class="text-sm font-semibold text-white">Cartera de clientes</h3>
                         @can('company.billing.manage')
-                            <a href="{{ route('company.billing.index') }}" class="text-xs text-indigo-400 hover:text-indigo-300">Facturación</a>
+                            <a href="{{ route('company.billing.index') }}" class="ui-chip-link">Facturación</a>
                         @endcan
                     </div>
                     <div class="company-cc-card-body">
@@ -540,7 +540,7 @@
             <div class="company-cc-card-head">
                 <h3 class="text-sm font-semibold text-white">Supervisión de campo (hoy)</h3>
                 @can('company.supervision.view')
-                    <a href="{{ route('company.supervision.index', ['tab' => 'summary']) }}" class="text-xs text-amber-300 hover:text-amber-200">Resumen e informe</a>
+                    <a href="{{ route('company.supervision.index', ['tab' => 'summary']) }}" class="ui-chip-link">Resumen e informe</a>
                 @endcan
             </div>
             <div class="company-cc-card-body">
@@ -625,7 +625,7 @@
             <div class="company-cc-card">
                 <div class="company-cc-card-head">
                     <h3 class="text-sm font-semibold text-white">Turnos abiertos · <span x-text="shifts().length">{{ $shiftsCount }}</span></h3>
-                    <a href="{{ route('company.clients.index', ['modo' => 'operar']) }}" class="text-xs text-indigo-400 hover:text-indigo-300">Ver detalle</a>
+                    <a href="{{ route('company.clients.index', ['modo' => 'operar']) }}" class="ui-chip-link">Ver detalle</a>
                 </div>
                 <div class="company-cc-card-body-flush">
                     <table class="min-w-full text-sm">

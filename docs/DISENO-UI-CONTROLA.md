@@ -107,7 +107,9 @@ Fuente: **Figtree** (`font-sans`). Base operativa: **14px** (`text-sm`).
 | `--ui-danger` / `--ui-warning` / `--ui-caution` / `--ui-success` | Solo alertas (grave / media / leve / ok) |
 | `--ui-surface` + `--ui-border` | Tablas, cards, inputs |
 
-Claro: mate verdoso, fondo en degradado suave. Datos siempre sobre superficie sólida.
+Claro: mate verdoso, fondo en degradado suave. Datos, KPIs y cards (incl. `.company-cc-card`) sobre `--ui-surface`. Chart.js toma ticks/grid de `ControlaTheme.chartPalette()`.
+
+Chips: `.ui-chip` / `.ui-chip-link` (+ `success|caution|warning|danger`). En claro, badges `*-900/30` + `*-300` se remapean a esos tokens para no verse opacos.
 
 ### Variantes (`x-ui.button`)
 
@@ -119,12 +121,12 @@ Claro: mate verdoso, fondo en degradado suave. Datos siempre sobre superficie s�
 
 **Forma:** `rounded-lg` · `inline-flex items-center justify-center`
 
-### Links de acción en tabla (no son botones)
+### Links de acción en tabla
 
 | Acción | Clases |
 |--------|--------|
-| Ver | `text-xs text-indigo-400 hover:text-indigo-300` |
-| Operar | `text-xs text-emerald-400 hover:text-emerald-300` |
+| Ver / Gestionar | `ui-chip-link` |
+| Estado / ciclo | `ui-chip` + tono (`ui-chip-caution`, etc.) |
 
 ---
 

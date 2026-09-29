@@ -2,7 +2,7 @@
 
 **Última actualización:** 28 septiembre 2026
 
-Temas claro/oscuro (28 sep 2026): `controla-theme` en localStorage, tokens en `theme.css`. PWA `controla-sup-v49`. APK v1.8. Pull + `npm run build` + `view:cache` + `route:cache`. Sin migrate.
+Temas claro/oscuro (28 sep 2026): `controla-theme` en localStorage, tokens en `theme.css`. Claro: KPIs/cards `.company-cc-card` + Chart.js + chips `.ui-chip` / `.ui-chip-link`. PWA `controla-sup-v49`. APK v1.8. Pull + `npm run build` + `view:cache` + `route:cache`. Sin migrate.
 
 Sitio público: [https://controla.wcodex.cloud](https://controla.wcodex.cloud)
 
