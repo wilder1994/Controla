@@ -49,7 +49,7 @@ final readonly class AccessSeatSplit
     public function label(): string
     {
         $size = $this->size();
-        $clients = $size === 1 ? '1 cliente' : "{$size} clientes";
+        $clients = $size === 1 ? '1 instalación' : "{$size} instalaciones";
 
         if ($this->modality() !== PackageModality::Mixed) {
             return "{$clients} · {$this->modality()->label()}";

@@ -16,6 +16,7 @@ final class CreateClientService
     public function execute(CreateClientData $data): Client
     {
         $company = SecurityCompany::query()->findOrFail($data->securityCompanyId);
+        app(AssertInstallationSeats::class)->execute($company, AssertInstallationSeats::ACTION_CREATE_CLIENT);
         app(AssertClientServiceSeats::class)->execute($company, $data->hasAccess, $data->hasSupervision);
 
         $slug = $this->uniqueSlug($data->securityCompanyId, $data->name);

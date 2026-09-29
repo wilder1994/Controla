@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\Auth\ClaimSingleUserSession;
 use App\Services\Auth\ResolveUserHomeRoute;
 use App\Support\Platform\SupportCompanyContext;
 use Illuminate\Http\RedirectResponse;
@@ -54,6 +55,11 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        if ($user !== null) {
+            app(ClaimSingleUserSession::class)->release($user);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

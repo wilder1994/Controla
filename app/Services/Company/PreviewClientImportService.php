@@ -279,12 +279,22 @@ final class PreviewClientImportService
         $company = SecurityCompany::query()->findOrFail($companyId);
         $accessLeft = $company->clientsRemaining();
         $proLeft = $company->supervisionSeatsRemaining();
+        $installationsLeft = $company->installationSeatsRemaining();
 
         foreach ($rows as $index => $row) {
             $payload = $row['payload'] ?? null;
             if (! is_array($payload) || ($row['status'] ?? '') === 'error') {
                 continue;
             }
+
+            if ($installationsLeft < 1) {
+                $rows[$index]['status'] = 'error';
+                $rows[$index]['messages'][] = 'No hay cupo de instalaciones. Amplía el paquete o archiva una sede para liberar cupo.';
+                $rows[$index]['payload'] = null;
+
+                continue;
+            }
+            $installationsLeft--;
 
             if (! empty($payload['has_access'])) {
                 if ($accessLeft < 1) {

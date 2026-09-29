@@ -6,6 +6,7 @@ namespace Tests\Feature\Company;
 
 use App\Exports\ClientImportTemplateExport;
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\User;
 use App\Support\Client\ClientExcelSchema;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,6 +78,12 @@ final class CompanyClientImportTest extends TestCase
         $this->seedWithPilot();
         $admin = $this->admin();
         $company = $admin->securityCompany;
+        $site = Installation::query()
+            ->withoutGlobalScopes()
+            ->whereHas('client', fn ($q) => $q->where('security_company_id', $company->id))
+            ->where('is_active', true)
+            ->first();
+        $site?->update(['is_active' => false]);
         $company->update(['max_clients' => max(1, $company->accessSeatsCount())]);
 
         $this->actingAs($admin)->post(route('company.clients.import.preview.store'), [

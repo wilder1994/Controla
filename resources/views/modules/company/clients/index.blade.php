@@ -59,6 +59,7 @@
             @if ($metrics)
                 <p class="text-xs text-slate-500 sm:ml-auto sm:text-right whitespace-nowrap">
                     {{ $clients->total() }} {{ $clients->total() === 1 ? 'cliente' : 'clientes' }}
+                    · Instalaciones {{ $metrics['installations_remaining'] ?? $metrics['clients_remaining'] }}/{{ $metrics['max_clients'] }}
                     · Accesos {{ $metrics['clients_remaining'] }}/{{ $metrics['max_clients'] }}
                     · Supervisión {{ ($metrics['supervision_unlimited'] ?? false) ? 'Ilimitada' : (($metrics['supervision_remaining'] ?? 0).'/'.($metrics['max_supervision_clients'] ?? 0)) }}
                 </p>
@@ -69,7 +70,15 @@
             @endif
         </form>
 
-        @if ($metrics && $metrics['is_quota_full'] && ! $operateMode)
+        @if ($metrics && ($metrics['is_installation_quota_full'] ?? false) && ! $operateMode)
+            <div class="rounded-lg border border-amber-800/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
+                Cupo de instalaciones lleno ({{ $metrics['installations_used'] ?? 0 }}/{{ $metrics['max_clients'] }}).
+                No puedes crear clientes ni sedes nuevas. Archiva una instalación o amplía el paquete.
+                <a href="{{ route('company.dashboard') }}" class="text-amber-100 underline hover:no-underline">
+                    Ver opciones en Mi empresa
+                </a>
+            </div>
+        @elseif ($metrics && $metrics['is_quota_full'] && ! $operateMode)
             <div class="rounded-lg border border-amber-800/60 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
                 Cupo de Accesos lleno ({{ $metrics['access_used'] ?? $metrics['total'] }}/{{ $metrics['max_clients'] }}).
                 Puedes seguir creando fichas; no podrás marcar Accesos hasta ampliar.

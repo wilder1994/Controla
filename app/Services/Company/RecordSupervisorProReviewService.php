@@ -12,6 +12,7 @@ use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
 use App\Support\Supervision\RecommendationEvidencePhotos;
 use App\Support\Supervision\SupervisorFieldSheetIntro;
+use App\Support\Supervision\SupervisorReviewGeofence;
 use App\Support\Supervision\WeaponInspectionPhotos;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,12 @@ final class RecordSupervisorProReviewService
                 'supervisor_post_id' => 'El puesto no pertenece a este cliente o no está activo.',
             ]);
         }
+
+        app(SupervisorReviewGeofence::class)->assertWithinRadius(
+            $post,
+            $input->latitude,
+            $input->longitude,
+        );
 
         $employee = Employee::query()
             ->where('id', $input->employeeId)

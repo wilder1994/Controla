@@ -17,6 +17,7 @@ use App\Models\SupervisorShift;
 use App\Models\SupervisorShiftReview;
 use App\Models\SupervisorShiftTemplate;
 use App\Models\SupervisorZone;
+use App\Services\Auth\ClaimSingleUserSession;
 use App\Services\Auth\FindUserByLogin;
 use App\Support\Company\CompanyServiceAccess;
 use App\Support\Auth\LoginUsernameRules;
@@ -60,6 +61,7 @@ final class SupervisorShiftController extends Controller
             'email' => 'nullable|string|max:255',
             'password' => 'required',
             'device_name' => 'nullable|string|max:100',
+            'replace_session' => 'sometimes|boolean',
         ]);
 
         $login = trim((string) ($request->input('login') ?: $request->input('email')));
@@ -98,6 +100,15 @@ final class SupervisorShiftController extends Controller
         if ($company === null || ! $company->hasSupervisionPackage()) {
             abort(403, 'La empresa no tiene Supervisión.');
         }
+
+        $claim = app(ClaimSingleUserSession::class);
+        if ($claim->isOccupied($user) && ! $request->boolean('replace_session')) {
+            return response()->json([
+                'message' => ClaimSingleUserSession::MESSAGE,
+                'code' => ClaimSingleUserSession::CODE,
+            ], 409);
+        }
+        $claim->claim($user);
 
         $token = $user->createToken($request->string('device_name')->toString() ?: 'supervision-pro')->plainTextToken;
 

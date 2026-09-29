@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Services\Auth\ClaimSingleUserSession;
 use App\Services\Auth\FindUserByLogin;
 use App\Support\Company\CompanyServiceAccess;
 use Illuminate\Auth\Events\Lockout;
@@ -33,6 +34,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string'],
             'password' => ['required', 'string'],
+            'replace_session' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -82,7 +84,11 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        app(ClaimSingleUserSession::class)->assertCanClaim($user, $this->boolean('replace_session'));
+        $sessionToken = app(ClaimSingleUserSession::class)->claim($user);
+
         Auth::login($user, $this->boolean('remember'));
+        $this->session()->put('single_session_token', $sessionToken);
 
         RateLimiter::clear($this->throttleKey());
     }

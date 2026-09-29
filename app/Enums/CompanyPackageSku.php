@@ -32,9 +32,9 @@ enum CompanyPackageSku: string
     public function label(): string
     {
         $size = $this->size();
-        $clients = $size === 1 ? '1 cliente' : "{$size} clientes";
+        $sites = $size === 1 ? '1 instalación' : "{$size} instalaciones";
 
-        return "{$clients} · {$this->modality()->label()}";
+        return "{$sites} · {$this->modality()->label()}";
     }
 
     public function allowsSupervision(): bool

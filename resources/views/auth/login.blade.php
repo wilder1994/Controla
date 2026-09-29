@@ -15,8 +15,9 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('login') }}" class="space-y-5">
+    <form method="POST" action="{{ route('login') }}" class="space-y-5" x-data="{ takeover: {{ $errors->has('session_takeover') ? 'true' : 'false' }} }">
         @csrf
+        <input type="hidden" name="replace_session" :value="takeover ? 1 : 0">
 
         <div>
             <x-input-label for="email" :value="__('Usuario o correo')" class="{{ $labelClass }}" />
@@ -75,5 +76,19 @@
         >
             Ingresar al sistema
         </button>
+
+        <div
+            x-show="takeover"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4"
+        >
+            <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-2xl">
+                <p class="text-sm text-slate-200">Tienes una sesión abierta. ¿Cerrar la otra y seguir aquí?</p>
+                <div class="mt-4 flex gap-2">
+                    <button type="button" class="flex-1 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300" @click="takeover = false">No</button>
+                    <button type="submit" class="flex-1 rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950">Sí, cerrar la otra</button>
+                </div>
+            </div>
+        </div>
     </form>
 </x-auth-layout>

@@ -1,6 +1,6 @@
 # Clientes, instalaciones, Accesos y Supervisión
 
-**Última actualización:** 21 septiembre 2026
+**Última actualización:** 28 septiembre 2026
 
 Fuente de verdad del **cliente comercial** y de los dos árboles operativos. El censo (nodos `structures`) cuelga de la **instalación**, no del cliente suelto.
 
@@ -30,6 +30,8 @@ Al **Ver** el cliente, el header es **Cliente | Resumen**. Resumen (si `has_acce
 ---
 
 ## Alta del cliente (formulario y Excel)
+
+El paquete cuenta **instalaciones activas**. Sin cupo libre no se crea cliente ni sede, ni se reactiva una archivada.
 
 Crear cliente = **solo la ficha**, igual que el formulario de `/company/clients/create`:
 

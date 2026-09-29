@@ -153,8 +153,9 @@ final class ClientRepository
             ? null
             : (int) ($company->max_supervision_clients ?: 0);
         $accessUsed = $company->accessSeatsCount();
+        $installationsUsed = $company->installationSeatsCount();
         $supervisionUsed = $company->supervisionSeatsCount();
-        $usageRatio = $maxClients > 0 ? round(($accessUsed / $maxClients) * 100, 1) : 0.0;
+        $usageRatio = $maxClients > 0 ? round(($installationsUsed / $maxClients) * 100, 1) : 0.0;
         $features = $company->package_modality?->features() ?? [];
         $featureLabels = $company->package_modality?->featureLabels() ?? [];
         $contractedAmount = $company->contractedAmount();
@@ -175,6 +176,9 @@ final class ClientRepository
             'max_clients' => $maxClients,
             'access_used' => $accessUsed,
             'clients_remaining' => $company->clientsRemaining(),
+            'installations_used' => $installationsUsed,
+            'installations_remaining' => $company->installationSeatsRemaining(),
+            'is_installation_quota_full' => $maxClients > 0 && $installationsUsed >= $maxClients,
             'max_supervision_clients' => $maxSupervision,
             'supervision_used' => $supervisionUsed,
             'supervision_remaining' => $company->supervisionSeatsRemaining(),

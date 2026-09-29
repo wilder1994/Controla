@@ -208,14 +208,23 @@ abstract class TestCase extends BaseTestCase
     /** @return array<string, mixed> */
     protected function supervisorReviewPayload(Client $client, array $overrides = []): array
     {
+        $post = $this->supervisionPostFor($client);
+        $post->loadMissing('installation');
+        $lat = $post->latitude !== null
+            ? (float) $post->latitude
+            : (float) ($post->installation?->latitude ?? 3.4516);
+        $lng = $post->longitude !== null
+            ? (float) $post->longitude
+            : (float) ($post->installation?->longitude ?? -76.5320);
+
         return array_merge([
             'client_id' => $client->id,
-            'supervisor_post_id' => $this->supervisionPostFor($client)->id,
+            'supervisor_post_id' => $post->id,
             'employee_id' => $this->supervisorVigilante()->id,
             'notes' => 'Revista de puesto',
             'has_novelty' => 0,
-            'latitude' => 3.4516,
-            'longitude' => -76.5320,
+            'latitude' => $lat,
+            'longitude' => $lng,
             'guard_photo' => UploadedFile::fake()->image('guard.jpg'),
         ], $overrides);
     }

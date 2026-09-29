@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Auth\ClaimSingleUserSession;
 use App\Support\Company\CompanyServiceAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ final class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
             'device_name' => 'nullable|string|max:100',
+            'replace_session' => 'sometimes|boolean',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -36,6 +38,15 @@ final class AuthController extends Controller
                 'email' => [CompanyServiceAccess::DENIED],
             ]);
         }
+
+        $claim = app(ClaimSingleUserSession::class);
+        if ($claim->isOccupied($user) && ! $request->boolean('replace_session')) {
+            return response()->json([
+                'message' => ClaimSingleUserSession::MESSAGE,
+                'code' => ClaimSingleUserSession::CODE,
+            ], 409);
+        }
+        $claim->claim($user);
 
         $token = $user->createToken($request->device_name ?? 'api-token')->plainTextToken;
 
@@ -69,7 +80,7 @@ final class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        app(ClaimSingleUserSession::class)->release($request->user());
 
         return response()->json(['message' => 'Sesión cerrada.']);
     }

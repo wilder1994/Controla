@@ -13,7 +13,7 @@
 
 <div>
     <p class="text-sm font-medium text-white">Líneas de servicio</p>
-    <p class="text-xs text-slate-500 mt-0.5">La ficha no consume cupo. El cupo se usa al marcar Accesos o Supervisión.</p>
+    <p class="text-xs text-slate-500 mt-0.5">El paquete cuenta <strong>instalaciones activas</strong> ({{ $metrics['installations_remaining'] ?? 0 }} de {{ $accessMax }} libres). Accesos y Supervisión son líneas aparte.</p>
     <x-ui.field-error :messages="$errors->get('has_access')" />
     <x-ui.field-error :messages="$errors->get('has_supervision')" />
 

@@ -52,6 +52,8 @@ final class StoreClientSupervisorPostRequest extends FormRequest
             'employee_ids' => ['nullable', 'array'],
             'employee_ids.*' => ['integer', 'exists:employees,id'],
             'is_active' => ['sometimes', 'boolean'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'observations' => ['nullable', 'string', 'max:2000'],
             'vista' => ['nullable', 'in:sitio,puertas,accesos,supervision'],
         ];

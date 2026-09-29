@@ -32,6 +32,8 @@ final class ClientSupervisorPostController extends Controller
                 'is_active' => $request->boolean('is_active', true),
                 'employee_ids' => $request->validated('employee_ids') ?? [],
                 'observations' => $request->validated('observations'),
+                'latitude' => $this->optionalCoord($request, 'latitude'),
+                'longitude' => $this->optionalCoord($request, 'longitude'),
             ]);
         } catch (ValidationException $e) {
             return $this->backToClient(
@@ -57,6 +59,8 @@ final class ClientSupervisorPostController extends Controller
                 'is_active' => $request->boolean('is_active'),
                 'employee_ids' => $request->validated('employee_ids') ?? [],
                 'observations' => $request->validated('observations'),
+                'latitude' => $this->optionalCoord($request, 'latitude'),
+                'longitude' => $this->optionalCoord($request, 'longitude'),
             ]);
         } catch (ValidationException $e) {
             return $this->backToClient(
@@ -87,6 +91,13 @@ final class ClientSupervisorPostController extends Controller
         }
 
         return $this->backToClient($client, $request, 'Puesto eliminado.');
+    }
+
+    private function optionalCoord(StoreClientSupervisorPostRequest $request, string $key): ?float
+    {
+        $value = $request->validated($key);
+
+        return $value === null || $value === '' ? null : (float) $value;
     }
 
     private function assertPost(Request $request, Client $client, SupervisorPost $post): void

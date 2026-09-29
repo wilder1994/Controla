@@ -146,7 +146,7 @@
         <label class="inline-flex items-center gap-2 text-xs text-slate-300">
             <input type="hidden" name="is_active" value="0">
             <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $installation->is_active)) class="rounded border-slate-700 text-indigo-600">
-            Activa
+            Activa (cuenta en el cupo). Desmarcar = archivar y liberar cupo.
         </label>
     @endif
 </div>

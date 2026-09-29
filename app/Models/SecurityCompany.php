@@ -294,6 +294,23 @@ class SecurityCompany extends Model
         return max(0, $max - $this->accessSeatsCount());
     }
 
+    public function installationSeatsCount(?int $exceptInstallationId = null): int
+    {
+        return Installation::query()
+            ->withoutGlobalScopes()
+            ->whereHas('client', fn ($q) => $q->where('security_company_id', $this->id))
+            ->where('is_active', true)
+            ->when($exceptInstallationId !== null, fn ($q) => $q->whereKeyNot($exceptInstallationId))
+            ->count();
+    }
+
+    public function installationSeatsRemaining(): int
+    {
+        $max = (int) ($this->max_clients ?: 0);
+
+        return max(0, $max - $this->installationSeatsCount());
+    }
+
     public function supervisionSeatsRemaining(): int
     {
         if (! $this->hasSupervisionPackage()) {

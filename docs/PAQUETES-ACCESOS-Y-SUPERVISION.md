@@ -17,7 +17,7 @@ Descuentos de volumen Accesos: 1=0 % · 5=10 % · 10=15 % · 50=25 % · 100=30 %
 
 Precio mixto: `(manual × unitario_manual + hardware × unitario_hardware) × (1 − desc. del cupo)`.
 
-La ficha de cliente **no** consume cupo. El cupo son las líneas `has_access` / `has_supervision`.
+El paquete Accesos vende **N instalaciones activas** (`max_clients` / `package_size`). El cupo es compartido entre clientes. Crear un cliente o una sede pide 1 cupo libre (`N − instalaciones activas`). Archivar la sede (`is_active` false) libera; reactivar consume. Si está lleno: archiva otra o amplía el paquete. Las líneas `has_access` / `has_supervision` siguen limitando esas operaciones, aparte del cupo de sedes.
 
 El Excel de clientes **solo** da de alta la ficha. Instalaciones, accesos y puestos se crean a mano en las tarjetas de la ficha. Ver [`CLIENTES-Y-ESTRUCTURA.md`](CLIENTES-Y-ESTRUCTURA.md).
 

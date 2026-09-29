@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Company;
 
 use App\Models\Client;
+use App\Models\Installation;
 use App\Models\StructureType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,7 +77,7 @@ final class CompanyClientCreateTest extends TestCase
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $company = $user->securityCompany;
-        $company->update(['max_clients' => max(1, $company->accessSeatsCount())]);
+        $this->fillAccessLeaveInstallationSeat($company);
         $companyId = (int) $user->security_company_id;
         $structureTypeId = StructureType::idByCode($companyId, 'ph');
 
@@ -111,7 +112,7 @@ final class CompanyClientCreateTest extends TestCase
 
         $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
         $company = $user->securityCompany;
-        $company->update(['max_clients' => max(1, $company->accessSeatsCount())]);
+        $this->fillAccessLeaveInstallationSeat($company);
         $companyId = (int) $user->security_company_id;
         $structureTypeId = StructureType::idByCode($companyId, 'ph');
 
@@ -130,5 +131,41 @@ final class CompanyClientCreateTest extends TestCase
 
         $response->assertSessionHasErrors('has_access');
         $this->assertNull(Client::query()->where('tax_id', '901999000-1')->first());
+    }
+
+    public function test_cannot_create_client_when_installation_quota_is_full(): void
+    {
+        $this->seedWithPilot();
+
+        $user = User::query()->where('email', 'empresa@sj-seguridad.test')->firstOrFail();
+        $company = $user->securityCompany;
+        $company->update(['max_clients' => max(1, $company->installationSeatsCount())]);
+        $companyId = (int) $user->security_company_id;
+        $structureTypeId = StructureType::idByCode($companyId, 'ph');
+
+        $this->actingAs($user)->post(route('company.clients.store'), [
+            'party_type' => 'legal_entity',
+            'name' => 'Sin cupo sede',
+            'legal_name' => 'Sin cupo sede PH',
+            'document_type' => 'NIT',
+            'tax_id' => '901111222-3',
+            'email' => 'sincupo.sede@norte.test',
+            'representative_name' => 'María López',
+            'representative_email' => 'maria@norte.test',
+            'structure_type_id' => $structureTypeId,
+        ])->assertSessionHasErrors('package');
+
+        $this->assertNull(Client::query()->where('tax_id', '901111222-3')->first());
+    }
+
+    private function fillAccessLeaveInstallationSeat(\App\Models\SecurityCompany $company): void
+    {
+        $site = Installation::query()
+            ->withoutGlobalScopes()
+            ->whereHas('client', fn ($q) => $q->where('security_company_id', $company->id))
+            ->where('is_active', true)
+            ->first();
+        $site?->update(['is_active' => false]);
+        $company->update(['max_clients' => max(1, $company->accessSeatsCount())]);
     }
 }

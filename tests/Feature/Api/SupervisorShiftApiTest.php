@@ -42,6 +42,7 @@ final class SupervisorShiftApiTest extends TestCase
         $this->postJson('/api/supervision/login', [
             'login' => 'legado.supervisor@sj-seguridad.test',
             'password' => self::COMPANY_SUPERVISOR_PASSWORD,
+            'replace_session' => true,
         ])->assertOk()->assertJsonPath('user.username', $user->username);
     }
 
@@ -202,17 +203,14 @@ final class SupervisorShiftApiTest extends TestCase
         $guards = $this->withToken($token)->getJson('/api/supervision/guards?document=1144001122');
         $guards->assertOk()->assertJsonPath('guards.0.document_number', '1144001122');
 
-        $saved = $this->withToken($token)->post('/api/supervision/reviews', $this->supervisorReviewPayload($client, [
-            'has_novelty' => 1,
-            'latitude' => 3.4481,
-            'longitude' => -76.5312,
-        ]));
+        $payload = $this->supervisorReviewPayload($client, ['has_novelty' => 1]);
+        $saved = $this->withToken($token)->post('/api/supervision/reviews', $payload);
         $saved->assertCreated()
             ->assertJsonPath('review.client_id', $client->id)
             ->assertJsonPath('review.has_novelty', true)
             ->assertJsonPath('review.supervisor_post_id', $this->supervisionPostFor($client)->id);
-        $this->assertEqualsWithDelta(3.4481, (float) $saved->json('review.latitude'), 0.0002);
-        $this->assertEqualsWithDelta(-76.5312, (float) $saved->json('review.longitude'), 0.0002);
+        $this->assertEqualsWithDelta((float) $payload['latitude'], (float) $saved->json('review.latitude'), 0.0002);
+        $this->assertEqualsWithDelta((float) $payload['longitude'], (float) $saved->json('review.longitude'), 0.0002);
 
         $this->assertSame($guardLogsBefore, GuardLog::query()->count());
 

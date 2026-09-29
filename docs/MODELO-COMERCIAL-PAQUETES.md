@@ -8,7 +8,7 @@ Documentación de la implementación de pricing B2B para empresas de seguridad (
 
 | Quién compra | Qué compra | Qué limita | Qué es ilimitado |
 |--------------|------------|------------|------------------|
-| Empresa de seguridad | Cupo de **conjuntos** (clientes) + modalidad + ciclo | Nº de `clients` que puede crear | Portafolio de cada conjunto (unidades, personas, mascotas, vehículos) |
+| Empresa de seguridad | Cupo de **instalaciones** activas + modalidad + ciclo | Nº de sedes `is_active` (reusa `max_clients`) | Personas, nodos y puertas de cada sede |
 
 El modelo **reemplaza** el pricing por unidades (`plan_tier` / `max_structures` en `clients`). Esas columnas siguen en BD por compatibilidad pero **no limitan** el censo.
 
@@ -117,7 +117,7 @@ Navegación: `config/access.php` → `navigation.admin`.
 ### Empresa (`/company`)
 
 - Dashboard: licencia, cupo, ciclo, CTA anual, sugerencias de upgrade de cupo.
-- Clientes: alta bloqueada si `clients_count >= max_clients`.
+- Instalaciones: alta o reactivar bloqueada si las sedes activas ≥ `max_clients`. Archivar libera cupo. Crear cliente también pide 1 cupo libre.
 - Sin selector de `plan_tier` al crear/editar conjunto.
 
 ---

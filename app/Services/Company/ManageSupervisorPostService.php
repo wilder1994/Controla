@@ -9,13 +9,14 @@ use App\Models\Employee;
 use App\Models\Installation;
 use App\Models\SupervisorPost;
 use App\Models\SupervisorPostModality;
+use App\Support\Supervision\SupervisorReviewGeofence;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class ManageSupervisorPostService
 {
     /**
-     * @param  array{installation_id: int, name: string, modality?: int, is_active?: bool, employee_ids?: list<int>, observations?: ?string}  $data
+     * @param  array{installation_id: int, name: string, modality?: int, is_active?: bool, employee_ids?: list<int>, observations?: ?string, latitude?: ?float, longitude?: ?float}  $data
      */
     public function create(Client $client, array $data): SupervisorPost
     {
@@ -32,11 +33,14 @@ final class ManageSupervisorPostService
             'name' => $name,
             'modality' => $hours,
             'is_active' => (bool) ($data['is_active'] ?? true),
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
         ]);
 
         $this->syncEmployees($client, $post, $data['employee_ids'] ?? []);
 
         $post->load(['installation', 'client', 'employees']);
+        app(SupervisorReviewGeofence::class)->annotateIfPostFarFromInstallation($post);
         $installation = $post->installation;
         if ($installation instanceof Installation) {
             $this->recordChange(
@@ -53,7 +57,7 @@ final class ManageSupervisorPostService
     }
 
     /**
-     * @param  array{installation_id?: int, name?: string, modality?: int, is_active?: bool, employee_ids?: list<int>, observations?: ?string}  $data
+     * @param  array{installation_id?: int, name?: string, modality?: int, is_active?: bool, employee_ids?: list<int>, observations?: ?string, latitude?: ?float, longitude?: ?float}  $data
      */
     public function update(SupervisorPost $post, array $data): SupervisorPost
     {
@@ -96,8 +100,14 @@ final class ManageSupervisorPostService
             $post->is_active = (bool) $data['is_active'];
         }
 
+        if (array_key_exists('latitude', $data) || array_key_exists('longitude', $data)) {
+            $post->latitude = $data['latitude'] ?? null;
+            $post->longitude = $data['longitude'] ?? null;
+        }
+
         $post->save();
         $post->load('installation');
+        app(SupervisorReviewGeofence::class)->annotateIfPostFarFromInstallation($post);
 
         $newStaff = $oldStaff;
         if (array_key_exists('employee_ids', $data)) {

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Services\Company;
 
 use App\Domain\Geo\GeoAddressData;
+use App\Enums\InstallationKind;
 use App\Models\Client;
 use App\Models\ClientUserInstallationAssignment;
 use App\Models\Installation;
+use App\Models\SecurityCompany;
 use App\Models\User;
-use App\Enums\InstallationKind;
+use App\Services\Tenant\AssertInstallationSeats;
 use App\Support\Auth\AssignableRoles;
 use App\Support\Geo\CaliComunaLayer;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +23,10 @@ final class ManageClientInstallationService
      */
     public function create(Client $client, array $data): Installation
     {
+        if ((bool) ($data['is_active'] ?? true)) {
+            $this->assertSeats($client, AssertInstallationSeats::ACTION_CREATE_INSTALLATION);
+        }
+
         $isClientSite = (bool) ($data['is_client_site'] ?? false);
         $name = $isClientSite ? trim((string) $client->name) : trim($data['name']);
 
@@ -78,7 +84,11 @@ final class ManageClientInstallationService
         $installation->is_client_site = $isClientSite;
 
         if (array_key_exists('is_active', $data)) {
-            $installation->is_active = (bool) $data['is_active'];
+            $nextActive = (bool) $data['is_active'];
+            if ($nextActive && ! $installation->is_active) {
+                $this->assertSeats($client, AssertInstallationSeats::ACTION_REACTIVATE, (int) $installation->id);
+            }
+            $installation->is_active = $nextActive;
         }
 
         if (array_key_exists('code', $data)) {
@@ -126,6 +136,18 @@ final class ManageClientInstallationService
         }
 
         $installation->delete();
+    }
+
+    private function assertSeats(Client $client, string $action, ?int $exceptInstallationId = null): void
+    {
+        $company = $client->securityCompany ?? SecurityCompany::query()->find($client->security_company_id);
+        if (! $company instanceof SecurityCompany) {
+            throw ValidationException::withMessages([
+                'package' => 'La empresa del cliente no está disponible.',
+            ]);
+        }
+
+        app(AssertInstallationSeats::class)->execute($company, $action, $exceptInstallationId);
     }
 
     private function geoAttributes(Client $client, bool $isClientSite, ?GeoAddressData $geo): array

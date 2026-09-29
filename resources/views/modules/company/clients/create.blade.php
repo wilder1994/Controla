@@ -9,8 +9,9 @@
 
     <div class="max-w-2xl space-y-4">
         <p class="text-sm text-slate-400">
-            Alta comercial. Puedes crear todas las fichas que necesites.
-            Accesos: {{ $metrics['clients_remaining'] }} de {{ $metrics['max_clients'] }}
+            Alta comercial. Crear un cliente pide al menos 1 cupo de instalaciones.
+            Instalaciones: {{ $metrics['installations_remaining'] ?? $metrics['clients_remaining'] }} de {{ $metrics['max_clients'] }}
+            · Accesos: {{ $metrics['clients_remaining'] }} de {{ $metrics['max_clients'] }}
             · Supervisión: {{ ($metrics['supervision_unlimited'] ?? false) ? 'Ilimitada' : (($metrics['supervision_remaining'] ?? 0).' de '.($metrics['max_supervision_clients'] ?? 0)) }}.
         </p>
 

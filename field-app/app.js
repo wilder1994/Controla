@@ -1594,14 +1594,27 @@ document.getElementById('btn-login').onclick = () => withBusy(
     'Entrando…',
     async () => {
         localStorage.removeItem('API_URL');
-        const data = await api('/supervision/login', {
-            method: 'POST',
-            body: JSON.stringify({
-                login: document.getElementById('login-user').value.trim(),
-                password: document.getElementById('password').value,
-                device_name: 'supervision-pwa',
-            }),
-        });
+        const payload = {
+            login: document.getElementById('login-user').value.trim(),
+            password: document.getElementById('password').value,
+            device_name: 'supervision-pwa',
+        };
+        let data;
+        try {
+            data = await api('/supervision/login', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+        } catch (err) {
+            if (err.status !== 409) throw err;
+            if (!confirm('Tienes una sesión abierta. ¿Cerrar la otra y seguir aquí?')) {
+                throw new Error('Entrada cancelada. La otra sesión sigue activa.');
+            }
+            data = await api('/supervision/login', {
+                method: 'POST',
+                body: JSON.stringify(Object.assign({}, payload, { replace_session: true })),
+            });
+        }
         if (!offlineReady()) {
             throw new Error('App desactualizada. Recargue o borre datos del sitio.');
         }

@@ -21,6 +21,8 @@ final class SupervisorPost extends Model
         'name',
         'modality',
         'is_active',
+        'latitude',
+        'longitude',
     ];
 
     protected function casts(): array
@@ -28,6 +30,8 @@ final class SupervisorPost extends Model
         return [
             'modality' => 'integer',
             'is_active' => 'boolean',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
         ];
     }
 
