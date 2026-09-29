@@ -239,7 +239,7 @@ Vista `resources/views/welcome.blade.php` · `WelcomeController` redirige autent
 | Asset | Ruta |
 |-------|------|
 | Logo | `resources/images/branding/logo-controla.png` |
-| Favicon | `resources/images/branding/favicon.ico` |
+| Favicon | `public/favicon.ico` (único; `partials.favicon`) |
 | Fondo | `resources/images/welcome/hero-background.png` |
 | Hero dashboard | `resources/images/welcome/hero-dashboard.png` |
 

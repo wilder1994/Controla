@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Página expirada</title>
+    @include('partials.favicon')
     <style>
         body { font-family: Figtree, system-ui, sans-serif; background: #020617; color: #e2e8f0; margin: 0; min-height: 100vh; display: grid; place-items: center; }
         .box { max-width: 28rem; padding: 1.5rem; text-align: center; }

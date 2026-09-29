@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Reporte de Accesos — {{ config('app.name') }}</title>
+    @include('partials.favicon')
     <style>
         * { box-sizing: border-box; }
         body {

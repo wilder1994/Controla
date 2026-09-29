@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>{{ $sheet->folio }} — {{ $sheet->kind->documentTitle() }}</title>
+    @include('partials.favicon')
     <style>
         @page { size: letter; margin: 14mm 12mm; }
         * { box-sizing: border-box; }

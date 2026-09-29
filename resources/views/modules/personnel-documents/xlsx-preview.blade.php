@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>{{ $title }}</title>
+    @include('partials.favicon')
     <style>
         body { margin: 0; background: #0f172a; color: #e2e8f0; font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; }
         .xlsx-preview-table { border-collapse: collapse; min-width: 100%; }
