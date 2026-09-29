@@ -80,7 +80,7 @@ Preview planilla parafiscal (21 sep 2026): LibreOffice convierte el recorte `.xl
 
 Documentos Ver vs Gestionar (21 sep 2026): `company.documents.view` solo preview. **Descargar** (PDF/xlsx) exige `company.documents.manage`. Pull + `npm run build` + `route:cache` + `view:cache`. Sin migrate ni seeder. Artisan como `wcodex-controla`.
 
-Cupo por instalación + revista 40 m + una sesión (28 sep 2026): migrate `2026_09_28_210000` (`users.single_session_token`, geo opcional en `supervisor_posts`). PWA `controla-sup-v48`. Pull + `migrate --force` + `npm run build` + `view:cache` + `route:cache`. Copiar `field-app/` a `public/campo`. Artisan como `wcodex-controla`.
+Cupo por instalación + revista 40 m + una sesión (28 sep 2026): migrate `2026_09_28_210000` (`users.single_session_token`, geo opcional en `supervisor_posts`). PWA `controla-sup-v48`. APK v1.7 en `public/downloads/controla-supervision.apk`. Pull + `migrate --force` + `npm run build` + `view:cache` + `route:cache`. Artisan como `wcodex-controla`.
 
 Favicon único (28 sep 2026): solo `public/favicon.ico`. `partials.favicon` añade `?v=` con `filemtime` para evitar caché. Pull + `view:cache`. Artisan como `wcodex-controla`.
 
