@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" class="h-full bg-slate-950">
+@include('partials.theme-boot')
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,6 +20,7 @@
                         <span class="text-xs text-slate-400">Portal Residente</span>
                     </div>
                     <div class="flex items-center gap-4">
+                        @include('partials.theme-toggle')
                         <span class="text-sm text-slate-400">{{ auth()->user()?->name }}</span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

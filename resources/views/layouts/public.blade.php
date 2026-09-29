@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@include('partials.theme-boot')
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,6 +18,7 @@
                 <img src="{{ asset('images/branding/logo-controla.png') }}" alt="Controla" class="h-9 w-auto">
             </a>
             <nav class="flex items-center gap-3 text-sm">
+                @include('partials.theme-toggle')
                 <a href="{{ route('planes.index') }}" class="text-slate-300 hover:text-white">Planes</a>
                 @auth
                     <a href="{{ route('home') }}" class="rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-slate-950">Ir al panel</a>

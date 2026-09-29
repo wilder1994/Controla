@@ -2255,3 +2255,11 @@ document.addEventListener('visibilitychange', () => {
         startPing();
     }
 });
+
+document.getElementById('btn-theme')?.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('controla-theme', next); } catch (e) {}
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', next === 'light' ? '#eaf4f1' : '#0b1220');
+});

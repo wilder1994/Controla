@@ -1,9 +1,10 @@
 const DURATION = 2800;
 
 const KINDS = {
-    error: 'border-red-400/60 bg-red-950/95 text-red-50',
-    warning: 'border-amber-400/60 bg-amber-950/95 text-amber-50',
-    success: 'border-emerald-400/60 bg-emerald-950/95 text-emerald-50',
+    error: 'ui-toast-error',
+    warning: 'ui-toast-warning',
+    caution: 'ui-toast-caution',
+    success: 'ui-toast-success',
 };
 
 function host() {

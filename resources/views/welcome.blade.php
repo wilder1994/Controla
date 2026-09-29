@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    @include('partials.theme-boot')
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,6 +37,7 @@
                         </a>
 
                         <nav class="flex items-center gap-3">
+                            @include('partials.theme-toggle')
                             @if (Route::has('login'))
                                 @auth
                                     <a

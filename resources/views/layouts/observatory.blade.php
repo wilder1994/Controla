@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@include('partials.theme-boot')
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,6 +13,7 @@
     <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="font-sans antialiased bg-slate-950 text-slate-100 min-h-screen">
+    <div class="max-w-lg mx-auto px-4 py-3 flex justify-end">@include('partials.theme-toggle')</div>
     <div class="max-w-lg mx-auto px-4 py-6">
         {{ $slot }}
     </div>

@@ -1,3 +1,5 @@
+import './theme';
+import '../css/theme.css';
 import './bootstrap';
 import './cali-comunas';
 import './geo-address-picker';

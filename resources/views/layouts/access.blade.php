@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@include('partials.theme-boot')
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -79,9 +80,12 @@
                             @endif
                         </div>
                     </div>
-                    @isset($actions)
-                        <div class="flex items-center gap-2 shrink-0">{{ $actions }}</div>
-                    @endisset
+                    <div class="flex items-center gap-2 shrink-0">
+                        @include('partials.theme-toggle')
+                        @isset($actions)
+                            {{ $actions }}
+                        @endisset
+                    </div>
                 </div>
             </header>
 

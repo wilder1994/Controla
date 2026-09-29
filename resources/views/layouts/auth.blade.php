@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    @include('partials.theme-boot')
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,6 +36,7 @@
                 </div>
 
                 <div class="rounded-2xl border border-white/10 bg-slate-950/75 p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-8">
+                    <div class="mb-4 flex justify-end">@include('partials.theme-toggle')</div>
                     <header class="mb-6 space-y-1 text-center">
                         <h2 class="text-2xl font-bold text-white">{{ $title }}</h2>
                         @if ($subtitle)

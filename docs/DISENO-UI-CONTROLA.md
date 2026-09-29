@@ -77,7 +77,7 @@ Fuente: **Figtree** (`font-sans`). Base operativa: **14px** (`text-sm`).
 
 - `text-2xl`, `text-3xl` en contenido operativo
 - `uppercase tracking-widest` en botones
-- Gradientes en datos/tablas/formularios
+- Gradientes en **datos / tablas / formularios** (sí en el chrome del tema claro)
 
 ---
 
@@ -97,14 +97,25 @@ Fuente: **Figtree** (`font-sans`). Base operativa: **14px** (`text-sm`).
 | **sm** | 36px (`h-9`) | `h-9 px-4 text-sm font-medium` |
 | **md** | 40px (`h-10`) | `h-10 px-5 text-sm font-semibold` |
 
-### Variantes (panel empresa — acento indigo)
+### Temas (oscuro / claro)
 
-| Variant | Clases | Uso |
-|---------|--------|-----|
-| **primary** | `bg-indigo-600 text-white hover:bg-indigo-500` | CTA principal (+ Conjunto, Solicitar ampliación) |
-| **secondary** | `border border-slate-700 text-slate-200 hover:bg-slate-800` | Acción secundaria (Portería) |
-| **success** | `bg-emerald-600 text-white hover:bg-emerald-500` | Upsell ahorro (licencia anual) |
-| **platform** | `bg-violet-600 text-white hover:bg-violet-500` | Panel plataforma (`/admin`) |
+`data-theme` en `<html>` (`dark` por defecto). Toggle en headers (`partials.theme-toggle`). Preferencia: `localStorage.controla-theme`. Tokens en `resources/css/theme.css`.
+
+| Token | Uso |
+|-------|-----|
+| `--ui-accent` | Gestión, sidebar activo, botones primary |
+| `--ui-danger` / `--ui-warning` / `--ui-caution` / `--ui-success` | Solo alertas (grave / media / leve / ok) |
+| `--ui-surface` + `--ui-border` | Tablas, cards, inputs |
+
+Claro: mate verdoso, fondo en degradado suave. Datos siempre sobre superficie sólida.
+
+### Variantes (`x-ui.button`)
+
+| Variant | Clase | Uso |
+|---------|-------|-----|
+| **primary** / **platform** | `ui-btn-primary` | CTA y gestión |
+| **secondary** | `ui-btn-secondary` | Acción secundaria |
+| **success** | `ui-btn-success` | Confirmación positiva |
 
 **Forma:** `rounded-lg` · `inline-flex items-center justify-center`
 
